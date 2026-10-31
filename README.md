@@ -1,1 +1,1 @@
-# Inversiones-Magui-a
+# Inversiones-Maguina
