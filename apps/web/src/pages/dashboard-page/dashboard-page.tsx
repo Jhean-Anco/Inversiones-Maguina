@@ -2,7 +2,7 @@ import "./dashboard-page.css";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowDownRight, ArrowUpRight, CreditCard, PackageX, Sparkles, TrendingUp, UsersRound, Wallet } from "lucide-react";
+import { ArrowUpRight, CreditCard, PackageX, TrendingUp, UsersRound, Wallet } from "lucide-react";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioDashboard, type ResumenGerencial } from "../../services/dashboard.service";
 import { servicioReportes, type FiltroReporte, type ReporteIngresos } from "../../services/reportes.service";
@@ -14,41 +14,22 @@ const etiquetaFechaPunto = (valor: string) => new Date(`${valor.length === 7 ? `
 const nombreMedioPago = (valor: string) => valor.toLocaleLowerCase("es-PE").replaceAll("_", " ").replace(/\b\p{L}/gu, (letra) => letra.toLocaleUpperCase("es-PE"));
 const coloresGraficos = ["#d62f4f", "#347caf", "#27a383", "#e2a541", "#8069bd", "#65a4b8"];
 const isoLocal = (fecha: Date) => new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-type RangosComparacion = { a: FiltroReporte; b: FiltroReporte };
-function fechaEnAnio(year: number, month: number, day: number): Date {
-  const ultimoDia = new Date(year, month + 1, 0).getDate();
-  return new Date(year, month, Math.min(day, ultimoDia));
-}
-const crearRango = (desde: Date, hasta: Date): FiltroReporte => ({ desde: isoLocal(desde), hasta: isoLocal(hasta) });
-function calcularRangos(referencia: string): RangosComparacion {
+const rangoMesActual = (referencia: string): FiltroReporte => {
   const fecha = new Date(`${referencia}T00:00:00`);
-  const inicioActual = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
-  const inicioAnterior = new Date(fecha.getFullYear(), fecha.getMonth() - 1, 1);
-  const finAnterior = fechaEnAnio(inicioAnterior.getFullYear(), inicioAnterior.getMonth(), fecha.getDate());
-  return { a: crearRango(inicioActual, fecha), b: crearRango(inicioAnterior, finAnterior) };
-}
-const etiquetaRango = ({ desde, hasta }: FiltroReporte) => `${new Date(desde + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })} – ${new Date(hasta + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}`;
+  return { desde: isoLocal(new Date(fecha.getFullYear(), fecha.getMonth(), 1)), hasta: referencia };
+};
 type PuntoIngresos = { fecha: string; ventas: number; total: string };
-function serieIngresos(reporte: ReporteIngresos | null, rango: FiltroReporte, granularidad: "dia" | "mes", cantidadMeses = 6): PuntoIngresos[] {
+function serieIngresos(reporte: ReporteIngresos | null, rango: FiltroReporte): PuntoIngresos[] {
   if (!reporte) return [];
-  if (granularidad === "dia") {
-    const ventasPorFecha = new Map(reporte.porDia.map((dia) => [dia.fecha, dia]));
-    const dias: PuntoIngresos[] = [];
-    const fin = new Date(`${rango.hasta}T00:00:00`);
-    for (let fecha = new Date(`${rango.desde}T00:00:00`); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
-      const iso = isoLocal(fecha);
-      const dia = ventasPorFecha.get(iso);
-      dias.push({ fecha: iso, ventas: dia?.ventas ?? 0, total: dia?.total ?? "0" });
-    }
-    return dias;
+  const ventasPorFecha = new Map(reporte.porDia.map((dia) => [dia.fecha, dia]));
+  const dias: PuntoIngresos[] = [];
+  const fin = new Date(`${rango.hasta}T00:00:00`);
+  for (let fecha = new Date(`${rango.desde}T00:00:00`); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
+    const iso = isoLocal(fecha);
+    const dia = ventasPorFecha.get(iso);
+    dias.push({ fecha: iso, ventas: dia?.ventas ?? 0, total: dia?.total ?? "0" });
   }
-  const inicio = new Date(`${rango.desde}T00:00:00`);
-  return Array.from({ length: cantidadMeses }, (_, indice) => {
-    const mes = new Date(inicio.getFullYear(), inicio.getMonth() + indice, 1);
-    const fecha = isoLocal(mes).slice(0, 7);
-    const datosMes = reporte.porDia.filter((dia) => dia.fecha.startsWith(fecha));
-    return { fecha, ventas: datosMes.reduce((suma, dia) => suma + dia.ventas, 0), total: String(datosMes.reduce((suma, dia) => suma + Number(dia.total), 0)) };
-  });
+  return dias;
 }
 
 export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre: string; rol: string; puedeVerIngresos?: boolean }) {
@@ -61,12 +42,11 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const [error, setError] = useState(() => datosInicio?.errorResumen ?? "");
   const fechaReferencia = isoLocal(new Date());
   const fechaCalendario = new Date(`${fechaReferencia}T00:00:00`);
-  const aplicados = calcularRangos(fechaReferencia);
-  const [reporteA, setReporteA] = useState<ReporteIngresos | null>(null);
-  const [reporteB, setReporteB] = useState<ReporteIngresos | null>(null);
-  const [cargandoComparacion, setCargandoComparacion] = useState(puedeVerIngresos);
-  const [errorComparacion, setErrorComparacion] = useState("");
-  const [solicitudComparacion, setSolicitudComparacion] = useState(0);
+  const rangoActual = rangoMesActual(fechaReferencia);
+  const [reporte, setReporte] = useState<ReporteIngresos | null>(null);
+  const [cargandoReporte, setCargandoReporte] = useState(puedeVerIngresos);
+  const [errorReporte, setErrorReporte] = useState("");
+  const [solicitudReporte, setSolicitudReporte] = useState(0);
 
   useEffect(() => {
     if (datosInicioValidos) return;
@@ -78,58 +58,34 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   }, [datosInicioValidos]);
 
   useEffect(() => {
-    if (!puedeVerIngresos) { setCargandoComparacion(false); return; }
+    if (!puedeVerIngresos) { setCargandoReporte(false); return; }
     let vigente = true;
-    setCargandoComparacion(true);
-    setErrorComparacion("");
-    setReporteA(null);
-    setReporteB(null);
-    Promise.all([servicioReportes.ingresos(aplicados.a), servicioReportes.ingresos(aplicados.b)])
-      .then(([resultadoA, resultadoB]) => { if (vigente) { setReporteA(resultadoA); setReporteB(resultadoB); } })
-      .catch((problema: unknown) => { if (vigente) setErrorComparacion(problema instanceof Error ? problema.message : "No se pudieron comparar los periodos actuales."); })
-      .finally(() => { if (vigente) setCargandoComparacion(false); });
+    setCargandoReporte(true);
+    setErrorReporte("");
+    setReporte(null);
+    void servicioReportes.ingresos(rangoActual)
+      .then((resultado) => { if (vigente) setReporte(resultado); })
+      .catch((problema: unknown) => { if (vigente) setErrorReporte(problema instanceof Error ? problema.message : "No se pudieron cargar las ventas de este mes."); })
+      .finally(() => { if (vigente) setCargandoReporte(false); });
     return () => { vigente = false; };
-  }, [aplicados.a.desde, aplicados.a.hasta, aplicados.b.desde, aplicados.b.hasta, puedeVerIngresos, solicitudComparacion]);
+  }, [rangoActual.desde, rangoActual.hasta, puedeVerIngresos, solicitudReporte]);
 
-  const totalPeriodoA = Number(reporteA?.resumen.total ?? 0);
-  const totalPeriodoB = Number(reporteB?.resumen.total ?? 0);
-  const diferenciaPeriodos = totalPeriodoA - totalPeriodoB;
-  const variacionPeriodos = totalPeriodoB > 0 ? diferenciaPeriodos / totalPeriodoB * 100 : null;
-  const operacionesPeriodoA = reporteA?.resumen.ventas ?? 0;
-  const operacionesPeriodoB = reporteB?.resumen.ventas ?? 0;
-  const ticketPromedioA = operacionesPeriodoA ? totalPeriodoA / operacionesPeriodoA : 0;
-  const ticketPromedioB = operacionesPeriodoB ? totalPeriodoB / operacionesPeriodoB : 0;
-  const mediosComparados = [...new Set([...(reporteA?.porMedioPago.map((pago) => pago.medioPago) ?? []), ...(reporteB?.porMedioPago.map((pago) => pago.medioPago) ?? [])])]
-    .map((medioPago) => ({ medioPago, totalA: Number(reporteA?.porMedioPago.find((pago) => pago.medioPago === medioPago)?.total ?? 0), totalB: Number(reporteB?.porMedioPago.find((pago) => pago.medioPago === medioPago)?.total ?? 0) }));
-  const pagosTotalA = mediosComparados.reduce((total, pago) => total + pago.totalA, 0);
-  const pagosTotalB = mediosComparados.reduce((total, pago) => total + pago.totalB, 0);
-  const datosMedios = (periodo: "totalA" | "totalB") => mediosComparados.map((pago, indice) => ({ nombre: nombreMedioPago(pago.medioPago), importe: pago[periodo], color: coloresGraficos[indice % coloresGraficos.length] })).filter((pago) => pago.importe > 0);
-  const datosMediosA = datosMedios("totalA");
-  const datosMediosB = datosMedios("totalB");
-  const datosDonutVacios = [{ nombre: "Sin pagos", importe: 1, color: "#e8eef2" }];
-  const articulosComparados = [...new Map([...(reporteA?.productosMasVendidos ?? []), ...(reporteB?.productosMasVendidos ?? [])].map((articulo) => [`${articulo.tipo}:${articulo.descripcion}`, articulo])).values()]
-    .map((articulo) => ({ ...articulo, totalA: Number(reporteA?.productosMasVendidos.find((item) => item.tipo === articulo.tipo && item.descripcion === articulo.descripcion)?.total ?? 0), totalB: Number(reporteB?.productosMasVendidos.find((item) => item.tipo === articulo.tipo && item.descripcion === articulo.descripcion)?.total ?? 0) }))
-    .sort((a, b) => Math.max(b.totalA, b.totalB) - Math.max(a.totalA, a.totalB)).slice(0, 6);
-  const diasPeriodoA = serieIngresos(reporteA, aplicados.a, "dia");
-  const diasPeriodoB = serieIngresos(reporteB, aplicados.b, "dia");
-  const cantidadTramos = Math.ceil(fechaCalendario.getDate() / 7);
-  const operacionesPorTramo = (dias: PuntoIngresos[]) => {
-    const grupos = Array.from({ length: cantidadTramos }, () => [] as PuntoIngresos[]);
-    dias.forEach((dia) => {
-      const semana = Math.min(cantidadTramos - 1, Math.floor((Number(dia.fecha.slice(8, 10)) - 1) / 7));
-      grupos[semana].push(dia);
-    });
-    return grupos.map((grupo, indice) => ({ cantidad: grupo.reduce((total, dia) => total + dia.ventas, 0), etiqueta: `Sem. ${indice + 1}` }));
-  };
-  const tramosA = operacionesPorTramo(diasPeriodoA);
-  const tramosB = operacionesPorTramo(diasPeriodoB);
-  const datosTendencia = Array.from({ length: Math.max(diasPeriodoA.length, diasPeriodoB.length) }, (_, indice) => {
-    const puntoA = diasPeriodoA[indice];
-    const puntoB = diasPeriodoB[indice];
-    return { etiqueta: `D?a ${indice + 1}`, fechaA: puntoA?.fecha ?? "", fechaB: puntoB?.fecha ?? "", totalA: Number(puntoA?.total ?? 0), totalB: Number(puntoB?.total ?? 0) };
+
+  const totalMes = Number(reporte?.resumen.total ?? 0);
+  const operacionesMes = reporte?.resumen.ventas ?? 0;
+  const ticketPromedio = operacionesMes ? totalMes / operacionesMes : 0;
+  const mediosPago = reporte?.porMedioPago ?? [];
+  const pagosTotal = mediosPago.reduce((total, pago) => total + Number(pago.total), 0);
+  const datosMedios = mediosPago.map((pago, indice) => ({ nombre: nombreMedioPago(pago.medioPago), importe: Number(pago.total), color: coloresGraficos[indice % coloresGraficos.length] })).filter((pago) => pago.importe > 0);
+  const articulosMes = [...(reporte?.productosMasVendidos ?? [])].sort((a, b) => Number(b.total) - Number(a.total)).slice(0, 6);
+  const datosProductos = articulosMes.map((articulo) => ({ descripcion: articulo.descripcion, total: Number(articulo.total) }));
+  const diasMes = serieIngresos(reporte, rangoActual);
+  const cantidadSemanas = Math.ceil(fechaCalendario.getDate() / 7);
+  const datosTendencia = diasMes.map((dia, indice) => ({ etiqueta: `Día ${indice + 1}`, fecha: dia.fecha, total: Number(dia.total) }));
+  const datosOperaciones = Array.from({ length: cantidadSemanas }, (_, indice) => {
+    const diasSemana = diasMes.filter((dia) => Math.floor((Number(dia.fecha.slice(8, 10)) - 1) / 7) === indice);
+    return { etiqueta: `Sem. ${indice + 1}`, cantidad: diasSemana.reduce((total, dia) => total + dia.ventas, 0) };
   });
-  const datosProductos = articulosComparados.map((articulo) => ({ descripcion: articulo.descripcion, totalA: articulo.totalA, totalB: articulo.totalB }));
-  const datosOperaciones = tramosA.map((tramo, indice) => ({ etiqueta: tramo.etiqueta, totalA: tramo.cantidad, totalB: tramosB[indice]?.cantidad ?? 0 }));
   const iniciales = nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("").toLocaleUpperCase("es-PE") || "IM";
 
 
@@ -138,14 +94,14 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
       <div className="inicio-hero-copy">
         <span className="inicio-eyebrow">INVERSIONES MAGUIÑA <i /> PANEL DE CONTROL</span>
         <h1>Hola, {nombre.split(" ")[0] || "equipo"}</h1>
-        <p>Este es el movimiento de tu negocio.</p>
+        <p>Resumen de la actividad de tu negocio.</p>
       </div>
-      <div className="inicio-hero-meta"><span className="inicio-avatar">{iniciales}</span><div><strong>{fechaCompleta(resumen?.generadoPara ?? new Date().toISOString().slice(0, 10))}</strong><small>{rol}</small></div></div>
+      <div className="inicio-hero-meta"><span className="inicio-avatar">{iniciales}</span><div><strong>{fechaCompleta(fechaReferencia)}</strong><small>{rol}</small></div></div>
       <div className="inicio-hero-orb inicio-hero-orb-one" aria-hidden="true" /><div className="inicio-hero-orb inicio-hero-orb-two" aria-hidden="true" />
     </header>
 
     {error && <div className="venta-alert" role="alert">{error}</div>}
-    {cargando ? <div className="inicio-loading" role="status"><i /><span>Preparando los gráficos del negocio…</span></div> : resumen && <>
+    {cargando ? <div className="inicio-loading" role="status"><i /><span>Preparando el panel del negocio...</span></div> : resumen && <>
       <div className="inicio-kpis">
         <article className="inicio-kpi is-sales"><span className="inicio-kpi-icon" aria-hidden="true"><Wallet /></span><small>VENTAS DE HOY</small><strong>{soles(resumen.ventasHoy.total)}</strong><span>{resumen.ventasHoy.operaciones} operaciones registradas</span></article>
         <article className="inicio-kpi"><span className="inicio-kpi-icon" aria-hidden="true"><TrendingUp /></span><small>VENTAS DEL MES</small><strong>{soles(resumen.ventasMes.total)}</strong><span>{resumen.ventasMes.operaciones} operaciones este mes</span></article>
@@ -153,25 +109,27 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
         <article className="inicio-kpi"><span className="inicio-kpi-icon" aria-hidden="true"><PackageX /></span><small>PRODUCTOS SIN STOCK</small><strong className={resumen.inventario.productosSinStock ? "inicio-stock-alert" : ""}>{resumen.inventario.productosSinStock}</strong><span>{resumen.inventario.productosActivos} productos activos</span></article>
       </div>
 
-      {errorComparacion && <div className="venta-alert" role="alert">{errorComparacion}</div>}
-      {!puedeVerIngresos ? <div className="inicio-chart-empty">Tu usuario no tiene permiso para consultar ingresos y comparar periodos.</div> : errorComparacion && !reporteA && !cargandoComparacion ? <div className="inicio-panel inicio-comparison-error" role="alert"><strong>No se pudo cargar esta comparación.</strong><span>{errorComparacion}</span><button type="button" onClick={() => setSolicitudComparacion((actual) => actual + 1)}>Reintentar comparación</button></div> : cargandoComparacion || !reporteA || !reporteB ? <div className="inicio-loading" role="status"><i /><span>Cargando datos de los periodos actuales…</span></div> : <>
-        <section className="inicio-comparison-band" aria-label="Resumen de la comparación"><article className="inicio-comparison-period is-a"><span><i />Periodo A</span><strong>{soles(totalPeriodoA)}</strong><small>{operacionesPeriodoA} operaciones · {etiquetaRango(aplicados.a)}</small></article><div className={`inicio-comparison-delta ${diferenciaPeriodos >= 0 ? "is-positive" : "is-negative"}`}><span><Sparkles size={12} aria-hidden="true" /> Variación</span><strong>{variacionPeriodos === null ? totalPeriodoA > 0 ? "Nuevo" : "—" : `${variacionPeriodos >= 0 ? "+" : ""}${variacionPeriodos.toLocaleString("es-PE", { maximumFractionDigits: 1 })}%`}</strong><small>{diferenciaPeriodos >= 0 ? <ArrowUpRight size={13} aria-hidden="true" /> : <ArrowDownRight size={13} aria-hidden="true" />}{soles(Math.abs(diferenciaPeriodos))}</small></div><article className="inicio-comparison-period is-b"><span><i />Periodo B</span><strong>{soles(totalPeriodoB)}</strong><small>{operacionesPeriodoB} operaciones · {etiquetaRango(aplicados.b)}</small></article></section>
-        <section className="inicio-insight-strip" aria-label="Indicadores complementarios"><div><span>Operaciones</span><strong>{operacionesPeriodoA}<i>vs.</i>{operacionesPeriodoB}</strong><small>{operacionesPeriodoA - operacionesPeriodoB >= 0 ? "+" : "−"}{Math.abs(operacionesPeriodoA - operacionesPeriodoB)} entre periodos</small></div><div><span>Ticket promedio</span><strong>{soles(ticketPromedioA)}<i>vs.</i>{soles(ticketPromedioB)}</strong><small>Importe promedio por venta</small></div></section>
+      {!puedeVerIngresos ? <div className="inicio-chart-empty">Tu usuario no tiene permiso para consultar los reportes de ventas.</div> : errorReporte ? <div className="inicio-panel inicio-comparison-error" role="alert"><strong>No se pudo cargar la actividad del mes.</strong><span>{errorReporte}</span><button type="button" onClick={() => setSolicitudReporte((actual) => actual + 1)}>Actualizar resumen</button></div> : cargandoReporte || !reporte ? <div className="inicio-loading" role="status"><i /><span>Cargando actividad de ventas...</span></div> : <>
+        <section className="inicio-insight-strip inicio-admin-metrics" aria-label="Indicadores de ventas del mes">
+          <div><span>OPERACIONES DEL MES</span><strong>{operacionesMes}</strong><small>Ventas registradas</small></div>
+          <div><span>TICKET PROMEDIO</span><strong>{soles(ticketPromedio)}</strong><small>Importe promedio por venta</small></div>
+          <div><span>MEDIOS DE PAGO</span><strong>{datosMedios.length}</strong><small>Medios utilizados este mes</small></div>
+        </section>
 
         <div className="inicio-chart-grid">
-          <article className="inicio-panel inicio-sales-chart"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">EVOLUCI?N DEL MES</span><h2>Ventas durante el mes</h2><p>Comparaci?n con el mismo avance del mes anterior</p></div><button type="button" onClick={() => navegar("/reportes/ingresos")}>Ver reporte <span aria-hidden="true">↗</span></button></header>
-            {datosTendencia.length ? <div className="inicio-recharts inicio-recharts-line"><ResponsiveContainer width="100%" height="100%"><AreaChart accessibilityLayer data={datosTendencia} margin={{ top: 12, right: 12, left: 4, bottom: 0 }}><defs><linearGradient id="inicio-area-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#cc3450" stopOpacity={0.22} /><stop offset="95%" stopColor="#cc3450" stopOpacity={0} /></linearGradient><linearGradient id="inicio-area-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#347895" stopOpacity={0.16} /><stop offset="95%" stopColor="#347895" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e9eef2" strokeDasharray="3 6" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 10 }} interval="preserveStartEnd" /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} width={58} /><Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fechaA ? etiquetaFechaPunto(String(payload[0].payload.fechaA)) : ""} formatter={(valor, nombre) => [soles(Number(valor)), nombre === "Periodo A" ? `A · ${etiquetaRango(aplicados.a)}` : `B · ${etiquetaRango(aplicados.b)}`]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 12, boxShadow: "0 12px 28px #18395018", fontSize: 11 }} labelStyle={{ marginBottom: 6, color: "#526d80", fontWeight: 800 }} /><Legend verticalAlign="top" align="right" height={30} iconType="circle" wrapperStyle={{ fontSize: 10, color: "#6c8294" }} /><Area type="monotone" dataKey="totalA" name="Periodo A" stroke="#cc3450" strokeWidth={2.6} fill="url(#inicio-area-a)" activeDot={{ r: 5, strokeWidth: 0 }} connectNulls /><Area type="monotone" dataKey="totalB" name="Periodo B" stroke="#347895" strokeWidth={2.6} fill="url(#inicio-area-b)" activeDot={{ r: 5, strokeWidth: 0 }} connectNulls /></AreaChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">No hay ventas registradas en estos periodos.</div>}
+          <article className="inicio-panel inicio-sales-chart"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">EVOLUCIÓN DEL MES</span><h2>Ventas durante el mes</h2><p>Importe diario desde el inicio del mes hasta hoy</p></div><button type="button" onClick={() => navegar("/reportes/ingresos")}>Ver reporte <span aria-hidden="true"><ArrowUpRight size={13} /></span></button></header>
+            {datosTendencia.length ? <div className="inicio-recharts inicio-recharts-line"><ResponsiveContainer width="100%" height="100%"><AreaChart accessibilityLayer data={datosTendencia} margin={{ top: 12, right: 12, left: 4, bottom: 0 }}><defs><linearGradient id="inicio-area-mes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#cc3450" stopOpacity={0.2} /><stop offset="95%" stopColor="#cc3450" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e9eef2" strokeDasharray="3 6" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 10 }} interval="preserveStartEnd" /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} width={58} /><Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fecha ? etiquetaFechaPunto(String(payload[0].payload.fecha)) : ""} formatter={(valor) => [soles(Number(valor)), "Ventas"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 12, boxShadow: "0 12px 28px #18395018", fontSize: 11 }} labelStyle={{ marginBottom: 6, color: "#526d80", fontWeight: 800 }} /><Area type="monotone" dataKey="total" name="Ventas" stroke="#cc3450" strokeWidth={2.8} fill="url(#inicio-area-mes)" activeDot={{ r: 5, strokeWidth: 0 }} /></AreaChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aún no hay ventas registradas este mes.</div>}
           </article>
 
-          <article className="inicio-panel inicio-payment-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker"><CreditCard size={11} aria-hidden="true" /> DISTRIBUCIÓN DE PAGOS</span><h2>Medios de pago</h2><p>Compara la mezcla de pagos en ambos periodos</p></div></header>{mediosComparados.length && (pagosTotalA > 0 || pagosTotalB > 0) ? <><div className="inicio-donut-pair">{[{ id: "a", label: "Periodo A", total: pagosTotalA, data: datosMediosA.length ? datosMediosA : datosDonutVacios }, { id: "b", label: "Periodo B", total: pagosTotalB, data: datosMediosB.length ? datosMediosB : datosDonutVacios }].map((donut) => <div className={`inicio-donut-card is-${donut.id}`} key={donut.id}><div className="inicio-donut-visual"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={donut.data} dataKey="importe" nameKey="nombre" innerRadius="67%" outerRadius="92%" paddingAngle={3} stroke="none">{donut.data.map((pago) => <Cell key={pago.nombre} fill={pago.color} />)}</Pie><Tooltip formatter={(valor, nombre) => [soles(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /></PieChart></ResponsiveContainer><div className="inicio-donut-center"><strong>{soles(donut.total)}</strong><small>{donut.id.toUpperCase()}</small></div></div><strong>{donut.label}</strong></div>)}</div><div className="inicio-donut-legend-head"><span>Medio de pago</span><span>A</span><span>B</span></div><div className="inicio-donut-legend">{mediosComparados.map((pago, indice) => <div key={pago.medioPago}><span><i style={{ background: coloresGraficos[indice % coloresGraficos.length] }} />{nombreMedioPago(pago.medioPago)}</span><b>{soles(pago.totalA)}</b><b>{soles(pago.totalB)}</b></div>)}</div></> : <div className="inicio-chart-empty">No hay pagos registrados en estos periodos.</div>}</article>
+          <article className="inicio-panel inicio-payment-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker"><CreditCard size={11} aria-hidden="true" /> DISTRIBUCIÓN DE PAGOS</span><h2>Medios de pago</h2><p>Participación en las ventas de este mes</p></div></header>{pagosTotal > 0 ? <><div className="inicio-donut-pair is-single"><div className="inicio-donut-card"><div className="inicio-donut-visual"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosMedios} dataKey="importe" nameKey="nombre" innerRadius="67%" outerRadius="92%" paddingAngle={3} stroke="none">{datosMedios.map((pago) => <Cell key={pago.nombre} fill={pago.color} />)}</Pie><Tooltip formatter={(valor, nombre) => [soles(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /></PieChart></ResponsiveContainer><div className="inicio-donut-center"><strong>{soles(pagosTotal)}</strong><small>MES ACTUAL</small></div></div><strong>Ventas cobradas</strong></div></div><div className="inicio-donut-legend">{datosMedios.map((pago) => <div key={pago.nombre}><span><i style={{ background: pago.color }} />{pago.nombre}</span><b>{soles(pago.importe)}</b></div>)}</div></> : <div className="inicio-chart-empty">Aún no hay pagos registrados este mes.</div>}</article>
 
-          <article className="inicio-panel inicio-products-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">LO MÁS VENDIDO</span><h2>Productos y servicios</h2><p>Importes comparados en los dos periodos</p></div></header>{datosProductos.length ? <div className="inicio-recharts inicio-recharts-products"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer layout="vertical" data={datosProductos} margin={{ top: 2, right: 12, bottom: 2, left: 4 }} barCategoryGap="24%"><CartesianGrid horizontal={false} stroke="#edf1f4" /><XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} /><YAxis type="category" dataKey="descripcion" width={132} tickLine={false} axisLine={false} tick={{ fill: "#506a7e", fontSize: 9 }} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor, nombre) => [soles(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Legend verticalAlign="top" align="right" height={28} iconType="circle" wrapperStyle={{ fontSize: 9, color: "#6c8294" }} /><Bar dataKey="totalA" name="Periodo A" fill="#cc3450" radius={[0, 6, 6, 0]} barSize={9} /><Bar dataKey="totalB" name="Periodo B" fill="#347895" radius={[0, 6, 6, 0]} barSize={9} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">No hay productos o servicios en estos periodos.</div>}</article>
+          <article className="inicio-panel inicio-products-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">MAYOR MOVIMIENTO</span><h2>Productos y servicios</h2><p>Más vendidos por importe durante el mes</p></div></header>{datosProductos.length ? <div className="inicio-recharts inicio-recharts-products"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer layout="vertical" data={datosProductos} margin={{ top: 2, right: 12, bottom: 2, left: 4 }} barCategoryGap="24%"><CartesianGrid horizontal={false} stroke="#edf1f4" /><XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} /><YAxis type="category" dataKey="descripcion" width={132} tickLine={false} axisLine={false} tick={{ fill: "#506a7e", fontSize: 9 }} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor) => [soles(Number(valor)), "Ventas del mes"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="total" name="Ventas del mes" fill="#347895" radius={[0, 6, 6, 0]} barSize={13} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aún no hay productos o servicios vendidos este mes.</div>}</article>
 
-          <article className="inicio-panel inicio-operations-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">OPERACIONES</span><h2>Ventas por semana</h2><p>Cantidad de operaciones en cada semana del mes</p></div></header>{datosOperaciones.length ? <div className="inicio-recharts inicio-recharts-operations"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={datosOperaciones} margin={{ top: 12, right: 8, bottom: 0, left: -14 }} barCategoryGap="26%"><CartesianGrid vertical={false} stroke="#edf1f4" strokeDasharray="3 5" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 9 }} /><YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} width={32} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor, nombre) => [`${Number(valor)} ventas`, String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Legend verticalAlign="top" align="right" height={28} iconType="circle" wrapperStyle={{ fontSize: 9, color: "#6c8294" }} /><Bar dataKey="totalA" name="Periodo A" fill="#cc3450" radius={[5, 5, 0, 0]} barSize={13} /><Bar dataKey="totalB" name="Periodo B" fill="#347895" radius={[5, 5, 0, 0]} barSize={13} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">No hay operaciones para graficar.</div>}</article>
+          <article className="inicio-panel inicio-operations-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">RITMO DE VENTAS</span><h2>Operaciones por semana</h2><p>Ventas registradas en cada semana del mes</p></div></header>{datosOperaciones.length ? <div className="inicio-recharts inicio-recharts-operations"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={datosOperaciones} margin={{ top: 12, right: 8, bottom: 0, left: -14 }} barCategoryGap="26%"><CartesianGrid vertical={false} stroke="#edf1f4" strokeDasharray="3 5" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 9 }} /><YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} width={32} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor) => [`${Number(valor)} ventas`, "Operaciones"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="cantidad" name="Operaciones" fill="#347895" radius={[5, 5, 0, 0]} barSize={18} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aún no hay operaciones para mostrar.</div>}</article>
         </div>
       </>}
 
-      <article className="inicio-panel inicio-recent-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">MOVIMIENTO RECIENTE</span><h2>Últimas ventas</h2><p>Comprobantes registrados en el sistema</p></div><button type="button" onClick={() => navegar("/reportes/ingresos")}>Ver ingresos <span aria-hidden="true">↗</span></button></header>{resumen.ventasRecientes.length ? <div className="inicio-recent-list">{resumen.ventasRecientes.map((venta) => <div key={venta.id}><span className="inicio-recent-avatar" aria-hidden="true">S/</span><div><strong>{venta.cliente}</strong><small>{venta.codigo} · {fechaCorta(venta.fecha)} · {nombreMedioPago(venta.medioPago)}</small></div><b>{soles(venta.total)}</b></div>)}</div> : <div className="inicio-chart-empty">Todavía no hay ventas registradas.</div>}</article>
+      <article className="inicio-panel inicio-recent-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">MOVIMIENTO RECIENTE</span><h2>Últimas ventas</h2><p>Comprobantes registrados en el sistema</p></div><button type="button" onClick={() => navegar("/reportes/ingresos")}>Ver ingresos <span aria-hidden="true"><ArrowUpRight size={13} /></span></button></header>{resumen.ventasRecientes.length ? <div className="inicio-recent-list">{resumen.ventasRecientes.map((venta) => <div key={venta.id}><span className="inicio-recent-avatar" aria-hidden="true">S/</span><div><strong>{venta.cliente}</strong><small>{venta.codigo} · {fechaCorta(venta.fecha)} ?? {nombreMedioPago(venta.medioPago)}</small></div><b>{soles(venta.total)}</b></div>)}</div> : <div className="inicio-chart-empty">Todavía no hay ventas registradas.</div>}</article>
     </>}
   </section>;
 }
