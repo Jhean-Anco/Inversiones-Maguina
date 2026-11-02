@@ -1016,6 +1016,20 @@
       "when": 1793639339168,
       "tag": "0144_mototaxi_inventory",
       "breakpoints": true
+    },
+    {
+      "idx": 145,
+      "version": "7",
+      "when": 1793640248117,
+      "tag": "0145_mototaxi_vehicle_identifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 146,
+      "version": "7",
+      "when": 1793640471689,
+      "tag": "0146_required_vehicle_identifiers",
+      "breakpoints": true
     }
   ]
 }

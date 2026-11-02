@@ -587,7 +587,7 @@ export class ServicioIngresos {
           afectacionIgv = linea.afectacionIgv; afectoIgv = afectacionIgv === "GRAVADO";
         }
 
-        if (tipoComprobante === "NOTA_VENTA") { afectacionIgv = "INAFECTO"; afectoIgv = false; }
+        if (tipoComprobante === "NOTA_VENTA" || tipoComprobante === "BOLETA") { afectacionIgv = "INAFECTO"; afectoIgv = false; }
 
         const totalBruto = redondear(linea.cantidad * precioUnitario);
         const descuento = linea.descuento ?? 0;

@@ -180,7 +180,7 @@ export function useNuevoIngreso() {
       if (linea.tipo === "PRODUCTO") detalles.push({ tipo: "PRODUCTO", presentacionId: linea.producto.presentacionId, cantidad: linea.cantidad, descuento: descuento.toFixed(2) });
       else {
         if (!linea.descripcion.trim() || !Number.isFinite(precio) || precio < 0 || Number(precio.toFixed(2)) !== precio) { setError(`Completa la descripción y un precio válido con IGV para el servicio ${i + 1}.`); return; }
-        detalles.push({ tipo: "SERVICIO", descripcion: linea.descripcion.trim(), cantidad: linea.cantidad, precioUnitario: linea.precio, descuento: descuento.toFixed(2), afectacionIgv: linea.afectacionIgv });
+        detalles.push({ tipo: "SERVICIO", descripcion: linea.descripcion.trim(), cantidad: linea.cantidad, precioUnitario: linea.precio, descuento: descuento.toFixed(2), afectacionIgv: "INAFECTO" });
       }
     }
     const tipoDocumentoNubefact = String(camposNubefact.cliente_tipo_de_documento ?? "");
@@ -192,17 +192,13 @@ export function useNuevoIngreso() {
     catch (problema) { if (problema instanceof ErrorApi && problema.estado === 401) navegar("/login", { replace: true }); else setError(problema instanceof Error ? problema.message : "No se pudo guardar el ingreso."); }
     finally { setGuardando(false); }
   }
-  const tasaIgv = 18;
   const totales = lineas.reduce((suma, linea) => {
     const cantidad = Number(linea.cantidad) || 0; const precio = linea.tipo === "PRODUCTO" ? Number(linea.producto.precio) : Number(linea.precio) || 0;
     const bruto = redondear(cantidad * precio); const totalLinea = Math.max(0, redondear(bruto - (Number(linea.descuento) || 0)));
-    const afectacion = linea.tipo === "PRODUCTO" ? linea.producto.afectacionIgv : linea.afectacionIgv;
-    const base = afectacion === "GRAVADO" ? redondear(totalLinea * 100 / (100 + tasaIgv)) : totalLinea;
+    const afectacion = "INAFECTO";
+    const base = totalLinea;
     suma.total = redondear(suma.total + totalLinea);
-    suma.igv = redondear(suma.igv + (afectacion === "GRAVADO" ? redondear(totalLinea * tasaIgv / (100 + tasaIgv)) : 0));
-    if (afectacion === "GRAVADO") suma.gravada = redondear(suma.gravada + base);
-    if (afectacion === "EXONERADO") suma.exonerada = redondear(suma.exonerada + base);
-    if (afectacion === "INAFECTO") suma.inafecta = redondear(suma.inafecta + base);
+    suma.inafecta = redondear(suma.inafecta + base);
     return suma;
   }, { total: 0, igv: 0, gravada: 0, exonerada: 0, inafecta: 0 });
   const ingresoBrutoProyectadoNrus = tipoComprobante === "BOLETA" && controlNrus?.periodo === fecha.slice(0, 7) ? redondear(controlNrus.ingresoBruto + totales.total) : null;
@@ -227,5 +223,5 @@ export function useNuevoIngreso() {
     setCuotasNubefact(siguiente);
     setFechaVencimientoPago(siguiente.at(-1)!.fecha_de_pago);
   }
-  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, agregarServicio, actualizarLinea, quitarLinea, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, tasaIgv, controlNrus, ingresoBrutoProyectadoNrus, superaLimiteMensualNrus, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, clienteSeleccionado, buscandoClientes, registrandoCliente, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
+  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, agregarServicio, actualizarLinea, quitarLinea, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, controlNrus, ingresoBrutoProyectadoNrus, superaLimiteMensualNrus, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, buscandoClientes, registrandoCliente, clienteSeleccionado, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
 }
