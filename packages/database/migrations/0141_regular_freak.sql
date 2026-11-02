@@ -1,0 +1,1 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "cliente_no_excluido_percepcion_combustible_fuente" varchar(240);

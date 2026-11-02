@@ -1,0 +1,1 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "percepcion_consumidor_final" boolean DEFAULT false NOT NULL;

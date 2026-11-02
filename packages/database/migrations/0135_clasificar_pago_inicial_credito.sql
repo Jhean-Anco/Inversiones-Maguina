@@ -1,0 +1,3 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "es_pago_inicial" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "ingresos_pagos_pago_inicial_unico" ON "ingresos_pagos" USING btree ("ingreso_id") WHERE "ingresos_pagos"."es_pago_inicial";--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_pago_inicial_individual_ck" CHECK (NOT "ingresos_pagos"."es_pago_inicial" OR "ingresos_pagos"."grupo_cobro_id" IS NULL);

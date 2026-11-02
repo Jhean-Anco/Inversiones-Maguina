@@ -1,0 +1,1 @@
+ALTER TABLE "configuracion_emisor_facturacion" ADD COLUMN "perfil_fiscal_vigente_desde" date;

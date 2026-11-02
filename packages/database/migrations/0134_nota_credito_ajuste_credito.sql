@@ -1,0 +1,4 @@
+ALTER TABLE "comprobantes_relacionados" DROP CONSTRAINT "comprobantes_relacionados_importes_ck";--> statement-breakpoint
+DROP INDEX "comprobantes_relacionados_origen_motivo_unico";--> statement-breakpoint
+CREATE UNIQUE INDEX "comprobantes_relacionados_origen_motivo_unico" ON "comprobantes_relacionados" USING btree ("ingreso_origen_id","tipo_comprobante","codigo_motivo") WHERE "comprobantes_relacionados"."codigo_motivo" NOT IN (7, 13);--> statement-breakpoint
+ALTER TABLE "comprobantes_relacionados" ADD CONSTRAINT "comprobantes_relacionados_importes_ck" CHECK ("comprobantes_relacionados"."subtotal" >= 0 AND "comprobantes_relacionados"."igv" >= 0 AND (("comprobantes_relacionados"."codigo_motivo" = 13 AND "comprobantes_relacionados"."subtotal" = 0 AND "comprobantes_relacionados"."igv" = 0 AND "comprobantes_relacionados"."total" = 0) OR ("comprobantes_relacionados"."codigo_motivo" <> 13 AND "comprobantes_relacionados"."total" > 0)));

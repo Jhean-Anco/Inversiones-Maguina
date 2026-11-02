@@ -1,0 +1,2 @@
+ALTER TABLE "ingresos_detalle" ADD COLUMN "descuento" numeric(14, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "ingresos_detalle" ADD CONSTRAINT "ingresos_detalle_descuento_valido_ck" CHECK ("ingresos_detalle"."descuento" >= 0 AND "ingresos_detalle"."descuento" <= round("ingresos_detalle"."cantidad" * "ingresos_detalle"."precio_unitario", 2));

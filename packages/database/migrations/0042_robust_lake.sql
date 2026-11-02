@@ -1,0 +1,2 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "clave_idempotencia" varchar(36) NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "ingresos_pagos_idempotencia_unico" ON "ingresos_pagos" USING btree ("clave_idempotencia");

@@ -1,0 +1,75 @@
+.emisor-kicker {
+  display: block;
+  color: #6d7f91;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.emisor-grid label small {
+  color: #8492a0;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.emisor-card .emisor-grid input::placeholder {
+  color: #98a4b1;
+}
+
+.emisor-message {
+  padding: 11px 14px;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.emisor-message.is-error {
+  border: 1px solid #f0d1d1;
+  background: #fff6f6;
+}
+
+.emisor-message.is-success {
+  border: 1px solid #cce8d8;
+  background: #f3fbf6;
+}
+
+html[data-theme="oscuro"] .emisor-page {
+  color: #e1eaf4;
+}
+
+html[data-theme="oscuro"] .emisor-grid label {
+  color: #c2d0df;
+}
+
+html[data-theme="oscuro"] .emisor-grid input {
+  border-color: #314761;
+  background: #142235;
+  color: #e1eaf4;
+}
+
+html[data-theme="oscuro"] .emisor-info,
+html[data-theme="oscuro"] .emisor-card {
+  border-color: #314761;
+  background: #17263a;
+}
+
+html[data-theme="oscuro"] .emisor-info strong,
+html[data-theme="oscuro"] .emisor-status strong {
+  color: #e1eaf4;
+}
+
+html[data-theme="oscuro"] .emisor-info,
+html[data-theme="oscuro"] .emisor-heading p:last-child {
+  color: #a9bdd3;
+}
+
+html[data-theme="oscuro"] .emisor-message.is-error {
+  border-color: #653b43;
+  background: #321f2a;
+  color: #ffb6b6;
+}
+
+html[data-theme="oscuro"] .emisor-message.is-success {
+  border-color: #315c4b;
+  background: #1c382e;
+  color: #a4e2bb;
+}

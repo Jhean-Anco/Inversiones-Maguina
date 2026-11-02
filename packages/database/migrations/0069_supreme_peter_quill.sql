@@ -1,0 +1,8 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "retencion_excepcion_motivo" varchar(240);--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "retencion_excepcion_fuente" varchar(240);--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "retencion_excepcion_fecha" date;--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "percepcion_excepcion_motivo" varchar(240);--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "percepcion_excepcion_fuente" varchar(240);--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "percepcion_excepcion_fecha" date;--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_retencion_excepcion_ck" CHECK (("ingresos_pagos"."retencion_excepcion_motivo" IS NULL AND "ingresos_pagos"."retencion_excepcion_fuente" IS NULL AND "ingresos_pagos"."retencion_excepcion_fecha" IS NULL) OR (length(trim("ingresos_pagos"."retencion_excepcion_motivo")) > 0 AND length(trim("ingresos_pagos"."retencion_excepcion_fuente")) > 0 AND "ingresos_pagos"."retencion_excepcion_fecha" IS NOT NULL));--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_percepcion_excepcion_ck" CHECK (("ingresos_pagos"."percepcion_excepcion_motivo" IS NULL AND "ingresos_pagos"."percepcion_excepcion_fuente" IS NULL AND "ingresos_pagos"."percepcion_excepcion_fecha" IS NULL) OR (length(trim("ingresos_pagos"."percepcion_excepcion_motivo")) > 0 AND length(trim("ingresos_pagos"."percepcion_excepcion_fuente")) > 0 AND "ingresos_pagos"."percepcion_excepcion_fecha" IS NOT NULL));

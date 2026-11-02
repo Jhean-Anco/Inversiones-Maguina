@@ -1,0 +1,24 @@
+.notificacion-flotante{position:fixed;z-index:12500;top:18px;right:18px;display:grid;grid-template-columns:30px minmax(0,1fr) 28px;align-items:start;gap:10px;width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:13px 14px;border:1px solid;border-radius:12px;background:#fff;box-shadow:0 14px 40px #14283b30;color:#26384a;animation:notificacion-flotante-entrada .18s ease-out}
+.notificacion-flotante-icono{display:grid;width:28px;height:28px;place-items:center;border-radius:50%;font-size:17px;font-weight:800;line-height:1}
+.notificacion-flotante-contenido{display:grid;gap:4px;min-width:0;padding-top:1px}
+.notificacion-flotante-contenido>strong{font-size:12px;font-weight:800;line-height:1.3}
+.notificacion-flotante-contenido>p{margin:0;font-size:12px;font-weight:550;line-height:1.45;overflow-wrap:anywhere}
+.notificacion-flotante-accion{justify-self:start;margin-top:5px;padding:6px 10px;border:1px solid currentColor;border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:11px;font-weight:750;cursor:pointer}
+.notificacion-flotante-cerrar{display:grid;width:26px;height:26px;place-items:center;padding:0;border:0;border-radius:7px;background:transparent;color:inherit;font-size:19px;line-height:1;cursor:pointer}
+.notificacion-flotante-cerrar:hover{background:#0000000d}
+.notificacion-flotante-error{border-color:#f0c4c4;background:#fff8f8;color:#872d35}
+.notificacion-flotante-error .notificacion-flotante-icono{background:#fce2e3;color:#b4232f}
+.notificacion-flotante-advertencia{border-color:#f0d49d;background:#fffaf0;color:#805515}
+.notificacion-flotante-advertencia .notificacion-flotante-icono{background:#ffedc7;color:#9b670b}
+.notificacion-flotante-exito{border-color:#b9dfce;background:#f5fcf8;color:#176344}
+.notificacion-flotante-exito .notificacion-flotante-icono{background:#d9f3e5;color:#14804f}
+.notificacion-flotante-informacion{border-color:#bed8ef;background:#f5faff;color:#1c527f}
+.notificacion-flotante-informacion .notificacion-flotante-icono{background:#deefff;color:#1768a8}
+html[data-theme="oscuro"] .notificacion-flotante{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto);box-shadow:0 16px 45px #0008}
+html[data-theme="oscuro"] .notificacion-flotante-error .notificacion-flotante-icono{background:#56292e;color:#ffb9bc}
+html[data-theme="oscuro"] .notificacion-flotante-advertencia .notificacion-flotante-icono{background:#554321;color:#ffda87}
+html[data-theme="oscuro"] .notificacion-flotante-exito .notificacion-flotante-icono{background:#214b39;color:#9be5bd}
+html[data-theme="oscuro"] .notificacion-flotante-informacion .notificacion-flotante-icono{background:#203f5c;color:#a5d4ff}
+@keyframes notificacion-flotante-entrada{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:560px){.notificacion-flotante{top:10px;right:10px;width:calc(100vw - 20px);grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}}
+@media(prefers-reduced-motion:reduce){.notificacion-flotante{animation:none}}

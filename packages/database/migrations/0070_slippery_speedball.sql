@@ -1,0 +1,7 @@
+ALTER TABLE "entradas_stock" DROP CONSTRAINT "entradas_stock_proveedor_documento_tipo_ck";--> statement-breakpoint
+ALTER TABLE "entradas_stock" DROP CONSTRAINT "entradas_stock_proveedor_documento_numero_ck";--> statement-breakpoint
+ALTER TABLE "entradas_stock" DROP CONSTRAINT "entradas_stock_proveedor_juridico_ruc_ck";--> statement-breakpoint
+ALTER TABLE "entradas_stock" ALTER COLUMN "proveedor_numero_documento" SET DATA TYPE varchar(100);--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD CONSTRAINT "entradas_stock_proveedor_documento_tipo_ck" CHECK ("entradas_stock"."proveedor_tipo_documento" IS NULL OR "entradas_stock"."proveedor_tipo_documento" IN ('DNI', 'RUC', 'EXT'));--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD CONSTRAINT "entradas_stock_proveedor_documento_numero_ck" CHECK ("entradas_stock"."proveedor_numero_documento" IS NULL OR ("entradas_stock"."proveedor_tipo_documento" = 'DNI' AND "entradas_stock"."proveedor_numero_documento" ~ '^[0-9]{8}$') OR ("entradas_stock"."proveedor_tipo_documento" = 'RUC' AND "entradas_stock"."proveedor_numero_documento" ~ '^[0-9]{11}$') OR ("entradas_stock"."proveedor_tipo_documento" = 'EXT' AND length(trim("entradas_stock"."proveedor_numero_documento")) BETWEEN 1 AND 100));--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD CONSTRAINT "entradas_stock_proveedor_juridico_ruc_ck" CHECK ("entradas_stock"."proveedor_tipo_persona" IS DISTINCT FROM 'JURIDICA' OR "entradas_stock"."proveedor_tipo_documento" IN ('RUC', 'EXT'));

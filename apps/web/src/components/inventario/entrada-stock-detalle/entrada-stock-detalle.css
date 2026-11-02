@@ -1,0 +1,56 @@
+
+@media (max-width: 700px) {
+  .stock-detail-content { padding: 24px 17px; }
+}
+@media (max-width: 700px) {
+  .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .stock-detail-footer { align-items: start; flex-direction: column; }
+}
+.stock-detail-tax-audit{display:grid;gap:.65rem;margin:1rem 0;padding:1rem;border:1px solid #d7e3ef;border-radius:12px;background:#f5f9fd;color:#213f5f}
+.stock-detail-tax-audit h3{margin:.15rem 0;font-size:1rem}
+.stock-detail-tax-audit p,.stock-detail-tax-audit small{margin:0;color:#5c7087;line-height:1.5;overflow-wrap:anywhere}
+.stock-tax-audit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-top:.4rem}
+.stock-tax-audit-form label{display:grid;gap:.3rem;font-size:.85rem;font-weight:650}
+.stock-tax-audit-form input,.stock-tax-audit-form select{min-width:0;min-height:40px;padding:.5rem .65rem;border:1px solid #cfdeed;border-radius:8px;background:white;color:#193c60}
+.stock-tax-audit-form button{justify-self:start;min-height:40px;padding:.5rem .9rem;border:0;border-radius:8px;background:#174d80;color:white;font-weight:700;cursor:pointer}
+.stock-tax-audit-form button:disabled{opacity:.65;cursor:wait}
+.stock-tax-audit-error,.stock-tax-audit-success{grid-column:1/-1;margin:0}
+.stock-tax-audit-error{color:#b42335!important}.stock-tax-audit-success{color:#18764b!important}
+.stock-detail-1041{border-color:#c5dbf0;background:#f2f8ff}
+.stock-detail-1041 .stock-tax-audit-form{padding:.85rem;border:1px solid #d7e3ef;border-radius:10px;background:#fff}
+.stock-tax-audit-form .stock-1041-confirm{display:flex;grid-template-columns:none;align-items:flex-start;gap:.55rem}
+.stock-1041-confirm input{min-height:auto;margin-top:.15rem}
+.stock-1041-form-title{grid-column:1/-1;color:#174d80}
+.stock-1041-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem}
+.stock-1041-summary span{display:grid;gap:.2rem;padding:.65rem;border-radius:8px;background:#e6f0fb;color:#5c7087;font-size:.8rem}
+.stock-1041-summary strong{color:#173f69;font-size:.95rem}
+.stock-1041-payment{padding:.55rem;border-bottom:1px solid #d7e3ef;font-size:.82rem}
+.stock-1041-credit-ready{padding:.65rem;border-radius:8px;background:#e6f7ee;color:#17613e!important;font-weight:650}
+.stock-1041-profile-pending{padding:.75rem;border:1px solid #f0d28b;border-radius:8px;background:#fff8e6;color:#744f08!important}
+.stock-provider-payments{border-color:#c5dbf0;background:#f6faff}
+.stock-provider-payment-list{display:grid;gap:.5rem}
+.stock-provider-payment-list article{display:grid;gap:.2rem;padding:.7rem .8rem;border:1px solid #d7e3ef;border-radius:9px;background:#fff}
+.stock-provider-payment-list article strong{color:#193c60}
+.stock-provider-payment-list article span,.stock-provider-payment-list article small{color:#5c7087;font-size:.82rem;line-height:1.45}
+.stock-provider-payment-form{padding:.85rem;border:1px solid #d7e3ef;border-radius:10px;background:#fff}
+.stock-provider-classify{justify-self:start;min-height:34px;padding:.35rem .7rem;border:1px solid #b8cde4;border-radius:7px;background:#eef5fc;color:#174d80;font-weight:700;cursor:pointer}
+.stock-provider-group-invoice{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(110px,160px);align-items:center;padding:.45rem .55rem;border:1px solid #d7e3ef;border-radius:8px;background:#f8fbfe}
+.stock-provider-group-invoice>span{display:flex;align-items:center;gap:.55rem;color:#294a6a;line-height:1.4}
+.stock-provider-group-invoice>span input[type="checkbox"]{width:18px;min-width:18px;min-height:18px;margin:0;accent-color:#174d80}
+.stock-provider-payment-form>p{grid-column:1/-1;margin:.1rem 0;color:#5c7087;font-size:.84rem;line-height:1.5}
+html[data-theme="oscuro"] .stock-detail-tax-audit{border-color:#314761;background:#17263a;color:#e4edf7}
+html[data-theme="oscuro"] .stock-detail-tax-audit p,html[data-theme="oscuro"] .stock-detail-tax-audit small{color:#a9bdd3}
+html[data-theme="oscuro"] .stock-tax-audit-form input,html[data-theme="oscuro"] .stock-tax-audit-form select{border-color:#314761;background:#1d3048;color:#e4edf7}
+html[data-theme="oscuro"] .stock-detail-1041 .stock-tax-audit-form{border-color:#314761;background:#1d3048}
+html[data-theme="oscuro"] .stock-1041-form-title,html[data-theme="oscuro"] .stock-1041-summary strong{color:#b9d8fa}
+html[data-theme="oscuro"] .stock-1041-summary span{background:#243b57;color:#b0c5db}
+html[data-theme="oscuro"] .stock-1041-profile-pending{border-color:#765c25;background:#392f1b;color:#f0d99f!important}
+html[data-theme="oscuro"] .stock-provider-payments{border-color:#314761;background:#17263a}
+html[data-theme="oscuro"] .stock-provider-payment-list article,html[data-theme="oscuro"] .stock-provider-payment-form{border-color:#314761;background:#1d3048}
+html[data-theme="oscuro"] .stock-provider-payment-list article strong{color:#d8e8f8}
+html[data-theme="oscuro"] .stock-provider-classify{border-color:#3b5a7d;background:#243b57;color:#c5ddf7}
+html[data-theme="oscuro"] .stock-provider-group-invoice{border-color:#314761;background:#192b41}
+html[data-theme="oscuro"] .stock-provider-group-invoice>span,html[data-theme="oscuro"] .stock-provider-payment-form>p{color:#b9cee3}
+@media(max-width:640px){.stock-tax-audit-form{grid-template-columns:1fr}.stock-1041-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}

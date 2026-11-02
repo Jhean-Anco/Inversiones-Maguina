@@ -1,0 +1,2 @@
+ALTER TABLE "ingresos" ADD COLUMN "importe_pago_inicial" numeric(14, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "ingresos" ADD CONSTRAINT "ingresos_pago_inicial_ck" CHECK ("ingresos"."importe_pago_inicial" >= 0 AND (("ingresos"."condicion_pago" = 'CONTADO' AND "ingresos"."importe_pago_inicial" = 0) OR ("ingresos"."condicion_pago" = 'CREDITO' AND "ingresos"."importe_pago_inicial" + "ingresos"."importe_detraccion" < "ingresos"."total")));

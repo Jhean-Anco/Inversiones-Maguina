@@ -1,0 +1,1 @@
+ALTER TABLE "categorias_productos" ADD COLUMN "imagen_url" text;

@@ -1,0 +1,2 @@
+ALTER TABLE "declaraciones_igv_621" DROP CONSTRAINT "declaraciones_igv_621_renta_pago_metodo_ck";--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD CONSTRAINT "declaraciones_igv_621_renta_pago_metodo_ck" CHECK ("declaraciones_igv_621"."renta_pago_cuenta_metodo" IN ('ORDINARIO', 'SUSPENSION_RESOLUCION', 'SUSPENSION_PDT625', 'MODIFICACION_PDT625'));

@@ -1,0 +1,2 @@
+ALTER TABLE "configuracion_emisor_facturacion" ALTER COLUMN "perfil_fiscal_fuente" SET DATA TYPE varchar(1000);--> statement-breakpoint
+ALTER TABLE "historial_perfil_fiscal_emisor" ALTER COLUMN "fuente" SET DATA TYPE varchar(1000);

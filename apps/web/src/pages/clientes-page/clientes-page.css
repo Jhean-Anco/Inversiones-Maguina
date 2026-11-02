@@ -1,0 +1,5 @@
+
+.clientes-document>span{display:grid;gap:2px}.clientes-document>span+span{margin-top:5px;padding-top:5px;border-top:1px solid #edf1ef}
+.clientes-document-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+.clientes-document-search button{min-width:82px;min-height:40px;border:1px solid #c8ded4;border-radius:8px;padding:0 12px;background:#edf7f1;color:#17674f;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.clientes-document-search button:disabled{cursor:not-allowed;opacity:.55}

@@ -1,0 +1,2 @@
+ALTER TABLE "ingresos_detalle" ADD COLUMN "sujeto_percepcion_igv" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "productos" ADD COLUMN "sujeto_percepcion_igv" boolean DEFAULT false NOT NULL;

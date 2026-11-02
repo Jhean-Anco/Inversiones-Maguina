@@ -1,0 +1,2 @@
+ALTER TABLE "comprobantes_relacionados" ADD COLUMN "inventario_devuelto" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "comprobantes_relacionados_origen_motivo_unico" ON "comprobantes_relacionados" USING btree ("ingreso_origen_id","tipo_comprobante","codigo_motivo");

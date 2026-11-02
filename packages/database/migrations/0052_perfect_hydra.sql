@@ -1,0 +1,1 @@
+ALTER TABLE "entradas_stock" ADD COLUMN "datos_tributarios_compra" jsonb;

@@ -1,0 +1,3 @@
+ALTER TABLE "ingresos" ADD COLUMN "condicion_pago" varchar(10) DEFAULT 'CONTADO' NOT NULL;--> statement-breakpoint
+ALTER TABLE "ingresos" ADD COLUMN "fecha_vencimiento_pago" date;--> statement-breakpoint
+ALTER TABLE "ingresos" ADD CONSTRAINT "ingresos_condicion_pago_ck" CHECK (("ingresos"."condicion_pago" = 'CONTADO' AND "ingresos"."fecha_vencimiento_pago" IS NULL) OR ("ingresos"."condicion_pago" = 'CREDITO' AND "ingresos"."fecha_vencimiento_pago" IS NOT NULL AND "ingresos"."fecha_vencimiento_pago" > "ingresos"."fecha"));

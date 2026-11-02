@@ -1,0 +1,2 @@
+ALTER TABLE "egresos_registros" ADD COLUMN "moneda" varchar(3) DEFAULT 'PEN' NOT NULL;--> statement-breakpoint
+ALTER TABLE "egresos_registros" ADD CONSTRAINT "egresos_registros_moneda_ck" CHECK ("egresos_registros"."moneda" IN ('PEN', 'USD', 'EUR'));

@@ -1,0 +1,2 @@
+ALTER TABLE "configuracion_emisor_facturacion" ADD COLUMN "perfil_fiscal_fuente" varchar(240);--> statement-breakpoint
+ALTER TABLE "configuracion_emisor_facturacion" ADD COLUMN "perfil_fiscal_fecha_verificacion" date;

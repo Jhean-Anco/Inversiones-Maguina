@@ -1,0 +1,29 @@
+
+.producto-form { background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%); }
+.catalog-form .producto-tax-control input[type="checkbox"], .catalog-form .producto-check-label input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: #155b9c; }
+.catalog-form .producto-editor-table input:not([type="checkbox"]), .catalog-form .producto-editor-table select { min-width: 96px; min-height: 38px; padding: 0 8px; font-size: 12px; }
+.producto-editor-table input[type="checkbox"] { width: 16px; min-height: 16px; accent-color: #15569a; }
+@media (max-width: 700px) {
+  .producto-form-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .producto-form-grid .producto-span-2 { grid-column: auto; }
+}
+@media (max-width: 700px) {
+  .producto-wizard { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+}
+@media (max-width: 700px) {
+  .producto-form-section { padding: 12px; }
+}
+@media (max-width: 700px) {
+  .producto-code-row { grid-template-columns: minmax(0, 1fr) 38px; }
+}
+@media (max-width: 700px) {
+  .producto-code-row select { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .producto-code-row .producto-scan-button { grid-column: 1; }
+}
+@media (max-width: 600px) {
+  .producto-form-scroll { gap: 14px; padding: 24px 18px; }
+}

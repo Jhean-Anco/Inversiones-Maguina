@@ -1,0 +1,2 @@
+ALTER TABLE "nubefact_correlativos" DROP CONSTRAINT "nubefact_correlativos_tipo_ck";--> statement-breakpoint
+ALTER TABLE "nubefact_correlativos" ADD CONSTRAINT "nubefact_correlativos_tipo_ck" CHECK ("nubefact_correlativos"."tipo_comprobante" IN (1, 2, 3, 4, 5, 6));

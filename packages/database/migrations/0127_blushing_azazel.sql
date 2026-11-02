@@ -1,0 +1,4 @@
+ALTER TABLE "ingresos_detalle" ADD COLUMN "sujeto_percepcion_numero_apendice" integer;--> statement-breakpoint
+ALTER TABLE "productos" ADD COLUMN "sujeto_percepcion_numero_apendice" integer;--> statement-breakpoint
+ALTER TABLE "ingresos_detalle" ADD CONSTRAINT "ingresos_detalle_percepcion_apendice_ck" CHECK ("ingresos_detalle"."sujeto_percepcion_numero_apendice" IS NULL OR "ingresos_detalle"."sujeto_percepcion_numero_apendice" BETWEEN 1 AND 12);--> statement-breakpoint
+ALTER TABLE "productos" ADD CONSTRAINT "productos_percepcion_apendice_ck" CHECK ("productos"."sujeto_percepcion_numero_apendice" IS NULL OR "productos"."sujeto_percepcion_numero_apendice" BETWEEN 1 AND 12);

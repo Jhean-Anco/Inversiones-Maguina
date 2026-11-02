@@ -1,0 +1,5 @@
+
+.producto-card-visual { background: radial-gradient(ellipse at 50% 20%, #fff 0, #f7f9fc 55%, #edf2f8 100%); }
+@media (max-width: 600px) { .producto-card-copy { min-height: 145px; padding: 12px 11px 10px; } }
+@media (max-width: 600px) { .producto-card-actions { gap: 5px; padding: 8px; } }
+@media (max-width: 600px) { .producto-card-actions button { flex: 1; padding: 0 5px; font-size: 9px; } }

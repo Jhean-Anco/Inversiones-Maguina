@@ -1,0 +1,4 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "cliente_listado_percepcion_05" boolean;--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "listado_percepcion_05_fuente" varchar(240);--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD COLUMN "listado_percepcion_05_fecha" date;--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_percepcion_05_evidencia_ck" CHECK (("ingresos_pagos"."cliente_listado_percepcion_05" IS NULL AND "ingresos_pagos"."listado_percepcion_05_fuente" IS NULL AND "ingresos_pagos"."listado_percepcion_05_fecha" IS NULL) OR ("ingresos_pagos"."cliente_listado_percepcion_05" IS NOT NULL AND "ingresos_pagos"."listado_percepcion_05_fuente" IS NOT NULL AND length(trim("ingresos_pagos"."listado_percepcion_05_fuente")) > 0 AND "ingresos_pagos"."listado_percepcion_05_fecha" IS NOT NULL));

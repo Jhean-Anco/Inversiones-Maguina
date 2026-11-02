@@ -1,0 +1,4 @@
+ALTER TABLE "entradas_stock" ADD COLUMN "medio_pago" varchar(30);--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD COLUMN "monto_pagado" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD CONSTRAINT "entradas_stock_pago_ck" CHECK ("entradas_stock"."monto_pagado" IS NULL OR ("entradas_stock"."monto_pagado" >= 0 AND "entradas_stock"."monto_pagado" <= "entradas_stock"."total"));--> statement-breakpoint
+ALTER TABLE "entradas_stock" ADD CONSTRAINT "entradas_stock_medio_pago_ck" CHECK ("entradas_stock"."medio_pago" IS NULL OR "entradas_stock"."medio_pago" IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO'));

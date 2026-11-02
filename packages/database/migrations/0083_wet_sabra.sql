@@ -1,0 +1,8 @@
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "regimen_renta_621" varchar(16);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "ingresos_netos_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "impuesto_resultante_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "saldo_anterior_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "resultado_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "total_deuda_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "importe_pagado_renta_621" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD CONSTRAINT "declaraciones_igv_621_renta_snapshot_ck" CHECK (("declaraciones_igv_621"."regimen_renta_621" IS NULL AND "declaraciones_igv_621"."ingresos_netos_renta_621" IS NULL AND "declaraciones_igv_621"."impuesto_resultante_renta_621" IS NULL AND "declaraciones_igv_621"."saldo_anterior_renta_621" IS NULL AND "declaraciones_igv_621"."resultado_renta_621" IS NULL AND "declaraciones_igv_621"."total_deuda_renta_621" IS NULL AND "declaraciones_igv_621"."importe_pagado_renta_621" IS NULL) OR ("declaraciones_igv_621"."regimen_renta_621" IN ('RER', 'RMT', 'GENERAL') AND "declaraciones_igv_621"."ingresos_netos_renta_621" >= 0 AND "declaraciones_igv_621"."impuesto_resultante_renta_621" >= 0 AND "declaraciones_igv_621"."saldo_anterior_renta_621" >= 0 AND "declaraciones_igv_621"."resultado_renta_621" IS NOT NULL AND "declaraciones_igv_621"."total_deuda_renta_621" >= 0 AND "declaraciones_igv_621"."importe_pagado_renta_621" >= 0));

@@ -1,0 +1,1 @@
+ALTER TABLE "igv_servicios_no_domiciliados" ADD COLUMN "es_servicio" boolean NOT NULL;

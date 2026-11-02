@@ -1,0 +1,2 @@
+ALTER TABLE "egresos_registros" ADD COLUMN "datos_retencion" jsonb;--> statement-breakpoint
+ALTER TABLE "egresos_registros" ADD CONSTRAINT "egresos_registros_datos_retencion_objeto_ck" CHECK ("egresos_registros"."datos_retencion" IS NULL OR jsonb_typeof("egresos_registros"."datos_retencion") = 'object');

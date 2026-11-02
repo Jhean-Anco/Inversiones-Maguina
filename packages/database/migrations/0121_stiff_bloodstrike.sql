@@ -1,0 +1,2 @@
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "coeficiente_suspension_renta_621" numeric(10, 6);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD CONSTRAINT "declaraciones_igv_621_coeficiente_suspension_ck" CHECK ("declaraciones_igv_621"."coeficiente_suspension_renta_621" IS NULL OR ("declaraciones_igv_621"."renta_pago_cuenta_metodo" = 'SUSPENSION_RESOLUCION' AND "declaraciones_igv_621"."coeficiente_suspension_renta_621" BETWEEN 0.0013 AND 0.0050));

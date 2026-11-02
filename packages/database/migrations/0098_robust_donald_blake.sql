@@ -1,0 +1,2 @@
+ALTER TABLE "reglas_tributarias" ADD COLUMN "valor_uit" numeric(14, 2) DEFAULT '5500.00' NOT NULL;--> statement-breakpoint
+ALTER TABLE "reglas_tributarias" ADD CONSTRAINT "reglas_tributarias_uit_ck" CHECK ("reglas_tributarias"."valor_uit" > 0);

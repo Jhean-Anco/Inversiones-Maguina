@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "pagos_igv_no_domiciliados_constancia_uq" ON "pagos_igv_servicios_no_domiciliados" USING btree ("obligacion_id","constancia_1662");

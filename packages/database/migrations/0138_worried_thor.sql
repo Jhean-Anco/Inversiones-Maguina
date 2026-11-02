@@ -1,0 +1,1 @@
+ALTER TABLE "entradas_stock" ADD COLUMN "proveedor_direccion" varchar(250);

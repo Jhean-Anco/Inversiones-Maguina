@@ -1,0 +1,55 @@
+
+@media (max-width: 600px) { .egreso-form-scroll { padding: 24px 18px; } }
+@media (max-width: 600px) { .egreso-form-grid { grid-template-columns: 1fr; gap: 12px; } }
+@media (max-width: 600px) { .egreso-full { grid-column: auto; } }
+.egreso-form fieldset {
+  border: 1px solid var(--border-color, #d7e2ee);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 0;
+  min-width: 0;
+}
+
+.egreso-form fieldset legend {
+  padding: 0 8px;
+  font-weight: 700;
+}
+
+.egreso-form fieldset p {
+  margin: 0 0 12px;
+  color: var(--text-muted, #64748b);
+  font-size: 0.875rem;
+}
+
+.egreso-form fieldset label > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.egreso-form fieldset input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.egreso-registrar-abono {
+  margin-top: 12px;
+  border: 1px solid var(--primary-600, #174b82);
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: var(--primary-700, #123e6c);
+  background: var(--surface, #fff);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.egreso-registrar-abono:hover {
+  color: #fff;
+  background: var(--primary-700, #123e6c);
+}
+
+@media (max-width: 600px) {
+  .egreso-registrar-abono { width: 100%; }
+  .egreso-form fieldset { padding: 13px; }
+}

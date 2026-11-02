@@ -1,0 +1,1 @@
+ALTER TABLE "entradas_stock" ADD COLUMN "registro_compras_sunat" jsonb;

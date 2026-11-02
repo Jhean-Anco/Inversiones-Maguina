@@ -1,0 +1,1 @@
+DROP TABLE "subcategorias_productos" CASCADE;

@@ -1,0 +1,3 @@
+ALTER TABLE "igv_servicios_no_domiciliados" ADD COLUMN "origen_periodo" varchar(20) NOT NULL;--> statement-breakpoint
+ALTER TABLE "igv_servicios_no_domiciliados" ADD COLUMN "fecha_origen_periodo" date NOT NULL;--> statement-breakpoint
+ALTER TABLE "igv_servicios_no_domiciliados" ADD CONSTRAINT "igv_no_domiciliados_origen_periodo_ck" CHECK (("igv_servicios_no_domiciliados"."origen_periodo" = 'COMPROBANTE' AND "igv_servicios_no_domiciliados"."periodo_sunat" = to_char("igv_servicios_no_domiciliados"."fecha_origen_periodo", 'YYYYMM')) OR ("igv_servicios_no_domiciliados"."origen_periodo" = 'PAGO_SERVICIO' AND "igv_servicios_no_domiciliados"."periodo_sunat" = to_char("igv_servicios_no_domiciliados"."fecha_origen_periodo", 'YYYYMM')));

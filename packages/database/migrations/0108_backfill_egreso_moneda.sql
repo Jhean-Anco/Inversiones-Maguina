@@ -1,0 +1,1 @@
+UPDATE egresos_registros SET moneda = CASE WHEN datos_tributarios_compra->>'moneda' IN ('PEN', 'USD', 'EUR') THEN datos_tributarios_compra->>'moneda' ELSE 'PEN' END WHERE datos_tributarios_compra IS NOT NULL AND moneda = 'PEN';

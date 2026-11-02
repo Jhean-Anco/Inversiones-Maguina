@@ -1,0 +1,2 @@
+ALTER TABLE "ingresos" DROP CONSTRAINT "ingresos_tipo_comprobante_ck";--> statement-breakpoint
+ALTER TABLE "ingresos" ADD CONSTRAINT "ingresos_tipo_comprobante_ck" CHECK ("ingresos"."tipo_comprobante" IN ('BOLETA', 'FACTURA', 'NOTA_VENTA'));

@@ -1,0 +1,1 @@
+ALTER TABLE "pagos_entradas_stock" ADD COLUMN "reglas_tributarias_snapshot" jsonb;

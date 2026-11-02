@@ -1,0 +1,1 @@
+ALTER TABLE "ingresos_pagos" ADD COLUMN "retencion_verificacion_fecha" date;

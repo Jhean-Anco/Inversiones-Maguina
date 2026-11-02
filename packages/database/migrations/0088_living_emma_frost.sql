@@ -1,0 +1,2 @@
+ALTER TABLE "pagos_entradas_stock" DROP CONSTRAINT "pagos_entradas_stock_exclusion_ck";--> statement-breakpoint
+ALTER TABLE "pagos_entradas_stock" ADD CONSTRAINT "pagos_entradas_stock_exclusion_ck" CHECK ("pagos_entradas_stock"."exclusion_retencion" IN ('PENDIENTE', 'NINGUNA', 'EMISOR_NO_AGENTE', 'BUEN_CONTRIBUYENTE', 'AGENTE_RETENCION', 'AGENTE_PERCEPCION', 'COMPROBANTE_SIN_CREDITO', 'SPOT', 'NO_GRAVADA', 'MONTO_MENOR_700', 'OTRO'));

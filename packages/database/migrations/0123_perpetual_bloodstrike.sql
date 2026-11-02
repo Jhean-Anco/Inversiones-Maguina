@@ -1,0 +1,6 @@
+ALTER TABLE "ingresos" DROP CONSTRAINT "ingresos_detraccion_codigo_ck";--> statement-breakpoint
+ALTER TABLE "ingresos_detalle" DROP CONSTRAINT "ingresos_detalle_detraccion_codigo_ck";--> statement-breakpoint
+ALTER TABLE "productos" DROP CONSTRAINT "productos_spot_venta_codigo_ck";--> statement-breakpoint
+ALTER TABLE "ingresos" ADD CONSTRAINT "ingresos_detraccion_codigo_ck" CHECK ("ingresos"."codigo_detraccion" IS NULL OR "ingresos"."codigo_detraccion" IN ('004', '005', '007', '008', '009', '010', '011', '014', '016', '017', '020', '023', '031', '032', '034', '035', '036', '037', '039', '041', '044', '045'));--> statement-breakpoint
+ALTER TABLE "ingresos_detalle" ADD CONSTRAINT "ingresos_detalle_detraccion_codigo_ck" CHECK ("ingresos_detalle"."codigo_detraccion" IS NULL OR "ingresos_detalle"."codigo_detraccion" IN ('004', '005', '007', '008', '009', '010', '011', '014', '016', '017', '020', '023', '031', '032', '034', '035', '036', '037', '039', '041', '044', '045', 'NO_SUJETO'));--> statement-breakpoint
+ALTER TABLE "productos" ADD CONSTRAINT "productos_spot_venta_codigo_ck" CHECK ("productos"."codigo_spot_venta" IS NULL OR "productos"."codigo_spot_venta" IN ('004', '005', '007', '008', '009', '010', '011', '014', '016', '017', '020', '023', '031', '032', '034', '035', '036', '037', '039', '041', '045', 'NO_SUJETO'));

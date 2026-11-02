@@ -1,0 +1,2 @@
+ALTER TABLE "declaraciones_igv_621" ADD COLUMN "coeficiente_renta_621" numeric(10, 6);--> statement-breakpoint
+ALTER TABLE "declaraciones_igv_621" ADD CONSTRAINT "declaraciones_igv_621_coeficiente_ck" CHECK ("declaraciones_igv_621"."coeficiente_renta_621" IS NULL OR ("declaraciones_igv_621"."coeficiente_renta_621" >= 0 AND "declaraciones_igv_621"."regimen_renta_621" IN ('RMT', 'GENERAL')));

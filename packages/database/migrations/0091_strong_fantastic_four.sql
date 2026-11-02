@@ -1,0 +1,1 @@
+CREATE INDEX "ingresos_pagos_grupo_cobro_idx" ON "ingresos_pagos" USING btree ("grupo_cobro_id");

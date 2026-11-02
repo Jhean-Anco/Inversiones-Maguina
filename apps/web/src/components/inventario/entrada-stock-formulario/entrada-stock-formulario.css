@@ -1,0 +1,73 @@
+
+@media (max-width: 700px) {
+  .stock-provider-identity { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .stock-provider-identity > button { width: 100%; }
+}
+@media (max-width: 700px) {
+}
+@media (max-width: 700px) {
+  .stock-entry-add-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .stock-add-product { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .stock-entry-add-fields { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .stock-add-product { grid-column: auto; width: 100%; }
+}
+@media (max-width: 700px) {
+  .stock-entry-form-scroll { gap: 14px; padding: 22px 16px; }
+}
+@media (max-width: 600px) { .stock-payment-fields { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .stock-payment-balance { grid-column: auto; } }
+.stock-product-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.stock-product-search-row > label { display: grid; gap: 6px; color: #294765; font-size: 12px; font-weight: 750; }
+.stock-create-product, .stock-product-empty-result button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; border: 1px solid #c8d9e9; border-radius: 9px; padding: 0 14px; background: #f5f9fd; color: #1c5687; font: inherit; font-size: 12px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.stock-create-product > span, .stock-product-empty-result button > span { font-size: 19px; line-height: 1; }
+.stock-create-product:hover, .stock-product-empty-result button:hover { border-color: #9cb9d4; background: #edf5fc; }
+.stock-product-empty-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stock-product-empty-result button { min-height: 34px; padding: 0 10px; }
+@media (max-width: 600px) { .stock-product-search-row { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .stock-create-product { justify-self: start; } }
+@media (max-width: 600px) { .stock-product-empty-result { align-items: flex-start; flex-direction: column; } }
+.stock-evidence-section { display: block; overflow: visible; border-color: #d7e3f0; border-radius: 14px; background: linear-gradient(145deg, #fff 0%, #f8fbff 100%); }
+.stock-evidence-section legend { padding: 0 9px; color: #183b5c; font-size: 14px; font-weight: 800; }
+.stock-evidence-upload { display: grid; gap: 9px; color: #294765; font-size: 12px; font-weight: 750; }
+.stock-evidence-upload input { width: 100%; max-width: 100%; min-height: 48px; border: 1px dashed #b9cde0; border-radius: 10px; padding: 9px 11px; background: #fff; color: #35536f; font: inherit; font-size: 12px; }
+.stock-evidence-upload input::file-selector-button { margin-right: 12px; border: 1px solid #cfdaea; border-radius: 7px; padding: 8px 12px; background: #f2f7fd; color: #1d5689; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.stock-evidence-upload input:hover { border-color: #76a3d3; background: #fbfdff; }
+.stock-provider-results { grid-column: 1 / -1; display: grid; gap: 6px; max-height: 220px; overflow: auto; border: 1px solid #d7e3ef; border-radius: 10px; padding: 6px; background: #fff; }
+.stock-provider-results button { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-radius: 7px; padding: 7px 10px; background: #f7faff; color: #294765; font: inherit; text-align: left; cursor: pointer; }
+.stock-provider-results button:hover { background: #eaf3fc; }
+.stock-provider-results button span { color: #71869b; font-size: 11px; white-space: nowrap; }
+.stock-provider-add { justify-self: start; }
+html[data-theme="oscuro"] .stock-provider-results { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] .stock-provider-results button { background: #192b41; color: #d8e8f8; }
+html[data-theme="oscuro"] .stock-provider-results button:hover { background: #243b57; }
+html[data-theme="oscuro"] .stock-provider-results button span { color: #b9cee3; }
+.stock-upload-hint, .stock-inventory-receipt-help, .stock-document-lines-heading p { margin: 0; color: #71869b; font-size: 11px; font-weight: 500; line-height: 1.45; }
+.stock-document-lines-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.stock-document-add-line, .stock-document-receive-line { min-height: 36px; border: 1px solid #c8d9e9; border-radius: 8px; padding: 0 11px; background: #f5f9fd; color: #1c5687; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.stock-document-line { border: 1px solid #e1e9f1; border-radius: 10px; padding: 12px; background: #fbfcfe; }
+.stock-document-line > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #294765; font-size: 12px; }
+.stock-document-line-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.stock-document-line-fields label, .stock-document-total label { display: grid; gap: 5px; color: #4c657d; font-size: 10px; font-weight: 750; }
+.stock-document-line-fields input, .stock-document-total input { width: 100%; min-width: 0; min-height: 35px; border: 1px solid #d9e3ed; border-radius: 7px; padding: 0 8px; background: #fff; color: #203d59; font: inherit; font-size: 12px; }
+.stock-document-line-description { grid-column: span 2; }
+.stock-document-receive-line { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.stock-document-receive-line span { font-size: 15px; }
+.stock-document-total { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-top: 12px; border-top: 1px solid #e3eaf1; padding-top: 11px; }
+.stock-document-total label { width: min(260px, 60%); }
+.stock-document-total > strong { color: #173d62; font-size: 15px; white-space: nowrap; }
+.stock-inventory-receipt-help { margin: 0 0 12px; }
+@media (max-width: 760px) { .stock-document-line-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .stock-document-line-description { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .stock-document-lines-heading { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 760px) {  }
+@media (max-width: 520px) {  }

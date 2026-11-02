@@ -1,0 +1,1 @@
+ALTER TABLE "ingresos_cobros_grupos" ADD COLUMN "huella_solicitud" varchar(64) NOT NULL;

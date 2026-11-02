@@ -1,0 +1,6 @@
+ALTER TABLE "ingresos_pagos" DROP CONSTRAINT "ingresos_pagos_percepcion_constancia_ck";--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" DROP CONSTRAINT "ingresos_pagos_percepcion_estado_ck";--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" DROP CONSTRAINT "ingresos_pagos_percepcion_emitida_ck";--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_percepcion_constancia_ck" CHECK ("ingresos_pagos"."percepcion_igv" = 0 OR ("ingresos_pagos"."percepcion_tasa" IN (0.5, 1, 2) AND "ingresos_pagos"."percepcion_estado" IN ('PENDIENTE', 'EMITIDO', 'EMITIDO_DEMO', 'ERROR')));--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_percepcion_estado_ck" CHECK ("ingresos_pagos"."percepcion_estado" IS NULL OR "ingresos_pagos"."percepcion_estado" IN ('PENDIENTE', 'EMITIDO', 'EMITIDO_DEMO', 'ERROR'));--> statement-breakpoint
+ALTER TABLE "ingresos_pagos" ADD CONSTRAINT "ingresos_pagos_percepcion_emitida_ck" CHECK ("ingresos_pagos"."percepcion_estado" NOT IN ('EMITIDO', 'EMITIDO_DEMO') OR ("ingresos_pagos"."percepcion_serie" IS NOT NULL AND "ingresos_pagos"."percepcion_numero" IS NOT NULL));

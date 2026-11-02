@@ -1,0 +1,3 @@
+ALTER TABLE "ingresos" DROP CONSTRAINT "ingresos_condicion_pago_ck";--> statement-breakpoint
+ALTER TABLE "ingresos" ADD COLUMN "cuotas_pago" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "ingresos" ADD CONSTRAINT "ingresos_condicion_pago_ck" CHECK (("ingresos"."condicion_pago" = 'CONTADO' AND "ingresos"."fecha_vencimiento_pago" IS NULL AND jsonb_array_length("ingresos"."cuotas_pago") = 0) OR ("ingresos"."condicion_pago" = 'CREDITO' AND "ingresos"."fecha_vencimiento_pago" IS NOT NULL AND "ingresos"."fecha_vencimiento_pago" > "ingresos"."fecha" AND jsonb_array_length("ingresos"."cuotas_pago") > 0));

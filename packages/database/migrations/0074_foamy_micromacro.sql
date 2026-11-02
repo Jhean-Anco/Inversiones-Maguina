@@ -1,0 +1,3 @@
+ALTER TABLE "pagos_igv_servicios_no_domiciliados" DROP CONSTRAINT "pagos_igv_no_domiciliados_importes_ck";--> statement-breakpoint
+ALTER TABLE "pagos_igv_servicios_no_domiciliados" ADD COLUMN "pago_completo" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "pagos_igv_servicios_no_domiciliados" ADD CONSTRAINT "pagos_igv_no_domiciliados_importes_ck" CHECK (("pagos_igv_servicios_no_domiciliados"."igv_pagado_pen" > 0 OR "pagos_igv_servicios_no_domiciliados"."intereses_pen" > 0) AND "pagos_igv_servicios_no_domiciliados"."igv_pagado_pen" >= 0 AND "pagos_igv_servicios_no_domiciliados"."intereses_pen" >= 0);
