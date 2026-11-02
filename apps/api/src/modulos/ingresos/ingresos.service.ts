@@ -142,7 +142,10 @@ export class ServicioIngresos {
       : Array.isArray(errores) ? errores.length > 0
         : typeof errores === "object" && errores !== null ? Object.keys(errores).length > 0
           : Boolean(errores);
-    const rechazado = !respuesta.ok || hayErrores || cuerpo.aceptada_por_sunat === false || (ambiente === "PRODUCCION" && cuerpo.aceptada_por_sunat !== true);
+    const artefactoDemoEmitido = ambiente === "DEMO" && typeof cuerpo.enlace_del_pdf === "string" && cuerpo.enlace_del_pdf.length > 0;
+    const rechazado = !respuesta.ok || hayErrores
+      || (ambiente === "PRODUCCION" && cuerpo.aceptada_por_sunat !== true)
+      || (ambiente === "DEMO" && cuerpo.aceptada_por_sunat === false && !artefactoDemoEmitido);
     const datosNubefact = { ambiente, solicitud, respuesta: cuerpo };
     const estadoEmitido = ambiente === "DEMO" ? "EMITIDO_DEMO" : "EMITIDO";
     await db.update(ingresos).set({ estado: rechazado ? (ambiente === "DEMO" ? "ERROR_NUBEFACT_DEMO" : "ERROR_NUBEFACT") : estadoEmitido, datosNubefact }).where(eq(ingresos.id, venta.id));
