@@ -9,7 +9,6 @@ import { servicioMototaxis, type CompraMototaxi, type GarantiaMototaxi, type Mar
 type Seccion = "resumen" | "modelos" | "unidades" | "compras" | "garantias" | "movimientos";
 const fechaHoy = () => { const f = new Date(); return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`; };
 const soles = (n: string | number) => `S/ ${Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const nombresSeccion: Record<Seccion, string> = { resumen: "Resumen", modelos: "Modelos", unidades: "Unidades", compras: "Compras y recepción", garantias: "Garantías", movimientos: "Movimientos y ajustes" };
 
 export function MototaxisPage({ seccion = "resumen" }: { seccion?: Seccion }) {
   const navegar = useNavigate();
@@ -112,11 +111,8 @@ export function MototaxisPage({ seccion = "resumen" }: { seccion?: Seccion }) {
   const disponibles = unidades.filter((u) => u.estado === "DISPONIBLE").length;
   const valorInventario = unidades.filter((u) => u.estado === "DISPONIBLE").reduce((n, u) => n + Number(u.costoAdquisicion), 0);
   const nombreProveedor = proveedores.find((p) => p.id === compra.proveedorPersonaId)?.nombre;
-  const subnav: Seccion[] = ["resumen", "modelos", "unidades", "compras", "garantias", "movimientos"];
-
   return <section className="mototaxis-page">
     <header className="moto-page-heading"><div><span className="moto-eyebrow">GESTIÓN DE VEHÍCULOS</span><h1>Mototaxis</h1><p>Controla modelos, compras, unidades, ventas y garantías desde un solo módulo.</p></div><div className="moto-heading-total"><small>Unidades disponibles</small><strong>{disponibles}</strong></div></header>
-    <nav className="moto-subnav" aria-label="Submódulos de mototaxis">{subnav.map((s) => <button key={s} type="button" className={seccion === s ? "is-active" : ""} onClick={() => navegar(`/mototaxis/${s === "resumen" ? "resumen" : s}`)}>{nombresSeccion[s]}</button>)}</nav>
     {error && <NotificacionFlotante tipo="error" mensaje={error} duracionMs={0} onCerrar={() => setError("")} />}{exito && <NotificacionFlotante tipo="exito" mensaje={exito} duracionMs={4000} onCerrar={() => setExito("")} />}
     {seccion === "resumen" && <>
       <div className="moto-kpis"><article><span>Unidades disponibles</span><strong>{disponibles}</strong></article><article><span>Modelos activos</span><strong>{modelos.length}</strong></article><article><span>Valor de inventario</span><strong>{soles(valorInventario)}</strong></article><article><span>Garantías registradas</span><strong>{garantias.length}</strong></article></div>
