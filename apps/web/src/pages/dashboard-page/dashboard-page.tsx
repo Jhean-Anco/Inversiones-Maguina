@@ -8,6 +8,7 @@ import { servicioReportes, type FiltroReporte, type ReporteIngresos } from "../.
 const soles = (valor: string | number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", maximumFractionDigits: 2 }).format(Number(valor) || 0);
 const fechaCorta = (valor: string) => new Date(valor + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short" });
 const fechaCompleta = (valor: string) => new Date(valor + "T00:00:00").toLocaleDateString("es-PE", { weekday: "long", day: "numeric", month: "long" });
+const etiquetaFechaPunto = (valor: string) => new Date(`${valor.length === 7 ? `${valor}-01` : valor}T00:00:00`).toLocaleDateString("es-PE", valor.length === 7 ? { month: "long", year: "numeric" } : { day: "numeric", month: "short" });
 const nombreMedioPago = (valor: string) => valor.toLocaleLowerCase("es-PE").replaceAll("_", " ").replace(/\b\p{L}/gu, (letra) => letra.toLocaleUpperCase("es-PE"));
 const coloresGraficos = ["#d62f4f", "#347caf", "#27a383", "#e2a541", "#8069bd", "#65a4b8"];
 const circunferenciaDonut = 326.73;
@@ -33,6 +34,7 @@ function calcularRangos(modo: ModoComparacion, referencia: string, year: number,
 }
 const etiquetaRango = ({ desde, hasta }: FiltroReporte) => `${new Date(desde + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })} – ${new Date(hasta + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}`;
 type PuntoIngresos = { fecha: string; ventas: number; total: string };
+type PuntoGrafico = PuntoIngresos & { x: number; y: number };
 function serieIngresos(reporte: ReporteIngresos | null, rango: FiltroReporte, granularidad: "dia" | "mes", cantidadMeses = 6): PuntoIngresos[] {
   if (!reporte) return [];
   if (granularidad === "dia") {
@@ -74,6 +76,7 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const [cargandoComparacion, setCargandoComparacion] = useState(puedeVerIngresos);
   const [errorComparacion, setErrorComparacion] = useState("");
   const [solicitudComparacion, setSolicitudComparacion] = useState(0);
+  const [puntoActivo, setPuntoActivo] = useState<{ punto: PuntoGrafico; periodo: "A" | "B" } | null>(null);
 
   useEffect(() => {
     if (datosInicioValidos) return;
@@ -91,6 +94,7 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
     setErrorComparacion("");
     setReporteA(null);
     setReporteB(null);
+    setPuntoActivo(null);
     Promise.all([servicioReportes.ingresos(aplicados.a), servicioReportes.ingresos(aplicados.b)])
       .then(([resultadoA, resultadoB]) => { if (vigente) { setReporteA(resultadoA); setReporteB(resultadoB); } })
       .catch((problema: unknown) => { if (vigente) setErrorComparacion(problema instanceof Error ? problema.message : "No se pudieron comparar los periodos seleccionados."); })
@@ -134,7 +138,7 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const diasPeriodoA = serieIngresos(reporteA, aplicados.a, granuloMensual ? "mes" : "dia", modo === "anual" ? 12 : 6);
   const diasPeriodoB = serieIngresos(reporteB, aplicados.b, granuloMensual ? "mes" : "dia", modo === "anual" ? 12 : 6);
   const maximoDia = Math.max(1, ...diasPeriodoA.map((dia) => Number(dia.total)), ...diasPeriodoB.map((dia) => Number(dia.total)));
-  const crearPuntos = (dias: PuntoIngresos[]) => dias.map((dia, indice) => ({
+  const crearPuntos = (dias: PuntoIngresos[]): PuntoGrafico[] => dias.map((dia, indice) => ({
     ...dia,
     x: dias.length < 2 ? 350 : 42 + indice * (620 / (dias.length - 1)),
     y: 176 - Number(dia.total) / maximoDia * 136,
@@ -143,6 +147,7 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const puntosPeriodoB = crearPuntos(diasPeriodoB);
   const trazoPeriodoA = puntosPeriodoA.map((punto, indice) => `${indice ? "L" : "M"}${punto.x},${punto.y}`).join(" ");
   const trazoPeriodoB = puntosPeriodoB.map((punto, indice) => `${indice ? "L" : "M"}${punto.x},${punto.y}`).join(" ");
+  const posicionTooltip = puntoActivo ? { x: Math.min(535, Math.max(48, puntoActivo.punto.x + 12)), y: Math.max(17, puntoActivo.punto.y - 46) } : null;
   const cantidadTramos = modo === "anual" ? 12 : modo === "semestral" ? 6 : modo === "semanal" ? 7 : 5;
   const operacionesPorTramo = (dias: PuntoIngresos[]) => {
     const grupos = Array.from({ length: cantidadTramos }, () => [] as PuntoIngresos[]);
@@ -202,16 +207,11 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
       </section>
       {errorComparacion && <div className="venta-alert" role="alert">{errorComparacion}</div>}
       {!puedeVerIngresos ? <div className="inicio-chart-empty">Tu usuario no tiene permiso para consultar ingresos y comparar periodos.</div> : errorComparacion && !reporteA && !cargandoComparacion ? <div className="inicio-panel inicio-comparison-error" role="alert"><strong>No se pudo cargar esta comparación.</strong><span>{errorComparacion}</span><button type="button" onClick={() => setSolicitudComparacion((actual) => actual + 1)}>Reintentar comparación</button></div> : cargandoComparacion || !reporteA || !reporteB ? <div className="inicio-loading" role="status"><i /><span>Cargando datos de los periodos seleccionados…</span></div> : <>
-        <div className="inicio-kpis inicio-comparison-kpis">
-          <article className="inicio-kpi is-sales"><span className="inicio-kpi-icon" aria-hidden="true">A</span><small>VENTAS · PERIODO A</small><strong>{soles(totalPeriodoA)}</strong><span>{operacionesPeriodoA} operaciones · {etiquetaRango(aplicados.a)}</span></article>
-          <article className="inicio-kpi"><span className="inicio-kpi-icon" aria-hidden="true">B</span><small>VENTAS · PERIODO B</small><strong>{soles(totalPeriodoB)}</strong><span>{operacionesPeriodoB} operaciones · {etiquetaRango(aplicados.b)}</span></article>
-          <article className={`inicio-kpi ${diferenciaPeriodos >= 0 ? "is-positive" : "is-negative"}`}><span className="inicio-kpi-icon" aria-hidden="true">Δ</span><small>CAMBIO EN VENTAS</small><strong>{variacionPeriodos === null ? totalPeriodoA > 0 ? "Nuevo" : "—" : `${variacionPeriodos >= 0 ? "+" : ""}${variacionPeriodos.toLocaleString("es-PE", { maximumFractionDigits: 1 })}%`}</strong><span>{diferenciaPeriodos >= 0 ? "+" : "−"}{soles(Math.abs(diferenciaPeriodos))} frente a B</span></article>
-          <article className="inicio-kpi"><span className="inicio-kpi-icon" aria-hidden="true">↔</span><small>OPERACIONES</small><strong>{operacionesPeriodoA} <i>vs</i> {operacionesPeriodoB}</strong><span>Periodo A frente a periodo B</span></article>
-        </div>
+        <section className="inicio-comparison-band" aria-label="Resumen de la comparación"><article className="inicio-comparison-period is-a"><span><i />Periodo A</span><strong>{soles(totalPeriodoA)}</strong><small>{operacionesPeriodoA} operaciones · {etiquetaRango(aplicados.a)}</small></article><div className={`inicio-comparison-delta ${diferenciaPeriodos >= 0 ? "is-positive" : "is-negative"}`}><span>Variación</span><strong>{variacionPeriodos === null ? totalPeriodoA > 0 ? "Nuevo" : "—" : `${variacionPeriodos >= 0 ? "+" : ""}${variacionPeriodos.toLocaleString("es-PE", { maximumFractionDigits: 1 })}%`}</strong><small>{diferenciaPeriodos >= 0 ? "+" : "−"}{soles(Math.abs(diferenciaPeriodos))}</small></div><article className="inicio-comparison-period is-b"><span><i />Periodo B</span><strong>{soles(totalPeriodoB)}</strong><small>{operacionesPeriodoB} operaciones · {etiquetaRango(aplicados.b)}</small></article></section>
 
         <div className="inicio-chart-grid">
           <article className="inicio-panel inicio-sales-chart"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">{granuloMensual ? "EVOLUCIÓN MENSUAL" : modo === "semanal" ? "EVOLUCIÓN DIARIA · SEMANA" : "EVOLUCIÓN DIARIA · MES"}</span><h2>{granuloMensual ? "Ventas mes a mes" : modo === "semanal" ? "Ventas día a día" : "Ventas durante el mes"}</h2><p>{modo === "anual" ? "Cada punto representa un mes del año" : modo === "semestral" ? "Cada punto representa un mes del semestre" : "Selecciona un punto para ver el importe de ese día"}</p></div><button type="button" onClick={() => navegar("/reportes/ingresos")}>Ver reporte <span aria-hidden="true">↗</span></button></header>
-            {puntosPeriodoA.length || puntosPeriodoB.length ? <figure className="inicio-line-figure"><svg viewBox="0 0 700 205" role="img" aria-label={`Comparación de ventas ${granuloMensual ? "mensuales" : "diarias"} entre ${etiquetaRango(aplicados.a)} y ${etiquetaRango(aplicados.b)}`}><line x1="40" y1="40" x2="665" y2="40" /><line x1="40" y1="84" x2="665" y2="84" /><line x1="40" y1="128" x2="665" y2="128" /><line x1="40" y1="176" x2="665" y2="176" /><text x="4" y="43">{soles(maximoDia)}</text><text x="4" y="88">{soles(maximoDia / 2)}</text>{puntosPeriodoA.length > 1 && <path className="inicio-chart-line" d={trazoPeriodoA} />}{puntosPeriodoB.length > 1 && <path className="inicio-chart-line inicio-chart-line-b" d={trazoPeriodoB} />}{puntosPeriodoA.map((punto) => <circle key={`a-${punto.fecha}`} cx={punto.x} cy={punto.y} r="3" tabIndex={0}><title>{punto.fecha}: {soles(punto.total)} · Periodo A</title></circle>)}{puntosPeriodoB.map((punto) => <circle className="inicio-chart-dot-b" key={`b-${punto.fecha}`} cx={punto.x} cy={punto.y} r="3" tabIndex={0}><title>{punto.fecha}: {soles(punto.total)} · Periodo B</title></circle>)}<text className="inicio-chart-date" x="40" y="198">{granuloMensual ? new Date(`${diasPeriodoA[0]?.fecha}-01T00:00:00`).toLocaleDateString("es-PE", { month: "short" }) : modo === "semanal" ? "Lun" : "Día 1"}</text><text className="inicio-chart-date" x="570" y="198">{granuloMensual ? new Date(`${diasPeriodoA.at(-1)?.fecha}-01T00:00:00`).toLocaleDateString("es-PE", { month: "short" }) : modo === "semanal" ? "Dom" : `Día ${diasPeriodoA.length}`}</text></svg></figure> : <div className="inicio-chart-empty">No hay ventas registradas en estos periodos.</div>}
+            {puntosPeriodoA.length || puntosPeriodoB.length ? <figure className="inicio-line-figure"><svg viewBox="0 0 700 205" role="img" aria-label={`Comparación de ventas ${granuloMensual ? "mensuales" : "diarias"} entre ${etiquetaRango(aplicados.a)} y ${etiquetaRango(aplicados.b)}`}><line x1="40" y1="40" x2="665" y2="40" /><line x1="40" y1="84" x2="665" y2="84" /><line x1="40" y1="128" x2="665" y2="128" /><line x1="40" y1="176" x2="665" y2="176" /><text x="4" y="43">{soles(maximoDia)}</text><text x="4" y="88">{soles(maximoDia / 2)}</text>{puntosPeriodoA.length > 1 && <path className="inicio-chart-line" d={trazoPeriodoA} />}{puntosPeriodoB.length > 1 && <path className="inicio-chart-line inicio-chart-line-b" d={trazoPeriodoB} />}{puntosPeriodoA.map((punto) => <circle className="inicio-chart-point-a" key={`a-${punto.fecha}`} cx={punto.x} cy={punto.y} r="3" tabIndex={0} onMouseEnter={() => setPuntoActivo({ punto, periodo: "A" })} onMouseLeave={() => setPuntoActivo(null)} onFocus={() => setPuntoActivo({ punto, periodo: "A" })} onBlur={() => setPuntoActivo(null)}><title>{etiquetaFechaPunto(punto.fecha)}: {soles(punto.total)} · Periodo A</title></circle>)}{puntosPeriodoB.map((punto) => <circle className="inicio-chart-dot-b" key={`b-${punto.fecha}`} cx={punto.x} cy={punto.y} r="3" tabIndex={0} onMouseEnter={() => setPuntoActivo({ punto, periodo: "B" })} onMouseLeave={() => setPuntoActivo(null)} onFocus={() => setPuntoActivo({ punto, periodo: "B" })} onBlur={() => setPuntoActivo(null)}><title>{etiquetaFechaPunto(punto.fecha)}: {soles(punto.total)} · Periodo B</title></circle>)}{puntoActivo && posicionTooltip && <g className="inicio-chart-tooltip" transform={`translate(${posicionTooltip.x},${posicionTooltip.y})`} pointerEvents="none"><rect width="148" height="42" rx="9" /><text x="12" y="16">PERIODO {puntoActivo.periodo}</text><text className="inicio-chart-tooltip-value" x="12" y="32">{etiquetaFechaPunto(puntoActivo.punto.fecha)} · {soles(puntoActivo.punto.total)}</text></g>}<text className="inicio-chart-date" x="40" y="198">{granuloMensual ? new Date(`${diasPeriodoA[0]?.fecha}-01T00:00:00`).toLocaleDateString("es-PE", { month: "short" }) : modo === "semanal" ? "Lun" : "Día 1"}</text><text className="inicio-chart-date" x="570" y="198">{granuloMensual ? new Date(`${diasPeriodoA.at(-1)?.fecha}-01T00:00:00`).toLocaleDateString("es-PE", { month: "short" }) : modo === "semanal" ? "Dom" : `Día ${diasPeriodoA.length}`}</text></svg></figure> : <div className="inicio-chart-empty">No hay ventas registradas en estos periodos.</div>}
             <div className="inicio-chart-legend"><span><i className="is-red" /> A · {etiquetaRango(aplicados.a)}</span><span><i className="is-blue" /> B · {etiquetaRango(aplicados.b)}</span></div>
           </article>
 
