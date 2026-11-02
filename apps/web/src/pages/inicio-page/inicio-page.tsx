@@ -143,7 +143,6 @@ export function InicioPage() {
     else if (vistaFacturacion) setSeccionAbierta("Facturación electrónica");
     else if (vistaReportes) setSeccionAbierta("Reportes");
     else setSeccionAbierta(null);
-    if (!dashboardActivo && window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true);
     setMenuAbierto(false);
   }, [ubicacion.pathname, vistaInventario, vistaMototaxis, vistaEgresos, vistaIngresos, vistaClientes, vistaFacturacion, vistaReportes, dashboardActivo, cancelarAperturaSubmenu]);
 
