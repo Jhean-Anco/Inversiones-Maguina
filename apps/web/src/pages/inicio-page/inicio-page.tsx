@@ -23,8 +23,9 @@ const rutasInventario: Record<string, string> = {
   Marcas: "/inventario/marcas",
   Productos: "/inventario/productos",
   "Movimientos y ajustes": "/inventario/movimientos-ajustes",
+  Compras: "/egresos/compras",
 };
-const rutasEgresos: Record<string, string> = { Compras: "/egresos/compras", "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas" };
+const rutasEgresos: Record<string, string> = { "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas" };
 const rutasMototaxis: Record<string, string> = { "Resumen de mototaxis": "/mototaxis/resumen", "Catálogo de modelos": "/mototaxis/modelos", Unidades: "/mototaxis/unidades", "Compras y recepción": "/mototaxis/compras", Garantías: "/mototaxis/garantias", "Movimientos y ajustes de mototaxi": "/mototaxis/movimientos" };
 const rutasIngresos: Record<string, string> = { "Nueva venta": "/ingresos/nuevo" };
 const rutasFacturacion: Record<string, string> = { "Datos del emisor": "/facturacion-electronica/datos-emisor", "Comprobantes emitidos": "/facturacion-electronica/comprobantes" };
@@ -35,9 +36,9 @@ const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximu
 
 const elementosAside = [
   { nombre: "Resumen", icono: "inicio", hijos: [] },
-  { nombre: "Ingresos", icono: "venta", hijos: ["Nueva venta"] },
-  { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Gastos operativos", "Activos y herramientas"] },
-  { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Movimientos y ajustes"] },
+  { nombre: "Ventas", icono: "venta", hijos: ["Nueva venta"] },
+  { nombre: "Egresos", icono: "egresos", hijos: ["Gastos operativos", "Activos y herramientas"] },
+  { nombre: "Inventario de productos", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Compras", "Movimientos y ajustes"] },
   { nombre: "Mototaxis", icono: "inventario", hijos: ["Resumen de mototaxis", "Catálogo de modelos", "Unidades", "Compras y recepción", "Garantías", "Movimientos y ajustes de mototaxi"] },
   { nombre: "Facturación electrónica", icono: "factura", hijos: ["Datos del emisor", "Comprobantes emitidos"] },
   { nombre: "Clientes", icono: "personas", hijos: ["Directorio de clientes"] },
@@ -89,9 +90,9 @@ export function InicioPage() {
     seccionPendienteRef.current = null;
   }, []);
   const contenidoRef = useRef<HTMLDivElement>(null);
-  const vistaInventario = ["/inventario/categorias", "/inventario/marcas", "/inventario/productos", "/inventario/movimientos-ajustes"].includes(ubicacion.pathname);
+  const vistaInventario = ["/inventario/categorias", "/inventario/marcas", "/inventario/productos", "/inventario/movimientos-ajustes", "/egresos/compras"].includes(ubicacion.pathname);
   const vistaMototaxis = ubicacion.pathname.startsWith("/mototaxis/") || ubicacion.pathname === "/mototaxis";
-  const vistaEgresos = ubicacion.pathname.startsWith("/egresos/");
+  const vistaEgresos = ubicacion.pathname.startsWith("/egresos/") && ubicacion.pathname !== "/egresos/compras";
   const vistaIngresos = ubicacion.pathname.startsWith("/ingresos/");
   const vistaClientes = ubicacion.pathname.startsWith("/clientes");
   const vistaFacturacion = ubicacion.pathname.startsWith("/facturacion-electronica/");
@@ -135,7 +136,7 @@ export function InicioPage() {
   useEffect(() => {
     cancelarAperturaSubmenu();
     setColapsoDashboard(false);
-    if (vistaInventario) setSeccionAbierta("Inventario");
+    if (vistaInventario) setSeccionAbierta("Inventario de productos");
     else if (vistaMototaxis) setSeccionAbierta("Mototaxis");
     else if (vistaEgresos) setSeccionAbierta("Egresos");
     else if (vistaIngresos) setSeccionAbierta("Ingresos");
@@ -194,7 +195,7 @@ export function InicioPage() {
           ) : (
             <div className="erp-nav-group" key={elemento.nombre}>
               <button
-                className={`erp-nav-link erp-nav-module-button${(vistaInventario && elemento.nombre === "Inventario") || (vistaMototaxis && elemento.nombre === "Mototaxis") || (vistaEgresos && elemento.nombre === "Egresos") || (vistaIngresos && elemento.nombre === "Ingresos") || (vistaFacturacion && elemento.nombre === "Facturación electrónica") || (vistaClientes && elemento.nombre === "Clientes") || (vistaReportes && elemento.nombre === "Reportes") ? " is-current" : ""}`}
+                className={`erp-nav-link erp-nav-module-button${(vistaInventario && elemento.nombre === "Inventario de productos") || (vistaMototaxis && elemento.nombre === "Mototaxis") || (vistaEgresos && elemento.nombre === "Egresos") || (vistaIngresos && elemento.nombre === "Ventas") || (vistaFacturacion && elemento.nombre === "Facturación electrónica") || (vistaClientes && elemento.nombre === "Clientes") || (vistaReportes && elemento.nombre === "Reportes") ? " is-current" : ""}`}
                 type="button"
                 aria-expanded={seccionAbierta === elemento.nombre}
                 onClick={() => {
