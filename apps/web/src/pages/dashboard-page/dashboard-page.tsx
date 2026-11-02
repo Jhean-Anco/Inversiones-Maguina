@@ -16,22 +16,29 @@ const coloresGraficos = ["#d62f4f", "#347caf", "#27a383", "#e2a541", "#8069bd", 
 const isoLocal = (fecha: Date) => new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 type ModoComparacion = "mensual" | "semanal" | "semestral" | "anual";
 type RangosComparacion = { a: FiltroReporte; b: FiltroReporte };
-const mesAnterior = (year: number, month: number): FiltroReporte => ({ desde: isoLocal(new Date(year, month - 1, 1)), hasta: isoLocal(new Date(year, month, 0)) });
+function fechaEnAnio(year: number, month: number, day: number): Date {
+  const ultimoDia = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(day, ultimoDia));
+}
+const crearRango = (desde: Date, hasta: Date): FiltroReporte => ({ desde: isoLocal(desde), hasta: isoLocal(hasta) });
 function calcularRangos(modo: ModoComparacion, referencia: string, year: number, semestre: "1" | "2"): RangosComparacion {
+  const fecha = new Date(`${referencia}T00:00:00`);
   if (modo === "mensual") {
-    const [yearMes, month] = referencia.split("-").map(Number);
-    return { a: mesAnterior(yearMes, month), b: mesAnterior(yearMes, month - 1) };
+    const inicioActual = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+    const inicioAnterior = new Date(fecha.getFullYear(), fecha.getMonth() - 1, 1);
+    const finAnterior = fechaEnAnio(inicioAnterior.getFullYear(), inicioAnterior.getMonth(), fecha.getDate());
+    return { a: crearRango(inicioActual, fecha), b: crearRango(inicioAnterior, finAnterior) };
   }
   if (modo === "semanal") {
-    const fecha = new Date(`${referencia}T00:00:00`);
-    const lunes = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate() - (fecha.getDay() + 6) % 7);
-    const crearSemana = (inicio: Date): FiltroReporte => ({ desde: isoLocal(inicio), hasta: isoLocal(new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + 6)) });
-    return { a: crearSemana(lunes), b: crearSemana(new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() - 7)) };
+    const lunesActual = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate() - (fecha.getDay() + 6) % 7);
+    const lunesAnterior = new Date(lunesActual.getFullYear(), lunesActual.getMonth(), lunesActual.getDate() - 7);
+    return { a: crearRango(lunesActual, fecha), b: crearRango(lunesAnterior, new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate() - 7)) };
   }
   const mesInicio = modo === "anual" ? 0 : semestre === "1" ? 0 : 6;
-  const cantidadMeses = modo === "anual" ? 12 : 6;
-  const crearPeriodo = (anio: number): FiltroReporte => ({ desde: isoLocal(new Date(anio, mesInicio, 1)), hasta: isoLocal(new Date(anio, mesInicio + cantidadMeses, 0)) });
-  return { a: crearPeriodo(year), b: crearPeriodo(year - 1) };
+  const inicioActual = new Date(year, mesInicio, 1);
+  const inicioAnterior = new Date(year - 1, mesInicio, 1);
+  const finAnterior = fechaEnAnio(year - 1, fecha.getMonth(), fecha.getDate());
+  return { a: crearRango(inicioActual, fecha), b: crearRango(inicioAnterior, finAnterior) };
 }
 const etiquetaRango = ({ desde, hasta }: FiltroReporte) => `${new Date(desde + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })} – ${new Date(hasta + "T00:00:00").toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}`;
 type PuntoIngresos = { fecha: string; ventas: number; total: string };
@@ -66,11 +73,10 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const [cargando, setCargando] = useState(() => !datosInicioValidos);
   const [error, setError] = useState(() => datosInicio?.errorResumen ?? "");
   const [modo, setModo] = useState<ModoComparacion>("mensual");
-  const [mesSeleccionado, setMesSeleccionado] = useState(() => isoLocal(new Date()).slice(0, 7));
-  const [semanaSeleccionada, setSemanaSeleccionada] = useState(() => isoLocal(new Date()));
-  const [anioSeleccionado, setAnioSeleccionado] = useState(() => new Date().getFullYear());
-  const [semestreSeleccionado, setSemestreSeleccionado] = useState<"1" | "2">(() => new Date().getMonth() < 6 ? "1" : "2");
-  const aplicados = calcularRangos(modo, modo === "semanal" ? semanaSeleccionada : mesSeleccionado, anioSeleccionado, semestreSeleccionado);
+  const fechaReferencia = isoLocal(new Date());
+  const fechaCalendario = new Date(`${fechaReferencia}T00:00:00`);
+  const semestreActual = fechaCalendario.getMonth() < 6 ? "1" : "2";
+  const aplicados = calcularRangos(modo, fechaReferencia, fechaCalendario.getFullYear(), semestreActual);
   const [reporteA, setReporteA] = useState<ReporteIngresos | null>(null);
   const [reporteB, setReporteB] = useState<ReporteIngresos | null>(null);
   const [cargandoComparacion, setCargandoComparacion] = useState(puedeVerIngresos);
@@ -95,7 +101,7 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
     setReporteB(null);
     Promise.all([servicioReportes.ingresos(aplicados.a), servicioReportes.ingresos(aplicados.b)])
       .then(([resultadoA, resultadoB]) => { if (vigente) { setReporteA(resultadoA); setReporteB(resultadoB); } })
-      .catch((problema: unknown) => { if (vigente) setErrorComparacion(problema instanceof Error ? problema.message : "No se pudieron comparar los periodos seleccionados."); })
+      .catch((problema: unknown) => { if (vigente) setErrorComparacion(problema instanceof Error ? problema.message : "No se pudieron comparar los periodos actuales."); })
       .finally(() => { if (vigente) setCargandoComparacion(false); });
     return () => { vigente = false; };
   }, [aplicados.a.desde, aplicados.a.hasta, aplicados.b.desde, aplicados.b.hasta, puedeVerIngresos, solicitudComparacion]);
@@ -125,9 +131,11 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
     .map((articulo) => ({ ...articulo, totalA: Number(reporteA?.productosMasVendidos.find((item) => item.tipo === articulo.tipo && item.descripcion === articulo.descripcion)?.total ?? 0), totalB: Number(reporteB?.productosMasVendidos.find((item) => item.tipo === articulo.tipo && item.descripcion === articulo.descripcion)?.total ?? 0) }))
     .sort((a, b) => Math.max(b.totalA, b.totalB) - Math.max(a.totalA, a.totalB)).slice(0, 6);
   const granuloMensual = modo === "semestral" || modo === "anual";
-  const diasPeriodoA = serieIngresos(reporteA, aplicados.a, granuloMensual ? "mes" : "dia", modo === "anual" ? 12 : 6);
-  const diasPeriodoB = serieIngresos(reporteB, aplicados.b, granuloMensual ? "mes" : "dia", modo === "anual" ? 12 : 6);
-  const cantidadTramos = modo === "anual" ? 12 : modo === "semestral" ? 6 : modo === "semanal" ? 7 : 5;
+  const mesInicioActual = modo === "semestral" && semestreActual === "2" ? 6 : 0;
+  const cantidadMesesVisibles = modo === "anual" ? fechaCalendario.getMonth() + 1 : modo === "semestral" ? fechaCalendario.getMonth() - mesInicioActual + 1 : 6;
+  const diasPeriodoA = serieIngresos(reporteA, aplicados.a, granuloMensual ? "mes" : "dia", modo === "anual" || modo === "semestral" ? cantidadMesesVisibles : 6);
+  const diasPeriodoB = serieIngresos(reporteB, aplicados.b, granuloMensual ? "mes" : "dia", modo === "anual" || modo === "semestral" ? cantidadMesesVisibles : 6);
+  const cantidadTramos = modo === "anual" ? cantidadMesesVisibles : modo === "semestral" ? cantidadMesesVisibles : modo === "semanal" ? (fechaCalendario.getDay() + 6) % 7 + 1 : Math.ceil(fechaCalendario.getDate() / 7);
   const operacionesPorTramo = (dias: PuntoIngresos[]) => {
     const grupos = Array.from({ length: cantidadTramos }, () => [] as PuntoIngresos[]);
     dias.forEach((dia, indice) => {
@@ -151,12 +159,11 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const datosProductos = articulosComparados.map((articulo) => ({ descripcion: articulo.descripcion, totalA: articulo.totalA, totalB: articulo.totalB }));
   const datosOperaciones = tramosA.map((tramo, indice) => ({ etiqueta: tramo.etiqueta, totalA: tramo.cantidad, totalB: tramosB[indice]?.cantidad ?? 0 }));
   const iniciales = nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("").toLocaleUpperCase("es-PE") || "IM";
-  const aniosDisponibles = Array.from({ length: 12 }, (_, indice) => new Date().getFullYear() - indice);
   const descripcionModo: Record<ModoComparacion, string> = {
-    mensual: "Compara el mes elegido con el mes anterior.",
-    semanal: "Revisa cada día de la semana elegida frente a la semana anterior.",
-    semestral: "Compara las ventas mes a mes con el mismo semestre del año anterior.",
-    anual: "Compara las ventas mes a mes con el año anterior.",
+    mensual: "Mes en curso frente al mismo avance del mes anterior.",
+    semanal: "Semana actual, día a día, frente al mismo avance de la semana pasada.",
+    semestral: "Meses transcurridos del semestre frente al mismo avance del año pasado.",
+    anual: "Año en curso, mes a mes, frente al mismo avance del año pasado.",
   };
 
   return <section className="dashboard-page inicio-dashboard">
@@ -179,21 +186,15 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
         <article className="inicio-kpi"><span className="inicio-kpi-icon" aria-hidden="true"><PackageX /></span><small>PRODUCTOS SIN STOCK</small><strong className={resumen.inventario.productosSinStock ? "inicio-stock-alert" : ""}>{resumen.inventario.productosSinStock}</strong><span>{resumen.inventario.productosActivos} productos activos</span></article>
       </div>
 
-      <section className="inicio-period-filter" aria-labelledby="inicio-comparacion-titulo">
-        <div className="inicio-period-filter-heading"><div><span className="inicio-panel-kicker">ANÁLISIS DE VENTAS</span><h2 id="inicio-comparacion-titulo">Comparar periodos</h2><p>{descripcionModo[modo]}</p></div>{cargandoComparacion && <span className="inicio-comparison-refresh" role="status">Actualizando gráficos…</span>}</div>
-        <div className="inicio-mode-tabs" role="tablist" aria-label="Tipo de comparaci\u00f3n">
-          {([{ id: "mensual", label: "Mensual", icon: <Calendar /> }, { id: "semanal", label: "Diaria / semana", icon: <CalendarDays /> }, { id: "semestral", label: "Mensual / semestre", icon: <CalendarRange /> }, { id: "anual", label: "Anual", icon: <TrendingUp /> }] as const).map((opcion) => <button key={opcion.id} type="button" role="tab" aria-selected={modo === opcion.id} className={modo === opcion.id ? "is-active" : ""} onClick={() => cambiarModo(opcion.id)} disabled={!puedeVerIngresos}><span aria-hidden="true">{opcion.icon}</span>{opcion.label}</button>)}
+      <section className="inicio-analysis-nav" aria-labelledby="inicio-comparacion-titulo">
+        <div className="inicio-analysis-heading"><div><span className="inicio-panel-kicker">ANÁLISIS DEL NEGOCIO</span><h2 id="inicio-comparacion-titulo">Rendimiento por periodos</h2><p>{descripcionModo[modo]}</p></div>{cargandoComparacion && <span className="inicio-comparison-refresh" role="status">Actualizando gráficos...</span>}</div>
+        <div className="inicio-period-views" role="group" aria-label="Vistas de comparación">
+          {([{ id: "mensual", label: "Mes", detail: "Mes a mes", icon: <Calendar /> }, { id: "semanal", label: "Semana", detail: "Día a día", icon: <CalendarDays /> }, { id: "semestral", label: "Semestre", detail: "Mes a mes", icon: <CalendarRange /> }, { id: "anual", label: "Año", detail: "Mes a mes", icon: <TrendingUp /> }] as const).map((opcion) => <button key={opcion.id} type="button" aria-pressed={modo === opcion.id} className={modo === opcion.id ? "is-active" : ""} onClick={() => cambiarModo(opcion.id)} disabled={!puedeVerIngresos}><span className="inicio-period-view-icon" aria-hidden="true">{opcion.icon}</span><span className="inicio-period-view-copy"><strong>{opcion.label}</strong><small>{opcion.detail}</small></span><span className="inicio-period-view-arrow" aria-hidden="true">{modo === opcion.id ? <ArrowUpRight size={15} /> : null}</span></button>)}
         </div>
-        <div className="inicio-mode-controls">
-          {modo === "mensual" && <label><span>Mes para comparar</span><input type="month" value={mesSeleccionado} onChange={(evento) => setMesSeleccionado(evento.target.value)} /></label>}
-          {modo === "semanal" && <label><span>Elige un día de esa semana</span><input type="date" value={semanaSeleccionada} onChange={(evento) => setSemanaSeleccionada(evento.target.value)} /></label>}
-          {modo === "semestral" && <><label><span>Semestre</span><select value={semestreSeleccionado} onChange={(evento) => setSemestreSeleccionado(evento.target.value as "1" | "2")}><option value="1">Primer semestre · ene–jun</option><option value="2">Segundo semestre · jul–dic</option></select></label><label><span>Año</span><select value={anioSeleccionado} onChange={(evento) => setAnioSeleccionado(Number(evento.target.value))}>{aniosDisponibles.map((anio) => <option key={anio} value={anio}>{anio}</option>)}</select></label></>}
-          {modo === "anual" && <label><span>Año para comparar</span><select value={anioSeleccionado} onChange={(evento) => setAnioSeleccionado(Number(evento.target.value))}>{aniosDisponibles.map((anio) => <option key={anio} value={anio}>{anio}</option>)}</select></label>}
-        </div>
-        <div className="inicio-period-hints"><span className="is-a">A · {etiquetaRango(aplicados.a)}</span><span className="is-b">B · {etiquetaRango(aplicados.b)}</span><small>{modo === "mensual" ? "Mes elegido frente al anterior" : modo === "semanal" ? "Semana elegida frente a la anterior" : modo === "semestral" ? "Semestre seleccionado frente al mismo semestre del año anterior" : "Año seleccionado frente al anterior"}</small></div>
+        <div className="inicio-period-hints"><span className="is-a"><i />En curso <strong>{etiquetaRango(aplicados.a)}</strong></span><span className="is-b"><i />Periodo comparable <strong>{etiquetaRango(aplicados.b)}</strong></span><small>Comparación automática con el mismo avance del periodo anterior</small></div>
       </section>
       {errorComparacion && <div className="venta-alert" role="alert">{errorComparacion}</div>}
-      {!puedeVerIngresos ? <div className="inicio-chart-empty">Tu usuario no tiene permiso para consultar ingresos y comparar periodos.</div> : errorComparacion && !reporteA && !cargandoComparacion ? <div className="inicio-panel inicio-comparison-error" role="alert"><strong>No se pudo cargar esta comparación.</strong><span>{errorComparacion}</span><button type="button" onClick={() => setSolicitudComparacion((actual) => actual + 1)}>Reintentar comparación</button></div> : cargandoComparacion || !reporteA || !reporteB ? <div className="inicio-loading" role="status"><i /><span>Cargando datos de los periodos seleccionados…</span></div> : <>
+      {!puedeVerIngresos ? <div className="inicio-chart-empty">Tu usuario no tiene permiso para consultar ingresos y comparar periodos.</div> : errorComparacion && !reporteA && !cargandoComparacion ? <div className="inicio-panel inicio-comparison-error" role="alert"><strong>No se pudo cargar esta comparación.</strong><span>{errorComparacion}</span><button type="button" onClick={() => setSolicitudComparacion((actual) => actual + 1)}>Reintentar comparación</button></div> : cargandoComparacion || !reporteA || !reporteB ? <div className="inicio-loading" role="status"><i /><span>Cargando datos de los periodos actuales…</span></div> : <>
         <section className="inicio-comparison-band" aria-label="Resumen de la comparación"><article className="inicio-comparison-period is-a"><span><i />Periodo A</span><strong>{soles(totalPeriodoA)}</strong><small>{operacionesPeriodoA} operaciones · {etiquetaRango(aplicados.a)}</small></article><div className={`inicio-comparison-delta ${diferenciaPeriodos >= 0 ? "is-positive" : "is-negative"}`}><span><Sparkles size={12} aria-hidden="true" /> Variación</span><strong>{variacionPeriodos === null ? totalPeriodoA > 0 ? "Nuevo" : "—" : `${variacionPeriodos >= 0 ? "+" : ""}${variacionPeriodos.toLocaleString("es-PE", { maximumFractionDigits: 1 })}%`}</strong><small>{diferenciaPeriodos >= 0 ? <ArrowUpRight size={13} aria-hidden="true" /> : <ArrowDownRight size={13} aria-hidden="true" />}{soles(Math.abs(diferenciaPeriodos))}</small></div><article className="inicio-comparison-period is-b"><span><i />Periodo B</span><strong>{soles(totalPeriodoB)}</strong><small>{operacionesPeriodoB} operaciones · {etiquetaRango(aplicados.b)}</small></article></section>
         <section className="inicio-insight-strip" aria-label="Indicadores complementarios"><div><span>Operaciones</span><strong>{operacionesPeriodoA}<i>vs.</i>{operacionesPeriodoB}</strong><small>{operacionesPeriodoA - operacionesPeriodoB >= 0 ? "+" : "−"}{Math.abs(operacionesPeriodoA - operacionesPeriodoB)} entre periodos</small></div><div><span>Ticket promedio</span><strong>{soles(ticketPromedioA)}<i>vs.</i>{soles(ticketPromedioB)}</strong><small>Importe promedio por venta</small></div></section>
 
