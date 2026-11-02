@@ -36,7 +36,7 @@ const elementosAside = [
   { nombre: "Resumen", icono: "inicio", hijos: [] },
   { nombre: "Ingresos", icono: "venta", hijos: ["Nueva venta"] },
   { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Compra de mototaxi", "Gastos operativos", "Activos y herramientas"] },
-  { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Movimientos y ajustes"] },
+  { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Mototaxis", "Movimientos y ajustes"] },
   { nombre: "Facturación electrónica", icono: "factura", hijos: ["Datos del emisor", "Comprobantes emitidos"] },
   { nombre: "Clientes", icono: "personas", hijos: ["Directorio de clientes"] },
   { nombre: "Reportes", icono: "reportes", hijos: ["Inventario", "Ingresos"] },

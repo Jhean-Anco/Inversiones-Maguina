@@ -34,3 +34,29 @@ export class ControladorEgresos {
   }
 
 }
+
+@Controller("inventario/mototaxis")
+@UseGuards(GuardiaSesion, GuardiaPermiso)
+export class ControladorMototaxisInventario {
+  constructor(private readonly egresos: ServicioEgresos) {}
+
+  @Get()
+  @RequierePermiso("INVENTARIO.LEER")
+  listar(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) {
+    return this.egresos.listar({ tipo: "MOTOTAXI", pagina, porPagina, busqueda });
+  }
+
+  @Post()
+  @RequierePermiso("EGRESOS.CREAR")
+  crear(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
+    if (typeof datos !== "object" || datos === null || Array.isArray(datos)) throw new BadRequestException("Los datos de la compra no son válidos.");
+    return this.egresos.crear({ ...datos, tipo: "MOTOTAXI" }, solicitud.usuario.id);
+  }
+
+  @Post(":id/pagos")
+  @RequierePermiso("EGRESOS.CREAR")
+  registrarPago(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
+    if (typeof datos !== "object" || datos === null || Array.isArray(datos)) throw new BadRequestException("Los datos del pago no son válidos.");
+    return this.egresos.registrarPago(id, datos, solicitud.usuario.id);
+  }
+}

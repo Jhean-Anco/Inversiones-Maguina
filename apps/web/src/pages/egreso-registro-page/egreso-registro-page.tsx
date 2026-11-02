@@ -65,13 +65,13 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
     const id = ++consultaActual.current;
     setCargando(true);
     try {
-      const resultado = await servicioEgresos.listar(tipo, pagina, porPagina, busqueda);
+      const resultado = await servicioEgresos.listar(tipo, pagina, porPagina, busqueda, esVistaInventario);
       if (id !== consultaActual.current) return;
       setItems(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError("");
       if (pagina > resultado.totalPaginas) setPagina(resultado.totalPaginas);
     } catch (problema) { if (id === consultaActual.current) manejarError(problema); }
     finally { if (id === consultaActual.current) setCargando(false); }
-  }, [tipo, pagina, porPagina, busqueda, manejarError]);
+  }, [tipo, pagina, porPagina, busqueda, manejarError, esVistaInventario]);
 
   useEffect(() => { const timer = window.setTimeout(() => { void cargar(); }, busqueda ? 200 : 0); return () => window.clearTimeout(timer); }, [cargar, busqueda]);
 
@@ -99,7 +99,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       observacion: observacion.trim() || null,
     };
     setGuardando(true);
-    try { await servicioEgresos.crear(datos); setModal(false); setPagina(1); await cargar(); }
+    try { await servicioEgresos.crear(datos, esVistaInventario); setModal(false); setPagina(1); await cargar(); }
     catch (problema) { manejarError(problema); }
     finally { setGuardando(false); }
   }
@@ -109,7 +109,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
     const importe = Number(importeAbono);
     if (!Number.isFinite(importe) || importe <= 0 || importe > Number(abono.saldoPendiente) || Number(importe.toFixed(2)) !== importe) { setError("El abono debe ser positivo y no superar el saldo pendiente."); return; }
     setGuardando(true);
-    try { await servicioEgresos.registrarPago(abono.id, { fechaPago: fechaAbono, importePagado: importe.toFixed(2), medioPago: medioAbono, claveIdempotencia: crypto.randomUUID() }); setAbono(null); setImporteAbono(""); await cargar(); }
+    try { await servicioEgresos.registrarPago(abono.id, { fechaPago: fechaAbono, importePagado: importe.toFixed(2), medioPago: medioAbono, claveIdempotencia: crypto.randomUUID() }, esVistaInventario); setAbono(null); setImporteAbono(""); await cargar(); }
     catch (problema) { manejarError(problema); }
     finally { setGuardando(false); }
   }

@@ -20,14 +20,17 @@ export type DatosEgreso = {
 };
 
 export const servicioEgresos = {
-  listar(tipo: TipoEgreso, pagina: number, porPagina: number, busqueda: string) {
+  listar(tipo: TipoEgreso, pagina: number, porPagina: number, busqueda: string, contextoInventario = false) {
     const parametros = new URLSearchParams({ tipo, pagina: String(pagina), porPagina: String(porPagina), busqueda });
-    return solicitarApi<PaginaEgresos>(`/egresos?${parametros.toString()}`);
+    const ruta = contextoInventario && tipo === "MOTOTAXI" ? "/inventario/mototaxis" : "/egresos";
+    return solicitarApi<PaginaEgresos>(`${ruta}?${parametros.toString()}`);
   },
-  crear(datos: DatosEgreso) {
-    return solicitarApi<Egreso>("/egresos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
+  crear(datos: DatosEgreso, contextoInventario = false) {
+    const ruta = contextoInventario && datos.tipo === "MOTOTAXI" ? "/inventario/mototaxis" : "/egresos";
+    return solicitarApi<Egreso>(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },
-  registrarPago(id: string, datos: { fechaPago: string; importePagado: string; medioPago: string; claveIdempotencia: string }) {
-    return solicitarApi<PagoEgreso>(`/egresos/${encodeURIComponent(id)}/pagos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
+  registrarPago(id: string, datos: { fechaPago: string; importePagado: string; medioPago: string; claveIdempotencia: string }, contextoInventario = false) {
+    const ruta = contextoInventario ? `/inventario/mototaxis/${encodeURIComponent(id)}/pagos` : `/egresos/${encodeURIComponent(id)}/pagos`;
+    return solicitarApi<PagoEgreso>(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },
 };
