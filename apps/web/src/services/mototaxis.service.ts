@@ -1,0 +1,36 @@
+import { solicitarApi } from "./api-cliente";
+
+export type MarcaMototaxi = { id: string; nombre: string; activo: boolean };
+export type ModeloMototaxi = {
+  id: string; codigo: string; marcaId: string; marca: string; nombre: string; version: string | null; categoriaVehicular: string;
+  fabricante: string | null; paisFabricacion: string | null; marcaMotor: string | null; modeloMotor: string | null; cilindradaCc: number | null;
+  combustible: string | null; transmision: string | null; carroceria: string | null; capacidadAsientos: number | null; capacidadCargaKg: string | null;
+  especificacionesAdicionales: string | null; activo: boolean;
+};
+export type ProveedorMototaxi = { id: string; nombre: string; razonSocial: string | null; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; tipoDocumento: string; numeroDocumento: string };
+export type UnidadMototaxi = {
+  id: string; codigo: string; modeloId: string; marca: string; modelo: string; version: string | null; vin: string | null; numeroMotor: string | null;
+  numeroChasis: string | null; anioModelo: number | null; color: string | null; placa: string | null; estado: string; costoAdquisicion: string; compraDetalleId: string;
+};
+export type PaginaUnidadesMototaxi = { items: UnidadMototaxi[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
+export type GarantiaMototaxi = { id: string; unidadId: string; codigo: string; vin: string | null; marca: string; modelo: string; proveedor: string; porcentajeProveedor: string; mesesVigencia: number; iniciaEn: string; terminaEn: string; alcance: string | null; exclusiones: string | null };
+export type ReclamoGarantia = { id: string; garantiaId: string; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
+
+export const servicioMototaxis = {
+  marcas: () => solicitarApi<MarcaMototaxi[]>("/mototaxis/marcas"),
+  crearMarca: (nombre: string) => solicitarApi<MarcaMototaxi>("/mototaxis/marcas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre }) }),
+  modelos: (busqueda = "") => solicitarApi<ModeloMototaxi[]>(`/mototaxis/modelos?busqueda=${encodeURIComponent(busqueda)}`),
+  crearModelo: (datos: Record<string, unknown>) => solicitarApi<ModeloMototaxi>("/mototaxis/modelos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  proveedores: (busqueda = "") => solicitarApi<ProveedorMototaxi[]>(`/mototaxis/proveedores?busqueda=${encodeURIComponent(busqueda)}`),
+  crearProveedor: (datos: Record<string, unknown>) => solicitarApi<ProveedorMototaxi>("/mototaxis/proveedores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  unidades: (filtros: { busqueda?: string; estado?: string; pagina?: number; porPagina?: number } = {}) => {
+    const p = new URLSearchParams({ busqueda: filtros.busqueda ?? "", estado: filtros.estado ?? "TODOS", pagina: String(filtros.pagina ?? 1), porPagina: String(filtros.porPagina ?? 24) });
+    return solicitarApi<PaginaUnidadesMototaxi>(`/mototaxis/unidades?${p}`);
+  },
+  comprar: (datos: Record<string, unknown>) => solicitarApi<{ id: string; codigo: string; fecha: string; total: string; unidades: number; importePagado: string; saldoPendiente: string }>("/mototaxis/compras", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  cambiarEstado: (id: string, datos: { estado: string; motivo: string; observacion?: string }) => solicitarApi<UnidadMototaxi>(`/mototaxis/unidades/${id}/estado`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  movimientos: (id: string) => solicitarApi<Array<{ id: string; tipo: string; estadoAnterior: string | null; estadoNuevo: string; motivo: string; observacion: string | null; creadoEn: string }>>(`/mototaxis/unidades/${id}/movimientos`),
+  garantias: () => solicitarApi<GarantiaMototaxi[]>("/mototaxis/garantias"),
+  reclamos: () => solicitarApi<ReclamoGarantia[]>("/mototaxis/reclamos"),
+  crearReclamo: (datos: Record<string, unknown>) => solicitarApi<ReclamoGarantia>("/mototaxis/reclamos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+};

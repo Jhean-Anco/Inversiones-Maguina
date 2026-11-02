@@ -50,6 +50,7 @@ export function ReportesPage({ tipo }: { tipo: TipoReporte }) {
           <article><span>Ventas registradas</span><strong>{numero(ingresos.resumen.ventas)}</strong></article>
           <article><span>Ingresos totales</span><strong>{soles(ingresos.resumen.total)}</strong></article>
           <article><span>Promedio por venta</span><strong>{soles(ingresos.resumen.promedio)}</strong></article>
+          <article><span>Valor referencial en notas internas</span><strong>{soles(ingresos.notasInternas.total)}</strong><small>{numero(ingresos.notasInternas.notas)} notas; no son ingresos por boleta</small></article>
         </div>
         <div className="report-panels">
           <article className="report-panel"><h2>Ingresos por medio de pago</h2>{ingresos.porMedioPago.length ? <div className="report-table-wrap"><table className="report-table"><thead><tr><th>Medio</th><th>Ventas</th><th>Total</th></tr></thead><tbody>{ingresos.porMedioPago.map((item) => <tr key={item.medioPago}><td>{medioPago(item.medioPago)}</td><td>{numero(item.ventas)}</td><td>{soles(item.total)}</td></tr>)}</tbody></table></div> : <p className="report-empty">No hay ventas en este periodo.</p>}</article>

@@ -1,14 +1,14 @@
 ﻿import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gt, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
-import { db, clientes, entradasStockDetalle, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosStock, nubefactCorrelativos, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, unidadesMedida } from "@magina/database";
+import { db, clientes, entradasStockDetalle, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosMototaxis, movimientosMototaxisVentas, movimientosStock, nubefactCorrelativos, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, unidadesMedida, unidadesMototaxis, modelosMototaxis, marcasMototaxis } from "@magina/database";
 import { ServicioEmisorFacturacion } from "../facturacion-electronica/emisor.service";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
-type Linea = { tipo?: unknown; presentacionId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
+type Linea = { tipo?: unknown; presentacionId?: unknown; mototaxiUnidadId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
 type DatosIngreso = { idempotencyKey?: unknown; fecha?: unknown; tipoComprobante?: unknown; clienteId?: unknown; clienteDireccion?: unknown; clienteTipoDocumento?: unknown; clienteNumeroDocumento?: unknown; clienteNombre?: unknown; medioPago?: unknown; condicionPago?: unknown; fechaVencimientoPago?: unknown; importePagoInicial?: unknown; cuotasPago?: unknown; observacion?: unknown; detalles?: unknown };
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
@@ -56,7 +56,7 @@ export class ServicioIngresos {
     const periodo = fecha.slice(0, 7);
     const [inicioMes, finMes] = [`${periodo}-01`, new Date(Date.UTC(Number(periodo.slice(0, 4)), Number(periodo.slice(5, 7)), 0)).toISOString().slice(0, 10)];
     const [acumulado] = await db.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(14,2)` })
-      .from(ingresos).where(and(gte(ingresos.fecha, inicioMes), lte(ingresos.fecha, finMes), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"])));
+      .from(ingresos).where(and(gte(ingresos.fecha, inicioMes), lte(ingresos.fecha, finMes), eq(ingresos.tipoComprobante, "BOLETA")));
     return { periodo, ingresoBruto: Number(acumulado?.total ?? 0), alertaCategoria1: 4500, limiteCategoria1: 5000, alertaLimiteMensual: 7500, limiteMensual: 8000 };
   }
 
@@ -520,7 +520,15 @@ export class ServicioIngresos {
         const afectacionIgv = linea.afectacionIgv === undefined ? "GRAVADO" : linea.afectacionIgv;
         if (afectacionIgv !== "GRAVADO" && afectacionIgv !== "EXONERADO" && afectacionIgv !== "INAFECTO") throw new BadRequestException(`El tratamiento de impuesto del servicio no es válido en la línea ${indice + 1}.`);
         return { tipo: "SERVICIO" as const, descripcion, cantidad, precio, descuento, afectacionIgv: afectacionIgv as AfectacionIgv };
-      }      throw new BadRequestException(`El tipo de línea ${indice + 1} debe ser producto o servicio.`);
+      }
+      if (linea.tipo === "MOTOTAXI") {
+        if (!uuidValido(linea.mototaxiUnidadId)) throw new BadRequestException(`Selecciona una unidad de mototaxi válida en la línea ${indice + 1}.`);
+        if (cantidad !== 1) throw new BadRequestException("Cada línea de mototaxi debe representar una sola unidad identificada.");
+        const precio = numero(linea.precioUnitario, `Precio de mototaxi ${indice + 1}`, 2, 0);
+        const descuento = numero(linea.descuento ?? "0", `Descuento en línea ${indice + 1}`, 2, 0);
+        return { tipo: "MOTOTAXI" as const, mototaxiUnidadId: linea.mototaxiUnidadId, cantidad, precio, descuento };
+      }
+      throw new BadRequestException(`El tipo de línea ${indice + 1} debe ser producto, servicio o mototaxi.`);
     });
 
     const huellaSolicitud = createHash("sha256").update(JSON.stringify({ usuarioId, fecha, tipoComprobante: datos.tipoComprobante, clienteId, clienteTipoDocumento, clienteNumeroDocumento, clienteNombre, clienteDireccion, medioPago: datos.medioPago, condicionPago, importePagoInicial, fechaVencimientoPago, cuotasPago, observacion, lineas })).digest("hex");
@@ -538,6 +546,7 @@ export class ServicioIngresos {
 
       for (const linea of lineas) {
         let producto: { id: string; codigoInterno: string; nombre: string; afectoIgv: boolean; afectacionIgv: AfectacionIgv; marca: string } | undefined;
+        let unidadMototaxi: { id: string; codigo: string; vin: string | null; estado: string; marca: string; modelo: string; version: string | null } | undefined;
         let presentacion: { id: string; nombre: string; unidad: string; unidadCodigo: string; factor: string; precio: string } | undefined;
         let descripcion: string, nombrePresentacion: string | null = null, unidadCodigo: string | null = null, factor: string | null = null, cantidadBase: string | null = null;
         let precioUnitario: number, afectoIgv: boolean, afectacionIgv: AfectacionIgv;
@@ -561,6 +570,17 @@ export class ServicioIngresos {
           precioUnitario = Number(presentacion.precio); afectacionIgv = producto.afectacionIgv; afectoIgv = afectacionIgv === "GRAVADO";
           const base = Number((linea.cantidad * Number(presentacion.factor)).toFixed(6));
           cantidadBase = base.toFixed(6);
+        } else if (linea.tipo === "MOTOTAXI") {
+          const [unidad] = await tx.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, estado: unidadesMototaxis.estado,
+            marca: marcasMototaxis.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version })
+            .from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasMototaxis, eq(modelosMototaxis.marcaId, marcasMototaxis.id))
+            .where(eq(unidadesMototaxis.id, linea.mototaxiUnidadId as string)).for("update", { of: unidadesMototaxis }).limit(1);
+          if (!unidad) throw new NotFoundException("La mototaxi seleccionada ya no está en el inventario.");
+          if (unidad.estado !== "DISPONIBLE") throw new BadRequestException(`${unidad.marca} ${unidad.modelo} ya no está disponible para venta.`);
+          unidadMototaxi = unidad;
+          descripcion = `${unidad.marca} ${unidad.modelo}${unidad.version ? ` ${unidad.version}` : ""} · ${unidad.codigo}`;
+          nombrePresentacion = unidad.vin ? `VIN ${unidad.vin}` : null;
+          precioUnitario = linea.precio; afectacionIgv = "GRAVADO"; afectoIgv = true;
         } else {
           descripcion = linea.descripcion;
           precioUnitario = linea.precio;
@@ -579,7 +599,7 @@ export class ServicioIngresos {
         const subtotalLinea = redondear(totalLineaBase - igvLinea);
         const totalLinea = totalLineaBase;
         subtotalHeader = redondear(subtotalHeader + subtotalLinea); igvHeader = redondear(igvHeader + igvLinea); totalHeader = redondear(totalHeader + totalLinea);
-        detallesGuardados.push({ id: randomUUID(), ingresoId: id, tipo: linea.tipo, productoId: producto?.id ?? null, presentacionId: presentacion?.id ?? null,
+        detallesGuardados.push({ id: randomUUID(), ingresoId: id, tipo: linea.tipo, productoId: producto?.id ?? null, mototaxiUnidadId: unidadMototaxi?.id ?? null, presentacionId: presentacion?.id ?? null,
           codigoProducto: producto?.codigoInterno ?? null, descripcion, presentacion: nombrePresentacion, unidadMedidaCodigo: unidadCodigo,
           cantidad: linea.cantidad.toFixed(3), factorAUnidadBase: factor, cantidadBase, precioUnitario: precioUnitario.toFixed(4), descuento: descuento.toFixed(2), afectacionIgv, afectoIgv,
           subtotal: subtotalLinea.toFixed(2), igv: igvLinea.toFixed(2), total: totalLinea.toFixed(2) });
@@ -588,8 +608,8 @@ export class ServicioIngresos {
       const saldoCreditoPendiente = redondear(totalHeader - importePagoInicial);
       const periodoVenta = fecha.slice(0, 7);
       const [inicioPeriodo, finPeriodo] = [`${periodoVenta}-01`, new Date(Date.UTC(Number(periodoVenta.slice(0, 4)), Number(periodoVenta.slice(5, 7)), 0)).toISOString().slice(0, 10)];
-      const [ingresosPeriodo] = await tx.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(14,2)` })
-        .from(ingresos).where(and(gte(ingresos.fecha, inicioPeriodo), lte(ingresos.fecha, finPeriodo), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"])));
+       const [ingresosPeriodo] = await tx.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(14,2)` })
+         .from(ingresos).where(and(gte(ingresos.fecha, inicioPeriodo), lte(ingresos.fecha, finPeriodo), eq(ingresos.tipoComprobante, "BOLETA")));
       const acumuladoMes = Number(ingresosPeriodo?.total ?? 0);
       if (tipoComprobante === "BOLETA" && redondear(acumuladoMes + totalHeader) >= 8000) {
         throw new BadRequestException(`No se puede emitir esta boleta: la venta llevaría los ingresos del mes a S/ ${redondear(acumuladoMes + totalHeader).toFixed(2)}. El límite mensual NRUS es menor a S/ 8,000.00.`);
@@ -603,7 +623,14 @@ export class ServicioIngresos {
         subtotal: subtotalHeader.toFixed(2), tasaIgv: tasaIgv.toFixed(2), igv: igvHeader.toFixed(2), total: totalHeader.toFixed(2), usuarioId, claveIdempotencia, huellaSolicitud });
       await tx.insert(ingresosDetalle).values(detallesGuardados);
       for (const detalle of detallesGuardados) {
-        if (detalle.tipo !== "PRODUCTO" || !detalle.productoId || !detalle.cantidadBase) continue;
+         if (detalle.tipo === "MOTOTAXI" && detalle.mototaxiUnidadId) {
+           const [unidad] = await tx.update(unidadesMototaxis).set({ estado: "VENDIDA" }).where(and(eq(unidadesMototaxis.id, detalle.mototaxiUnidadId), eq(unidadesMototaxis.estado, "DISPONIBLE"))).returning({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado });
+           if (!unidad) throw new BadRequestException(`La unidad ${detalle.descripcion} dejó de estar disponible. No se registró la venta.`);
+           const [movimiento] = await tx.insert(movimientosMototaxis).values({ unidadId: unidad.id, tipo: "VENTA", estadoAnterior: "DISPONIBLE", estadoNuevo: "VENDIDA", motivo: "VENTA", observacion: `Venta ${codigo}`, usuarioId }).returning({ id: movimientosMototaxis.id });
+           await tx.insert(movimientosMototaxisVentas).values({ movimientoId: movimiento.id, ventaDetalleId: detalle.id! });
+           continue;
+         }
+         if (detalle.tipo !== "PRODUCTO" || !detalle.productoId || !detalle.cantidadBase) continue;
         const [saldo] = await tx.update(saldosStock).set({ cantidad: sql`${saldosStock.cantidad} - ${detalle.cantidadBase}`, actualizadoEn: new Date() })
           .where(and(eq(saldosStock.productoId, detalle.productoId), gte(saldosStock.cantidad, detalle.cantidadBase))).returning({ cantidad: saldosStock.cantidad });
         if (!saldo) throw new BadRequestException(`Stock insuficiente para ${detalle.descripcion} (${detalle.presentacion}). No se registró ningún ingreso.`);

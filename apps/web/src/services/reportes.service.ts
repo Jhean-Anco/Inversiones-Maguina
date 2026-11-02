@@ -4,6 +4,7 @@ export type FiltroReporte = { desde: string; hasta: string };
 export type ReporteIngresos = {
   rango: FiltroReporte;
   resumen: { ventas: number; subtotal: string; total: string; promedio: string };
+  notasInternas: { notas: number; total: string; productos: number; serviciosOMototaxis: number };
   porMedioPago: Array<{ medioPago: string; ventas: number; total: string }>;
   productosMasVendidos: Array<{ descripcion: string; tipo: string; unidades: string; ventas: number; total: string }>;
   porDia: Array<{ fecha: string; ventas: number; total: string }>;

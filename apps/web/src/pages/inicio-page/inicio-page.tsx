@@ -14,6 +14,7 @@ const DashboardPage = lazy(() => import("../dashboard-page/dashboard-page").then
 const DatosEmisorPage = lazy(() => import("../facturacion-electronica/datos-emisor-page/datos-emisor-page").then((modulo) => ({ default: modulo.DatosEmisorPage })));
 const ComprobantesPage = lazy(() => import("../facturacion-electronica/comprobantes-page/comprobantes-page").then((modulo) => ({ default: modulo.ComprobantesPage })));
 const PerfilPage = lazy(() => import("../perfil-page/perfil-page").then((modulo) => ({ default: modulo.PerfilPage })));
+const MototaxisPage = lazy(() => import("../mototaxis-page/mototaxis-page").then((modulo) => ({ default: modulo.MototaxisPage })));
 import { useSesion } from "../../hooks/use-sesion";
 import { useTema } from "../../components/tema-contexto/tema-contexto";
 import { servicioProductos, type AlertaStockBajo } from "../../services/inventario/productos.service";
@@ -22,21 +23,22 @@ const rutasInventario: Record<string, string> = {
   Marcas: "/inventario/marcas",
   Productos: "/inventario/productos",
   "Movimientos y ajustes": "/inventario/movimientos-ajustes",
-  Mototaxis: "/inventario/mototaxis",
 };
-const rutasEgresos: Record<string, string> = { Compras: "/egresos/compras", "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas", "Compra de mototaxi": "/egresos/mototaxis" };
+const rutasEgresos: Record<string, string> = { Compras: "/egresos/compras", "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas" };
+const rutasMototaxis: Record<string, string> = { "Resumen de mototaxis": "/mototaxis/resumen", "Catálogo de modelos": "/mototaxis/modelos", Unidades: "/mototaxis/unidades", "Compras y recepción": "/mototaxis/compras", Garantías: "/mototaxis/garantias", "Movimientos y ajustes de mototaxi": "/mototaxis/movimientos" };
 const rutasIngresos: Record<string, string> = { "Nueva venta": "/ingresos/nuevo" };
 const rutasFacturacion: Record<string, string> = { "Datos del emisor": "/facturacion-electronica/datos-emisor", "Comprobantes emitidos": "/facturacion-electronica/comprobantes" };
 const rutasClientes: Record<string, string> = { "Directorio de clientes": "/clientes" };
 const rutasReportes: Record<string, string> = { Inventario: "/reportes/inventario", Ingresos: "/reportes/ingresos" };
-const rutaSubmodulo = (nombre: string) => rutasInventario[nombre] ?? rutasEgresos[nombre] ?? rutasIngresos[nombre] ?? rutasFacturacion[nombre] ?? rutasClientes[nombre] ?? rutasReportes[nombre];
+const rutaSubmodulo = (nombre: string) => rutasInventario[nombre] ?? rutasEgresos[nombre] ?? rutasMototaxis[nombre] ?? rutasIngresos[nombre] ?? rutasFacturacion[nombre] ?? rutasClientes[nombre] ?? rutasReportes[nombre];
 const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 3 }).format(Number(valor) || 0);
 
 const elementosAside = [
   { nombre: "Resumen", icono: "inicio", hijos: [] },
   { nombre: "Ingresos", icono: "venta", hijos: ["Nueva venta"] },
-  { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Compra de mototaxi", "Gastos operativos", "Activos y herramientas"] },
-  { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Mototaxis", "Movimientos y ajustes"] },
+  { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Gastos operativos", "Activos y herramientas"] },
+  { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Movimientos y ajustes"] },
+  { nombre: "Mototaxis", icono: "inventario", hijos: ["Resumen de mototaxis", "Catálogo de modelos", "Unidades", "Compras y recepción", "Garantías", "Movimientos y ajustes de mototaxi"] },
   { nombre: "Facturación electrónica", icono: "factura", hijos: ["Datos del emisor", "Comprobantes emitidos"] },
   { nombre: "Clientes", icono: "personas", hijos: ["Directorio de clientes"] },
   { nombre: "Reportes", icono: "reportes", hijos: ["Inventario", "Ingresos"] },
@@ -87,7 +89,8 @@ export function InicioPage() {
     seccionPendienteRef.current = null;
   }, []);
   const contenidoRef = useRef<HTMLDivElement>(null);
-  const vistaInventario = ["/inventario/categorias", "/inventario/marcas", "/inventario/productos", "/inventario/mototaxis", "/inventario/movimientos-ajustes"].includes(ubicacion.pathname);
+  const vistaInventario = ["/inventario/categorias", "/inventario/marcas", "/inventario/productos", "/inventario/movimientos-ajustes"].includes(ubicacion.pathname);
+  const vistaMototaxis = ubicacion.pathname.startsWith("/mototaxis/") || ubicacion.pathname === "/mototaxis";
   const vistaEgresos = ubicacion.pathname.startsWith("/egresos/");
   const vistaIngresos = ubicacion.pathname.startsWith("/ingresos/");
   const vistaClientes = ubicacion.pathname.startsWith("/clientes");
@@ -133,6 +136,7 @@ export function InicioPage() {
     cancelarAperturaSubmenu();
     setColapsoDashboard(false);
     if (vistaInventario) setSeccionAbierta("Inventario");
+    else if (vistaMototaxis) setSeccionAbierta("Mototaxis");
     else if (vistaEgresos) setSeccionAbierta("Egresos");
     else if (vistaIngresos) setSeccionAbierta("Ingresos");
     else if (vistaClientes) setSeccionAbierta("Clientes");
@@ -141,7 +145,7 @@ export function InicioPage() {
     else setSeccionAbierta(null);
     if (!dashboardActivo && window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true);
     setMenuAbierto(false);
-  }, [ubicacion.pathname, vistaInventario, vistaEgresos, vistaIngresos, vistaClientes, vistaFacturacion, vistaReportes, dashboardActivo, cancelarAperturaSubmenu]);
+  }, [ubicacion.pathname, vistaInventario, vistaMototaxis, vistaEgresos, vistaIngresos, vistaClientes, vistaFacturacion, vistaReportes, dashboardActivo, cancelarAperturaSubmenu]);
 
   useEffect(() => () => cancelarAperturaSubmenu(), [cancelarAperturaSubmenu]);
 
@@ -178,7 +182,7 @@ export function InicioPage() {
         </div>
 
         <nav className="erp-navigation" aria-label="Navegación principal">
-          {elementosAside.filter((elemento) => elemento.nombre !== "Egresos" || perfil?.permisos.includes("EGRESOS.LEER")).map((elemento) => elemento.hijos.length === 0 ? (
+          {elementosAside.filter((elemento) => (elemento.nombre !== "Egresos" || perfil?.permisos.includes("EGRESOS.LEER")) && (elemento.nombre !== "Mototaxis" || perfil?.permisos.includes("MOTOTAXIS.LEER"))).map((elemento) => elemento.hijos.length === 0 ? (
             elemento.nombre === "Resumen" ? (
               <Link className={`erp-nav-link erp-nav-direct${dashboardActivo ? " is-active" : ""}`} key={elemento.nombre} to="/inicio" aria-current={dashboardActivo ? "page" : undefined} onClick={() => { cancelarAperturaSubmenu(); setColapsoDashboard(true); setMenuAbierto(false); if (window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true); }}>
                 <Icono nombre={elemento.icono} /><span>{elemento.nombre}</span>
@@ -191,7 +195,7 @@ export function InicioPage() {
           ) : (
             <div className="erp-nav-group" key={elemento.nombre}>
               <button
-                className={`erp-nav-link erp-nav-module-button${(vistaInventario && elemento.nombre === "Inventario") || (vistaEgresos && elemento.nombre === "Egresos") || (vistaIngresos && elemento.nombre === "Ingresos") || (vistaFacturacion && elemento.nombre === "Facturación electrónica") || (vistaClientes && elemento.nombre === "Clientes") || (vistaReportes && elemento.nombre === "Reportes") ? " is-current" : ""}`}
+                className={`erp-nav-link erp-nav-module-button${(vistaInventario && elemento.nombre === "Inventario") || (vistaMototaxis && elemento.nombre === "Mototaxis") || (vistaEgresos && elemento.nombre === "Egresos") || (vistaIngresos && elemento.nombre === "Ingresos") || (vistaFacturacion && elemento.nombre === "Facturación electrónica") || (vistaClientes && elemento.nombre === "Clientes") || (vistaReportes && elemento.nombre === "Reportes") ? " is-current" : ""}`}
                 type="button"
                 aria-expanded={seccionAbierta === elemento.nombre}
                 onClick={() => {
@@ -259,7 +263,7 @@ export function InicioPage() {
           </div>
         </header>
 
-        <div ref={contenidoRef} className={`erp-content${vistaInventario || vistaEgresos ? " is-catalog-view" : ""}${ubicacion.pathname === "/ingresos/nuevo" ? " is-new-sale-view" : ""}`} aria-live="polite">
+        <div ref={contenidoRef} className={`erp-content${vistaInventario || vistaEgresos || vistaMototaxis ? " is-catalog-view" : ""}${ubicacion.pathname === "/ingresos/nuevo" ? " is-new-sale-view" : ""}`} aria-live="polite">
           <div key={ubicacion.pathname} className="modulo-route-transition">
           <Suspense fallback={(
             <div className="module-loading" role="status" aria-live="polite" aria-label="Cargando módulo">
@@ -271,7 +275,7 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/egresos/mototaxis" ? <EgresoRegistroPage tipo="MOTOTAXI" /> : ubicacion.pathname === "/inventario/mototaxis" ? <EgresoRegistroPage tipo="MOTOTAXI" contexto="inventario" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
+          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "modelos" | "unidades" | "compras" | "garantias" | "movimientos"} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
           </Suspense>
 
           </div>
