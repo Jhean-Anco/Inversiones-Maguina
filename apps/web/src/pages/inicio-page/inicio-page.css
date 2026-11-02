@@ -63,28 +63,33 @@
 }
 .modulo-route-transition { animation: modulo-route-enter 240ms cubic-bezier(.2,.7,.25,1) both; }
 .erp-layout .erp-subnav {
-  display: grid !important;
-  grid-template-rows: 0fr;
-  max-height: none !important;
+  display: flex !important;
+  max-height: 0 !important;
+  flex-direction: column;
+  gap: 1px;
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 0;
   padding-bottom: 0;
   overflow: hidden;
   opacity: 0;
-  transition: grid-template-rows .42s cubic-bezier(.2,.7,.25,1), opacity .3s ease, margin .42s cubic-bezier(.2,.7,.25,1), padding .42s cubic-bezier(.2,.7,.25,1);
+  transition: max-height .48s cubic-bezier(.2,.7,.25,1), opacity .32s ease, margin .48s cubic-bezier(.2,.7,.25,1), padding .48s cubic-bezier(.2,.7,.25,1);
 }
 .erp-layout .erp-subnav.is-open {
-  grid-template-rows: 1fr;
-  max-height: none;
+  max-height: 500px !important;
   margin: 2px 0 5px 20px;
   padding: 2px 0 2px 14px;
   opacity: 1;
 }
-.erp-subnav-inner { min-height: 0; overflow: hidden; }
+.erp-subnav-inner { display: flex; min-height: 0; flex-direction: column; gap: 1px; overflow: hidden; }
 .erp-subnav.is-open .erp-subnav-inner { overflow: visible; }
-@media (prefers-reduced-motion: reduce) {
-  .erp-layout .erp-subnav { transition: none; }
+.erp-sidebar-collapse { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; margin-left: auto; border: 1px solid #ffffff2b; border-radius: 8px; background: #ffffff0c; color: #c2d2e3; cursor: pointer; transition: background .18s ease, border-color .18s ease, color .18s ease; }
+.erp-sidebar-collapse:hover { border-color: #ffffff55; background: #ffffff19; color: #fff; }
+.erp-sidebar-collapse svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .45s cubic-bezier(.2,.7,.25,1); }
+.erp-sidebar-collapse.is-collapsed svg { transform: rotate(180deg); }
+@media (max-width: 960px) { .erp-sidebar-collapse { display: none; } }
+@media (min-width: 961px) and (max-width: 1100px) {
+  .erp-layout.is-collapsed { grid-template-columns: 84px minmax(0, 1fr); }
 }
 @media (max-width: 960px) {
   .is-collapsed .erp-sidebar-account { display: grid; align-items: stretch; justify-items: stretch; gap: 10px; padding: 12px 10px; }

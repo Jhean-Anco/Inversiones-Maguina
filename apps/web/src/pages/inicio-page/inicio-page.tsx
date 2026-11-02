@@ -194,6 +194,9 @@ export function InicioPage() {
         <div className="erp-brand">
           <img src="/logo.png" alt="Inversiones Maguiña" />
           <div><strong>MAGUIÑA</strong></div>
+          <button className={`erp-sidebar-collapse${asideContraido ? " is-collapsed" : ""}`} type="button" aria-label={asideContraido ? "Expandir menú lateral" : "Contraer menú lateral"} aria-expanded={!asideContraido} onClick={() => { cancelarAperturaSubmenu(); setAsideContraido((contraido) => !contraido); }}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7" /></svg>
+          </button>
         </div>
 
         <nav className="erp-navigation" aria-label="Navegación principal">
