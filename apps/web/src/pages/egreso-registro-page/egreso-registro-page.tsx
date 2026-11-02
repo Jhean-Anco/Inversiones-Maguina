@@ -20,8 +20,10 @@ const categoriasPorTipo: Record<TipoEgreso, string[]> = {
   MOTOTAXI: ["Compra de mototaxi"],
 };
 
-export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
+export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoEgreso; contexto?: "egresos" | "inventario" }) {
   const navegar = useNavigate();
+  const esMototaxi = tipo === "MOTOTAXI";
+  const esVistaInventario = esMototaxi && contexto === "inventario";
   const consultaActual = useRef(0);
   const [items, setItems] = useState<Egreso[]>([]);
   const [total, setTotal] = useState(0);
@@ -114,11 +116,11 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
 
   return <>
     <CatalogoListado
-      titulo={tipo === "GASTO_OPERATIVO" ? "Gastos operativos" : tipo === "MOTOTAXI" ? "Compras de mototaxis" : "Activos y herramientas"}
-      descripcion={tipo === "MOTOTAXI" ? "Registra cada mototaxi como una unidad identificable, con sus datos y pagos." : "Registra los pagos y egresos operativos del negocio."}
-      etiquetaCrear={tipo === "MOTOTAXI" ? "Registrar compra de mototaxi" : "Registrar egreso"}
+      titulo={tipo === "GASTO_OPERATIVO" ? "Gastos operativos" : esMototaxi ? (esVistaInventario ? "Mototaxis" : "Compras de mototaxis") : "Activos y herramientas"}
+      descripcion={esMototaxi ? (esVistaInventario ? "Consulta las unidades registradas con su identificaci?n y costo de compra." : "Registra cada mototaxi como una unidad identificable, con sus datos y pagos.") : "Registra los pagos y egresos operativos del negocio."}
+      etiquetaCrear={esMototaxi ? (esVistaInventario ? "Registrar mototaxi" : "Registrar compra de mototaxi") : "Registrar egreso"}
       entidadSingular={tipo === "MOTOTAXI" ? "compra de mototaxi" : "egreso"}
-      tituloListado={tipo === "MOTOTAXI" ? "Historial de mototaxis comprados" : "Historial de egresos"}
+      tituloListado={esMototaxi ? (esVistaInventario ? "Unidades registradas" : "Historial de mototaxis comprados") : "Historial de egresos"}
       registros={items}
       totalRegistros={total}
       visibles={items}
@@ -127,7 +129,7 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
       error={error}
       iconoVacio="S/"
       tituloVacio={tipo === "MOTOTAXI" ? "Aun no hay mototaxis registrados" : "Aun no hay egresos"}
-      descripcionVacio={tipo === "MOTOTAXI" ? "Registra cada unidad con su marca, modelo, motor, chasis y costo." : "Registra un gasto operativo o activo para iniciar el control."}
+      descripcionVacio={esMototaxi ? "Registra cada unidad con su marca, modelo, motor, chasis y costo." : "Registra un gasto operativo o activo para iniciar el control."}
       pagina={pagina}
       porPagina={porPagina}
       totalPaginas={totalPaginas}
