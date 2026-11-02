@@ -81,6 +81,14 @@
   padding: 2px 0 2px 14px;
   opacity: 1;
 }
+.erp-layout.is-collapsed .erp-subnav.is-open {
+  max-height: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
 .erp-subnav-inner { display: flex; min-height: 0; flex-direction: column; gap: 1px; overflow: hidden; }
 .erp-subnav.is-open .erp-subnav-inner { overflow: visible; }
 .erp-sidebar-collapse { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; margin-left: auto; border: 1px solid #ffffff2b; border-radius: 8px; background: #ffffff0c; color: #c2d2e3; cursor: pointer; transition: background .18s ease, border-color .18s ease, color .18s ease; }
@@ -88,6 +96,10 @@
 .erp-sidebar-collapse svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .45s cubic-bezier(.2,.7,.25,1); }
 .erp-sidebar-collapse.is-collapsed svg { transform: rotate(180deg); }
 @media (max-width: 960px) { .erp-sidebar-collapse { display: none; } }
+@media (min-width: 961px) and (prefers-reduced-motion: reduce) {
+  .erp-layout .erp-subnav, .erp-layout .erp-subnav.is-open,
+  .erp-layout.is-collapsed .erp-subnav.is-open { transition-duration: .01ms !important; }
+}
 @media (min-width: 961px) and (max-width: 1100px) {
   .erp-layout.is-collapsed { grid-template-columns: 84px minmax(0, 1fr); }
 }
