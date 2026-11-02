@@ -5,6 +5,7 @@ import { db, clientes, entradasStockDetalle, ingresos, ingresosDetalle, ingresos
 import { ServicioEmisorFacturacion } from "../facturacion-electronica/emisor.service";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
@@ -175,12 +176,13 @@ export class ServicioIngresos {
     const importeAplicado = numero(datos.importeAplicado, "El importe aplicado", 2, 0.01);
     const medioPago = texto(datos.medioPago, "El medio de pago", 30, true)!;
     if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, true);
     const referenciaPago = texto(datos.referenciaPago, "La referencia del pago", 120);
     const observacion = texto(datos.observacion, "La observación del pago", 500);
     return db.transaction(async (tx) => {
       const [previo] = await tx.select({ id: ingresosPagos.id, ingresoId: ingresosPagos.ingresoId,
         fechaPago: ingresosPagos.fechaPago, importeAplicado: ingresosPagos.importeAplicado,
-        medioPago: ingresosPagos.medioPago, referenciaPago: ingresosPagos.referenciaPago,
+        medioPago: ingresosPagos.medioPago, cuentaFinancieraId: ingresosPagos.cuentaFinancieraId, referenciaPago: ingresosPagos.referenciaPago,
         observacion: ingresosPagos.observacion, usuarioId: ingresosPagos.usuarioId, creadoEn: ingresosPagos.creadoEn })
         .from(ingresosPagos).where(eq(ingresosPagos.claveIdempotencia, claveIdempotencia)).limit(1);
       if (previo) {
@@ -205,9 +207,9 @@ export class ServicioIngresos {
       const [pago] = await tx.insert(ingresosPagos).values({
         ingresoId: ingresoIdEntrada, fechaPago, importeAplicado: importeAplicado.toFixed(2),
         esPagoInicial: inicialPendiente > 0, importeRecibido: importeAplicado.toFixed(2),
-        medioPago, referenciaPago, observacion, usuarioId, claveIdempotencia,
+        medioPago, cuentaFinancieraId, referenciaPago, observacion, usuarioId, claveIdempotencia,
       }).returning({ id: ingresosPagos.id, ingresoId: ingresosPagos.ingresoId, fechaPago: ingresosPagos.fechaPago,
-        importeAplicado: ingresosPagos.importeAplicado, medioPago: ingresosPagos.medioPago,
+        importeAplicado: ingresosPagos.importeAplicado, medioPago: ingresosPagos.medioPago, cuentaFinancieraId: ingresosPagos.cuentaFinancieraId,
         referenciaPago: ingresosPagos.referenciaPago, observacion: ingresosPagos.observacion,
         usuarioId: ingresosPagos.usuarioId, creadoEn: ingresosPagos.creadoEn });
       return pago;

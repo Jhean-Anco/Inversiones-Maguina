@@ -8,10 +8,11 @@ import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle,
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
+import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
-type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; montoPagado?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
+type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
 const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO", "OTRO"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
@@ -194,6 +195,7 @@ export class ServicioEntradasStock {
     if (medioPago && !(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
     const montoPagado = datos.montoPagado === undefined || datos.montoPagado === null || datos.montoPagado === "" ? null : decimal(datos.montoPagado, "El monto pagado", 2, 0);
     if ((montoPagado ?? 0) > 0 && !medioPago) throw new BadRequestException("Selecciona el medio de pago del abono registrado.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, (montoPagado ?? 0) > 0);
     if (proveedorTipoPersona && !["NATURAL", "JURIDICA"].includes(proveedorTipoPersona)) throw new BadRequestException("Selecciona si el proveedor es persona natural o jurídica.");
     if (proveedorTipoDocumento && !["DNI", "RUC", "EXT"].includes(proveedorTipoDocumento)) throw new BadRequestException("Selecciona DNI, RUC o identificación extranjera para el proveedor.");
     if (proveedorNumeroDocumento && (!proveedorTipoDocumento || (proveedorTipoDocumento === "DNI" ? !/^\d{8}$/.test(proveedorNumeroDocumento) : proveedorTipoDocumento === "RUC" ? !rucPeruValido(proveedorNumeroDocumento) : proveedorTipoDocumento === "EXT" ? !/^[A-Za-z0-9][A-Za-z0-9 .\-/]{0,99}$/.test(proveedorNumeroDocumento) : true))) throw new BadRequestException("El número debe corresponder al tipo de documento seleccionado: DNI de 8 dígitos, RUC peruano válido o identificación extranjera alfanumérica.");
@@ -252,12 +254,13 @@ export class ServicioEntradasStock {
           codigo, fecha, tipoDocumento, numeroDocumento, proveedor, proveedorTipoPersona, proveedorTipoDocumento,
           proveedorNumeroDocumento, proveedorDireccion,
           medioPago: (montoPagado ?? 0) > 0 ? medioPago : null,
+          cuentaFinancieraId,
           montoPagado: montoPagado === null ? null : montoPagado.toFixed(2), observacion,
           totalDocumento: totalDocumento === null ? null : totalDocumento.toFixed(2), total: total.toFixed(2), usuarioId,
         }).returning({ id: entradasStock.id });
         if ((montoPagado ?? 0) > 0) await tx.insert(pagosEntradasStock).values({
           entradaId: nuevaEntrada.id, fechaPago: fechaActualPeru(), importePagado: montoPagado!.toFixed(2), medioPago: medioPago!,
-          usuarioId,
+          cuentaFinancieraId, usuarioId,
         });
         const idsDocumento = new Map<string, string>();
         for (const [orden, linea] of detallesDocumento.entries()) {

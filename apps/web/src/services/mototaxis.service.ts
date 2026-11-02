@@ -16,7 +16,7 @@ export type PaginaUnidadesMototaxi = { items: UnidadMototaxi[]; total: number; p
 export type GarantiaMototaxi = { id: string; unidadId: string; codigo: string; vin: string | null; marca: string; modelo: string; proveedor: string; porcentajeProveedor: string; mesesVigencia: number; iniciaEn: string; terminaEn: string; alcance: string | null; exclusiones: string | null };
 export type ReclamoGarantia = { id: string; garantiaId: string; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
 export type CompraMototaxi = { id: string; codigo: string; fecha: string; documentoTipo: string; documentoNumero: string | null; moneda: string; total: string; proveedor: string; unidades: number; pagado: string; saldo: string; observacion: string | null };
-export type PagoCompraMototaxi = { id: string; fechaPago: string; importePagado: string; medioPago: string; creadoEn: string };
+export type PagoCompraMototaxi = { id: string; fechaPago: string; importePagado: string; medioPago: string; cuentaFinancieraId: string | null; creadoEn: string };
 
 export const servicioMototaxis = {
   marcas: () => solicitarApi<MarcaMototaxi[]>("/mototaxis/marcas"),

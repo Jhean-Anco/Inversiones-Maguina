@@ -1,0 +1,22 @@
+.finanzas-page { display: grid; gap: 18px; padding: 8px 0 28px; color: var(--erp-ink, #14345a); }
+.finanzas-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 4px 2px 17px; border-bottom: 1px solid var(--erp-border, #dce5ee); }
+.finanzas-heading h1 { margin: 4px 0 6px; font-size: clamp(25px, 3vw, 34px); }.finanzas-heading p { margin: 0; color: #70849a; }
+.finanzas-kicker { color: #768ca2; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+.finanzas-primary { min-height: 44px; padding: 0 17px; border: 1px solid #155495; border-radius: 9px; color: #fff; background: #155495; font-weight: 750; cursor: pointer; }
+.finanzas-summary { display: flex; align-items: center; gap: 26px; padding: 18px 20px; border: 1px solid #d9e4ef; border-radius: 13px; background: #f5f8fc; }
+.finanzas-summary div { display: grid; gap: 5px; min-width: 180px; }.finanzas-summary span,.finanzas-totals small { color: #71859a; font-size: 12px; }.finanzas-summary strong { font-size: 22px; }.finanzas-summary small { margin-left: auto; color: #75899e; }
+.finanzas-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); gap: 14px; }
+.finanzas-card { display: grid; gap: 12px; padding: 18px; border: 1px solid #dce5ee; border-radius: 13px; background: #fff; box-shadow: 0 7px 20px #173b5b08; }.finanzas-card.is-inactive { opacity: .72; }
+.finanzas-card header,.finanzas-card footer,.finanzas-form header,.finanzas-form footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.finanzas-type,.finanzas-status { padding: 5px 9px; border-radius: 999px; color: #14577c; background: #eef5fa; font-size: 11px; font-weight: 800; }.finanzas-status { color: #127558; background: #e9f7f1; }.finanzas-status.is-inactive { color: #66788a; background: #eef1f4; }
+.finanzas-card h2 { margin: 0; font-size: 19px; }.finanzas-institution { margin: -7px 0 0; color: #71859a; font-size: 13px; }
+.finanzas-identifiers { display: flex; flex-wrap: wrap; gap: 7px; }.finanzas-identifiers span { padding: 5px 8px; border: 1px solid #e2e9f0; border-radius: 7px; color: #566d83; font-size: 11px; }
+.finanzas-totals { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding-top: 12px; border-top: 1px solid #e8edf2; }.finanzas-totals div { display: grid; gap: 5px; }.finanzas-totals strong { font-size: 14px; }
+.finanzas-card footer { justify-content: flex-end; padding-top: 10px; border-top: 1px solid #e8edf2; }.finanzas-card footer button,.finanzas-form footer button:not(.finanzas-primary) { min-height: 38px; padding: 0 12px; border: 1px solid #d8e3ed; border-radius: 8px; color: #1a4c7d; background: #fff; font-weight: 700; cursor: pointer; }
+.finanzas-empty { display: grid; justify-items: center; gap: 10px; padding: 44px 18px; border: 1px dashed #cddbe7; border-radius: 12px; color: #75899e; text-align: center; }.finanzas-empty strong { color: #254565; }.finanzas-empty .finanzas-primary { margin-top: 8px; }
+.finanzas-footnote { margin: 0; color: #73869a; font-size: 12px; }
+.finanzas-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 18px; background: #0c223d80; }
+.finanzas-form { display: grid; gap: 13px; width: min(570px,100%); max-height: min(90vh,850px); overflow: auto; padding: 23px; border: 1px solid #dce5ed; border-radius: 15px; background: #fff; box-shadow: 0 22px 70px #08213b40; }
+.finanzas-form header { align-items: flex-start; padding-bottom: 7px; }.finanzas-form header h2 { margin: 4px 0 0; }.finanzas-form header>button { width: 36px; height: 36px; border: 1px solid #dce5ed; border-radius: 9px; color: #4b637b; background: #fff; font-size: 23px; cursor: pointer; }
+.finanzas-form label { display: grid; gap: 6px; color: #38546e; font-size: 13px; font-weight: 700; }.finanzas-form input,.finanzas-form select,.finanzas-form textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #d3e0eb; border-radius: 8px; color: #183754; background: #fff; font: inherit; }.finanzas-form textarea { min-height: 75px; resize: vertical; }.finanzas-form footer { justify-content: flex-end; margin-top: 5px; padding-top: 13px; border-top: 1px solid #e5ebf1; }
+@media (max-width:700px) { .finanzas-heading { align-items: flex-start; flex-direction: column; }.finanzas-summary { align-items: flex-start; flex-direction: column; gap: 14px; }.finanzas-summary small { margin-left: 0; }.finanzas-grid { grid-template-columns: 1fr; } }

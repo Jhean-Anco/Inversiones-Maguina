@@ -16,6 +16,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/inicio" element={<InicioPage />} />
         <Route path="/mi-perfil" element={<InicioPage />} />
+        <Route path="/finanzas/cuentas" element={<InicioPage />} />
         <Route path="/ingresos/nuevo" element={<InicioPage />} />
         <Route path="/reportes/inventario" element={<InicioPage />} />
         <Route path="/reportes/ingresos" element={<InicioPage />} />

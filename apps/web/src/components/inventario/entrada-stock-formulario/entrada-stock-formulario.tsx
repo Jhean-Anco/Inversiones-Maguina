@@ -1,11 +1,12 @@
 import "./entrada-stock-formulario.css";
 import type { FormEvent } from "react";
 import type { useEntradasStock } from "../../../hooks/use-entradas-stock";
+import { SelectorCuentaFinanciera } from "../../finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 
 type ModuloEntradas = ReturnType<typeof useEntradasStock>;
 type Props = Pick<ModuloEntradas,
   | "cerrarModal" | "guardando" | "error" | "fecha" | "setFecha" | "tipoDocumento" | "setTipoDocumento"
-  | "numeroDocumento" | "setNumeroDocumento" | "proveedor" | "setProveedor" | "medioPago" | "setMedioPago" | "montoPagado" | "setMontoPagado"
+  | "numeroDocumento" | "setNumeroDocumento" | "proveedor" | "setProveedor" | "medioPago" | "setMedioPago" | "cuentaFinancieraId" | "setCuentaFinancieraId" | "montoPagado" | "setMontoPagado"
   | "proveedorTipoPersona" | "setProveedorTipoPersona" | "proveedorTipoDocumento" | "setProveedorTipoDocumento"
   | "proveedorNumeroDocumento" | "setProveedorNumeroDocumento" | "proveedorDireccion" | "setProveedorDireccion" | "observacion" | "setObservacion"
   | "productoBusqueda" | "cambiarBusquedaProducto" | "productosEncontrados" | "buscandoProductos"
@@ -14,7 +15,7 @@ type Props = Pick<ModuloEntradas,
   | "detalles" | "setDetalles" | "totalBorrador" | "agregarDetalle" | "quitarDetalle" | "guardar"
 > & Pick<ModuloEntradas, "archivoEvidencia" | "seleccionarEvidencia" | "proveedoresEncontrados" | "buscandoProveedores" | "proveedorNoEncontrado" | "datosProveedorEditables" | "setDatosProveedorEditables" | "buscarProveedor" | "seleccionarProveedor"> & { alAgregarProducto: () => void };
 
-export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, medioPago, setMedioPago, montoPagado, setMontoPagado, archivoEvidencia, seleccionarEvidencia, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto, detalles, setDetalles, totalBorrador, agregarDetalle, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, setDatosProveedorEditables, buscarProveedor, seleccionarProveedor }: Props) {
+export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, montoPagado, setMontoPagado, archivoEvidencia, seleccionarEvidencia, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto, detalles, setDetalles, totalBorrador, agregarDetalle, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, setDatosProveedorEditables, buscarProveedor, seleccionarProveedor }: Props) {
   function enviar(evento: FormEvent<HTMLFormElement>) { void guardar(evento); }
   return <div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
     <section className="catalog-modal stock-entry-modal" role="dialog" aria-modal="true" aria-labelledby="stock-entry-title">
@@ -76,7 +77,7 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
           <div className="stock-entry-total"><span>Total de la compra</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div>
           <div className="stock-payment-fields">
             <label>Monto pagado ahora (S/)<input type="number" min="0" max={totalBorrador.toFixed(2)} step="0.01" value={montoPagado} onChange={(evento) => setMontoPagado(evento.target.value)} /></label>
-            <label>Medio de pago<select value={medioPago} onChange={(evento) => setMedioPago(evento.target.value)} disabled={Number(montoPagado) <= 0}><option value="">No aplica por ahora</option><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_DIGITAL">Billetera digital</option><option value="OTRO">Otro</option></select></label>
+            {Number(montoPagado) > 0 && <SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} />}
             <div className="stock-payment-balance"><span>Saldo de la compra</span><strong>S/ {Math.max(0, totalBorrador - (Number(montoPagado) || 0)).toFixed(2)}</strong></div>
           </div>
         </fieldset>

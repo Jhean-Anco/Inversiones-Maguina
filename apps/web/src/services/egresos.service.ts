@@ -14,7 +14,7 @@ export type PaginaEgresos = { items: Egreso[]; total: number; pagina: number; po
 export type DatosEgreso = {
   tipo: TipoEgreso; fecha: string; categoria: string; concepto: string; beneficiario: string | null;
   proveedorRuc: string | null; documentoTipo: string | null; documentoNumero: string | null;
-  moneda: "PEN"; medioPago: string; monto: string; importePagoInicial: string;
+  moneda: "PEN"; medioPago: string; cuentaFinancieraId: string; monto: string; importePagoInicial: string;
   identificadorActivo: string | null; mototaxiMarca: string | null; mototaxiModelo: string | null;
   mototaxiNumeroMotor: string | null; mototaxiNumeroChasis: string | null; observacion: string | null;
 };
@@ -29,7 +29,7 @@ export const servicioEgresos = {
     const ruta = contextoInventario && datos.tipo === "MOTOTAXI" ? "/inventario/mototaxis" : "/egresos";
     return solicitarApi<Egreso>(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },
-  registrarPago(id: string, datos: { fechaPago: string; importePagado: string; medioPago: string; claveIdempotencia: string }, contextoInventario = false) {
+  registrarPago(id: string, datos: { fechaPago: string; importePagado: string; medioPago: string; cuentaFinancieraId: string; claveIdempotencia: string }, contextoInventario = false) {
     const ruta = contextoInventario ? `/inventario/mototaxis/${encodeURIComponent(id)}/pagos` : `/egresos/${encodeURIComponent(id)}/pagos`;
     return solicitarApi<PagoEgreso>(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },

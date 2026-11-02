@@ -6,6 +6,7 @@ import { ModuloFacturacionElectronica } from "./modulos/facturacion-electronica/
 import { ModuloReportes } from "./modulos/reportes/reportes.module";
 import { ModuloEgresos } from "./modulos/egresos/egresos.module";
 import { ModuloMototaxis } from "./modulos/mototaxis/mototaxis.module";
+import { ModuloFinanzas } from "./modulos/finanzas/finanzas.module";
 import { ServiceUnavailableException } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { db } from "@magina/database";
@@ -24,7 +25,7 @@ class ControladorSalud {
 }
 
 @Module({
-  imports: [ModuloAutenticacion, ModuloInventario, ModuloIngresos, ModuloFacturacionElectronica, ModuloReportes, ModuloEgresos, ModuloMototaxis],
+  imports: [ModuloAutenticacion, ModuloInventario, ModuloIngresos, ModuloFacturacionElectronica, ModuloReportes, ModuloEgresos, ModuloMototaxis, ModuloFinanzas],
   controllers: [ControladorSalud],
 })
 export class ModuloAplicacion {}

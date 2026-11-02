@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm"
 import { randomUUID } from "node:crypto";
 import { db, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, marcasMototaxis, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
@@ -151,6 +152,7 @@ export class ServicioMototaxis {
     const inicial = importe(d.importePagoInicial ?? 0, "El pago inicial");
     const medioPago = texto(d.medioPago ?? "EFECTIVO", "El medio de pago", 30, true)!;
     if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(d.cuentaFinancieraId, medioPago, inicial > 0);
     const unidades = d.unidades.map((entrada, i) => {
       if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`La unidad ${i + 1} no es válida.`);
       const u = entrada as Record<string, unknown>;
@@ -188,7 +190,7 @@ export class ServicioMototaxis {
         const termina = this.sumarMeses(fecha, unidad.meses);
         await tx.insert(garantiasMototaxis).values({ unidadId: insertada.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(unidad.porcentaje), mesesVigencia: unidad.meses, iniciaEn, terminaEn: termina });
       }
-      if (inicial > 0) await tx.insert(pagosComprasMototaxis).values({ compraId: compra.id, fechaPago: fecha, importePagado: inicial.toFixed(2), medioPago, claveIdempotencia: uuidValido(d.claveIdempotencia) ? d.claveIdempotencia : randomUUID(), usuarioId });
+      if (inicial > 0) await tx.insert(pagosComprasMototaxis).values({ compraId: compra.id, fechaPago: fecha, importePagado: inicial.toFixed(2), medioPago, cuentaFinancieraId, claveIdempotencia: uuidValido(d.claveIdempotencia) ? d.claveIdempotencia : randomUUID(), usuarioId });
       return { id: compra.id, codigo, fecha, total: compra.total, unidades: unidades.length, importePagado: inicial.toFixed(2), saldoPendiente: (total - inicial).toFixed(2) };
     }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("El VIN, la placa u otro identificador de la unidad ya está registrado."); throw error; });
   }
@@ -210,7 +212,7 @@ export class ServicioMototaxis {
   async listarPagosCompra(compraId: string) {
     if (!uuidValido(compraId)) throw new BadRequestException("La compra no es válida.");
     return db.select({ id: pagosComprasMototaxis.id, fechaPago: pagosComprasMototaxis.fechaPago, importePagado: pagosComprasMototaxis.importePagado,
-      medioPago: pagosComprasMototaxis.medioPago, creadoEn: pagosComprasMototaxis.creadoEn })
+      medioPago: pagosComprasMototaxis.medioPago, cuentaFinancieraId: pagosComprasMototaxis.cuentaFinancieraId, creadoEn: pagosComprasMototaxis.creadoEn })
       .from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.compraId, compraId)).orderBy(asc(pagosComprasMototaxis.fechaPago), asc(pagosComprasMototaxis.creadoEn));
   }
 
@@ -222,11 +224,12 @@ export class ServicioMototaxis {
     const importePagado = importe(d.importePagado, "El importe del pago", 0.01);
     const medioPago = texto(d.medioPago, "El medio de pago", 30, true)!;
     if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(d.cuentaFinancieraId, medioPago, true);
     if (!uuidValido(d.claveIdempotencia)) throw new BadRequestException("La clave de idempotencia del pago no es válida.");
     return db.transaction(async (tx) => {
       const [existente] = await tx.select().from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.claveIdempotencia, d.claveIdempotencia as string)).limit(1);
       if (existente) {
-        if (existente.compraId !== compraId || existente.fechaPago !== fechaPago || Number(existente.importePagado) !== importePagado || existente.medioPago !== medioPago) throw new ConflictException("La clave de pago ya se utilizó para otra operación.");
+        if (existente.compraId !== compraId || existente.fechaPago !== fechaPago || Number(existente.importePagado) !== importePagado || existente.medioPago !== medioPago || existente.cuentaFinancieraId !== cuentaFinancieraId) throw new ConflictException("La clave de pago ya se utilizó para otra operación.");
         return existente;
       }
       const [compra] = await tx.select().from(comprasMototaxis).where(eq(comprasMototaxis.id, compraId)).for("update").limit(1);
@@ -235,7 +238,7 @@ export class ServicioMototaxis {
         .from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.compraId, compraId));
       const saldo = redondear(Number(compra.total) - Number(resumen?.pagado ?? 0));
       if (importePagado > saldo) throw new BadRequestException(`El pago supera el saldo pendiente de S/ ${saldo.toFixed(2)}.`);
-      const [pago] = await tx.insert(pagosComprasMototaxis).values({ compraId, fechaPago, importePagado: importePagado.toFixed(2), medioPago,
+      const [pago] = await tx.insert(pagosComprasMototaxis).values({ compraId, fechaPago, importePagado: importePagado.toFixed(2), medioPago, cuentaFinancieraId,
         claveIdempotencia: d.claveIdempotencia as string, usuarioId }).returning();
       return pago;
     });

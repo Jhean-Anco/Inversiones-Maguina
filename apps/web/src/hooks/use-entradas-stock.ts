@@ -30,6 +30,7 @@ export function useEntradasStock() {
   const [proveedorNoEncontrado, setProveedorNoEncontrado] = useState(false);
   const [datosProveedorEditables, setDatosProveedorEditables] = useState(false);
   const [medioPago, setMedioPago] = useState("");
+  const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
   const [montoPagado, setMontoPagado] = useState("0.00");
   const [observacion, setObservacion] = useState("");
   const [productoBusqueda, setProductoBusqueda] = useState("");
@@ -134,7 +135,7 @@ export function useEntradasStock() {
   }
 
   function abrirNuevo() {
-    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); setProveedor(""); setProveedorTipoPersona(""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(""); setProveedorDireccion(""); setProveedoresEncontrados([]); setBuscandoProveedores(false); setProveedorNoEncontrado(false); setDatosProveedorEditables(false); setMedioPago(""); setMontoPagado("0.00"); setArchivoEvidencia(null); setObservacion("");
+    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); setProveedor(""); setProveedorTipoPersona(""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(""); setProveedorDireccion(""); setProveedoresEncontrados([]); setBuscandoProveedores(false); setProveedorNoEncontrado(false); setDatosProveedorEditables(false); setMedioPago(""); setCuentaFinancieraId(""); setMontoPagado("0.00"); setArchivoEvidencia(null); setObservacion("");
     setProductoBusqueda(""); setProductosEncontrados([]); setProductoElegido(""); setCantidadProducto("1"); setCostoProducto(""); setDetalles([]); setModalAbierto(true);
   }
   function agregarDetalle() {
@@ -156,8 +157,8 @@ export function useEntradasStock() {
     if (!detalles.length) { setError("Agrega al menos un producto comprado para registrar la compra."); return; }
     const pago = Number(montoPagado);
     if (!Number.isFinite(pago) || pago < 0 || Number(pago.toFixed(2)) !== pago || pago > totalBorrador) { setError("El monto abonado debe ser válido y no puede superar el total de la compra."); return; }
-    if (pago > 0 && !medioPago) { setError("Selecciona el medio de pago del abono."); return; }
-    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: proveedor.trim(), proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento: proveedorNumeroDocumento.trim(), proveedorDireccion: proveedorDireccion.trim(), medioPago: medioPago || null, montoPagado: pago.toFixed(2), observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario }) => ({ productoId, presentacionId, cantidad, costoUnitario })) };
+    if (pago > 0 && (!medioPago || !cuentaFinancieraId)) { setError("Selecciona la cuenta de dinero desde donde se paga este abono."); return; }
+    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: proveedor.trim(), proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento: proveedorNumeroDocumento.trim(), proveedorDireccion: proveedorDireccion.trim(), medioPago: medioPago || null, cuentaFinancieraId: cuentaFinancieraId || null, montoPagado: pago.toFixed(2), observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario }) => ({ productoId, presentacionId, cantidad, costoUnitario })) };
     setGuardando(true);
     try {
       const creada = await servicioEntradasStock.crear(datos);
@@ -179,7 +180,7 @@ export function useEntradasStock() {
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, error, setError, busqueda, setBusqueda, cambiarPagina: setPagina, cambiarPorPagina,
     modalAbierto, abrirNuevo, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
-    fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, medioPago, setMedioPago, montoPagado, setMontoPagado,
+    fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, montoPagado, setMontoPagado,
     proveedorTipoPersona, setProveedorTipoPersona,
     proveedorTipoDocumento, setProveedorTipoDocumento,
     proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion,

@@ -73,6 +73,7 @@ export type DatosEntradaStock = {
   proveedorNumeroDocumento: string;
   proveedorDireccion: string;
   medioPago: string | null;
+  cuentaFinancieraId: string | null;
   montoPagado: string;
   observacion: string;
   detalles: Array<{ productoId: string; presentacionId: string; cantidad: string; costoUnitario: string }>;

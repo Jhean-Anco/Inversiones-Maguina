@@ -1030,6 +1030,13 @@
       "when": 1793640471689,
       "tag": "0146_required_vehicle_identifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 147,
+      "version": "7",
+      "when": 1793641000000,
+      "tag": "0147_financial_accounts",
+      "breakpoints": true
     }
   ]
 }

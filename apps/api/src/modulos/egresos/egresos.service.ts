@@ -4,11 +4,12 @@ import { randomUUID } from "node:crypto";
 import { db, egresosPagos, egresosRegistros, entradasStock } from "@magina/database";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
 const tiposEgreso = ["GASTO_OPERATIVO", "ACTIVO_HERRAMIENTA", "MOTOTAXI"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 type TipoEgreso = typeof tiposEgreso[number];
-type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
+type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
 
 function texto(valor: unknown, etiqueta: string, maximo: number, requerido = false) {
   if (valor === undefined || valor === null) {
@@ -76,6 +77,7 @@ export class ServicioEgresos {
     if (!Number.isFinite(monto) || monto <= 0 || Number(monto.toFixed(2)) !== monto) throw new BadRequestException("El importe debe ser mayor que cero y tener hasta dos decimales.");
     const importePagoInicial = datos.importePagoInicial === undefined || datos.importePagoInicial === null || datos.importePagoInicial === "" ? monto : Number(datos.importePagoInicial);
     if (!Number.isFinite(importePagoInicial) || importePagoInicial <= 0 || Number(importePagoInicial.toFixed(2)) !== importePagoInicial || importePagoInicial > monto) throw new BadRequestException("El primer pago debe ser positivo y no superar el importe del egreso.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, datos.medioPago, true);
     const categoria = texto(datos.categoria, "la categoría", 80, true)!;
     const concepto = texto(datos.concepto, "el concepto", 240, true)!;
     const beneficiario = texto(datos.beneficiario, "el proveedor o beneficiario", 180, tipo !== "GASTO_OPERATIVO");
@@ -111,11 +113,11 @@ export class ServicioEgresos {
       }
       const [registro] = await tx.insert(egresosRegistros).values({ codigo, tipo, fecha: datos.fecha as string, categoria,
         concepto, beneficiario, proveedorRuc, documentoTipo, documentoNumero, moneda,
-        medioPago: datos.medioPago as string, monto: monto.toFixed(2), identificadorActivo,
+        medioPago: datos.medioPago as string, cuentaFinancieraId, monto: monto.toFixed(2), identificadorActivo,
         mototaxiMarca, mototaxiModelo, mototaxiNumeroMotor, mototaxiNumeroChasis,
         observacion: texto(datos.observacion, "la observación", 2000), usuarioId }).returning({ id: egresosRegistros.id });
       await tx.insert(egresosPagos).values({ egresoId: registro.id, fechaPago: datos.fecha as string,
-        importePagado: importePagoInicial.toFixed(2), medioPago: datos.medioPago as string,
+        importePagado: importePagoInicial.toFixed(2), medioPago: datos.medioPago as string, cuentaFinancieraId,
         claveIdempotencia: randomUUID(), usuarioId });
       return this.obtenerRegistro(registro.id);
     });
@@ -132,6 +134,7 @@ export class ServicioEgresos {
     if (!Number.isFinite(importe) || importe <= 0 || Number(importe.toFixed(2)) !== importe) throw new BadRequestException("El pago debe ser mayor que cero y tener hasta dos decimales.");
     const medioPago = texto(datos.medioPago, "el medio de pago", 30, true)!;
     if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, true);
     const claveIdempotencia = texto(datos.claveIdempotencia, "la clave de idempotencia", 36, true)!;
     if (!uuid.test(claveIdempotencia)) throw new BadRequestException("La clave de idempotencia no es válida.");
     return db.transaction(async (tx) => {
@@ -139,10 +142,10 @@ export class ServicioEgresos {
         .from(egresosRegistros).where(eq(egresosRegistros.id, idEntrada)).for("update").limit(1);
       if (!egreso) throw new NotFoundException("No se encontró el egreso indicado.");
       const [duplicado] = await tx.select({ id: egresosPagos.id, egresoId: egresosPagos.egresoId, fechaPago: egresosPagos.fechaPago,
-        importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, claveIdempotencia: egresosPagos.claveIdempotencia })
+        importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, cuentaFinancieraId: egresosPagos.cuentaFinancieraId, claveIdempotencia: egresosPagos.claveIdempotencia })
         .from(egresosPagos).where(eq(egresosPagos.claveIdempotencia, claveIdempotencia)).limit(1);
       if (duplicado) {
-        if (duplicado.egresoId !== idEntrada || Number(duplicado.importePagado) !== importe || duplicado.fechaPago !== fechaPago || duplicado.medioPago !== medioPago) throw new ConflictException("La clave de pago ya fue usada con otros datos.");
+        if (duplicado.egresoId !== idEntrada || Number(duplicado.importePagado) !== importe || duplicado.fechaPago !== fechaPago || duplicado.medioPago !== medioPago || duplicado.cuentaFinancieraId !== cuentaFinancieraId) throw new ConflictException("La clave de pago ya fue usada con otros datos.");
         return duplicado;
       }
       const [suma] = await tx.select({ total: sql<string>`coalesce(sum(${egresosPagos.importePagado}), 0)::numeric(14,2)` })
@@ -151,8 +154,8 @@ export class ServicioEgresos {
       if (importe > saldo + 0.001) throw new BadRequestException(`El pago supera el saldo pendiente de ${egreso.moneda} ${Math.max(0, saldo).toFixed(2)}.`);
       if (fechaPago < egreso.fecha) throw new BadRequestException("La fecha del pago no puede ser anterior al egreso.");
       const [pago] = await tx.insert(egresosPagos).values({ egresoId: idEntrada, fechaPago, importePagado: importe.toFixed(2),
-        medioPago, claveIdempotencia, usuarioId }).returning({ id: egresosPagos.id, egresoId: egresosPagos.egresoId,
-        fechaPago: egresosPagos.fechaPago, importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago });
+        medioPago, cuentaFinancieraId, claveIdempotencia, usuarioId }).returning({ id: egresosPagos.id, egresoId: egresosPagos.egresoId,
+        fechaPago: egresosPagos.fechaPago, importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, cuentaFinancieraId: egresosPagos.cuentaFinancieraId });
       return pago;
     });
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { servicioIngresos, type PagoIngreso } from "../../../services/ingresos.service";
+import { SelectorCuentaFinanciera } from "../../finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 import "./pago-ingreso-dialog.css";
 
 type Props = { ingresoId: string; total: string; contadoPendiente?: boolean; importeInicialObligatorio?: boolean; fechaPagoInicial?: string; importeInicial?: string; medioPagoInicial?: string; onPaymentRecorded?: () => void; onClose: () => void };
@@ -12,6 +13,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
   const [fechaPago, setFechaPago] = useState(fechaPagoInicial ?? hoy());
   const [importeAplicado, setImporteAplicado] = useState(contadoPendiente || importeInicialObligatorio ? (importeInicial ?? total) : "");
   const [medioPago, setMedioPago] = useState(medioPagoInicial ?? "EFECTIVO");
+  const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
   const [referenciaPago, setReferenciaPago] = useState("");
   const [observacion, setObservacion] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -35,7 +37,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
     if (!Number.isFinite(importe) || importe <= 0 || importe > saldo) { setError("Ingresa un importe válido que no supere el saldo pendiente."); return; }
     setGuardando(true);
     try {
-      await servicioIngresos.registrarPago(ingresoId, { idempotencyKey: uuid(), fechaPago, importeAplicado: importe.toFixed(2), medioPago, referenciaPago: referenciaPago.trim() || undefined, observacion: observacion.trim() || undefined });
+      await servicioIngresos.registrarPago(ingresoId, { idempotencyKey: uuid(), fechaPago, importeAplicado: importe.toFixed(2), medioPago, cuentaFinancieraId, referenciaPago: referenciaPago.trim() || undefined, observacion: observacion.trim() || undefined });
       setImporteAplicado(""); setReferenciaPago(""); setObservacion("");
       await cargar(); onPaymentRecorded?.();
     } catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo registrar el pago."); }
@@ -49,7 +51,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
     {saldo > 0 && <form onSubmit={(evento) => void registrar(evento)}>
       <label>Fecha de pago<input type="date" max={hoy()} required value={fechaPago} onChange={(evento) => setFechaPago(evento.target.value)} /></label>
       <label>Importe aplicado (S/)<input type="number" min="0.01" max={saldo.toFixed(2)} step="0.01" required value={importeAplicado} onChange={(evento) => setImporteAplicado(evento.target.value)} /></label>
-      <label>Medio de pago<select value={medioPago} onChange={(evento) => setMedioPago(evento.target.value)}><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_DIGITAL">Billetera digital</option><option value="OTRO">Otro</option></select></label>
+      <SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} />
       <label>Referencia (opcional)<input maxLength={100} value={referenciaPago} onChange={(evento) => setReferenciaPago(evento.target.value)} /></label>
       <label>Observación (opcional)<textarea maxLength={500} value={observacion} onChange={(evento) => setObservacion(evento.target.value)} /></label>
       <button type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Registrar pago"}</button>

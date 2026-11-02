@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { CatalogoListado } from "../../components/catalogo/catalogo-listado/catalogo-listado";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioEgresos, type DatosEgreso, type Egreso, type TipoEgreso } from "../../services/egresos.service";
+import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 
-const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"];
 const fechaHoy = () => {
   const fecha = new Date();
   const anio = fecha.getFullYear();
@@ -43,6 +43,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
   const [documentoNumero, setDocumentoNumero] = useState("");
   const [proveedorRuc, setProveedorRuc] = useState("");
   const [medioPago, setMedioPago] = useState("EFECTIVO");
+  const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
   const [monto, setMonto] = useState("");
   const [importeInicial, setImporteInicial] = useState("");
   const [identificadorActivo, setIdentificadorActivo] = useState("");
@@ -55,6 +56,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
   const [fechaAbono, setFechaAbono] = useState(fechaHoy());
   const [importeAbono, setImporteAbono] = useState("");
   const [medioAbono, setMedioAbono] = useState("TRANSFERENCIA");
+  const [cuentaAbonoId, setCuentaAbonoId] = useState("");
 
   const manejarError = useCallback((problema: unknown) => {
     if (problema instanceof ErrorApi && problema.estado === 401) { navegar("/login", { replace: true }); return; }
@@ -77,7 +79,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
 
   function abrirFormulario() {
     setFecha(fechaHoy()); setCategoria(categoriasPorTipo[tipo][0]); setConcepto(""); setBeneficiario("");
-    setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO");
+    setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO"); setCuentaFinancieraId("");
     setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setMototaxiMarca(""); setMototaxiModelo("");
     setMototaxiNumeroMotor(""); setMototaxiNumeroChasis(""); setObservacion(""); setError(""); setModal(true);
   }
@@ -90,7 +92,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
     const datos: DatosEgreso = {
       tipo, fecha, categoria, concepto: tipo === "MOTOTAXI" ? "Compra de mototaxi " + mototaxiMarca.trim() + " " + mototaxiModelo.trim() : concepto.trim(), beneficiario: beneficiario.trim() || null,
       documentoTipo: documentoTipo || null, documentoNumero: documentoNumero.trim() || null,
-      proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", medioPago, monto: importe.toFixed(2),
+      proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", medioPago, cuentaFinancieraId, monto: importe.toFixed(2),
       importePagoInicial: inicial.toFixed(2), identificadorActivo: tipo === "ACTIVO_HERRAMIENTA" ? identificadorActivo.trim() || null : null,
       mototaxiMarca: tipo === "MOTOTAXI" ? mototaxiMarca.trim() : null,
       mototaxiModelo: tipo === "MOTOTAXI" ? mototaxiModelo.trim() : null,
@@ -109,7 +111,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
     const importe = Number(importeAbono);
     if (!Number.isFinite(importe) || importe <= 0 || importe > Number(abono.saldoPendiente) || Number(importe.toFixed(2)) !== importe) { setError("El abono debe ser positivo y no superar el saldo pendiente."); return; }
     setGuardando(true);
-    try { await servicioEgresos.registrarPago(abono.id, { fechaPago: fechaAbono, importePagado: importe.toFixed(2), medioPago: medioAbono, claveIdempotencia: crypto.randomUUID() }, esVistaInventario); setAbono(null); setImporteAbono(""); await cargar(); }
+    try { await servicioEgresos.registrarPago(abono.id, { fechaPago: fechaAbono, importePagado: importe.toFixed(2), medioPago: medioAbono, cuentaFinancieraId: cuentaAbonoId, claveIdempotencia: crypto.randomUUID() }, esVistaInventario); setAbono(null); setImporteAbono(""); setCuentaAbonoId(""); await cargar(); }
     catch (problema) { manejarError(problema); }
     finally { setGuardando(false); }
   }
@@ -147,7 +149,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       {item.documentoTipo && <div className="egreso-documento">{item.documentoTipo}{item.documentoNumero ? ` · ${item.documentoNumero}` : ""}</div>}
       <div className="egreso-documento">Pagado {soles(item.importePagadoAcumulado)} · saldo {soles(item.saldoPendiente)}</div>
       {item.pagos.map((pago) => <div className="egreso-documento" key={pago.id}>Pago {new Date(`${pago.fechaPago}T00:00:00`).toLocaleDateString("es-PE")} · {soles(pago.importePagado)}</div>)}
-      {Number(item.saldoPendiente) > 0 && <button className="egreso-registrar-abono" type="button" onClick={() => { setAbono(item); setFechaAbono(fechaHoy()); setImporteAbono(""); setError(""); }}>Registrar abono · saldo {soles(item.saldoPendiente)}</button>}
+      {Number(item.saldoPendiente) > 0 && <button className="egreso-registrar-abono" type="button" onClick={() => { setAbono(item); setFechaAbono(fechaHoy()); setImporteAbono(""); setCuentaAbonoId(""); setError(""); }}>Registrar abono · saldo {soles(item.saldoPendiente)}</button>}
       <footer><span>{item.medioPago}</span><strong>{soles(item.monto)}</strong></footer>
     </article>}
     />
@@ -165,11 +167,11 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       <label>Número de documento<input value={documentoNumero} onChange={(evento) => setDocumentoNumero(evento.target.value)} maxLength={60} /></label>
       {documentoTipo === "FACTURA" && <label>RUC del proveedor<input required inputMode="numeric" pattern="[0-9]{11}" maxLength={11} value={proveedorRuc} onChange={(evento) => setProveedorRuc(evento.target.value.replace(/\D/g, "").slice(0, 11))} /></label>}
       {tipo === "ACTIVO_HERRAMIENTA" && <label className="egreso-full">Modelo o identificación<input required maxLength={100} value={identificadorActivo} onChange={(evento) => setIdentificadorActivo(evento.target.value)} /></label>}
-      <label>Medio de pago<select value={medioPago} onChange={(evento) => setMedioPago(evento.target.value)}>{mediosPago.map((item) => <option value={item} key={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
+      <SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} />
       <label>Importe total (S/)<input required type="number" min="0.01" step="0.01" value={monto} onChange={(evento) => setMonto(evento.target.value)} /></label>
       <label>Primer pago (S/)<input type="number" min="0.01" max={monto || undefined} step="0.01" value={importeInicial} onChange={(evento) => setImporteInicial(evento.target.value)} placeholder="Vacío: pago completo" /></label>
       <label className="egreso-full">Observación<input maxLength={2000} value={observacion} onChange={(evento) => setObservacion(evento.target.value)} /></label>
     </div></div><div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={() => setModal(false)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar egreso"}</button></div></form></section></div>}
-    {abono && <div className="catalog-modal-backdrop"><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-payment-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardarAbono(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-payment-title">Registrar abono</h2><p>{abono.concepto} · saldo {soles(abono.saldoPendiente)}</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid"><label>Fecha<input required type="date" value={fechaAbono} onChange={(evento) => setFechaAbono(evento.target.value)} /></label><label>Importe (S/)<input required type="number" min="0.01" max={abono.saldoPendiente} step="0.01" value={importeAbono} onChange={(evento) => setImporteAbono(evento.target.value)} /></label><label className="egreso-full">Medio de pago<select value={medioAbono} onChange={(evento) => setMedioAbono(evento.target.value)}>{mediosPago.map((item) => <option key={item}>{item}</option>)}</select></label></div></div><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setAbono(null)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar abono"}</button></div></form></section></div>}
+    {abono && <div className="catalog-modal-backdrop"><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-payment-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardarAbono(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-payment-title">Registrar abono</h2><p>{abono.concepto} · saldo {soles(abono.saldoPendiente)}</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid"><label>Fecha<input required type="date" value={fechaAbono} onChange={(evento) => setFechaAbono(evento.target.value)} /></label><label>Importe (S/)<input required type="number" min="0.01" max={abono.saldoPendiente} step="0.01" value={importeAbono} onChange={(evento) => setImporteAbono(evento.target.value)} /></label><div className="egreso-full"><SelectorCuentaFinanciera value={cuentaAbonoId} medioActual={medioAbono} onChange={(id, medio) => { setCuentaAbonoId(id); setMedioAbono(medio); }} /></div></div></div><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setAbono(null)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar abono"}</button></div></form></section></div>}
   </>;
 }
