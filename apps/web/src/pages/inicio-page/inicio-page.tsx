@@ -9,6 +9,7 @@ const EgresoRegistroPage = lazy(() => import("../egreso-registro-page/egreso-reg
 const MovimientosStockPage = lazy(() => import("../movimientos-stock-page/movimientos-stock-page").then((modulo) => ({ default: modulo.MovimientosStockPage })));
 const NuevoIngresoPage = lazy(() => import("../nuevo-ingreso-page/nuevo-ingreso-page").then((modulo) => ({ default: modulo.NuevoIngresoPage })));
 const ClientesPage = lazy(() => import("../clientes-page/clientes-page").then((modulo) => ({ default: modulo.ClientesPage })));
+const ProveedoresPage = lazy(() => import("../proveedores-page/proveedores-page").then((modulo) => ({ default: modulo.ProveedoresPage })));
 const ReportePage = lazy(() => import("../reportes-page/reportes-page").then((modulo) => ({ default: modulo.ReportesPage })));
 const DashboardPage = lazy(() => import("../dashboard-page/dashboard-page").then((modulo) => ({ default: modulo.DashboardPage })));
 const DatosEmisorPage = lazy(() => import("../facturacion-electronica/datos-emisor-page/datos-emisor-page").then((modulo) => ({ default: modulo.DatosEmisorPage })));
@@ -48,7 +49,10 @@ const elementosAside: ModuloAside[] = [
     { nombre: "Datos del emisor", ruta: "/facturacion-electronica/datos-emisor", permiso: "FACTURACION.LEER" },
     { nombre: "Comprobantes emitidos", ruta: "/facturacion-electronica/comprobantes", permiso: "FACTURACION.LEER" },
   ] },
-  { nombre: "Clientes", icono: "personas", hijos: [{ nombre: "Directorio de clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" }] },
+  { nombre: "Contactos", icono: "personas", hijos: [
+    { nombre: "Clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" },
+    { nombre: "Proveedores", ruta: "/personas/proveedores", permiso: "PERSONAS.LEER" },
+  ] },
   { nombre: "Finanzas", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }] },
   { nombre: "Reportes", icono: "reportes", hijos: [
     { nombre: "Inventario", ruta: "/reportes/inventario", permiso: "INVENTARIO.LEER" },
@@ -222,15 +226,15 @@ export function InicioPage() {
               >
                 <Icono nombre={elemento.icono} /><span>{elemento.nombre}</span><i className={seccionAbierta === elemento.nombre ? "submenu-chevron is-open" : "submenu-chevron"} />
               </button>
-              {seccionAbierta === elemento.nombre && (
-                <div className="erp-subnav">
+              <div className={`erp-subnav${seccionAbierta === elemento.nombre ? " is-open" : ""}`} aria-hidden={seccionAbierta !== elemento.nombre} inert={seccionAbierta !== elemento.nombre}>
+                <div className="erp-subnav-inner">
                   {elemento.hijos.map((hijo) => (
                     <button className={`erp-subnav-link${submoduloActivo?.ruta === hijo.ruta ? " is-current" : ""}`} type="button" key={hijo.ruta} aria-current={submoduloActivo?.ruta === hijo.ruta ? "page" : undefined} title={`Abrir ${hijo.nombre.toLocaleLowerCase("es-PE")}`} onClick={() => { navegar(hijo.ruta); setMenuAbierto(false); }}>
                       <span className="subnav-marker" />{hijo.nombre}
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </nav>
@@ -280,7 +284,7 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "modelos" | "unidades" | "compras" | "garantias" | "movimientos"} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
+          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "modelos" | "unidades" | "compras" | "garantias" | "movimientos"} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
           </Suspense>
 
           </div>

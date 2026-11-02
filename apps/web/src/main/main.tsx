@@ -23,6 +23,7 @@ function App() {
         <Route path="/facturacion-electronica/datos-emisor" element={<InicioPage />} />
         <Route path="/facturacion-electronica/comprobantes" element={<InicioPage />} />
         <Route path="/clientes" element={<InicioPage />} />
+        <Route path="/personas/proveedores" element={<InicioPage />} />
         <Route path="/inventario/categorias" element={<InicioPage />} />
         <Route path="/inventario/marcas" element={<InicioPage />} />
         <Route path="/inventario/productos" element={<InicioPage />} />
