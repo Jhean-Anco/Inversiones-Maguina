@@ -25,9 +25,11 @@ function App() {
         <Route path="/inventario/categorias" element={<InicioPage />} />
         <Route path="/inventario/marcas" element={<InicioPage />} />
         <Route path="/inventario/productos" element={<InicioPage />} />
+        <Route path="/inventario/mototaxis" element={<InicioPage />} />
         <Route path="/egresos/compras" element={<InicioPage />} />
         <Route path="/egresos/gastos-operativos" element={<InicioPage />} />
         <Route path="/egresos/activos-herramientas" element={<InicioPage />} />
+        <Route path="/egresos/mototaxis" element={<InicioPage />} />
         <Route path="/inventario/entradas-stock" element={<Navigate to="/egresos/compras" replace />} />
         <Route path="/inventario/movimientos-ajustes" element={<InicioPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
