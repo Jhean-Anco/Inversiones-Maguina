@@ -1,5 +1,6 @@
 import "./proveedores-page.css";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { useNavigate } from "react-router-dom";
 import { servicioIngresos } from "../../services/ingresos.service";
 import { ErrorApi } from "../../services/api-cliente";
@@ -38,6 +39,8 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
 }
 
 function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: DatosProveedorNuevo) => Promise<string | null>; onCerrar: () => void }) {
+  const dialogoRef = useRef<HTMLFormElement>(null);
+  useDialogoFlotante(dialogoRef, true, onCerrar);
   const [tipoDocumento, setTipoDocumento] = useState<"DNI" | "RUC">("RUC");
   const [numeroDocumento, setNumeroDocumento] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [nombreComercial, setNombreComercial] = useState("");
   const [buscando, setBuscando] = useState(false); const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
@@ -53,7 +56,7 @@ function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
     const datos: DatosProveedorNuevo = { tipoDocumento, numeroDocumento, ...(esJuridica ? { razonSocial } : { nombres, apellidoPaterno, apellidoMaterno }), nombreComercial };
     const resultado = await onGuardar(datos); if (resultado) setError(resultado); setGuardando(false);
   }
-  return <div className="proveedores-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onCerrar(); }}><form className="proveedores-form" onSubmit={(evento) => void submit(evento)}><header><div><span className="proveedores-kicker">DIRECTORIO COMERCIAL</span><h2>Registrar proveedor</h2></div><button type="button" aria-label="Cerrar" onClick={onCerrar}>×</button></header>
+  return <div className="proveedores-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onCerrar(); }}><form ref={dialogoRef} className="proveedores-form" role="dialog" aria-modal="true" aria-labelledby="proveedor-form-title" onSubmit={(evento) => void submit(evento)}><header><div><span className="proveedores-kicker">DIRECTORIO COMERCIAL</span><h2 id="proveedor-form-title">Registrar proveedor</h2></div><button type="button" aria-label="Cerrar" onClick={onCerrar}>×</button></header>
     <div className="proveedores-fields"><label>Documento<select value={tipoDocumento} onChange={(evento) => { setTipoDocumento(evento.target.value as "DNI" | "RUC"); setNumeroDocumento(""); setRazonSocial(""); setNombres(""); setApellidoPaterno(""); setApellidoMaterno(""); }}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label><label className="proveedores-document">Número de documento<div><input required inputMode="numeric" maxLength={tipoDocumento === "DNI" ? 8 : 11} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{11}"} value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value.replace(/\D/g, ""))} /><button type="button" disabled={buscando || numeroDocumento.length !== (tipoDocumento === "DNI" ? 8 : 11)} onClick={() => void buscarIdentidad()}>{buscando ? "Buscando…" : "Buscar"}</button></div></label>
       {esJuridica ? <label className="proveedores-wide">Razón social<input required maxLength={180} value={razonSocial} onChange={(evento) => setRazonSocial(evento.target.value)} /></label> : <><label>Nombres<input required maxLength={120} value={nombres} onChange={(evento) => setNombres(evento.target.value)} /></label><label>Apellido paterno<input required maxLength={120} value={apellidoPaterno} onChange={(evento) => setApellidoPaterno(evento.target.value)} /></label><label>Apellido materno<input maxLength={120} value={apellidoMaterno} onChange={(evento) => setApellidoMaterno(evento.target.value)} /></label></>}
       <label className="proveedores-wide">Nombre comercial<input maxLength={180} value={nombreComercial} onChange={(evento) => setNombreComercial(evento.target.value)} placeholder="Opcional" /></label>

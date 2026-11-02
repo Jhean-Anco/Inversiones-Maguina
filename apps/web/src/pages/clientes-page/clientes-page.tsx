@@ -1,5 +1,6 @@
 import "./clientes-page.css";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo } from "../../services/ingresos.service";
 
 const nombreDe = (cliente: ClienteRegistrado) => cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
@@ -49,6 +50,8 @@ export function ClientesPage() {
 }
 
 function FormularioCliente({ onGuardar, onCancelar }: { onGuardar: (datos: DatosClienteNuevo) => Promise<string | null>; onCancelar: () => void }) {
+  const dialogoRef = useRef<HTMLFormElement>(null);
+  useDialogoFlotante(dialogoRef, true, onCancelar);
   const [tipoPersona, setTipoPersona] = useState<"NATURAL" | "JURIDICA">("NATURAL");
   const [tipoDocumento, setTipoDocumento] = useState<DatosClienteNuevo["tipoDocumento"]>("DNI");
   const [numeroDocumento, setNumeroDocumento] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombreComercial, setNombreComercial] = useState(""); const [contactoNombre, setContactoNombre] = useState(""); const [correo, setCorreo] = useState(""); const [telefono, setTelefono] = useState(""); const [direccion, setDireccion] = useState(""); const [direccionEntrega, setDireccionEntrega] = useState(""); const [observacion, setObservacion] = useState("");
@@ -76,7 +79,7 @@ function FormularioCliente({ onGuardar, onCancelar }: { onGuardar: (datos: Datos
     setGuardando(false);
   }
 
-  return <div className="clientes-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancelar(); }}><form className="clientes-modal" onSubmit={(e) => void submit(e)} aria-labelledby="clientes-form-title"><header><div><p className="page-eyebrow">CARTERA COMERCIAL</p><h2 id="clientes-form-title">Registrar cliente</h2></div><button type="button" aria-label="Cerrar" onClick={onCancelar}>×</button></header>
+  return <div className="clientes-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancelar(); }}><form ref={dialogoRef} className="clientes-modal" role="dialog" aria-modal="true" onSubmit={(e) => void submit(e)} aria-labelledby="clientes-form-title"><header><div><p className="page-eyebrow">CARTERA COMERCIAL</p><h2 id="clientes-form-title">Registrar cliente</h2></div><button type="button" aria-label="Cerrar" onClick={onCancelar}>×</button></header>
     <div className="clientes-form-grid">
       <label>Tipo de cliente<select value={tipoPersona} onChange={(e) => { const tipo = e.target.value as "NATURAL" | "JURIDICA"; setTipoPersona(tipo); setTipoDocumento(tipo === "JURIDICA" ? "RUC" : "DNI"); setNumeroDocumento(""); }}><option value="NATURAL">Persona natural</option><option value="JURIDICA">Empresa / organización</option></select></label>
       <label>Documento de identidad<select value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as DatosClienteNuevo["tipoDocumento"])}><option value="RUC">RUC</option>{!esJuridica && <><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></>}</select></label>

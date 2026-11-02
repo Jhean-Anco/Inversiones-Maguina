@@ -36,3 +36,20 @@
 .proveedores-form > footer > button:first-child { padding: 0 14px; border: 1px solid #d5e0ea; border-radius: 9px; background: #fff; color: #49627b; font-weight: 700; cursor: pointer; }
 .proveedores-primary:disabled { opacity: .65; cursor: wait; }
 @media (max-width: 600px) { .proveedores-page { padding: 20px 14px 30px; } .proveedores-heading { align-items: flex-start; flex-direction: column; } .proveedores-fields { grid-template-columns: 1fr; } .proveedores-fields .proveedores-wide { grid-column: auto; } .proveedores-toolbar { grid-template-columns: 1fr; } .proveedores-toolbar label { grid-column: auto; } }
+.proveedores-backdrop { align-items: center; overscroll-behavior: contain; }
+.proveedores-form { overscroll-behavior: contain; scrollbar-gutter: stable; }
+.proveedores-form > header { position: sticky; z-index: 1; top: -22px; margin: -22px -22px 18px; padding: 22px 22px 14px; border-bottom: 1px solid #e8eef4; background: inherit; }
+.proveedores-form > footer { position: sticky; bottom: -22px; margin: 18px -22px -22px; padding: 14px 22px 22px; border-top: 1px solid #e8eef4; background: inherit; }
+.proveedores-page :is(button, input, select):focus-visible { outline: 3px solid #3784bd55; outline-offset: 2px; }
+html[data-theme="oscuro"] .proveedores-page { color: #e1eaf4; }
+html[data-theme="oscuro"] .proveedores-heading { border-color: #314761; }
+html[data-theme="oscuro"] .proveedores-heading p, html[data-theme="oscuro"] .proveedores-kicker, html[data-theme="oscuro"] .proveedores-card p, html[data-theme="oscuro"] .proveedores-card small, html[data-theme="oscuro"] .proveedores-toolbar > span { color: #a9bdd3; }
+html[data-theme="oscuro"] .proveedores-toolbar, html[data-theme="oscuro"] .proveedores-card, html[data-theme="oscuro"] .proveedores-form { border-color: #314761; background: #17263a; color: #e1eaf4; }
+html[data-theme="oscuro"] .proveedores-toolbar label, html[data-theme="oscuro"] .proveedores-fields label, html[data-theme="oscuro"] .proveedores-card h2 { color: #d9e8f8; }
+html[data-theme="oscuro"] .proveedores-toolbar input, html[data-theme="oscuro"] .proveedores-fields input, html[data-theme="oscuro"] .proveedores-fields select, html[data-theme="oscuro"] .proveedores-form > header > button, html[data-theme="oscuro"] .proveedores-form > footer > button:first-child { border-color: #314761; background: #142235; color: #e1eaf4; }
+html[data-theme="oscuro"] .proveedores-form > header, html[data-theme="oscuro"] .proveedores-form > footer { border-color: #314761; }
+html[data-theme="oscuro"] .proveedores-empty { border-color: #314761; color: #a9bdd3; }
+html[data-theme="oscuro"] .proveedores-empty strong { color: #d9e8f8; }
+html[data-theme="oscuro"] .proveedores-avatar { background: #203b57; color: #9bcaff; }
+html[data-theme="oscuro"] .proveedores-document button { border-color: #314761; background: #203b57; color: #9bcaff; }
+@media (max-width: 600px) { .proveedores-backdrop { align-items: end; padding: 8px; } .proveedores-form { max-height: calc(100dvh - 16px); padding: 16px; border-radius: 16px 16px 10px 10px; } .proveedores-form > header { top: -16px; margin: -16px -16px 14px; padding: 16px 16px 12px; } .proveedores-form > footer { bottom: -16px; margin: 14px -16px -16px; padding: 12px 16px 16px; } }

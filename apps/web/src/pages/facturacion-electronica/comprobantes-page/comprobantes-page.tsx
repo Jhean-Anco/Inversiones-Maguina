@@ -4,7 +4,13 @@ import { ErrorApi } from "../../../services/api-cliente";
 import { servicioFacturacionElectronica, type ComprobanteEmitido } from "../../../services/facturacion-electronica.service";
 
 const soles = (monto: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(monto);
-const estadoLegible = (estado: string) => ({ EMITIDO: "Emitido", EMITIDO_DEMO: "Emitido en DEMO", ERROR_NUBEFACT: "Error de emisión", ERROR_NUBEFACT_DEMO: "Error DEMO", NUBEFACT_PENDIENTE: "Pendiente de revisión" }[estado] ?? estado);
+const estadoLegible = (estado: string, ambiente: string | null) => ({
+  EMITIDO: ambiente === "PRODUCCION" ? "Aceptado por SUNAT" : "Emitido",
+  EMITIDO_DEMO: "Generado en DEMO · sin validez tributaria",
+  ERROR_NUBEFACT: "Emisión sin confirmar",
+  ERROR_NUBEFACT_DEMO: "Error de prueba DEMO",
+  NUBEFACT_PENDIENTE: "Envío pendiente de confirmación",
+}[estado] ?? estado);
 
 export function ComprobantesPage() {
   const [items, setItems] = useState<ComprobanteEmitido[]>([]);
@@ -38,9 +44,11 @@ export function ComprobantesPage() {
         const emitido = ["EMITIDO", "EMITIDO_DEMO"].includes(item.estado);
         const estadoClase = emitido ? "is-ok" : item.estado.includes("ERROR") ? "is-error" : "is-pending";
         return <article className="cpe-card" key={item.id}>
-          <header><div><span className="cpe-doc-type">{item.tipoComprobante === "FACTURA" ? "FACTURA" : item.tipoComprobante === "BOLETA" ? "BOLETA DE VENTA" : "REGISTRO ANTERIOR"}</span><strong>{item.codigoComprobante ?? item.codigoVenta}</strong><span>{new Date(item.fecha).toLocaleDateString("es-PE")} · {item.ambiente ?? "Sin ambiente"}</span></div><b className={`cpe-state ${estadoClase}`}>{estadoLegible(item.estado)}</b></header>
+          <header><div><span className="cpe-doc-type">{item.tipoComprobante === "FACTURA" ? "FACTURA" : item.tipoComprobante === "BOLETA" ? "BOLETA DE VENTA" : "REGISTRO ANTERIOR"}</span><strong>{item.codigoComprobante ?? item.codigoVenta}</strong><span>{new Date(item.fecha).toLocaleDateString("es-PE")} · {item.ambiente ?? "Sin ambiente"}</span></div><b className={`cpe-state ${estadoClase}`}>{estadoLegible(item.estado, item.ambiente)}</b></header>
           <div className="cpe-card-grid"><div><small>Cliente</small><strong title={`${item.clienteNombre ?? "Cliente"}${item.clienteNumeroDocumento ? ` · ${item.clienteNumeroDocumento}` : ""}`}>{item.clienteNombre ?? "Cliente"}{item.clienteNumeroDocumento ? ` · ${item.clienteNumeroDocumento}` : ""}</strong></div><div><small>Base</small><strong>{soles(Number(item.subtotal))}</strong></div><div><small>IGV</small><strong>{soles(Number(item.igv))}</strong></div><div><small>Total</small><strong>{soles(Number(item.total))}</strong></div></div>
-          {!emitido && item.mensaje && <p className="cpe-message" role="status">{item.mensaje} Verifica el estado con NubeFact antes de volver a emitir.</p>}
+          {item.estado === "EMITIDO_DEMO" && <p className="cpe-message" role="status">Prueba de integración: este comprobante no fue enviado a SUNAT. Cambiar a producción requiere credenciales y serie reales.</p>}
+          {!emitido && item.mensaje && <p className="cpe-message is-error" role="alert">{item.mensaje} Verifica el estado en NubeFact antes de volver a emitir para evitar duplicados.</p>}
+          {item.estado === "NUBEFACT_PENDIENTE" && <p className="cpe-message" role="status">El envío todavía no tiene confirmación final. No vuelvas a emitir hasta verificar el resultado con NubeFact.</p>}
           {emitido && <footer>{item.enlacePdf && <a href={item.enlacePdf} target="_blank" rel="noreferrer">PDF</a>}{item.enlaceXml && <a href={item.enlaceXml} target="_blank" rel="noreferrer">XML</a>}{item.enlace && <a href={item.enlace} target="_blank" rel="noreferrer">NubeFact</a>}</footer>}
         </article>;
       })}</div>
