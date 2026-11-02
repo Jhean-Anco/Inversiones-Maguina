@@ -52,3 +52,31 @@ html[data-theme="oscuro"] #root .inicio-comparison-band{border-color:#344a5c;bac
 
 .inicio-recharts-months{height:250px}
 @media(max-width:760px){.inicio-recharts-months{height:225px}}
+
+/* Dashboard charts: aligned cards, clear comparison hierarchy, responsive grids. */
+.inicio-chart-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.inicio-chart-grid>.inicio-sales-chart{grid-column:span 8}
+.inicio-chart-grid>.inicio-payment-panel{grid-column:span 4}
+.inicio-chart-grid>.inicio-months-panel,.inicio-chart-grid>.inicio-products-panel{grid-column:span 6}
+.inicio-chart-grid>.inicio-operations-panel{grid-column:1/-1}
+.inicio-chart-grid>.inicio-panel{border-color:#e4ebf0;background:#fff;box-shadow:0 4px 16px #17354b08}
+.inicio-chart-grid>.inicio-panel:hover{border-color:#d7e2e9;box-shadow:0 10px 25px #17354b0d}
+.inicio-chart-grid .inicio-panel-heading{min-height:43px;align-items:flex-start;margin-bottom:12px}
+.inicio-chart-grid .inicio-panel-kicker{margin-bottom:5px;color:#72899b}
+.inicio-chart-grid .inicio-panel-heading h2{font-size:15px;font-weight:720;letter-spacing:-.025em}
+.inicio-chart-grid .inicio-panel-heading p{font-size:10px;line-height:1.5}
+.inicio-chart-grid .inicio-recharts{overflow:hidden}
+.inicio-chart-grid .recharts-cartesian-axis-tick-value{font-size:10px}
+.inicio-chart-grid .recharts-cartesian-grid-horizontal line{stroke:#edf1f4}
+.inicio-chart-grid .recharts-tooltip-wrapper{filter:drop-shadow(0 8px 18px #17354b14)}
+.inicio-recharts-months{height:252px}
+.inicio-recharts-operations{height:252px}
+.inicio-months-panel .recharts-bar-rectangle,.inicio-operations-panel .recharts-bar-rectangle{transition:opacity .18s ease}
+.inicio-months-panel .recharts-bar-rectangle:hover,.inicio-operations-panel .recharts-bar-rectangle:hover{opacity:.78}
+html[data-theme="oscuro"] #root .inicio-chart-grid>.inicio-panel{border-color:#2b4358;background:#17283b;box-shadow:0 5px 18px #0002}
+html[data-theme="oscuro"] #root .inicio-chart-grid>.inicio-panel:hover{border-color:#3a566c;box-shadow:0 12px 28px #0003}
+html[data-theme="oscuro"] #root .inicio-chart-grid .recharts-cartesian-grid-horizontal line{stroke:#2d4357}
+html[data-theme="oscuro"] #root .inicio-chart-grid .recharts-cartesian-axis-tick-value{fill:#aabccb}
+@media(max-width:1050px){.inicio-chart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inicio-chart-grid>.inicio-sales-chart,.inicio-chart-grid>.inicio-operations-panel{grid-column:1/-1}.inicio-chart-grid>.inicio-payment-panel,.inicio-chart-grid>.inicio-months-panel,.inicio-chart-grid>.inicio-products-panel{grid-column:auto}.inicio-chart-grid>.inicio-payment-panel{grid-row:auto}}
+@media(max-width:760px){.inicio-chart-grid{grid-template-columns:1fr;gap:12px}.inicio-chart-grid>.inicio-panel{grid-column:1}.inicio-chart-grid>.inicio-panel{padding:17px}.inicio-chart-grid .inicio-panel-heading{margin-bottom:9px}.inicio-recharts-line{height:245px}.inicio-recharts-months,.inicio-recharts-operations{height:230px}}
+@media(max-width:480px){.inicio-chart-grid>.inicio-panel{padding:15px}.inicio-chart-grid .inicio-panel-heading h2{font-size:14px}.inicio-chart-grid .inicio-panel-heading p{font-size:9px}.inicio-recharts-line{height:220px}.inicio-recharts-months,.inicio-recharts-operations{height:210px}}
