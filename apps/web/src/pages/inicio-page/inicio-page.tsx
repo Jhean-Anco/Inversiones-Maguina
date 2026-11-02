@@ -18,39 +18,49 @@ const MototaxisPage = lazy(() => import("../mototaxis-page/mototaxis-page").then
 import { useSesion } from "../../hooks/use-sesion";
 import { useTema } from "../../components/tema-contexto/tema-contexto";
 import { servicioProductos, type AlertaStockBajo } from "../../services/inventario/productos.service";
-const rutasInventario: Record<string, string> = {
-  Categorías: "/inventario/categorias",
-  Marcas: "/inventario/marcas",
-  Productos: "/inventario/productos",
-  "Movimientos y ajustes": "/inventario/movimientos-ajustes",
-  Compras: "/egresos/compras",
-};
-const rutasEgresos: Record<string, string> = { "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas" };
-const rutasMototaxis: Record<string, string> = { "Resumen de mototaxis": "/mototaxis/resumen", "Catálogo de modelos": "/mototaxis/modelos", Unidades: "/mototaxis/unidades", "Compras y recepción": "/mototaxis/compras", Garantías: "/mototaxis/garantias", "Movimientos y ajustes de mototaxi": "/mototaxis/movimientos" };
-const rutasIngresos: Record<string, string> = { "Nueva venta": "/ingresos/nuevo" };
-const rutasFacturacion: Record<string, string> = { "Datos del emisor": "/facturacion-electronica/datos-emisor", "Comprobantes emitidos": "/facturacion-electronica/comprobantes" };
-const rutasClientes: Record<string, string> = { "Directorio de clientes": "/clientes" };
-const rutasReportes: Record<string, string> = { Inventario: "/reportes/inventario", Ingresos: "/reportes/ingresos" };
-const rutaSubmodulo = (nombre: string) => rutasInventario[nombre] ?? rutasEgresos[nombre] ?? rutasMototaxis[nombre] ?? rutasIngresos[nombre] ?? rutasFacturacion[nombre] ?? rutasClientes[nombre] ?? rutasReportes[nombre];
-const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 3 }).format(Number(valor) || 0);
-
-const elementosAside = [
-  { nombre: "Resumen", icono: "inicio", hijos: [] },
-  { nombre: "Ventas", icono: "venta", hijos: ["Nueva venta"] },
-  { nombre: "Egresos", icono: "egresos", hijos: ["Gastos operativos", "Activos y herramientas"] },
-  { nombre: "Inventario de productos", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Compras", "Movimientos y ajustes"] },
-  { nombre: "Mototaxis", icono: "inventario", hijos: ["Resumen de mototaxis", "Catálogo de modelos", "Unidades", "Compras y recepción", "Garantías", "Movimientos y ajustes de mototaxi"] },
-  { nombre: "Facturación electrónica", icono: "factura", hijos: ["Datos del emisor", "Comprobantes emitidos"] },
-  { nombre: "Clientes", icono: "personas", hijos: ["Directorio de clientes"] },
-  { nombre: "Reportes", icono: "reportes", hijos: ["Inventario", "Ingresos"] },
-  { nombre: "Administración", icono: "administracion", hijos: ["Usuarios", "Roles y permisos"] },
+type PermisoNavegacion = "INGRESOS.CREAR" | "INGRESOS.LEER" | "EGRESOS.LEER" | "INVENTARIO.LEER" | "MOTOTAXIS.LEER" | "FACTURACION.LEER" | "PERSONAS.LEER";
+type SubmoduloAside = { nombre: string; ruta: string; permiso: PermisoNavegacion };
+type ModuloAside = { nombre: string; icono: string; ruta?: string; hijos: SubmoduloAside[] };
+const elementosAside: ModuloAside[] = [
+  { nombre: "Resumen", icono: "inicio", ruta: "/inicio", hijos: [] },
+  { nombre: "Ventas", icono: "venta", hijos: [{ nombre: "Nueva venta", ruta: "/ingresos/nuevo", permiso: "INGRESOS.CREAR" }] },
+  { nombre: "Egresos", icono: "egresos", hijos: [
+    { nombre: "Gastos operativos", ruta: "/egresos/gastos-operativos", permiso: "EGRESOS.LEER" },
+    { nombre: "Activos y herramientas", ruta: "/egresos/activos-herramientas", permiso: "EGRESOS.LEER" },
+  ] },
+  { nombre: "Inventario de productos", icono: "inventario", hijos: [
+    { nombre: "Categorías", ruta: "/inventario/categorias", permiso: "INVENTARIO.LEER" },
+    { nombre: "Marcas", ruta: "/inventario/marcas", permiso: "INVENTARIO.LEER" },
+    { nombre: "Productos", ruta: "/inventario/productos", permiso: "INVENTARIO.LEER" },
+    { nombre: "Compras y recepción", ruta: "/egresos/compras", permiso: "INVENTARIO.LEER" },
+    { nombre: "Movimientos y ajustes", ruta: "/inventario/movimientos-ajustes", permiso: "INVENTARIO.LEER" },
+  ] },
+  { nombre: "Mototaxis", icono: "mototaxis", hijos: [
+    { nombre: "Resumen", ruta: "/mototaxis/resumen", permiso: "MOTOTAXIS.LEER" },
+    { nombre: "Modelos", ruta: "/mototaxis/modelos", permiso: "MOTOTAXIS.LEER" },
+    { nombre: "Unidades", ruta: "/mototaxis/unidades", permiso: "MOTOTAXIS.LEER" },
+    { nombre: "Compras y recepción", ruta: "/mototaxis/compras", permiso: "MOTOTAXIS.LEER" },
+    { nombre: "Movimientos y ajustes", ruta: "/mototaxis/movimientos", permiso: "MOTOTAXIS.LEER" },
+    { nombre: "Garantías", ruta: "/mototaxis/garantias", permiso: "MOTOTAXIS.LEER" },
+  ] },
+  { nombre: "Facturación electrónica", icono: "factura", hijos: [
+    { nombre: "Datos del emisor", ruta: "/facturacion-electronica/datos-emisor", permiso: "FACTURACION.LEER" },
+    { nombre: "Comprobantes emitidos", ruta: "/facturacion-electronica/comprobantes", permiso: "FACTURACION.LEER" },
+  ] },
+  { nombre: "Clientes", icono: "personas", hijos: [{ nombre: "Directorio de clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" }] },
+  { nombre: "Reportes", icono: "reportes", hijos: [
+    { nombre: "Inventario", ruta: "/reportes/inventario", permiso: "INVENTARIO.LEER" },
+    { nombre: "Ingresos", ruta: "/reportes/ingresos", permiso: "INGRESOS.LEER" },
+  ] },
 ];
+const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 3 }).format(Number(valor) || 0);
 
 function Icono({ nombre }: { nombre: string }) {
   const paths: Record<string, ReactNode> = {
     inicio: <><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="5" rx="2" /><rect x="13" y="10" width="8" height="11" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /></>,
     venta: <><path d="M4 5h2l2.2 10.2a2 2 0 0 0 2 1.6h7.5a2 2 0 0 0 1.9-1.4L21 9H7" /><circle cx="11" cy="20" r="1" /><circle cx="18" cy="20" r="1" /></>,
     inventario: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 8 9 5 9-5M3 13l9 5 9-5M3 8v9l9 5 9-5V8" /></>,
+    mototaxis: <><path d="M4 16h1l2-5h8l3 5h2" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /><path d="M8 11l1-3h5l2 3M3 13h4M19 13h2" /></>,
     egresos: <><path d="M4 5h16v14H4z" /><path d="M8 9h8M8 13h5M12 3v4M12 17v4" /><path d="m9 18 3 3 3-3" /></>,
     factura: <><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 13h7M9 17h7" /></>,
     personas: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6V20" /></>,
@@ -90,13 +100,14 @@ export function InicioPage() {
     seccionPendienteRef.current = null;
   }, []);
   const contenidoRef = useRef<HTMLDivElement>(null);
-  const vistaInventario = ["/inventario/categorias", "/inventario/marcas", "/inventario/productos", "/inventario/movimientos-ajustes", "/egresos/compras"].includes(ubicacion.pathname);
-  const vistaMototaxis = ubicacion.pathname.startsWith("/mototaxis/") || ubicacion.pathname === "/mototaxis";
-  const vistaEgresos = ubicacion.pathname.startsWith("/egresos/") && ubicacion.pathname !== "/egresos/compras";
-  const vistaIngresos = ubicacion.pathname.startsWith("/ingresos/");
-  const vistaClientes = ubicacion.pathname.startsWith("/clientes");
-  const vistaFacturacion = ubicacion.pathname.startsWith("/facturacion-electronica/");
-  const vistaReportes = ubicacion.pathname.startsWith("/reportes/");
+  const rutaActual = ubicacion.pathname;
+  const moduloActivo = elementosAside.find((modulo) => modulo.hijos.some((hijo) => hijo.ruta === rutaActual || (rutaActual === "/mototaxis" && hijo.ruta === "/mototaxis/resumen")));
+  const submoduloActivo = moduloActivo?.hijos.find((hijo) => hijo.ruta === rutaActual || (rutaActual === "/mototaxis" && hijo.ruta === "/mototaxis/resumen"));
+  const vistaInventario = moduloActivo?.nombre === "Inventario de productos";
+  const vistaMototaxis = moduloActivo?.nombre === "Mototaxis";
+  const vistaEgresos = moduloActivo?.nombre === "Egresos";
+  const puedeNavegar = (permiso: PermisoNavegacion) => perfil?.permisos.includes(permiso) ?? false;
+  const navegacionVisible = elementosAside.map((modulo) => ({ ...modulo, hijos: modulo.hijos.filter((hijo) => puedeNavegar(hijo.permiso)) })).filter((modulo) => modulo.ruta || modulo.hijos.length > 0);
   const dashboardActivo = ubicacion.pathname === "/inicio" || ubicacion.pathname === "/";
   const puedeLeerInventario = perfil?.permisos.includes("INVENTARIO.LEER") ?? false;
 
@@ -136,16 +147,13 @@ export function InicioPage() {
   useEffect(() => {
     cancelarAperturaSubmenu();
     setColapsoDashboard(false);
-    if (vistaInventario) setSeccionAbierta("Inventario de productos");
-    else if (vistaMototaxis) setSeccionAbierta("Mototaxis");
-    else if (vistaEgresos) setSeccionAbierta("Egresos");
-    else if (vistaIngresos) setSeccionAbierta("Ingresos");
-    else if (vistaClientes) setSeccionAbierta("Clientes");
-    else if (vistaFacturacion) setSeccionAbierta("Facturación electrónica");
-    else if (vistaReportes) setSeccionAbierta("Reportes");
-    else setSeccionAbierta(null);
+    setSeccionAbierta(moduloActivo?.nombre ?? null);
     setMenuAbierto(false);
-  }, [ubicacion.pathname, vistaInventario, vistaMototaxis, vistaEgresos, vistaIngresos, vistaClientes, vistaFacturacion, vistaReportes, dashboardActivo, cancelarAperturaSubmenu]);
+  }, [ubicacion.pathname, moduloActivo?.nombre, dashboardActivo, cancelarAperturaSubmenu]);
+
+  useEffect(() => {
+    if (ubicacion.pathname.startsWith("/mototaxis/") && !moduloActivo) navegar("/mototaxis/resumen", { replace: true });
+  }, [ubicacion.pathname, moduloActivo, navegar]);
 
   useEffect(() => () => cancelarAperturaSubmenu(), [cancelarAperturaSubmenu]);
 
@@ -182,20 +190,14 @@ export function InicioPage() {
         </div>
 
         <nav className="erp-navigation" aria-label="Navegación principal">
-          {elementosAside.filter((elemento) => (elemento.nombre !== "Egresos" || perfil?.permisos.includes("EGRESOS.LEER")) && (elemento.nombre !== "Mototaxis" || perfil?.permisos.includes("MOTOTAXIS.LEER"))).map((elemento) => elemento.hijos.length === 0 ? (
-            elemento.nombre === "Resumen" ? (
-              <Link className={`erp-nav-link erp-nav-direct${dashboardActivo ? " is-active" : ""}`} key={elemento.nombre} to="/inicio" aria-current={dashboardActivo ? "page" : undefined} onClick={() => { cancelarAperturaSubmenu(); setColapsoDashboard(true); setMenuAbierto(false); if (window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true); }}>
+          {navegacionVisible.map((elemento) => elemento.ruta ? (
+              <Link className={`erp-nav-link erp-nav-direct${dashboardActivo ? " is-active" : ""}`} key={elemento.nombre} to={elemento.ruta} aria-current={dashboardActivo ? "page" : undefined} onClick={() => { cancelarAperturaSubmenu(); setColapsoDashboard(true); setMenuAbierto(false); if (window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true); }}>
                 <Icono nombre={elemento.icono} /><span>{elemento.nombre}</span>
               </Link>
-            ) : (
-              <div className="erp-nav-link erp-nav-direct is-pending" key={elemento.nombre} aria-disabled="true" title="Módulo en preparación">
-                <Icono nombre={elemento.icono} /><span>{elemento.nombre}</span><i />
-              </div>
-            )
           ) : (
             <div className="erp-nav-group" key={elemento.nombre}>
               <button
-                className={`erp-nav-link erp-nav-module-button${(vistaInventario && elemento.nombre === "Inventario de productos") || (vistaMototaxis && elemento.nombre === "Mototaxis") || (vistaEgresos && elemento.nombre === "Egresos") || (vistaIngresos && elemento.nombre === "Ventas") || (vistaFacturacion && elemento.nombre === "Facturación electrónica") || (vistaClientes && elemento.nombre === "Clientes") || (vistaReportes && elemento.nombre === "Reportes") ? " is-current" : ""}`}
+                className={`erp-nav-link erp-nav-module-button${moduloActivo?.nombre === elemento.nombre ? " is-current" : ""}`}
                 type="button"
                 aria-expanded={seccionAbierta === elemento.nombre}
                 onClick={() => {
@@ -220,8 +222,8 @@ export function InicioPage() {
               {seccionAbierta === elemento.nombre && (
                 <div className="erp-subnav">
                   {elemento.hijos.map((hijo) => (
-                    <button className={`erp-subnav-link${ubicacion.pathname === rutaSubmodulo(hijo) ? " is-current" : ""}`} type="button" key={hijo} disabled={!rutaSubmodulo(hijo)} title={rutaSubmodulo(hijo) ? `Gestionar ${hijo.toLocaleLowerCase("es-PE")}` : "Submódulo en preparación"} onClick={() => { const ruta = rutaSubmodulo(hijo); if (ruta) navegar(ruta); setMenuAbierto(false); }}>
-                      <span className="subnav-marker" />{hijo}
+                    <button className={`erp-subnav-link${submoduloActivo?.ruta === hijo.ruta ? " is-current" : ""}`} type="button" key={hijo.ruta} aria-current={submoduloActivo?.ruta === hijo.ruta ? "page" : undefined} title={`Abrir ${hijo.nombre.toLocaleLowerCase("es-PE")}`} onClick={() => { navegar(hijo.ruta); setMenuAbierto(false); }}>
+                      <span className="subnav-marker" />{hijo.nombre}
                     </button>
                   ))}
                 </div>
