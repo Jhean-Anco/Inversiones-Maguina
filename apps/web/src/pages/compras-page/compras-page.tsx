@@ -14,11 +14,11 @@ export function ComprasPage({ permisos = [] }: { permisos?: string[] }) {
   const [productoFormularioAbierto, setProductoFormularioAbierto] = useState(false);
   return <>
     <CatalogoListado
-      titulo="Compras"
-      descripcion="Registra las compras recibidas y actualiza las existencias de tu inventario."
-      etiquetaCrear="Nueva compra"
-      entidadSingular="compra"
-      tituloListado="Historial de compras"
+      titulo="Compras de productos"
+      descripcion="Registra productos y repuestos comprados para mantener actualizado el inventario."
+      etiquetaCrear="Nueva compra de productos"
+      entidadSingular="compra de productos"
+      tituloListado="Historial de compras de productos"
       registros={modulo.entradas}
       totalRegistros={modulo.total}
       visibles={modulo.entradas}
@@ -26,8 +26,8 @@ export function ComprasPage({ permisos = [] }: { permisos?: string[] }) {
       mensajeCarga="Cargando compras…"
       error={modulo.modalAbierto ? "" : modulo.error}
       iconoVacio="↓"
-      tituloVacio="Aún no hay compras"
-      descripcionVacio="Registra la primera compra recibida para empezar a controlar las existencias."
+      tituloVacio="Aún no hay compras de productos"
+      descripcionVacio="Registra la primera compra de productos para empezar a controlar las existencias."
       pagina={modulo.pagina}
       porPagina={modulo.porPagina}
       totalPaginas={modulo.totalPaginas}

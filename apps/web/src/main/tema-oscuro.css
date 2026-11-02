@@ -9,9 +9,9 @@ html[data-theme="oscuro"] #root .stock-evidence-section{background:var(--tema-su
 html[data-theme="oscuro"] #root .stock-evidence-upload input{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-document-add-line,html[data-theme="oscuro"] #root .stock-document-receive-line{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-document-line{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-document-line-fields input,html[data-theme="oscuro"] #root .stock-document-total input{background:var(--tema-superficie)!important}
+
+
+
 html[data-theme="oscuro"] #root .producto-card-visual{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-form{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .login-panel{background:var(--tema-superficie)!important}
@@ -291,12 +291,12 @@ html[data-theme="oscuro"] #root .stock-evidence-section legend{color:#788da0!imp
 html[data-theme="oscuro"] #root .stock-evidence-upload{color:#7a8d9f!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{color:#798d9f!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{color:#688eb0!important}
-html[data-theme="oscuro"] #root .stock-upload-hint,html[data-theme="oscuro"] #root .stock-inventory-receipt-help,html[data-theme="oscuro"] #root .stock-document-lines-heading p{color:#798da0!important}
-html[data-theme="oscuro"] #root .stock-document-add-line,html[data-theme="oscuro"] #root .stock-document-receive-line{color:#688faf!important}
-html[data-theme="oscuro"] #root .stock-document-line > header{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-document-line-fields label,html[data-theme="oscuro"] #root .stock-document-total label{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .stock-document-line-fields input,html[data-theme="oscuro"] #root .stock-document-total input{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .stock-document-total > strong{color:#768da2!important}
+
+
+
+
+
+
 html[data-theme="oscuro"] #root .login-content h1{color:#7f8c9c!important}
 html[data-theme="oscuro"] #root .login-form > label,html[data-theme="oscuro"] #root .password-heading label{color:#818b9a!important}
 html[data-theme="oscuro"] #root .visibility-button{color:#7b8ca0!important}
@@ -742,9 +742,9 @@ html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] 
 html[data-theme="oscuro"] #root .stock-evidence-section{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-document-add-line,html[data-theme="oscuro"] #root .stock-document-receive-line{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-document-line{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-document-line-fields input,html[data-theme="oscuro"] #root .stock-document-total input{border-color:var(--tema-borde)!important}
+
+
+
 html[data-theme="oscuro"] #root .login-panel{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .login-form input:not([type="checkbox"]){border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .today-chip{border-color:var(--tema-borde)!important}

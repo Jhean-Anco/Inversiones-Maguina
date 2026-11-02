@@ -12,16 +12,16 @@ type Props = Pick<ModuloEntradas,
   | "productoElegido" | "seleccionarProductoCompra" | "limpiarProductoElegido"
   | "cantidadProducto" | "setCantidadProducto" | "costoProducto" | "setCostoProducto"
   | "detalles" | "setDetalles" | "totalBorrador" | "agregarDetalle" | "quitarDetalle" | "guardar"
-> & Pick<ModuloEntradas, "totalDocumento" | "setTotalDocumento" | "totalDocumentoBorrador" | "detallesDocumento" | "actualizarDetalleDocumento" | "agregarDetalleDocumento" | "prepararRecepcionDocumento" | "quitarDetalleDocumento" | "archivoEvidencia" | "seleccionarEvidencia" | "proveedoresEncontrados" | "buscandoProveedores" | "proveedorNoEncontrado" | "datosProveedorEditables" | "setDatosProveedorEditables" | "buscarProveedor" | "seleccionarProveedor"> & { alAgregarProducto: () => void };
+> & Pick<ModuloEntradas, "archivoEvidencia" | "seleccionarEvidencia" | "proveedoresEncontrados" | "buscandoProveedores" | "proveedorNoEncontrado" | "datosProveedorEditables" | "setDatosProveedorEditables" | "buscarProveedor" | "seleccionarProveedor"> & { alAgregarProducto: () => void };
 
-export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, medioPago, setMedioPago, montoPagado, setMontoPagado, totalDocumento, setTotalDocumento, totalDocumentoBorrador, detallesDocumento, actualizarDetalleDocumento, agregarDetalleDocumento, prepararRecepcionDocumento, archivoEvidencia, seleccionarEvidencia, quitarDetalleDocumento, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto, detalles, setDetalles, totalBorrador, agregarDetalle, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, setDatosProveedorEditables, buscarProveedor, seleccionarProveedor }: Props) {
+export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, medioPago, setMedioPago, montoPagado, setMontoPagado, archivoEvidencia, seleccionarEvidencia, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto, detalles, setDetalles, totalBorrador, agregarDetalle, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, setDatosProveedorEditables, buscarProveedor, seleccionarProveedor }: Props) {
   function enviar(evento: FormEvent<HTMLFormElement>) { void guardar(evento); }
   return <div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
     <section className="catalog-modal stock-entry-modal" role="dialog" aria-modal="true" aria-labelledby="stock-entry-title">
       <button className="catalog-modal-close" type="button" aria-label="Cerrar compra" onClick={cerrarModal}>×</button>
       <form className="catalog-form stock-entry-form" onSubmit={enviar}>
         <div className="stock-entry-form-scroll">
-        <div className="catalog-form-title"><span aria-hidden="true">↓</span><div><h2 id="stock-entry-title">Nueva compra</h2><p>Registra el comprobante de compra. Puedes anotar servicios o gastos sin mover stock; solo los productos recibidos abajo actualizan existencias.</p></div></div>
+        <div className="catalog-form-title"><span aria-hidden="true">↓</span><div><h2 id="stock-entry-title">Nueva compra de productos</h2><p>Registra el comprobante del proveedor y agrega los productos que recibiste para actualizar existencias.</p></div></div>
         {error && <div className="catalog-alert" role="alert">{error}</div>}
         <fieldset className="stock-entry-section"><legend>Documento y proveedor</legend>
           <div className="stock-entry-fields">
@@ -41,26 +41,9 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
             <label className="stock-entry-observation">Observación <span className="stock-field-optional">Opcional</span><input value={observacion} onChange={(evento) => setObservacion(evento.target.value)} maxLength={2000} placeholder="Detalle adicional de esta compra" /></label>
           </div>
         </fieldset>
-        <fieldset className="stock-entry-section stock-document-lines-section"><legend>Según el documento</legend>
-          <div className="stock-document-lines-heading"><p>Estas líneas conservan lo que indica la factura o boleta. No actualizan existencias.</p><button className="stock-document-add-line" type="button" onClick={agregarDetalleDocumento}>+ Agregar línea</button></div>
-          {detallesDocumento.length ? <div className="stock-document-lines">{detallesDocumento.map((linea, indice) => <article className="stock-document-line" key={linea.clave}>
-            <header><strong>Línea {indice + 1}</strong><button className="producto-remove-row" type="button" aria-label={`Quitar línea ${indice + 1} del documento`} onClick={() => quitarDetalleDocumento(linea.clave)}>×</button></header>
-            <div className="stock-document-line-fields">
-              <label className="stock-document-line-description">Descripción<input value={linea.descripcion} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "descripcion", evento.target.value)} maxLength={500} /></label>
-              <label>Código<input value={linea.codigo} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "codigo", evento.target.value)} maxLength={100} /></label>
-              <label>Unidad<input value={linea.unidad} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "unidad", evento.target.value)} maxLength={40} /></label>
-              <label>Cantidad<input type="number" min="0.001" step="0.001" value={linea.cantidad} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "cantidad", evento.target.value)} /></label>
-              <label>Precio unitario<input type="number" min="0" step="0.0001" value={linea.costoUnitario} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "costoUnitario", evento.target.value)} /></label>
-              <label>Descuento<input type="number" min="0" step="0.01" value={linea.descuento} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "descuento", evento.target.value)} /></label>
-              <label>Total de línea<input type="number" min="0" step="0.01" value={linea.total} onChange={(evento) => actualizarDetalleDocumento(linea.clave, "total", evento.target.value)} /></label>
-            </div>
-            <button className="stock-document-receive-line" type="button" onClick={() => prepararRecepcionDocumento(linea)}>Preparar recepción de esta línea <span aria-hidden="true">→</span></button>
-          </article>)}</div> : <div className="stock-entry-empty-lines"><strong>Aún no se han agregado líneas del documento</strong><small>Agrega las líneas manualmente si deseas conservar el detalle indicado por el proveedor.</small></div>}
-          <div className="stock-document-total"><label>Total según el documento (S/)<input type="number" min="0" step="0.01" value={totalDocumento} onChange={(evento) => setTotalDocumento(evento.target.value)} placeholder={totalDocumentoBorrador.toFixed(2)} /></label><strong>S/ {totalDocumentoBorrador.toFixed(2)}</strong></div>
-        </fieldset>
         
-        <fieldset className="stock-entry-section stock-inventory-receipt-section"><legend>Recepción de inventario</legend>
-          <p className="stock-inventory-receipt-help">Registra aquí solamente lo que llegó físicamente. Estas cantidades son las que actualizarán el stock.</p>
+        <fieldset className="stock-entry-section stock-purchase-products-section"><legend>Productos de la compra</legend>
+          <p className="stock-purchase-products-help">Agrega los productos que compraste. La cantidad y el costo actualizan el inventario disponible.</p>
           <div className="stock-product-search">
             <div className="stock-product-search-field">
               <div className="stock-product-search-row">
@@ -82,7 +65,7 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
           </div>
           {detalles.length ? <div className="stock-entry-lines-wrap"><table className="stock-entry-lines"><thead><tr><th>Producto</th><th>Presentación</th><th>Cantidad</th><th>Unidades base</th><th>Costo</th><th>Subtotal</th><th /></tr></thead><tbody>
             {detalles.map((detalle, indice) => <tr key={detalle.clave}>
-              <td><strong>{detalle.nombre}</strong><small>{detalle.codigo}</small><small>{detalle.detalleDocumentoId ? `Vinculado: ${detallesDocumento.find((linea) => linea.clave === detalle.detalleDocumentoId)?.descripcion ?? "línea del documento"}` : "No vinculado a una línea del documento"}</small></td><td>{detalle.presentacion} · {detalle.unidad}</td>
+              <td><strong>{detalle.nombre}</strong><small>{detalle.codigo}</small></td><td>{detalle.presentacion} · {detalle.unidad}</td>
               <td><input aria-label={`Cantidad de ${detalle.nombre}`} type="number" min="0.001" step="0.001" value={detalle.cantidad} onChange={(evento) => setDetalles((actuales) => actuales.map((fila, index) => index === indice ? { ...fila, cantidad: evento.target.value } : fila))} /></td>
               <td>{(Number(detalle.cantidad) * detalle.factor).toFixed(3)}</td>
               <td><input aria-label={`Costo de ${detalle.nombre}`} type="number" min="0" step="0.0001" value={detalle.costoUnitario} onChange={(evento) => setDetalles((actuales) => actuales.map((fila, index) => index === indice ? { ...fila, costoUnitario: evento.target.value } : fila))} /></td>
@@ -90,11 +73,11 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
               <td><button className="producto-remove-row" type="button" aria-label={`Quitar ${detalle.nombre}`} onClick={() => quitarDetalle(detalle.clave)}>×</button></td>
             </tr>)}
           </tbody></table></div> : <div className="stock-entry-empty-lines"><span aria-hidden="true">▤</span><strong>Aún no agregas productos</strong><small>Busca un artículo, indica cuánto recibiste y su costo de compra.</small></div>}
-          <div className="stock-entry-total"><span>Total recibido en inventario</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div>
+          <div className="stock-entry-total"><span>Total de la compra</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div>
           <div className="stock-payment-fields">
-            <label>Monto pagado ahora (S/)<input type="number" min="0" max={(detallesDocumento.length ? totalDocumentoBorrador : totalBorrador).toFixed(2)} step="0.01" value={montoPagado} onChange={(evento) => setMontoPagado(evento.target.value)} /></label>
+            <label>Monto pagado ahora (S/)<input type="number" min="0" max={totalBorrador.toFixed(2)} step="0.01" value={montoPagado} onChange={(evento) => setMontoPagado(evento.target.value)} /></label>
             <label>Medio de pago<select value={medioPago} onChange={(evento) => setMedioPago(evento.target.value)} disabled={Number(montoPagado) <= 0}><option value="">No aplica por ahora</option><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_DIGITAL">Billetera digital</option><option value="OTRO">Otro</option></select></label>
-            <div className="stock-payment-balance"><span>Saldo del documento</span><strong>S/ {Math.max(0, (detallesDocumento.length ? totalDocumentoBorrador : totalBorrador) - (Number(montoPagado) || 0)).toFixed(2)}</strong></div>
+            <div className="stock-payment-balance"><span>Saldo de la compra</span><strong>S/ {Math.max(0, totalBorrador - (Number(montoPagado) || 0)).toFixed(2)}</strong></div>
           </div>
         </fieldset>
         <fieldset className="stock-entry-section stock-evidence-section"><legend>Evidencia de compra</legend>
@@ -102,7 +85,7 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
           {archivoEvidencia && <span className="stock-evidence-name">Archivo seleccionado: {archivoEvidencia.name}</span>}
         </fieldset>
         </div>
-        <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={cerrarModal}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || (!detalles.length && !detallesDocumento.length)}>{guardando ? "Registrando…" : "Registrar compra"}</button></div>
+        <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={cerrarModal}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || !detalles.length}>{guardando ? "Registrando…" : "Registrar compra"}</button></div>
       </form>
     </section>
   </div>;

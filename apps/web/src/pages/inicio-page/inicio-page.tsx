@@ -23,7 +23,7 @@ const rutasInventario: Record<string, string> = {
   Productos: "/inventario/productos",
   "Movimientos y ajustes": "/inventario/movimientos-ajustes",
 };
-const rutasEgresos: Record<string, string> = { Compras: "/egresos/compras", "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas" };
+const rutasEgresos: Record<string, string> = { Compras: "/egresos/compras", "Gastos operativos": "/egresos/gastos-operativos", "Activos y herramientas": "/egresos/activos-herramientas", "Compra de mototaxi": "/egresos/mototaxis" };
 const rutasIngresos: Record<string, string> = { "Nueva venta": "/ingresos/nuevo" };
 const rutasFacturacion: Record<string, string> = { "Datos del emisor": "/facturacion-electronica/datos-emisor", "Comprobantes emitidos": "/facturacion-electronica/comprobantes" };
 const rutasClientes: Record<string, string> = { "Directorio de clientes": "/clientes" };
@@ -34,7 +34,7 @@ const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximu
 const elementosAside = [
   { nombre: "Resumen", icono: "inicio", hijos: [] },
   { nombre: "Ingresos", icono: "venta", hijos: ["Nueva venta"] },
-  { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Gastos operativos", "Activos y herramientas"] },
+  { nombre: "Egresos", icono: "egresos", hijos: ["Compras", "Compra de mototaxi", "Gastos operativos", "Activos y herramientas"] },
   { nombre: "Inventario", icono: "inventario", hijos: ["Categorías", "Marcas", "Productos", "Movimientos y ajustes"] },
   { nombre: "Facturación electrónica", icono: "factura", hijos: ["Datos del emisor", "Comprobantes emitidos"] },
   { nombre: "Clientes", icono: "personas", hijos: ["Directorio de clientes"] },
@@ -270,7 +270,7 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
+          {ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/facturacion-electronica/datos-emisor" ? <DatosEmisorPage /> : ubicacion.pathname === "/facturacion-electronica/comprobantes" ? <ComprobantesPage /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/ingresos/nuevo" ? <NuevoIngresoPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/egresos/mototaxis" ? <EgresoRegistroPage tipo="MOTOTAXI" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
           </Suspense>
 
           </div>

@@ -51,23 +51,23 @@ html[data-theme="oscuro"] .stock-provider-results { border-color: var(--tema-bor
 html[data-theme="oscuro"] .stock-provider-results button { background: #192b41; color: #d8e8f8; }
 html[data-theme="oscuro"] .stock-provider-results button:hover { background: #243b57; }
 html[data-theme="oscuro"] .stock-provider-results button span { color: #b9cee3; }
-.stock-upload-hint, .stock-inventory-receipt-help, .stock-document-lines-heading p { margin: 0; color: #71869b; font-size: 11px; font-weight: 500; line-height: 1.45; }
-.stock-document-lines-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
-.stock-document-add-line, .stock-document-receive-line { min-height: 36px; border: 1px solid #c8d9e9; border-radius: 8px; padding: 0 11px; background: #f5f9fd; color: #1c5687; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
-.stock-document-line { border: 1px solid #e1e9f1; border-radius: 10px; padding: 12px; background: #fbfcfe; }
-.stock-document-line > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #294765; font-size: 12px; }
-.stock-document-line-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
-.stock-document-line-fields label, .stock-document-total label { display: grid; gap: 5px; color: #4c657d; font-size: 10px; font-weight: 750; }
-.stock-document-line-fields input, .stock-document-total input { width: 100%; min-width: 0; min-height: 35px; border: 1px solid #d9e3ed; border-radius: 7px; padding: 0 8px; background: #fff; color: #203d59; font: inherit; font-size: 12px; }
-.stock-document-line-description { grid-column: span 2; }
-.stock-document-receive-line { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.stock-document-receive-line span { font-size: 15px; }
-.stock-document-total { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-top: 12px; border-top: 1px solid #e3eaf1; padding-top: 11px; }
-.stock-document-total label { width: min(260px, 60%); }
-.stock-document-total > strong { color: #173d62; font-size: 15px; white-space: nowrap; }
-.stock-inventory-receipt-help { margin: 0 0 12px; }
-@media (max-width: 760px) { .stock-document-line-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .stock-document-line-description { grid-column: 1 / -1; } }
-@media (max-width: 760px) { .stock-document-lines-heading { align-items: flex-start; flex-direction: column; } }
+.stock-purchase-products-help { margin: 0 0 12px; }
 @media (max-width: 760px) {  }
 @media (max-width: 520px) {  }
+
+.stock-purchase-products-section { position: relative; overflow: visible; border: 1px solid #cbdce8; border-radius: 16px; padding: 16px 18px 18px; background: linear-gradient(145deg, #fff 0%, #f7fbfd 100%); box-shadow: 0 8px 22px #17354b0a; }
+.stock-purchase-products-section legend { padding: 0 10px; color: #173c5c; font-size: 15px; font-weight: 850; letter-spacing: -.02em; }
+.stock-purchase-products-help { margin: 0 0 16px; color: #70859a; font-size: 12px; line-height: 1.55; }
+.stock-purchase-products-section .stock-entry-add-fields { margin-top: 16px; }
+.stock-purchase-products-section .stock-entry-empty-lines { min-height: 112px; border-color: #d5e3ec; border-radius: 13px; background: #fbfdfe; }
+.stock-purchase-products-section .stock-entry-total { margin-top: 15px; border-top: 1px solid #dce7ed; padding: 14px 2px 4px; color: #526e83; font-size: 12px; }
+.stock-purchase-products-section .stock-entry-total strong { color: #173e62; font-size: 23px; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.stock-purchase-products-section .stock-payment-fields { margin-top: 14px; border: 1px solid #d6e3eb; border-radius: 13px; padding: 15px; background: #f3f8fb; }
+.stock-purchase-products-section .stock-payment-balance { border-color: #d9e5ec; }
+html[data-theme="oscuro"] .stock-purchase-products-section { border-color: #38546a; background: linear-gradient(145deg, #172b3d, #142538); box-shadow: 0 8px 22px #0002; }
+html[data-theme="oscuro"] .stock-purchase-products-section legend { color: #dceaf4; }
+html[data-theme="oscuro"] .stock-purchase-products-help { color: #afc2d1; }
+html[data-theme="oscuro"] .stock-purchase-products-section .stock-entry-empty-lines { border-color: #344e63; background: #192e42; }
+html[data-theme="oscuro"] .stock-purchase-products-section .stock-entry-total strong { color: #e0ebf3; }
+html[data-theme="oscuro"] .stock-purchase-products-section .stock-payment-fields { border-color: #344e63; background: #192e42; }
+@media (max-width: 600px) { .stock-purchase-products-section { padding: 13px 12px 14px; border-radius: 13px; } .stock-purchase-products-section .stock-payment-fields { padding: 12px; } .stock-purchase-products-section .stock-entry-total strong { font-size: 20px; } }

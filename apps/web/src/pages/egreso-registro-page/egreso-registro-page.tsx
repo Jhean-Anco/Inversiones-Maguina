@@ -17,6 +17,7 @@ const soles = (valor: string | number) => `S/ ${Number(valor).toFixed(2)}`;
 const categoriasPorTipo: Record<TipoEgreso, string[]> = {
   GASTO_OPERATIVO: ["Alquiler", "Servicios básicos", "Internet y telefonía", "Mantenimiento", "Transporte y flete", "Publicidad", "Suministros", "Gastos bancarios", "Otro"],
   ACTIVO_HERRAMIENTA: ["Herramientas de taller", "Equipos", "Mobiliario", "Equipos informáticos", "Otro"],
+  MOTOTAXI: ["Compra de mototaxi"],
 };
 
 export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
@@ -43,6 +44,10 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
   const [monto, setMonto] = useState("");
   const [importeInicial, setImporteInicial] = useState("");
   const [identificadorActivo, setIdentificadorActivo] = useState("");
+  const [mototaxiMarca, setMototaxiMarca] = useState("");
+  const [mototaxiModelo, setMototaxiModelo] = useState("");
+  const [mototaxiNumeroMotor, setMototaxiNumeroMotor] = useState("");
+  const [mototaxiNumeroChasis, setMototaxiNumeroChasis] = useState("");
   const [observacion, setObservacion] = useState("");
   const [abono, setAbono] = useState<Egreso | null>(null);
   const [fechaAbono, setFechaAbono] = useState(fechaHoy());
@@ -71,7 +76,8 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
   function abrirFormulario() {
     setFecha(fechaHoy()); setCategoria(categoriasPorTipo[tipo][0]); setConcepto(""); setBeneficiario("");
     setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO");
-    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setObservacion(""); setError(""); setModal(true);
+    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setMototaxiMarca(""); setMototaxiModelo("");
+    setMototaxiNumeroMotor(""); setMototaxiNumeroChasis(""); setObservacion(""); setError(""); setModal(true);
   }
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
@@ -80,10 +86,14 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
     if (!Number.isFinite(importe) || importe <= 0 || Number(importe.toFixed(2)) !== importe) { setError("Ingresa un importe mayor que cero con hasta dos decimales."); return; }
     if (!Number.isFinite(inicial) || inicial <= 0 || inicial > importe || Number(inicial.toFixed(2)) !== inicial) { setError("El primer pago debe ser positivo y no superar el importe registrado."); return; }
     const datos: DatosEgreso = {
-      tipo, fecha, categoria, concepto: concepto.trim(), beneficiario: beneficiario.trim() || null,
+      tipo, fecha, categoria, concepto: tipo === "MOTOTAXI" ? "Compra de mototaxi " + mototaxiMarca.trim() + " " + mototaxiModelo.trim() : concepto.trim(), beneficiario: beneficiario.trim() || null,
       documentoTipo: documentoTipo || null, documentoNumero: documentoNumero.trim() || null,
       proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", medioPago, monto: importe.toFixed(2),
       importePagoInicial: inicial.toFixed(2), identificadorActivo: tipo === "ACTIVO_HERRAMIENTA" ? identificadorActivo.trim() || null : null,
+      mototaxiMarca: tipo === "MOTOTAXI" ? mototaxiMarca.trim() : null,
+      mototaxiModelo: tipo === "MOTOTAXI" ? mototaxiModelo.trim() : null,
+      mototaxiNumeroMotor: tipo === "MOTOTAXI" ? mototaxiNumeroMotor.trim() : null,
+      mototaxiNumeroChasis: tipo === "MOTOTAXI" ? mototaxiNumeroChasis.trim() : null,
       observacion: observacion.trim() || null,
     };
     setGuardando(true);
@@ -104,11 +114,11 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
 
   return <>
     <CatalogoListado
-      titulo={tipo === "GASTO_OPERATIVO" ? "Gastos operativos" : "Activos y herramientas"}
-      descripcion="Registra los pagos y egresos operativos del negocio."
-      etiquetaCrear="Registrar egreso"
-      entidadSingular="egreso"
-      tituloListado="Historial de egresos"
+      titulo={tipo === "GASTO_OPERATIVO" ? "Gastos operativos" : tipo === "MOTOTAXI" ? "Compras de mototaxis" : "Activos y herramientas"}
+      descripcion={tipo === "MOTOTAXI" ? "Registra cada mototaxi como una unidad identificable, con sus datos y pagos." : "Registra los pagos y egresos operativos del negocio."}
+      etiquetaCrear={tipo === "MOTOTAXI" ? "Registrar compra de mototaxi" : "Registrar egreso"}
+      entidadSingular={tipo === "MOTOTAXI" ? "compra de mototaxi" : "egreso"}
+      tituloListado={tipo === "MOTOTAXI" ? "Historial de mototaxis comprados" : "Historial de egresos"}
       registros={items}
       totalRegistros={total}
       visibles={items}
@@ -116,8 +126,8 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
       mensajeCarga="Cargando egresos..."
       error={error}
       iconoVacio="S/"
-      tituloVacio="Aun no hay egresos"
-      descripcionVacio="Registra un gasto operativo o activo para iniciar el control."
+      tituloVacio={tipo === "MOTOTAXI" ? "Aun no hay mototaxis registrados" : "Aun no hay egresos"}
+      descripcionVacio={tipo === "MOTOTAXI" ? "Registra cada unidad con su marca, modelo, motor, chasis y costo." : "Registra un gasto operativo o activo para iniciar el control."}
       pagina={pagina}
       porPagina={porPagina}
       totalPaginas={totalPaginas}
@@ -130,7 +140,8 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
       alCambiarTamanioPagina={(valor) => { setPorPagina(valor); setPagina(1); }}
       renderizarTarjeta={(item) => <article className="egreso-card" key={item.id}>
       <div className="egreso-card-top"><span>{item.categoria}</span><time>{new Date(`${item.fecha}T00:00:00`).toLocaleDateString("es-PE")}</time></div>
-      <h3>{item.concepto}</h3>{item.beneficiario && <p className="egreso-beneficiario">{item.beneficiario}</p>}
+      <h3>{item.tipo === "MOTOTAXI" ? (item.mototaxiMarca ?? "Mototaxi") + " " + (item.mototaxiModelo ?? "") : item.concepto}</h3>
+      {item.tipo === "MOTOTAXI" && <p className="egreso-beneficiario">Motor: {item.mototaxiNumeroMotor} - Chasis: {item.mototaxiNumeroChasis}</p>}{item.beneficiario && <p className="egreso-beneficiario">{item.beneficiario}</p>}
       {item.documentoTipo && <div className="egreso-documento">{item.documentoTipo}{item.documentoNumero ? ` · ${item.documentoNumero}` : ""}</div>}
       <div className="egreso-documento">Pagado {soles(item.importePagadoAcumulado)} · saldo {soles(item.saldoPendiente)}</div>
       {item.pagos.map((pago) => <div className="egreso-documento" key={pago.id}>Pago {new Date(`${pago.fechaPago}T00:00:00`).toLocaleDateString("es-PE")} · {soles(pago.importePagado)}</div>)}
@@ -138,10 +149,15 @@ export function EgresoRegistroPage({ tipo }: { tipo: TipoEgreso }) {
       <footer><span>{item.medioPago}</span><strong>{soles(item.monto)}</strong></footer>
     </article>}
     />
-    {modal && <div className="catalog-modal-backdrop"><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-form-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardar(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-form-title">Registrar egreso</h2><p>Control operativo del negocio</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid">
+    {modal && <div className="catalog-modal-backdrop"><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-form-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardar(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-form-title">{tipo === "MOTOTAXI" ? "Registrar compra de mototaxi" : "Registrar egreso"}</h2><p>{tipo === "MOTOTAXI" ? "Una unidad por registro. No se agrega al stock de repuestos." : "Control operativo del negocio"}</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid">
       <label>Fecha<input required type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} /></label>
-      <label>Categoría<select value={categoria} onChange={(evento) => setCategoria(evento.target.value)}>{categoriasPorTipo[tipo].map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label className="egreso-full">Concepto<input required maxLength={240} value={concepto} onChange={(evento) => setConcepto(evento.target.value)} /></label>
+      {tipo !== "MOTOTAXI" && <label>Categoría<select value={categoria} onChange={(evento) => setCategoria(evento.target.value)}>{categoriasPorTipo[tipo].map((item) => <option key={item}>{item}</option>)}</select></label>}
+      {tipo === "MOTOTAXI" ? <>
+        <label>Marca<input required maxLength={100} value={mototaxiMarca} onChange={(evento) => setMototaxiMarca(evento.target.value)} /></label>
+        <label>Modelo<input required maxLength={100} value={mototaxiModelo} onChange={(evento) => setMototaxiModelo(evento.target.value)} /></label>
+        <label>Numero de motor<input required maxLength={100} value={mototaxiNumeroMotor} onChange={(evento) => setMototaxiNumeroMotor(evento.target.value)} /></label>
+        <label>Numero de chasis<input required maxLength={100} value={mototaxiNumeroChasis} onChange={(evento) => setMototaxiNumeroChasis(evento.target.value)} /></label>
+      </> : <label className="egreso-full">Concepto<input required maxLength={240} value={concepto} onChange={(evento) => setConcepto(evento.target.value)} /></label>}
       <label className="egreso-full">Proveedor o beneficiario<input value={beneficiario} onChange={(evento) => setBeneficiario(evento.target.value)} maxLength={180} /></label>
       <label>Documento<select value={documentoTipo} onChange={(evento) => setDocumentoTipo(evento.target.value)}><option value="">Sin documento</option><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="OTRO">Otro</option></select></label>
       <label>Número de documento<input value={documentoNumero} onChange={(evento) => setDocumentoNumero(evento.target.value)} maxLength={60} /></label>

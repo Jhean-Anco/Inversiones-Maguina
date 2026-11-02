@@ -5,10 +5,10 @@ import { db, egresosPagos, egresosRegistros, entradasStock } from "@magina/datab
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
-const tiposEgreso = ["GASTO_OPERATIVO", "ACTIVO_HERRAMIENTA"] as const;
+const tiposEgreso = ["GASTO_OPERATIVO", "ACTIVO_HERRAMIENTA", "MOTOTAXI"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 type TipoEgreso = typeof tiposEgreso[number];
-type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; observacion?: unknown };
+type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
 
 function texto(valor: unknown, etiqueta: string, maximo: number, requerido = false) {
   if (valor === undefined || valor === null) {
@@ -43,6 +43,8 @@ export class ServicioEgresos {
         proveedorRuc: egresosRegistros.proveedorRuc, documentoTipo: egresosRegistros.documentoTipo,
         documentoNumero: egresosRegistros.documentoNumero, moneda: egresosRegistros.moneda, medioPago: egresosRegistros.medioPago,
         monto: egresosRegistros.monto, identificadorActivo: egresosRegistros.identificadorActivo,
+        mototaxiMarca: egresosRegistros.mototaxiMarca, mototaxiModelo: egresosRegistros.mototaxiModelo,
+        mototaxiNumeroMotor: egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroChasis: egresosRegistros.mototaxiNumeroChasis,
         observacion: egresosRegistros.observacion, creadoEn: egresosRegistros.creadoEn })
         .from(egresosRegistros).where(condicion).orderBy(desc(egresosRegistros.fecha), desc(egresosRegistros.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(egresosRegistros).where(condicion),
@@ -87,8 +89,17 @@ export class ServicioEgresos {
     if (!( ["PEN", "USD", "EUR"] as const).includes(moneda as "PEN" | "USD" | "EUR")) throw new BadRequestException("Selecciona PEN, USD o EUR.");
     const identificadorActivo = texto(datos.identificadorActivo, "el identificador", 100);
     if (tipo === "ACTIVO_HERRAMIENTA" && !identificadorActivo) throw new BadRequestException("Indica el modelo, serie o identificación del activo o herramienta.");
+    const mototaxiMarca = texto(datos.mototaxiMarca, "la marca del mototaxi", 100, tipo === "MOTOTAXI");
+    const mototaxiModelo = texto(datos.mototaxiModelo, "el modelo del mototaxi", 100, tipo === "MOTOTAXI");
+    const mototaxiNumeroMotor = texto(datos.mototaxiNumeroMotor, "el número de motor", 100, tipo === "MOTOTAXI")?.toUpperCase() ?? null;
+    const mototaxiNumeroChasis = texto(datos.mototaxiNumeroChasis, "el número de chasis", 100, tipo === "MOTOTAXI")?.toUpperCase() ?? null;
     const codigo = `EGR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
     return db.transaction(async (tx) => {
+      if (tipo === "MOTOTAXI" && mototaxiNumeroMotor && mototaxiNumeroChasis) {
+        const [duplicado] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
+          .where(and(eq(egresosRegistros.tipo, "MOTOTAXI"), or(eq(egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroMotor), eq(egresosRegistros.mototaxiNumeroChasis, mototaxiNumeroChasis)))).limit(1);
+        if (duplicado) throw new ConflictException("Ya existe una compra registrada con ese número de motor o chasis.");
+      }
       if (documentoTipo === "FACTURA" && proveedorRuc && documentoNumero) {
         const clave = `COMPROBANTE_COMPRA:${proveedorRuc}:${documentoNumero}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${clave}, 0))`);
@@ -101,6 +112,7 @@ export class ServicioEgresos {
       const [registro] = await tx.insert(egresosRegistros).values({ codigo, tipo, fecha: datos.fecha as string, categoria,
         concepto, beneficiario, proveedorRuc, documentoTipo, documentoNumero, moneda,
         medioPago: datos.medioPago as string, monto: monto.toFixed(2), identificadorActivo,
+        mototaxiMarca, mototaxiModelo, mototaxiNumeroMotor, mototaxiNumeroChasis,
         observacion: texto(datos.observacion, "la observación", 2000), usuarioId }).returning({ id: egresosRegistros.id });
       await tx.insert(egresosPagos).values({ egresoId: registro.id, fechaPago: datos.fecha as string,
         importePagado: importePagoInicial.toFixed(2), medioPago: datos.medioPago as string,
@@ -151,7 +163,10 @@ export class ServicioEgresos {
       concepto: egresosRegistros.concepto, beneficiario: egresosRegistros.beneficiario, proveedorRuc: egresosRegistros.proveedorRuc,
       documentoTipo: egresosRegistros.documentoTipo, documentoNumero: egresosRegistros.documentoNumero,
       moneda: egresosRegistros.moneda, medioPago: egresosRegistros.medioPago, monto: egresosRegistros.monto,
-      identificadorActivo: egresosRegistros.identificadorActivo, observacion: egresosRegistros.observacion,
+      identificadorActivo: egresosRegistros.identificadorActivo,
+      mototaxiMarca: egresosRegistros.mototaxiMarca, mototaxiModelo: egresosRegistros.mototaxiModelo,
+      mototaxiNumeroMotor: egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroChasis: egresosRegistros.mototaxiNumeroChasis,
+      observacion: egresosRegistros.observacion,
       creadoEn: egresosRegistros.creadoEn }).from(egresosRegistros).where(eq(egresosRegistros.id, id)).limit(1);
     if (!registro) throw new NotFoundException("No se encontró el egreso recién registrado.");
     return registro;

@@ -410,6 +410,10 @@ export const egresosRegistros = pgTable("egresos_registros", {
   medioPago: varchar("medio_pago", { length: 30 }).notNull(),
   monto: numeric("monto", { precision: 14, scale: 2 }).notNull(),
   identificadorActivo: varchar("identificador_activo", { length: 100 }),
+  mototaxiMarca: varchar("mototaxi_marca", { length: 100 }),
+  mototaxiModelo: varchar("mototaxi_modelo", { length: 100 }),
+  mototaxiNumeroMotor: varchar("mototaxi_numero_motor", { length: 100 }),
+  mototaxiNumeroChasis: varchar("mototaxi_numero_chasis", { length: 100 }),
   observacion: text("observacion"),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
@@ -417,12 +421,15 @@ export const egresosRegistros = pgTable("egresos_registros", {
   index("egresos_registros_tipo_fecha_idx").on(tabla.tipo, tabla.fecha),
   index("egresos_registros_ruc_emisor_fecha_idx").on(tabla.rucEmisor, tabla.fecha),
   index("egresos_registros_beneficiario_idx").on(tabla.beneficiario),
-  check("egresos_registros_tipo_ck", sql`${tabla.tipo} IN ('GASTO_OPERATIVO', 'SERVICIO_PERSONAL', 'ACTIVO_HERRAMIENTA')`),
+  check("egresos_registros_tipo_ck", sql`${tabla.tipo} IN ('GASTO_OPERATIVO', 'SERVICIO_PERSONAL', 'ACTIVO_HERRAMIENTA', 'MOTOTAXI')`),
   check("egresos_registros_ruc_emisor_ck", sql`${tabla.rucEmisor} IS NULL OR ${tabla.rucEmisor} ~ '^[0-9]{11}$'`),
   check("egresos_registros_proveedor_ruc_ck", sql`${tabla.proveedorRuc} IS NULL OR ${tabla.proveedorRuc} ~ '^[0-9]{11}$'`),
   check("egresos_registros_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
   check("egresos_registros_medio_pago_ck", sql`${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
   check("egresos_registros_monto_positivo_ck", sql`${tabla.monto} > 0`),
+  check("egresos_registros_mototaxi_datos_ck", sql`(${tabla.tipo} <> 'MOTOTAXI') OR (${tabla.mototaxiMarca} IS NOT NULL AND ${tabla.mototaxiModelo} IS NOT NULL AND ${tabla.mototaxiNumeroMotor} IS NOT NULL AND ${tabla.mototaxiNumeroChasis} IS NOT NULL)`),
+  uniqueIndex("egresos_registros_mototaxi_motor_unique").on(tabla.mototaxiNumeroMotor).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
+  uniqueIndex("egresos_registros_mototaxi_chasis_unique").on(tabla.mototaxiNumeroChasis).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
 ]);
 
 export const egresosPagos = pgTable("egresos_pagos", {
