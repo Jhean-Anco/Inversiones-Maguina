@@ -18,6 +18,7 @@ const rangoMesActual = (referencia: string): FiltroReporte => {
   const fecha = new Date(`${referencia}T00:00:00`);
   return { desde: isoLocal(new Date(fecha.getFullYear(), fecha.getMonth(), 1)), hasta: referencia };
 };
+const rangoAnioActual = (referencia: string): FiltroReporte => ({ desde: `${referencia.slice(0, 4)}-01-01`, hasta: referencia });
 type PuntoIngresos = { fecha: string; ventas: number; total: string };
 function serieIngresos(reporte: ReporteIngresos | null, rango: FiltroReporte): PuntoIngresos[] {
   if (!reporte) return [];
@@ -43,7 +44,9 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const fechaReferencia = isoLocal(new Date());
   const fechaCalendario = new Date(`${fechaReferencia}T00:00:00`);
   const rangoActual = rangoMesActual(fechaReferencia);
+  const rangoAnual = rangoAnioActual(fechaReferencia);
   const [reporte, setReporte] = useState<ReporteIngresos | null>(null);
+  const [reporteAnual, setReporteAnual] = useState<ReporteIngresos | null>(null);
   const [cargandoReporte, setCargandoReporte] = useState(puedeVerIngresos);
   const [errorReporte, setErrorReporte] = useState("");
   const [solicitudReporte, setSolicitudReporte] = useState(0);
@@ -63,12 +66,13 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
     setCargandoReporte(true);
     setErrorReporte("");
     setReporte(null);
-    void servicioReportes.ingresos(rangoActual)
-      .then((resultado) => { if (vigente) setReporte(resultado); })
+    setReporteAnual(null);
+    void Promise.all([servicioReportes.ingresos(rangoActual), servicioReportes.ingresos(rangoAnual)])
+      .then(([resultadoMes, resultadoAnual]) => { if (vigente) { setReporte(resultadoMes); setReporteAnual(resultadoAnual); } })
       .catch((problema: unknown) => { if (vigente) setErrorReporte(problema instanceof Error ? problema.message : "No se pudieron cargar las ventas de este mes."); })
       .finally(() => { if (vigente) setCargandoReporte(false); });
     return () => { vigente = false; };
-  }, [rangoActual.desde, rangoActual.hasta, puedeVerIngresos, solicitudReporte]);
+  }, [rangoActual.desde, rangoActual.hasta, rangoAnual.desde, rangoAnual.hasta, puedeVerIngresos, solicitudReporte]);
 
 
   const totalMes = Number(reporte?.resumen.total ?? 0);
@@ -80,12 +84,13 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
   const articulosMes = [...(reporte?.productosMasVendidos ?? [])].sort((a, b) => Number(b.total) - Number(a.total)).slice(0, 6);
   const datosProductos = articulosMes.map((articulo) => ({ descripcion: articulo.descripcion, total: Number(articulo.total) }));
   const diasMes = serieIngresos(reporte, rangoActual);
-  const cantidadSemanas = Math.ceil(fechaCalendario.getDate() / 7);
   const datosTendencia = diasMes.map((dia, indice) => ({ etiqueta: `Día ${indice + 1}`, fecha: dia.fecha, total: Number(dia.total) }));
-  const datosOperaciones = Array.from({ length: cantidadSemanas }, (_, indice) => {
-    const diasSemana = diasMes.filter((dia) => Math.floor((Number(dia.fecha.slice(8, 10)) - 1) / 7) === indice);
-    return { etiqueta: `Sem. ${indice + 1}`, cantidad: diasSemana.reduce((total, dia) => total + dia.ventas, 0) };
+  const datosMeses = Array.from({ length: fechaCalendario.getMonth() + 1 }, (_, indice) => {
+    const mes = `${fechaReferencia.slice(0, 4)}-${String(indice + 1).padStart(2, "0")}`;
+    const datos = (reporteAnual?.porDia ?? []).filter((dia) => dia.fecha.startsWith(mes));
+    return { etiqueta: new Date(`${mes}-01T00:00:00`).toLocaleDateString("es-PE", { month: "short" }).replace(".", ""), total: datos.reduce((total, dia) => total + Number(dia.total), 0), ventas: datos.reduce((total, dia) => total + dia.ventas, 0) };
   });
+  const diasSemana = (resumen?.ventasUltimosSieteDias ?? []).map((dia) => ({ etiqueta: new Date(`${dia.fecha}T00:00:00`).toLocaleDateString("es-PE", { weekday: "short" }).replace(".", ""), fecha: dia.fecha, total: Number(dia.total), operaciones: dia.operaciones }));
   const iniciales = nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("").toLocaleUpperCase("es-PE") || "IM";
 
 
@@ -123,9 +128,10 @@ export function DashboardPage({ nombre, rol, puedeVerIngresos = true }: { nombre
 
           <article className="inicio-panel inicio-payment-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker"><CreditCard size={11} aria-hidden="true" /> DISTRIBUCIÓN DE PAGOS</span><h2>Medios de pago</h2><p>Participación en las ventas de este mes</p></div></header>{pagosTotal > 0 ? <><div className="inicio-donut-pair is-single"><div className="inicio-donut-card"><div className="inicio-donut-visual"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={datosMedios} dataKey="importe" nameKey="nombre" innerRadius="67%" outerRadius="92%" paddingAngle={3} stroke="none">{datosMedios.map((pago) => <Cell key={pago.nombre} fill={pago.color} />)}</Pie><Tooltip formatter={(valor, nombre) => [soles(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /></PieChart></ResponsiveContainer><div className="inicio-donut-center"><strong>{soles(pagosTotal)}</strong><small>MES ACTUAL</small></div></div><strong>Ventas cobradas</strong></div></div><div className="inicio-donut-legend">{datosMedios.map((pago) => <div key={pago.nombre}><span><i style={{ background: pago.color }} />{pago.nombre}</span><b>{soles(pago.importe)}</b></div>)}</div></> : <div className="inicio-chart-empty">Aún no hay pagos registrados este mes.</div>}</article>
 
+          <article className="inicio-panel inicio-months-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">RESUMEN DEL ANO</span><h2>Ventas por mes</h2><p>Comparacion mensual desde enero hasta hoy</p></div></header>{datosMeses.length ? <div className="inicio-recharts inicio-recharts-months"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={datosMeses} margin={{ top: 12, right: 8, bottom: 0, left: -14 }} barCategoryGap="32%"><CartesianGrid vertical={false} stroke="#edf1f4" strokeDasharray="3 5" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 9 }} /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} width={48} /><Tooltip formatter={(valor) => [soles(Number(valor)), "Ventas del mes"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="total" name="Ventas del mes" fill="#347895" radius={[5, 5, 0, 0]} barSize={22} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aun no hay datos mensuales para mostrar.</div>}</article>
           <article className="inicio-panel inicio-products-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">MAYOR MOVIMIENTO</span><h2>Productos y servicios</h2><p>Más vendidos por importe durante el mes</p></div></header>{datosProductos.length ? <div className="inicio-recharts inicio-recharts-products"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer layout="vertical" data={datosProductos} margin={{ top: 2, right: 12, bottom: 2, left: 4 }} barCategoryGap="24%"><CartesianGrid horizontal={false} stroke="#edf1f4" /><XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} /><YAxis type="category" dataKey="descripcion" width={132} tickLine={false} axisLine={false} tick={{ fill: "#506a7e", fontSize: 9 }} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor) => [soles(Number(valor)), "Ventas del mes"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="total" name="Ventas del mes" fill="#347895" radius={[0, 6, 6, 0]} barSize={13} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aún no hay productos o servicios vendidos este mes.</div>}</article>
 
-          <article className="inicio-panel inicio-operations-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">RITMO DE VENTAS</span><h2>Operaciones por semana</h2><p>Ventas registradas en cada semana del mes</p></div></header>{datosOperaciones.length ? <div className="inicio-recharts inicio-recharts-operations"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={datosOperaciones} margin={{ top: 12, right: 8, bottom: 0, left: -14 }} barCategoryGap="26%"><CartesianGrid vertical={false} stroke="#edf1f4" strokeDasharray="3 5" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 9 }} /><YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} width={32} /><Tooltip labelFormatter={(label) => String(label)} formatter={(valor) => [`${Number(valor)} ventas`, "Operaciones"]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="cantidad" name="Operaciones" fill="#347895" radius={[5, 5, 0, 0]} barSize={18} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aún no hay operaciones para mostrar.</div>}</article>
+          <article className="inicio-panel inicio-operations-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">ULTIMOS SIETE DIAS</span><h2>Ventas dia a dia</h2><p>Comparacion diaria hasta la fecha actual</p></div></header>{diasSemana.length ? <div className="inicio-recharts inicio-recharts-operations"><ResponsiveContainer width="100%" height="100%"><BarChart accessibilityLayer data={diasSemana} margin={{ top: 12, right: 8, bottom: 0, left: -14 }} barCategoryGap="30%"><CartesianGrid vertical={false} stroke="#edf1f4" strokeDasharray="3 5" /><XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 9 }} /><YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor: number) => `S/ ${Intl.NumberFormat("es-PE", { notation: "compact", maximumFractionDigits: 1 }).format(valor)}`} width={48} /><Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fecha ? etiquetaFechaPunto(String(payload[0].payload.fecha)) : ""} formatter={(valor, nombre) => [nombre === "Ventas" ? soles(Number(valor)) : `${Number(valor)} operaciones`, String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} /><Bar dataKey="total" name="Ventas" fill="#cc3450" radius={[5, 5, 0, 0]} barSize={20} /><Bar dataKey="operaciones" name="Operaciones" fill="#347895" radius={[5, 5, 0, 0]} barSize={20} /></BarChart></ResponsiveContainer></div> : <div className="inicio-chart-empty">Aun no hay operaciones para mostrar.</div>}</article>
         </div>
       </>}
 
