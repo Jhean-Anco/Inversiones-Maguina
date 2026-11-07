@@ -1,3 +1,5 @@
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { createPortal } from "react-dom";
 import "./finanzas-page.css";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -5,6 +7,7 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioFinanzas, type CuentaFinanciera, type DatosCuentaFinanciera, type MovimientosCuentas, type PeriodoMovimientosCuenta, type TipoCuentaFinanciera } from "../../services/finanzas.service";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { AccionIcono } from "../../components/ui/accion-icono";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { useNavigate } from "react-router-dom";
 
 const tipos: Array<{ valor: TipoCuentaFinanciera; nombre: string }> = [
@@ -78,7 +81,7 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
   }
 
   return <section className="finanzas-page">
-    <header className="finanzas-heading"><div><span className="finanzas-kicker">TESORERÍA</span><h1>Cuentas y medios de pago</h1><p>Registra dónde recibes y desde dónde pagas el dinero de la empresa.</p></div>{puedeAdministrar && <button className="finanzas-primary erp-floating-action" type="button" aria-label="Agregar cuenta" title="Agregar cuenta" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }}><span className="erp-floating-action-icon" aria-hidden="true">+</span><span className="erp-floating-action-label">Agregar cuenta</span></button>}</header>
+    <header className="finanzas-heading"><div><span className="finanzas-kicker">TESORERÍA</span><h1>Cuentas y medios de pago</h1><p>Registra dónde recibes y desde dónde pagas el dinero de la empresa.</p></div>{puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}</header>
     {error && <NotificacionFlotante tipo="error" mensaje={error} duracionMs={0} onCerrar={() => setError("")} />}{exito && <NotificacionFlotante tipo="exito" mensaje={exito} duracionMs={4000} onCerrar={() => setExito("")} />}
     <section className="finanzas-summary"><div><span>Entradas registradas este mes</span><strong>{moneda(items.reduce((total, cuenta) => total + Number(cuenta.ingresosMes ?? 0), 0), "PEN")}</strong></div><div><span>Salidas registradas este mes</span><strong>{moneda(items.reduce((total, cuenta) => total + Number(cuenta.egresosMes ?? 0), 0), "PEN")}</strong></div><small>{periodo ? `Flujos vinculados a cuentas · ${periodo}` : "Resumen mensual"}</small></section>
     <section className="finanzas-flow-panel">
@@ -89,15 +92,15 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
         <p className="finanzas-flow-note">El gráfico resume pagos registrados con una cuenta asignada; no representa el saldo bancario disponible si no se ha ingresado un saldo inicial.</p>
       </>}
     </section>
-    {cargando ? <div className="finanzas-empty">Cargando cuentas y movimientos…</div> : items.length ? <div className="finanzas-grid">{items.map((cuenta) => <article className={`finanzas-card${cuenta.activa ? "" : " is-inactive"}`} key={cuenta.id}>
+    <ListadoMaestro<CuentaFinanciera> variante="tarjetas" titulo="Cuentas y medios registrados" registros={items} paginacion={{ modo: "local" }} cargando={cargando} error={error || undefined} columnas={3} vacio={<><strong>Aún no hay cuentas configuradas</strong><span>Agrega tu caja, bancos, billeteras digitales o tarjetas para asociarlas a cobros y pagos.</span>{puedeAdministrar && <button className="finanzas-primary" type="button" onClick={() => setAbierto(true)}>Configurar primera cuenta</button>}</>} renderizarTarjeta={(cuenta) => <article className={`finanzas-card${cuenta.activa ? "" : " is-inactive"}`} key={cuenta.id}>
       <header><span className="finanzas-type">{etiquetaTipo(cuenta.tipo)}</span><span className={`finanzas-status${cuenta.activa ? "" : " is-inactive"}`}>{cuenta.activa ? "Activa" : "Inactiva"}</span></header>
       <h2>{cuenta.nombre}</h2><p className="finanzas-institution">{[cuenta.entidad, cuenta.titular && `Titular: ${cuenta.titular}`].filter(Boolean).join(" · ") || "Caja de efectivo"}</p>
       <div className="finanzas-identifiers">{cuenta.numeroCuenta && <span>Cuenta · {cuenta.numeroCuenta}</span>}{cuenta.cci && <span>CCI · {cuenta.cci}</span>}{cuenta.telefono && <span>Celular · {cuenta.telefono}</span>}{cuenta.numeroTarjeta && <span>Tarjeta terminada en · {cuenta.numeroTarjeta}</span>}</div>
       <div className="finanzas-totals"><div><small>Entró</small><strong>{moneda(cuenta.ingresosMes ?? 0, cuenta.moneda)}</strong></div><div><small>Salió</small><strong>{moneda(cuenta.egresosMes ?? 0, cuenta.moneda)}</strong></div><div><small>Neto del mes</small><strong>{moneda(cuenta.netoMes ?? 0, cuenta.moneda)}</strong></div></div>
       {puedeAdministrar && <footer><AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} /><AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} /></footer>}
-    </article>)}</div> : <div className="finanzas-empty"><strong>Aún no hay cuentas configuradas</strong><span>Agrega tu caja, bancos, billeteras digitales o tarjetas para asociarlas a cobros y pagos.</span>{puedeAdministrar && <button className="finanzas-primary" type="button" onClick={() => setAbierto(true)}>Configurar primera cuenta</button>}</div>}
+    </article>} />
     {items.some((cuenta) => Number(cuenta.ingresosMes) || Number(cuenta.egresosMes)) && <p className="finanzas-footnote">El resumen incluye pagos con cuenta asignada durante el mes. Los movimientos anteriores sin cuenta configurada no se pueden distribuir retroactivamente.</p>}
-    {abierto && <div className="finanzas-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setAbierto(false); }}><form className="finanzas-form" onSubmit={(evento) => void guardar(evento)}>
+    {abierto && createPortal(<div className="finanzas-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setAbierto(false); }}><form className="finanzas-form" onSubmit={(evento) => void guardar(evento)}>
       <header><div><span className="finanzas-kicker">CONFIGURACIÓN DE TESORERÍA</span><h2>{editando ? "Editar cuenta" : "Agregar cuenta o medio"}</h2></div><button type="button" aria-label="Cerrar" onClick={() => setAbierto(false)}>×</button></header>
       <label>Tipo de cuenta<select value={formulario.tipo} onChange={(evento) => setFormulario((actual) => ({ ...actual, tipo: evento.target.value as TipoCuentaFinanciera }))}>{tipos.map((tipo) => <option value={tipo.valor} key={tipo.valor}>{tipo.nombre}</option>)}</select></label>
       <label>Nombre para identificarla<input required maxLength={100} value={formulario.nombre} onChange={(evento) => setFormulario((actual) => ({ ...actual, nombre: evento.target.value }))} placeholder={formulario.tipo === "EFECTIVO" ? "Ej. Caja principal" : formulario.tipo === "BANCO" ? "Ej. Cuenta corriente del negocio" : formulario.tipo === "BILLETERA" ? "Ej. Yape del negocio" : "Ej. Visa para compras"} /></label>
@@ -109,6 +112,6 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
       <label>Moneda<select value={formulario.moneda} onChange={(evento) => setFormulario((actual) => ({ ...actual, moneda: evento.target.value as DatosCuentaFinanciera["moneda"] }))}><option value="PEN">Soles (PEN)</option></select><small>Los flujos actuales se registran en soles. Se habilitarán otras monedas cuando el sistema gestione tipo de cambio.</small></label>
       <label>Observación<textarea maxLength={1000} value={formulario.observacion ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, observacion: evento.target.value }))} /></label>
       <footer><button type="button" onClick={() => setAbierto(false)}>Cancelar</button><button className="finanzas-primary" disabled={guardando}>{guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar cuenta"}</button></footer>
-    </form></div>}
+    </form></div>, document.body)}
   </section>;
 }

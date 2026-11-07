@@ -20,12 +20,13 @@ export class ControladorIngresos {
   @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite); }
   @Get("mototaxis") @RequierePermiso("INGRESOS.CREAR") buscarMototaxisVenta(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarMototaxisVenta(busqueda); }
   @Get("series") @RequierePermiso("INGRESOS.CREAR") obtenerNumeraciones() { return this.ingresos.obtenerNumeraciones(); }
-  @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias() { return this.ingresos.listarGuias(); }
+  @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }
   @Post("guias") @RequierePermiso("INGRESOS.CREAR") emitirGuia(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirGuia(datos, solicitud.usuario.id); }
   @Post("guias/:id/consultar") @RequierePermiso("INGRESOS.LEER") consultarGuia(@Param("id") id: string) { return this.ingresos.consultarGuia(id); }
   @Get("medios-pago") @RequierePermiso("INGRESOS.CREAR") obtenerMediosPagoDisponibles() { return this.ingresos.mediosPagoDisponibles(); }
   @Get("control-nrus") @RequierePermiso("INGRESOS.CREAR") obtenerControlNrus(@Query("fecha") fecha?: string) { return this.ingresos.obtenerControlNrus(fecha); }
   @Get("clientes") @RequierePermiso("PERSONAS.LEER") buscarClientes(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarClientes(busqueda); }
+  @Get("clientes/listado") @RequierePermiso("PERSONAS.LEER") listarClientes(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) { return this.ingresos.listarClientes(pagina, porPagina, busqueda); }
   @Get("clientes/consulta-identidad") @RequierePermiso("PERSONAS.CREAR") consultarIdentidadCliente(@Query("tipoDocumento") tipoDocumento?: string, @Query("numeroDocumento") numeroDocumento?: string) { return this.ingresos.consultarIdentidadCliente(tipoDocumento, numeroDocumento); }
   @Post("clientes") @RequierePermiso("PERSONAS.CREAR") registrarCliente(@Body() datos: unknown) { return this.ingresos.registrarCliente(datos); }
   @Patch("clientes/:id") @RequierePermiso("PERSONAS.EDITAR") actualizarCliente(@Param("id") id: string, @Body() datos: unknown) { return this.ingresos.actualizarCliente(id, datos); }

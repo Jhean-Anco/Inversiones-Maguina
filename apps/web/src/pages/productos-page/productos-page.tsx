@@ -40,7 +40,7 @@ export function ProductosPage() {
 
   return <section className="repuestos-module">
     <Suspense fallback={<div className="repuestos-module-loading" role="status">Cargando catálogo y precios…</div>}>
-      <PreciosProductosPage integrado revision={revision} alCrearProducto={nuevoProducto} alEditarProducto={editarProducto} alCambiarEstado={cambiarEstado} alCrearLista={modulo.crearListaPrecio} />
+      <PreciosProductosPage integrado revision={revision} alCrearProducto={nuevoProducto} alEditarProducto={editarProducto} alCambiarEstado={cambiarEstado} />
     </Suspense>
     {formularioAbierto && <ProductoFormulario catalogos={modulo.catalogos} producto={productoEditando} error={modulo.error} alCerrar={cerrarFormulario} alGuardar={guardarProducto} alCrearMarca={modulo.crearMarca} alCrearCategoria={modulo.crearCategoria} />}
   </section>;

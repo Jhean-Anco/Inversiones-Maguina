@@ -22,12 +22,14 @@ function App() {
           <Route path="/ingresos/nuevo" element={<Navigate to="/ingresos/nuevo/repuestos" replace />} />
           <Route path="/ingresos/nuevo/repuestos" element={<InicioPage />} />
           <Route path="/ingresos/nuevo/mototaxis" element={<InicioPage />} />
+          <Route path="/ingresos/guias" element={<InicioPage />} />
           <Route path="/ingresos/ventas/repuestos" element={<InicioPage />} />
           <Route path="/ingresos/ventas/mototaxis" element={<InicioPage />} />
           <Route path="/reportes/inventario" element={<InicioPage />} />
           <Route path="/reportes/ingresos" element={<InicioPage />} />
           <Route path="/clientes" element={<InicioPage />} />
           <Route path="/personas/proveedores" element={<InicioPage />} />
+          <Route path="/personas/conductores" element={<InicioPage />} />
           <Route path="/inventario/categorias" element={<InicioPage />} />
           <Route path="/inventario/marcas" element={<InicioPage />} />
           <Route path="/inventario/productos" element={<InicioPage />} />

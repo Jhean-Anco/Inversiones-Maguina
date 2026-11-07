@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
+import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
 import { servicioMovimientosStock, type DatosAjusteStock, type MovimientoStock, type PaginaMovimientosStock, type ProductoParaAjuste } from "../services/inventario/movimientos-stock.service";
 
 export const MOTIVOS_AJUSTE = [
@@ -17,9 +18,9 @@ export const motivoVisible = (codigo: string | null) => MOTIVOS_AJUSTE.find((mot
 
 export function useMovimientosStock() {
   const navegar = useNavigate();
-  const [paginaDatos, setPaginaDatos] = useState<PaginaMovimientosStock>({ items: [], total: 0, pagina: 1, porPagina: 12, totalPaginas: 1 });
+  const [paginaDatos, setPaginaDatos] = useState<PaginaMovimientosStock>(() => ({ items: [], total: 0, pagina: 1, porPagina: tamanioTablaInicial(), totalPaginas: 1 }));
   const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(12);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
   const [tipo, setTipo] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -104,7 +105,7 @@ export function useMovimientosStock() {
     movimientos: paginaDatos.items, total: paginaDatos.total, pagina, porPagina, totalPaginas: paginaDatos.totalPaginas,
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, guardando, error, setError, busqueda, setBusqueda, tipo, filtrarTipo,
-    cambiarPagina: setPagina, cambiarPorPagina: (valor: number) => { if ([12, 16, 20].includes(valor)) { setPorPagina(valor); setPagina(1); } },
+    cambiarPagina: setPagina, cambiarPorPagina: (valor: number) => { if ([4, 6, 8, 10].includes(valor)) { setPorPagina(valor); setPagina(1); } },
     modalAbierto, abrirNuevo, cerrarModal, guardar, productoBusqueda, setProductoBusqueda,
     productosEncontrados, buscandoProductos, productoElegido, elegirProducto, limpiarProducto,
     sentido, setSentido, cantidad, setCantidad, motivo, setMotivo, observacion, setObservacion,

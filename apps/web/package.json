@@ -9,6 +9,8 @@
     "lint": "echo Configure ESLint"
   },
   "dependencies": {
+    "@heroui/react": "^3.2.7",
+    "@heroui/styles": "^3.2.7",
     "@magina/contracts": "workspace:*",
     "@tsparticles/engine": "^4.5.3",
     "@tsparticles/react": "^4.5.3",
@@ -22,8 +24,10 @@
     "vite": "^7.1.7"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "tailwindcss": "^4.3.5",
     "typescript": "^5.9.3"
   }
 }

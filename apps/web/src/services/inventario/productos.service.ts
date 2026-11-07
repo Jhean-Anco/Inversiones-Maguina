@@ -95,16 +95,13 @@ export function redondearPrecioADecimos(valor: string) {
 
 export const servicioProductos = {
   catalogos: () => solicitarApi<CatalogosProducto>("/inventario/productos/catalogos"),
-  crearListaPrecio: (nombre: string) => solicitarApi<OpcionCatalogo>("/inventario/productos/listas-precio", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre }),
-  }),
   alertasStockBajo: () => solicitarApi<AlertaStockBajo[]>("/inventario/productos/alertas-stock-bajo"),
   listar: (pagina: number, porPagina: number, busqueda: string) => {
     const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda });
     return solicitarApi<PaginaProductos>(`/inventario/productos?${parametros.toString()}`);
   },
-  listarPrecios: (pagina: number, busqueda: string) => {
-    const parametros = new URLSearchParams({ pagina: String(pagina), busqueda });
+  listarPrecios: (pagina: number, porPagina: number, busqueda: string) => {
+    const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda });
     return solicitarApi<PaginaPreciosCatalogo>(`/inventario/productos/precios?${parametros.toString()}`);
   },
   actualizarPrecio: (id: string, precio: string) => solicitarApi<{ id: string; precio: string }>(`/inventario/productos/precios/${id}`, {

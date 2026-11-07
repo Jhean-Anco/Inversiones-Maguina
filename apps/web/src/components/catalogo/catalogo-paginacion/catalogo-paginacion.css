@@ -1,6 +1,0 @@
-
-@media (max-width: 600px) { .catalog-pagination { align-items: start; flex-direction: column; } }
-@media (max-width: 600px) { .catalog-pagination > div { width: 100%; justify-content: space-between; gap: 6px; } }
-@media (max-width: 600px) {
-  .catalog-pagination { right: 19px; bottom: 12px; left: 19px; align-items: center; padding-top: 10px; }
-}

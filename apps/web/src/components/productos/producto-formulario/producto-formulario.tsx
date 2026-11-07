@@ -1,5 +1,6 @@
 import "./producto-formulario.css";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { redondearPrecioADecimos, type CatalogosProducto, type Producto } from "../../../services/inventario/productos.service";
 import { useProductoFormulario } from "../../../hooks/use-producto-formulario";
 import { ProductoCategoriaModal } from "../producto-categoria-modal/producto-categoria-modal";
@@ -43,7 +44,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
     void formulario.guardar(evento);
   }
 
-  return <div className="catalog-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.guardando) alCerrar(); }}>
+  return createPortal(<div className="catalog-modal-backdrop producto-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.guardando) alCerrar(); }}>
     <section className="catalog-modal producto-modal" role="dialog" aria-modal="true" aria-labelledby="producto-form-title">
       <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario" onClick={alCerrar}>×</button>
       {(error || formulario.errorLocal) && <div className="catalog-alert catalog-modal-alert" role="alert">{formulario.errorLocal || error}</div>}
@@ -83,14 +84,14 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             <legend>Presentaciones de compra y venta</legend>
             <p className="producto-section-help">Cada factor indica cuántas unidades base se suman o descuentan. Ejemplo: 1 caja = 12 unidades.</p>
             <div className="producto-table-wrap"><table className="producto-editor-table"><thead><tr><th>Presentación</th><th>Unidad</th><th>Equivale a unidad base</th><th>Compra</th><th>Venta</th><th /></tr></thead><tbody>
-              <tr className="producto-base-row"><td>Unidad base</td><td>{codigoBase} ({formulario.unidadBaseCodigo})</td><td>1</td><td>Sí</td><td>Sí</td><td>Base</td></tr>
+              <tr className="producto-base-row"><td data-label="Presentación">Unidad base</td><td data-label="Unidad">{codigoBase} ({formulario.unidadBaseCodigo})</td><td data-label="Equivale a unidad base">1</td><td data-label="Compra">Sí</td><td data-label="Venta">Sí</td><td data-label="Tipo">Base</td></tr>
               {formulario.presentaciones.map((presentacion, indice) => <tr key={presentacion.clave}>
-                <td><input aria-label="Nombre de presentación" value={presentacion.nombre} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, nombre: event.target.value } : fila))} placeholder="Ej. Caja de 12" /></td>
-                <td><select aria-label="Unidad de presentación" value={presentacion.unidadMedidaCodigo} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, unidadMedidaCodigo: event.target.value } : fila))}>{catalogos.unidadesMedida.map((unidad) => <option key={unidad.codigo} value={unidad.codigo}>{unidad.nombre} ({unidad.codigo})</option>)}</select></td>
-                <td><input aria-label="Factor de conversión" type="number" min="0.000001" step="0.000001" value={presentacion.factorAUnidadBase} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, factorAUnidadBase: event.target.value } : fila))} /></td>
-                <td><input aria-label="Se compra en esta presentación" type="checkbox" checked={presentacion.seCompra} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seCompra: event.target.checked } : fila))} /></td>
-                <td><input aria-label="Se vende en esta presentación" type="checkbox" checked={presentacion.seVende} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seVende: event.target.checked } : fila))} /></td>
-                <td><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar presentación" onClick={() => formulario.setPresentaciones((actual) => actual.filter((_, i) => i !== indice))} /></td>
+                <td data-label="Presentación"><input aria-label="Nombre de presentación" value={presentacion.nombre} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, nombre: event.target.value } : fila))} placeholder="Ej. Caja de 12" /></td>
+                <td data-label="Unidad"><select aria-label="Unidad de presentación" value={presentacion.unidadMedidaCodigo} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, unidadMedidaCodigo: event.target.value } : fila))}>{catalogos.unidadesMedida.map((unidad) => <option key={unidad.codigo} value={unidad.codigo}>{unidad.nombre} ({unidad.codigo})</option>)}</select></td>
+                <td data-label="Equivale a unidad base"><input aria-label="Factor de conversión" type="number" min="0.000001" step="0.000001" value={presentacion.factorAUnidadBase} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, factorAUnidadBase: event.target.value } : fila))} /></td>
+                <td data-label="Compra"><input aria-label="Se compra en esta presentación" type="checkbox" checked={presentacion.seCompra} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seCompra: event.target.checked } : fila))} /></td>
+                <td data-label="Venta"><input aria-label="Se vende en esta presentación" type="checkbox" checked={presentacion.seVende} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seVende: event.target.checked } : fila))} /></td>
+                <td data-label="Acciones"><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar presentación" onClick={() => formulario.setPresentaciones((actual) => actual.filter((_, i) => i !== indice))} /></td>
               </tr>)}
             </tbody></table></div>
             <button type="button" className="producto-add-row" onClick={formulario.agregarPresentacion}>+ Agregar presentación</button>
@@ -100,11 +101,11 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             <p className="producto-section-help">Cada precio se asocia a una lista y una presentación. La cantidad mínima permite aplicar precio mayorista por volumen.</p>
             <div className="producto-table-wrap"><table className="producto-editor-table"><thead><tr><th>Tipo de lista</th><th>Presentación</th><th>Precio S/</th><th>Desde cantidad</th><th /></tr></thead><tbody>
               {formulario.precios.map((precio, indice) => <tr key={precio.clave}>
-                <td><select aria-label="Tipo de lista de precio" value={precio.tipoListaPrecioId} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipoListaPrecioId: event.target.value } : fila))}><option value="">Selecciona lista</option>{catalogos.tiposListasPrecio.map((lista) => <option key={lista.id} value={lista.id}>{lista.nombre}</option>)}</select></td>
-                <td><select aria-label="Presentación con precio" value={precio.presentacionClave} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, presentacionClave: event.target.value } : fila))}><option value="base">Unidad base ({formulario.unidadBaseCodigo})</option>{formulario.presentaciones.map((item) => <option key={item.clave} value={item.clave}>{item.nombre}</option>)}</select></td>
-                <td><input aria-label="Precio en soles" type="number" min="0" step="0.10" value={precio.precio} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: event.target.value } : fila))} onBlur={(event) => { const precioRedondeado = redondearPrecioADecimos(event.currentTarget.value); formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: precioRedondeado } : fila)); }} placeholder="0.00" /></td>
-                <td><input aria-label="Cantidad mínima" type="number" min="0.001" step="0.001" value={precio.cantidadMinima} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, cantidadMinima: event.target.value } : fila))} /></td>
-                <td><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar precio" onClick={() => formulario.setPrecios((actual) => actual.filter((_, i) => i !== indice))} /></td>
+                <td data-label="Tipo de lista"><select aria-label="Tipo de lista de precio" value={precio.tipoListaPrecioId} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipoListaPrecioId: event.target.value } : fila))}><option value="">Selecciona lista</option>{catalogos.tiposListasPrecio.map((lista) => <option key={lista.id} value={lista.id}>{lista.nombre}</option>)}</select></td>
+                <td data-label="Presentación"><select aria-label="Presentación con precio" value={precio.presentacionClave} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, presentacionClave: event.target.value } : fila))}><option value="base">Unidad base ({formulario.unidadBaseCodigo})</option>{formulario.presentaciones.map((item) => <option key={item.clave} value={item.clave}>{item.nombre}</option>)}</select></td>
+                <td data-label="Precio S/"><input aria-label="Precio en soles" type="number" min="0" step="0.10" value={precio.precio} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: event.target.value } : fila))} onBlur={(event) => { const precioRedondeado = redondearPrecioADecimos(event.currentTarget.value); formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: precioRedondeado } : fila)); }} placeholder="0.00" /></td>
+                <td data-label="Desde cantidad"><input aria-label="Cantidad mínima" type="number" min="0.001" step="0.001" value={precio.cantidadMinima} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, cantidadMinima: event.target.value } : fila))} /></td>
+                <td data-label="Acciones"><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar precio" onClick={() => formulario.setPrecios((actual) => actual.filter((_, i) => i !== indice))} /></td>
               </tr>)}
             </tbody></table></div>
             <button type="button" className="producto-add-row" onClick={formulario.agregarPrecio}>+ Agregar precio</button>
@@ -160,7 +161,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
         </div>
         <div className="catalog-form-actions producto-wizard-actions">
           <button className="catalog-cancel" type="button" onClick={paso === 1 ? alCerrar : () => { formulario.setErrorLocal(""); setPaso((actual) => actual - 1); }} disabled={formulario.guardando}>{paso === 1 ? "Cancelar" : "Atrás"}</button>
-          <button className="catalog-submit" type="submit" disabled={formulario.guardando}>{formulario.guardando ? "Guardando…" : paso < 3 ? "Continuar" : formulario.modoEdicion ? "Guardar producto" : "Crear producto"}</button>
+          <button className="catalog-submit" type="submit" disabled={formulario.guardando}>{formulario.guardando ? "Guardando…" : paso < 3 ? "Continuar" : formulario.modoEdicion ? "Guardar repuesto" : "Crear repuesto"}</button>
         </div>
       </form>
       {formulario.marcaModalAbierto && <div className="producto-brand-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.creandoMarca) formulario.setMarcaModalAbierto(false); }} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); formulario.setMarcaModalAbierto(false); } }}>
@@ -183,5 +184,5 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
       </div>}
       {formulario.categoriaModalAbierto && <ProductoCategoriaModal nombre={formulario.categoriaNueva} imagen={formulario.categoriaNuevaImagen} vistaPrevia={formulario.vistaPreviaCategoria} error={formulario.errorLocal} guardando={formulario.creandoCategoria} alCambiarNombre={formulario.setCategoriaNueva} alSeleccionarImagen={formulario.seleccionarCategoriaImagen} alCerrar={() => formulario.setCategoriaModalAbierto(false)} alCrear={() => { void formulario.crearCategoria(); }} />}
     </section>
-  </div>;
+  </div>, document.getElementById("root") ?? document.body);
 }

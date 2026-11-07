@@ -9,13 +9,11 @@ export function useInicioSesion() {
   const [aviso, setAviso] = useState("");
   const [cargando, setCargando] = useState(false);
   const [accesoConfirmado, setAccesoConfirmado] = useState(false);
-  const [progresoCarga, setProgresoCarga] = useState(0);
 
   function iniciar(datos: { usuario: FormDataEntryValue | null; contrasena: FormDataEntryValue | null; recordar: boolean }) {
     setAviso("");
     setCargando(true);
     setAccesoConfirmado(false);
-    setProgresoCarga(0);
     void iniciarSesion(datos)
       .then(async () => {
         setAccesoConfirmado(true);

@@ -29,8 +29,8 @@ export class ServicioEgresos {
   async listar(filtros: { tipo?: string; pagina?: string; porPagina?: string; busqueda?: string }) {
     if (filtros.tipo && !(tiposEgreso as readonly string[]).includes(filtros.tipo)) throw new BadRequestException("El tipo de egreso solicitado no es válido.");
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const solicitado = Number.parseInt(filtros.porPagina ?? "12", 10);
-    const porPagina = [12, 16, 20].includes(solicitado) ? solicitado : 12;
+    const solicitado = Number.parseInt(filtros.porPagina ?? "10", 10);
+    const porPagina = [4, 6, 8, 10].includes(solicitado) ? solicitado : 10;
     const termino = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const patron = termino ? `%${termino.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condiciones = [

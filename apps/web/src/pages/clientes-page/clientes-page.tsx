@@ -1,7 +1,11 @@
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import "./clientes-page.css";
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo } from "../../services/ingresos.service";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
+import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 
 const nombreDe = (cliente: ClienteRegistrado) => cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const etiquetaDocumento = (tipo: string) => ({ "01": "DNI", "04": "Carné de extranjería", "06": "RUC", "07": "Pasaporte" } as Record<string, string>)[tipo] ?? tipo;
@@ -9,6 +13,10 @@ const etiquetaDocumento = (tipo: string) => ({ "01": "DNI", "04": "Carné de ext
 export function ClientesPage() {
   const [busqueda, setBusqueda] = useState("");
   const [clientes, setClientes] = useState<ClienteRegistrado[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
+  const [total, setTotal] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -18,18 +26,18 @@ export function ClientesPage() {
     let vigente = true;
     const espera = window.setTimeout(() => {
       setCargando(true);
-      void servicioIngresos.buscarClientes(busqueda.trim()).then((datos) => { if (vigente) { setClientes(datos); setError(""); } })
+      void servicioIngresos.listarClientes(pagina, porPagina, busqueda.trim()).then((resultado) => { if (vigente) { setClientes(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError(""); } })
         .catch((problema) => { if (vigente) setError(problema instanceof Error ? problema.message : "No se pudo cargar el directorio de clientes."); })
         .finally(() => { if (vigente) setCargando(false); });
     }, 180);
     return () => { vigente = false; window.clearTimeout(espera); };
-  }, [busqueda, actualizarLista]);
+  }, [busqueda, actualizarLista, pagina, porPagina]);
 
   async function guardarCliente(datos: DatosClienteNuevo): Promise<string | null> {
     setError("");
     try {
       await servicioIngresos.registrarCliente(datos);
-      setMostrarFormulario(false); setBusqueda(datos.numeroDocumento); setActualizarLista((n) => n + 1);
+      setMostrarFormulario(false); setBusqueda(datos.numeroDocumento); setPagina(1); setActualizarLista((n) => n + 1);
       return null;
     } catch (problema) {
       const mensaje = problema instanceof Error ? problema.message : "No se pudo registrar el cliente.";
@@ -39,13 +47,9 @@ export function ClientesPage() {
   }
 
   return <div className="clientes-page">
-    <header className="clientes-heading"><div><p className="page-eyebrow">CARTERA COMERCIAL <span>·</span> RELACIONES CON CLIENTES</p><h1>Clientes</h1><p className="page-subtitle">Registra al comprador como cliente y guarda por separado sus datos de contacto y entrega.</p></div><button className="clientes-primary-action erp-floating-action" type="button" aria-label="Nuevo cliente" title="Nuevo cliente" onClick={() => { setError(""); setMostrarFormulario(true); }}><span className="erp-floating-action-icon" aria-hidden="true">+</span><span className="erp-floating-action-label">Nuevo cliente</span></button></header>
-    {error && <div className="clientes-alert" role="alert">{error}</div>}
-    <section className="clientes-toolbar"><label htmlFor="clientes-buscar">Directorio de clientes</label><div className="clientes-search"><span aria-hidden="true">⌕</span><input id="clientes-buscar" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar cliente, contacto, correo o documento" autoComplete="off" /></div><span className="clientes-count">{cargando ? "Buscando…" : `${clientes.length} ${clientes.length === 1 ? "cliente" : "clientes"}`}</span></section>
-    <section className="clientes-table-wrap" aria-label="Clientes registrados">
-      {cargando ? <div className="clientes-empty">Cargando clientes…</div> : clientes.length ? <div className="clientes-table"><div className="clientes-table-head"><span>CLIENTE</span><span>CONTACTO</span><span>DOCUMENTOS</span><span>CONTACTO DIRECTO</span></div>{clientes.map((cliente) => <article className="clientes-row clientes-row-account" key={cliente.id}><div className="clientes-name"><strong>{nombreDe(cliente)}</strong><small>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Cliente persona natural"}</small></div><div className="clientes-name"><strong>{cliente.contactoNombre || "—"}</strong><small>{cliente.direccion || "Sin dirección fiscal"}</small></div><div className="clientes-document">{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((doc) => <span key={`${doc.tipoDocumento}:${doc.numeroDocumento}`}><strong>{doc.numeroDocumento}</strong><small>{etiquetaDocumento(doc.tipoDocumento)}</small></span>)}</div><div className="clientes-name"><strong>{cliente.telefono || "Sin teléfono"}</strong><small>{cliente.correo || "Sin correo"}</small></div></article>)}</div> : <div className="clientes-empty"><strong>{busqueda ? "No hay coincidencias" : "Aún no tienes clientes registrados"}</strong><span>{busqueda ? "Revisa nombre, contacto, correo o documento, o registra el cliente." : "Los clientes que registres desde una venta aparecerán aquí."}</span><button type="button" onClick={() => setMostrarFormulario(true)}>+ Registrar cliente</button></div>}
-    </section>
-    {mostrarFormulario && <FormularioCliente onGuardar={guardarCliente} onCancelar={() => setMostrarFormulario(false)} />}
+    <header className="clientes-heading"><div><p className="page-eyebrow">CARTERA COMERCIAL <span>·</span> RELACIONES CON CLIENTES</p><h1>Clientes</h1><p className="page-subtitle">Registra al comprador como cliente y guarda por separado sus datos de contacto y entrega.</p></div><RegistrarAccionPrincipal etiqueta="Crear cliente" onClick={() => { setError(""); setMostrarFormulario(true); }} /></header>
+    <ListadoMaestro<ClienteRegistrado> variante="tabla" titulo="Directorio de clientes" registros={clientes} cargando={cargando} error={error || undefined} claseContenedor="clientes-table-wrap" paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} encabezadoTabla={<tr><th>Cliente</th><th>Contacto</th><th>Documentos</th><th>Contacto directo</th></tr>} controlesCabecera={<label className="listado-maestro-busqueda">Buscar cliente<input id="clientes-buscar" value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }} placeholder="Nombre, contacto, correo o documento" autoComplete="off" /></label>} resetKey={busqueda} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no tienes clientes registrados"}</strong><span>{busqueda ? "Revisa nombre, contacto, correo o documento, o registra el cliente." : "Los clientes que registres desde una venta aparecerán aquí."}</span></>} renderizarFila={(cliente) => <tr className="clientes-row-account" key={cliente.id}><td><strong>{nombreDe(cliente)}</strong><small>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Cliente persona natural"}</small></td><td><strong>{cliente.contactoNombre || "—"}</strong><small>{cliente.direccion || "Sin dirección fiscal"}</small></td><td><div className="clientes-document">{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((doc) => <span key={`${doc.tipoDocumento}:${doc.numeroDocumento}`}><strong>{doc.numeroDocumento}</strong><small>{etiquetaDocumento(doc.tipoDocumento)}</small></span>)}</div></td><td><strong>{cliente.telefono || "Sin teléfono"}</strong><small>{cliente.correo || "Sin correo"}</small></td></tr>} />
+    {mostrarFormulario && createPortal(<FormularioCliente onGuardar={guardarCliente} onCancelar={() => setMostrarFormulario(false)} />, document.body)}
   </div>;
 }
 

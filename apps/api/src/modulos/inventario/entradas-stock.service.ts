@@ -67,8 +67,8 @@ export class ServicioEntradasStock {
 
   async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const solicitados = Number.parseInt(filtros.porPagina ?? "12", 10);
-    const porPagina = [12, 16, 20].includes(solicitados) ? solicitados : 12;
+    const solicitados = Number.parseInt(filtros.porPagina ?? "10", 10);
+    const porPagina = [4, 6, 8, 10].includes(solicitados) ? solicitados : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condicion = coincidencia ? or(ilike(entradasStock.codigo, coincidencia), ilike(entradasStock.proveedor, coincidencia), ilike(entradasStock.numeroDocumento, coincidencia), ilike(entradasStock.proveedorNumeroDocumento, coincidencia)) : undefined;

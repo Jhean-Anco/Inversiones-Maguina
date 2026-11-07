@@ -12,27 +12,25 @@ import type { EntradaStock } from "../../services/inventario/entradas-stock.serv
 
 const soles = (valor: string | number) => `S/ ${Number(valor).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const documentosCompra: Record<string, string> = { FACTURA: "Factura", BOLETA: "Boleta", GUIA_REMISION: "Guía de remisión", NOTA: "Nota", SIN_DOCUMENTO: "Sin documento", OTRO: "Otro" };
-function tablaCompras(entradas: EntradaStock[], alAbrir: (id: string) => void) {
-  return <div className="egresos-table-scroll"><table className="egresos-table stock-purchases-table"><thead><tr><th>Fecha</th><th>Compra y documento</th><th>Proveedor</th><th>Artículos</th><th>Pago</th><th className="is-number">Total</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>{entradas.map((entrada) => {
-    const total = Number(entrada.totalDocumento ?? entrada.total);
-    const pagado = entrada.montoPagado == null ? null : Number(entrada.montoPagado);
-    const saldo = pagado == null ? null : Math.max(0, total - pagado);
-    return <tr key={entrada.id}><td>{new Date(`${entrada.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{entrada.codigo}</strong><small>{documentosCompra[entrada.tipoDocumento] ?? entrada.tipoDocumento} · {entrada.numeroDocumento || "Registro interno"}</small></td><td><strong>{entrada.proveedor || "No especificado"}</strong>{entrada.proveedorTipoDocumento && entrada.proveedorNumeroDocumento && <small>{entrada.proveedorTipoDocumento} · {entrada.proveedorNumeroDocumento}</small>}</td><td>{entrada.cantidadProductos ?? 0} {(entrada.cantidadProductos ?? 0) === 1 ? "producto" : "productos"}</td><td>{entrada.medioPago || "Sin registrar"}<small>{pagado == null ? "Pago no registrado" : saldo === 0 ? "Pagada" : `Pagado ${soles(pagado)}`}</small></td><td className="is-number"><strong>{soles(total)}</strong></td><td><span className={`egresos-status${saldo === null ? " is-muted" : saldo > 0 ? " is-pending" : " is-paid"}`}>{saldo === null ? "Sin pago" : saldo > 0 ? `Saldo ${soles(saldo)}` : "Pagada"}</span></td><td><button className="egresos-row-button" type="button" onClick={() => alAbrir(entrada.id)}>Ver detalle</button></td></tr>;
-  })}</tbody></table></div>;
+const encabezadoCompras = <tr><th>Fecha</th><th>Compra y documento</th><th>Proveedor</th><th>Artículos</th><th>Pago</th><th className="is-number">Total</th><th>Estado</th><th>Detalle</th></tr>;
+function filaCompra(entrada: EntradaStock, alAbrir: (id: string) => void) {
+  const total = Number(entrada.totalDocumento ?? entrada.total);
+  const pagado = entrada.montoPagado == null ? null : Number(entrada.montoPagado);
+  const saldo = pagado == null ? null : Math.max(0, total - pagado);
+  return <tr key={entrada.id}><td>{new Date(`${entrada.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{entrada.codigo}</strong><small>{documentosCompra[entrada.tipoDocumento] ?? entrada.tipoDocumento} · {entrada.numeroDocumento || "Registro interno"}</small></td><td><strong>{entrada.proveedor || "No especificado"}</strong>{entrada.proveedorTipoDocumento && entrada.proveedorNumeroDocumento && <small>{entrada.proveedorTipoDocumento} · {entrada.proveedorNumeroDocumento}</small>}</td><td>{entrada.cantidadProductos ?? 0} {(entrada.cantidadProductos ?? 0) === 1 ? "producto" : "productos"}</td><td>{entrada.medioPago || "Sin registrar"}<small>{pagado == null ? "Pago no registrado" : saldo === 0 ? "Pagada" : `Pagado ${soles(pagado)}`}</small></td><td className="is-number"><strong>{soles(total)}</strong></td><td><span className={`egresos-status${saldo === null ? " is-muted" : saldo > 0 ? " is-pending" : " is-paid"}`}>{saldo === null ? "Sin pago" : saldo > 0 ? `Saldo ${soles(saldo)}` : "Pagada"}</span></td><td><button className="egresos-row-button" type="button" onClick={() => alAbrir(entrada.id)}>Ver detalle</button></td></tr>;
 }
 
-export function ComprasPage({ permisos = [] }: { permisos?: string[] }) {
+export function ComprasPage() {
   const modulo = useEntradasStock();
   const [productoFormularioAbierto, setProductoFormularioAbierto] = useState(false);
   return <>
     <CatalogoListado
       titulo="Compras de repuestos"
       descripcion="Registra las compras de repuestos para mantener actualizado el inventario."
-      etiquetaCrear="Nueva compra de repuestos"
+      etiquetaCrear="Crear compra de repuestos"
       tituloListado="Historial de compras de repuestos"
       registros={modulo.entradas}
       totalRegistros={modulo.total}
-      visibles={modulo.entradas}
       cargando={modulo.cargando || modulo.cargandoDetalle}
       mensajeCarga="Cargando compras…"
       error={modulo.modalAbierto ? "" : modulo.error}
@@ -47,7 +45,11 @@ export function ComprasPage({ permisos = [] }: { permisos?: string[] }) {
       busqueda={modulo.busqueda}
       busquedaPlaceholder="Buscar por código, proveedor o documento"
       busquedaAriaLabel="Buscar compras"
-      contenidoListado={tablaCompras(modulo.entradas, modulo.abrirProductoDetalle)}
+      variante="tabla"
+      encabezadoTabla={encabezadoCompras}
+      renderizarFila={(entrada) => filaCompra(entrada, modulo.abrirProductoDetalle)}
+      claseTabla="egresos-table stock-purchases-table"
+      claseContenedorTabla="egresos-table-scroll"
       alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}
       alCrear={modulo.abrirNuevo}
       alCambiarPagina={modulo.cambiarPagina}

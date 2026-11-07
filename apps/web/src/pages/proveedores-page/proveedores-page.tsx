@@ -1,16 +1,24 @@
 import "./proveedores-page.css";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioIdentidad } from "../../services/identidad.service";
 import { servicioProveedores, type DatosProveedorNuevo, type ProveedorRegistrado } from "../../services/proveedores.service";
+import { tamanioListadoSegunPantalla } from "../../components/ui/listado-maestro/paginacion-responsive";
 
 const nombreDe = (proveedor: ProveedorRegistrado) => proveedor.nombre || proveedor.razonSocial || [proveedor.nombres, proveedor.apellidoPaterno, proveedor.apellidoMaterno].filter(Boolean).join(" ");
 
 export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
   const navegar = useNavigate();
   const [proveedores, setProveedores] = useState<ProveedorRegistrado[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(() => tamanioListadoSegunPantalla(window.innerWidth, "tarjetas"));
+  const [total, setTotal] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -18,10 +26,10 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [exito, setExito] = useState("");
   const cargar = useCallback(async () => {
     setCargando(true);
-    try { setProveedores(await servicioProveedores.listar(busqueda)); setError(""); }
+    try { const resultado = await servicioProveedores.listarPaginado(pagina, porPagina, busqueda); setProveedores(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError(""); }
     catch (problema) { if (problema instanceof ErrorApi && problema.estado === 401) navegar("/login", { replace: true }); else setError(problema instanceof Error ? problema.message : "No se pudo cargar el directorio."); }
     finally { setCargando(false); }
-  }, [busqueda, navegar]);
+  }, [busqueda, navegar, pagina, porPagina]);
   useEffect(() => { const timer = window.setTimeout(() => void cargar(), 180); return () => window.clearTimeout(timer); }, [cargar]);
 
   async function guardar(datos: DatosProveedorNuevo) {
@@ -30,11 +38,10 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
   }
 
   return <section className="proveedores-page">
-    <header className="proveedores-heading"><div><span className="proveedores-kicker">CONTACTOS COMERCIALES</span><h1>Proveedores</h1><p>Directorio compartido con las compras de productos y mototaxis.</p></div>{puedeCrear && <button type="button" className="proveedores-primary erp-floating-action" aria-label="Registrar proveedor" title="Registrar proveedor" onClick={() => { setError(""); setAbierto(true); }}><span className="erp-floating-action-icon" aria-hidden="true">+</span><span className="erp-floating-action-label">Registrar proveedor</span></button>}</header>
-    {error && <div className="proveedores-alert" role="alert">{error}</div>}{exito && <div className="proveedores-success" role="status">{exito}<button type="button" aria-label="Cerrar" onClick={() => setExito("")}>×</button></div>}
-    <div className="proveedores-toolbar"><label htmlFor="proveedores-search">Buscar por nombre o documento</label><input id="proveedores-search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, DNI o RUC" /><span>{proveedores.length} proveedores</span></div>
-    {cargando ? <div className="proveedores-empty">Cargando directorio…</div> : proveedores.length ? <div className="proveedores-grid">{proveedores.map((proveedor) => <article className="proveedores-card" key={proveedor.id}><span className="proveedores-avatar">{nombreDe(proveedor).slice(0, 1).toLocaleUpperCase("es-PE")}</span><div><h2>{nombreDe(proveedor)}</h2><p>{proveedor.tipoDocumento} · {proveedor.numeroDocumento}</p>{proveedor.razonSocial && proveedor.nombre !== proveedor.razonSocial && <small>{proveedor.razonSocial}</small>}</div><span className="proveedores-tag">Proveedor</span></article>)}</div> : <div className="proveedores-empty"><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>Los proveedores registrados aquí también estarán disponibles al registrar compras.</span></div>}
-    {abierto && <FormularioProveedor onGuardar={guardar} onCerrar={() => setAbierto(false)} />}
+    <header className="proveedores-heading"><div><span className="proveedores-kicker">CONTACTOS COMERCIALES</span><h1>Proveedores</h1><p>Directorio compartido con las compras de productos y mototaxis.</p></div>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear proveedor" onClick={() => { setError(""); setAbierto(true); }} />}</header>
+    {exito && <div className="proveedores-success" role="status">{exito}<button type="button" aria-label="Cerrar" onClick={() => setExito("")}>×</button></div>}
+    <ListadoMaestro<ProveedorRegistrado> variante="tarjetas" titulo="Directorio de proveedores" registros={proveedores} cargando={cargando} error={error || undefined} columnas={2} resetKey={busqueda} paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} controlesCabecera={<label className="listado-maestro-busqueda">Buscar por nombre o documento<input id="proveedores-search" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); setPagina(1); }} placeholder="Nombre, DNI o RUC" /></label>} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>Los proveedores registrados aquí también estarán disponibles al registrar compras.</span></>} renderizarTarjeta={(proveedor) => <article className="proveedores-card" key={proveedor.id}><span className="proveedores-avatar">{nombreDe(proveedor).slice(0, 1).toLocaleUpperCase("es-PE")}</span><div><h2>{nombreDe(proveedor)}</h2><p>{proveedor.tipoDocumento} · {proveedor.numeroDocumento}</p>{proveedor.razonSocial && proveedor.nombre !== proveedor.razonSocial && <small>{proveedor.razonSocial}</small>}</div><span className="proveedores-tag">Proveedor</span></article>} />
+    {abierto && createPortal(<FormularioProveedor onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
   </section>;
 }
 

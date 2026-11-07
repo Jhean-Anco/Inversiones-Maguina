@@ -15,88 +15,125 @@
 }
 .moto-page-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 0 0 18px; border-bottom: 1px solid var(--moto-border); }
 .moto-page-heading h1 { margin: 8px 0; color: #0b2749; font-size: clamp(30px, 3vw, 42px); letter-spacing: -.04em; }
-.moto-page-heading p,.moto-panel-heading p,.moto-side-form p { margin: 0; color: var(--moto-muted); }
+.moto-page-heading p,
+.moto-panel-heading p{ margin: 0; color: var(--moto-muted); }
 .moto-eyebrow { color: #637b96; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
 .moto-heading-total { min-width: 160px; padding: 12px 16px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); text-align: right; }
 .moto-heading-total small,.moto-heading-total strong { display: block; }
 .moto-heading-total small { color: var(--moto-muted); font-size: 12px; }
 .moto-heading-total strong { margin-top: 3px; font-size: 26px; }
-.moto-panel-heading button,.moto-quick-actions button,.moto-inline-form button,.moto-side-form button,.moto-modal footer button,.moto-adjust-modal footer button {
+.moto-panel-heading button,
+.moto-modal footer button,
+.moto-adjust-modal footer button{
   min-height: 40px; padding: 0 14px; border: 1px solid #d5e0ec; border-radius: 8px; background: var(--moto-surface); color: var(--moto-primary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .moto-panel { min-width: 0; padding: 22px; border: 1px solid var(--moto-border); border-radius: 14px; background: var(--moto-surface); box-shadow: 0 4px 16px #122e4d08; }
 .moto-panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; }
-.moto-panel-heading .moto-create-action { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border-color: var(--action-primary-border); border-radius: 10px; background: var(--action-primary-surface); color: var(--action-primary); font: inherit; font-size: 12px; font-weight: 750; white-space: nowrap; }
-.moto-panel-heading .moto-create-action:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); }
-.moto-panel-heading h2,.moto-side-form h2 { margin: 0 0 5px; color: var(--moto-ink); font-size: 18px; }
-.moto-panel-heading p,.moto-side-form p { font-size: 13px; }
-.moto-kpis { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
-.moto-kpis article { display: grid; gap: 9px; padding: 17px 18px; border: 1px solid var(--moto-border); border-radius: 12px; background: var(--moto-surface); }
-.moto-kpis span { color: var(--moto-muted); font-size: 12px; font-weight: 650; }
-.moto-kpis strong { color: var(--moto-ink); font-size: 24px; letter-spacing: -.025em; }
+.moto-panel-heading h2{ margin: 0 0 5px; color: var(--moto-ink); font-size: 18px; }
+.moto-panel-heading p{ font-size: 13px; }
 .moto-content-grid { display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); gap: 16px; align-items: start; }
-.moto-content-grid.is-purchase { grid-template-columns: minmax(0,1.65fr) minmax(260px,.65fr); }
-.moto-inline-form { display: flex; gap: 8px; }
-.moto-inline-form input { flex: 1; min-width: 0; }
-.moto-chip-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
-.moto-chip-list span { padding: 6px 10px; border: 1px solid var(--moto-border); border-radius: 8px; background: var(--moto-soft); color: var(--moto-ink); font-size: 12px; font-weight: 650; }
-.moto-model-list { display: grid; }
-.moto-model-list article,.moto-guarantee { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--moto-border); }
-.moto-model-list strong,.moto-model-list small,.moto-guarantee strong,.moto-guarantee small { display: block; }
-.moto-model-list small,.moto-guarantee small { margin-top: 4px; color: var(--moto-muted); font-size: 12px; }
-.moto-model-list article>span,.moto-guarantee time { color: var(--moto-muted); font-size: 12px; white-space: nowrap; }
+.moto-guarantee{ display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid var(--moto-border); }
+.moto-guarantee strong,
+.moto-guarantee small{ display: block; }
+.moto-guarantee small{ margin-top: 4px; color: var(--moto-muted); font-size: 12px; }
+.moto-guarantee time{ color: var(--moto-muted); font-size: 12px; white-space: nowrap; }
+.listado-maestro-tarjetas .moto-guarantee { min-height: 84px; padding: 14px 16px; border: 1px solid var(--moto-border); border-radius: 12px; background: var(--moto-surface); }
 .moto-empty { display: grid; place-items: center; min-height: 130px; padding: 22px; border: 1px dashed #ccd8e5; border-radius: 10px; color: var(--moto-muted); text-align: center; }
-.moto-quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .moto-filters { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 10px; margin-bottom: 15px; }
-.moto-unit-list { display: grid; gap: 10px; }
-.moto-unit-card { display: grid; grid-template-columns: minmax(180px,1.1fr) minmax(260px,1.3fr) auto auto; align-items: center; gap: 16px; padding: 15px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); }
-.moto-unit-main h3 { margin: 8px 0 4px; color: var(--moto-ink); font-size: 15px; }
-.moto-unit-main small,.moto-unit-cost small { color: var(--moto-muted); font-size: 11px; }
 .moto-state { display: inline-flex; padding: 4px 8px; border-radius: 6px; background: #eaf6ef; color: #13734c; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
-.moto-state.state-vendida { background: #edf0f4; color: #536477; }.moto-state.state-garantia { background: #fff4df; color: #98640c; }.moto-state.state-reservada { background: #eaf2fc; color: #315d95; }.moto-state.state-baja { background: #ffeded; color: #a33f3f; }
-.moto-unit-card dl { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr .7fr; gap: 9px; margin: 0; }
-.moto-unit-card dt { color: var(--moto-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
-.moto-unit-card dd { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--moto-ink); font-size: 12px; font-weight: 650; }
-.moto-unit-cost strong,.moto-unit-cost small { display: block; text-align: right; }.moto-unit-cost strong { margin-top: 4px; color: var(--moto-ink); white-space: nowrap; }
+.moto-state.state-vendida { background: #edf0f4; color: #536477; }.moto-state.state-garantia { background: #fff4df; color: #98640c; }.moto-state.state-reservada { background: #eaf2fc; color: #315d95; }.moto-state.state-baja,.moto-state.state-faltante { background: #ffeded; color: #a33f3f; }
 .moto-quiet-button { border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .moto-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-.moto-fields label,.moto-side-form label,.moto-adjust-modal label { display: grid; gap: 7px; color: #273f5b; font-size: 13px; font-weight: 700; }
-.moto-fields input,.moto-fields select,.moto-fields textarea,.moto-filters input,.moto-filters select,.moto-inline-form input,.moto-side-form input,.moto-side-form select,.moto-adjust-modal input,.moto-adjust-modal select {
+.moto-fields label,
+.moto-adjust-modal label{ display: grid; gap: 7px; color: #273f5b; font-size: 13px; font-weight: 700; }
+.moto-fields input,
+.moto-fields select,
+.moto-fields textarea,
+.moto-filters input,
+.moto-filters select,
+.moto-adjust-modal input,
+.moto-adjust-modal select,
+.moto-adjust-modal textarea{
   width: 100%; min-height: 45px; padding: 0 12px; border: 1px solid #dce4ed; border-radius: 8px; background: var(--moto-surface); color: var(--moto-ink); font: inherit; font-size: 14px;
 }
 .moto-fields textarea { min-height: 82px; padding: 10px 12px; resize: vertical; }
-.moto-fields input:focus,.moto-fields select:focus,.moto-fields textarea:focus,.moto-filters input:focus,.moto-filters select:focus,.moto-inline-form input:focus,.moto-side-form input:focus,.moto-side-form select:focus,.moto-adjust-modal input:focus,.moto-adjust-modal select:focus { outline: none; border-color: #2d75bf; box-shadow: 0 0 0 3px #2d75bf1c; }
+.moto-fields input:focus,
+.moto-fields select:focus,
+.moto-fields textarea:focus,
+.moto-filters input:focus,
+.moto-filters select:focus,
+.moto-adjust-modal input:focus,
+.moto-adjust-modal select:focus,
+.moto-adjust-modal textarea:focus{ outline: none; border-color: #2d75bf; box-shadow: 0 0 0 3px #2d75bf1c; }
 .moto-field-wide { grid-column: 1/-1; }
 .moto-form { display: grid; gap: 16px; }
 .moto-primary { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--action-primary-border); border-radius: 10px; background: var(--action-primary-surface); color: var(--action-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .moto-primary:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); }
 .moto-primary:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 2px; }
-.moto-primary:disabled,.moto-side-form button:disabled,.moto-inline-form button:disabled { opacity: .55; cursor: wait; }
-.moto-note { padding: 12px 14px; border: 1px solid var(--moto-border); border-radius: 9px; background: var(--moto-soft); color: var(--moto-muted); font-size: 12px; line-height: 1.55; }
-.moto-side-form { display: grid; gap: 13px; background: var(--moto-soft); }.moto-side-form form { display: grid; gap: 12px; }.moto-side-form small { color: #427356; }
+.moto-primary:disabled{ opacity: .55; cursor: wait; }
 .moto-modal-backdrop { background: #071a2db8; overscroll-behavior: contain; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .moto-modal { gap: 18px; width: min(820px,100%); max-height: min(90dvh,900px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 24px; border: 1px solid var(--moto-border); border-radius: 14px; background: var(--moto-surface); box-shadow: 0 24px 80px #10284244; }
 .moto-modal :is(button,input,select,textarea):focus-visible { outline: 3px solid #3784bd66; outline-offset: 2px; }
-.moto-purchase-dialog { width: min(920px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+.moto-purchase-dialog { --moto-ink: #102b4d; --moto-muted: #71839a; --moto-border: #e2e8f0; --moto-surface: #fff; --moto-soft: #f7f9fc; --moto-primary: #15569a; width: min(920px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--moto-ink); }
+html[data-theme="oscuro"] .moto-purchase-dialog { --moto-ink: #e6edf6; --moto-muted: #9aaabd; --moto-border: #2b3b50; --moto-surface: #142235; --moto-soft: #182a3f; --moto-primary: #5796d1; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-fields label { color: #c2cedc; }
 .moto-purchase-dialog > .moto-modal-title { padding-bottom: 16px; border-bottom: 1px solid var(--moto-border); }
 .moto-purchase-dialog .moto-purchase-layout { grid-template-columns: minmax(0,1fr); }
 .moto-modal-title { display: flex; justify-content: space-between; align-items: start; gap: 15px; }.moto-modal-title h2 { margin: 0 0 5px; color: var(--moto-ink); font-size: 20px; }.moto-modal-title p { margin: 0; color: var(--moto-muted); font-size: 13px; }.moto-modal-title>button { width: 34px; height: 34px; border: 1px solid var(--moto-border); border-radius: 8px; background: var(--moto-surface); color: var(--moto-muted); font-size: 20px; cursor: pointer; }
 .moto-modal footer,.moto-adjust-modal footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 14px; border-top: 1px solid var(--moto-border); }.moto-modal footer .moto-primary,.moto-adjust-modal footer .moto-primary { padding: 0 18px; }.moto-adjust-modal { width: min(480px,100%); }.moto-adjust-modal>label { display: grid; gap: 7px; color: #273f5b; font-size: 13px; font-weight: 700; }
+.moto-stocktake-page { display: grid; gap: 18px; }
+.moto-stocktake-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #b8ddcb; border-radius: 9px; background: #edf8f2; color: #226342; font-size: 13px; }
+.moto-stocktake-notice button { border: 0; background: transparent; color: inherit; font-size: 20px; cursor: pointer; }
+.moto-stocktake-history { display: grid; gap: 10px; }
+.moto-stocktake-history-head,.moto-stocktake-counts,.moto-stocktake-section-title { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.moto-stocktake-history-head span,.moto-stocktake-history-main small,.moto-stocktake-section-title p { color: var(--moto-muted); font-size: 12px; }
+.moto-stocktake-list { display: grid; gap: 10px; }
+.moto-stocktake-list article { display: grid; grid-template-columns: minmax(170px,1fr) auto; gap: 10px 18px; padding: 15px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); }
+.moto-stocktake-history-main { display: grid; gap: 5px; }
+.moto-stocktake-counts { justify-content: flex-end; flex-wrap: wrap; color: var(--moto-muted); font-size: 12px; }
+.moto-stocktake-counts span { display: flex; gap: 6px; }
+.moto-stocktake-counts b { color: var(--moto-ink); }
+.moto-stocktake-differences,.moto-stocktake-list article>p { grid-column: 1/-1; margin: 0; color: var(--moto-muted); font-size: 12px; overflow-wrap: anywhere; }
+.moto-stocktake-differences { display: grid; gap: 4px; }
+.moto-stocktake-differences b { color: var(--moto-ink); }
+.moto-stocktake-modal { width: min(760px,calc(100vw - 32px)); }
+.moto-stocktake-modal>label { display: grid; gap: 7px; color: #273f5b; font-size: 13px; font-weight: 700; }
+.moto-stocktake-modal>label :is(input,select,textarea) { width: 100%; min-height: 44px; padding: 0 11px; border: 1px solid var(--moto-border); border-radius: 8px; background: var(--moto-surface); color: var(--moto-ink); font: inherit; }
+.moto-stocktake-modal>label textarea { min-height: 82px; padding: 10px 12px; resize: vertical; }
+.moto-stocktake-counter { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.moto-stocktake-counter>div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--moto-border); border-radius: 9px; background: var(--moto-soft); }
+.moto-stocktake-counter span { color: var(--moto-muted); font-size: 11px; }
+.moto-stocktake-counter strong { color: var(--moto-ink); font-size: 20px; }
+.moto-stocktake-counter .is-surplus strong { color: #16814f; }.moto-stocktake-counter .is-shortage strong { color: #b43f45; }.moto-stocktake-counter .is-even strong { color: #52718f; }
+.moto-stocktake-existing,.moto-stocktake-new-unit { min-width: 0; padding: 12px; border: 1px solid var(--moto-border); border-radius: 9px; }
+.moto-stocktake-existing legend,.moto-stocktake-new-unit legend { padding: 0 5px; color: var(--moto-muted); font-size: 12px; font-weight: 750; }
+.moto-stocktake-unit-list { display: grid; max-height: 220px; overflow: auto; }
+.moto-stocktake-unit-list label { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--moto-border); cursor: pointer; }
+.moto-stocktake-unit-list label:last-child { border-bottom: 0; }
+.moto-stocktake-unit-list input { width: 18px; min-height: 18px; accent-color: var(--moto-primary); }
+.moto-stocktake-unit-list label span { display: grid; gap: 3px; }
+.moto-stocktake-unit-list small,.moto-stocktake-empty,.moto-stocktake-loading { color: var(--moto-muted); font-size: 12px; }
+.moto-stocktake-section-title { margin-bottom: 10px; }
+.moto-stocktake-section-title h3 { margin: 0 0 4px; color: var(--moto-ink); font-size: 14px; }
+.moto-stocktake-section-title p { margin: 0; }
+.moto-stocktake-section-title button,.moto-stocktake-new-unit>button { min-height: 34px; padding: 0 11px; border: 1px solid var(--moto-border); border-radius: 8px; background: var(--moto-surface); color: var(--moto-primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.moto-stocktake-new-units { display: grid; gap: 8px; }
+.moto-stocktake-new-unit { position: relative; padding-top: 16px; }
+.moto-stocktake-new-unit>button { position: absolute; top: -4px; right: 9px; }
+.moto-stocktake-new-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.moto-stocktake-new-fields label { display: grid; gap: 6px; color: #273f5b; font-size: 12px; font-weight: 700; }
+.moto-stocktake-new-fields input { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--moto-border); border-radius: 7px; background: var(--moto-surface); color: var(--moto-ink); font: inherit; }
+html[data-theme="oscuro"] #root .mototaxis-page .moto-stocktake-modal label { color: #c2cedc; }
 .moto-purchases-history { margin-top: 18px; }
 .moto-claims-history { margin-top: 18px; }
-.moto-claims-list { display: grid; gap: 10px; }
-.moto-claims-list > article { display: grid; grid-template-columns: minmax(200px,1.5fr) auto repeat(3,minmax(95px,.7fr)); align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); }
+.moto-claim-card { display: grid; grid-template-columns: minmax(200px,1.5fr) auto repeat(3,minmax(95px,.7fr)); align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); }
 .moto-claim-main { min-width: 0; }
-.moto-claim-main strong,.moto-claim-main small,.moto-claims-list article > div:not(.moto-claim-main) small,.moto-claims-list article > div:not(.moto-claim-main) strong { display: block; }
+.moto-claim-main strong,.moto-claim-main small,.moto-claim-card > div:not(.moto-claim-main) small,.moto-claim-card > div:not(.moto-claim-main) strong { display: block; }
 .moto-claim-main small { margin-top: 5px; overflow-wrap: anywhere; color: var(--moto-muted); font-size: 12px; }
-.moto-claims-list article > div:not(.moto-claim-main) small { color: var(--moto-muted); font-size: 11px; }
-.moto-claims-list article > div:not(.moto-claim-main) strong { margin-top: 4px; font-size: 13px; }
+.moto-claim-card > div:not(.moto-claim-main) small { color: var(--moto-muted); font-size: 11px; }
+.moto-claim-card > div:not(.moto-claim-main) strong { margin-top: 4px; font-size: 13px; }
 .moto-claim-status { width: max-content; padding: 5px 8px; border-radius: 6px; background: #fff4df; color: #98640c; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .moto-claim-resolution { grid-column: 1/-1; margin: 0; color: var(--moto-muted); font-size: 12px; }
-.moto-purchase-list { display: grid; gap: 10px; }
-.moto-purchase-list > article { display: grid; grid-template-columns: minmax(220px,1.8fr) repeat(3,minmax(90px,.7fr)) auto; align-items: center; gap: 18px; padding: 15px 17px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); }
-.moto-purchase-list > article > div { display: grid; gap: 4px; }.moto-purchase-list small { color: var(--moto-muted); }.moto-purchase-list .has-balance strong { color: #b63f35; }.moto-purchase-list .is-settled strong { color: #13775e; }
-.moto-purchase-list button { min-height: 38px; padding: 0 12px; border: 1px solid #d5e0ec; border-radius: 8px; color: var(--moto-primary); background: var(--moto-surface); font-weight: 700; cursor: pointer; }
 .moto-payment-history { display: grid; gap: 9px; padding: 14px; margin-top: 18px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-soft); }
 .moto-payment-history > div { display: flex; justify-content: space-between; gap: 12px; padding-top: 8px; border-top: 1px solid var(--moto-border); color: var(--moto-muted); font-size: .88rem; }
 .moto-staged-units { display: grid; gap: 8px; }
@@ -105,32 +142,18 @@
 html[data-theme="oscuro"] #root .mototaxis-page { --moto-ink: #e6edf6; --moto-muted: #9aaabd; --moto-border: #2b3b50; --moto-surface: #142235; --moto-soft: #182a3f; --moto-primary: #5796d1; color: var(--moto-ink); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-page-heading h1,
 html[data-theme="oscuro"] #root .mototaxis-page .moto-panel-heading h2,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-side-form h2,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-kpis strong,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-main h3,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-card dd,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-cost strong,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-modal-title h2 { color: var(--moto-ink); }
+html[data-theme="oscuro"] #root .mototaxis-page .moto-modal-title h2{ color: var(--moto-ink); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-fields label,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-side-form label,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-adjust-modal label { color: #c2cedc; }
+html[data-theme="oscuro"] #root .mototaxis-page .moto-adjust-modal label{ color: #c2cedc; }
 html[data-theme="oscuro"] #root .mototaxis-page input,
 html[data-theme="oscuro"] #root .mototaxis-page select,
 html[data-theme="oscuro"] #root .mototaxis-page textarea { border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-ink); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-panel-heading button,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-quick-actions button,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-inline-form button,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-side-form button,
-html[data-theme="oscuro"] #root .mototaxis-page .moto-modal footer button:not(.moto-primary) { border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-primary); }
+html[data-theme="oscuro"] #root .mototaxis-page .moto-modal footer button:not(.moto-primary){ border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-primary); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-primary { border-color: var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary); }
-@media (max-width: 1000px) { .moto-content-grid,.moto-content-grid.is-purchase { grid-template-columns: 1fr; }.moto-unit-card { grid-template-columns: 1fr 1.2fr auto; }.moto-unit-card dl { grid-column: 1/3; grid-row: 2; }.moto-unit-cost { grid-column: 3; grid-row: 1; }.moto-purchase-list > article { grid-template-columns: repeat(2,minmax(0,1fr)); }.moto-purchase-info { grid-column: 1/-1; } }
-@media (max-width: 650px) { .mototaxis-page { padding: 0 0 20px; }.moto-page-heading { align-items: flex-start; }.moto-heading-total { min-width: 105px; padding: 10px; }.moto-heading-total strong { font-size: 21px; }.moto-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }.moto-kpis article { padding: 14px; }.moto-fields,.moto-filters { grid-template-columns: 1fr; }.moto-field-wide { grid-column: auto; }.moto-unit-card { grid-template-columns: 1fr 1fr; align-items: start; }.moto-unit-card dl { grid-column: 1/-1; grid-row: auto; }.moto-unit-cost { grid-column: 1; grid-row: auto; }.moto-quiet-button { justify-self: end; }.moto-panel { padding: 17px; }.moto-inline-form { flex-direction: column; }.moto-panel-heading { align-items: flex-start; }.moto-staged-units article { grid-template-columns: auto 1fr; }.moto-staged-units article small { grid-column: 1/-1; }.moto-staged-units article button { grid-column: 2; grid-row: 1; justify-self: end; } }
-.moto-movement-history { display: grid; gap: 12px; margin-top: 20px; padding: 18px; border: 1px solid var(--moto-border); border-radius: 12px; background: var(--moto-soft); }
-.moto-movement-history .moto-panel-heading h3 { margin: 0 0 4px; color: var(--moto-ink); }
-.moto-movement-history ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.moto-movement-history li { display: grid; grid-template-columns: minmax(120px, .7fr) minmax(140px, 1fr) minmax(180px, 1.5fr) auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--moto-border); border-radius: 9px; background: var(--moto-surface); color: var(--moto-ink); }
-.moto-movement-history li small,.moto-movement-history li time { color: var(--moto-muted); }
-@media (max-width: 750px) { .moto-movement-history li { grid-template-columns: 1fr 1fr; }.moto-movement-history li small { grid-column: 1/-1; }.moto-movement-history li time { grid-column: 1/-1; } }
+@media (max-width: 1000px) { .moto-content-grid{ grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .mototaxis-page { padding: 0 0 20px; }.moto-page-heading { align-items: flex-start; }.moto-heading-total { min-width: 105px; padding: 10px; }.moto-heading-total strong { font-size: 21px; }.moto-fields,.moto-filters,.moto-stocktake-new-fields { grid-template-columns: 1fr; }.moto-field-wide { grid-column: auto; }.moto-quiet-button { justify-self: end; }.moto-panel { padding: 17px; }.moto-panel-heading { align-items: flex-start; }.moto-staged-units article { grid-template-columns: auto 1fr; }.moto-staged-units article small { grid-column: 1/-1; }.moto-staged-units article button { grid-column: 2; grid-row: 1; justify-self: end; }.moto-stocktake-list article { grid-template-columns: 1fr; }.moto-stocktake-counts { justify-content: flex-start; }.moto-stocktake-counter { grid-template-columns: 1fr; } }
+@media (max-width: 750px) { }
 
 /* Compra de mototaxis: flujo guiado por etapas */
 .moto-purchase-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
@@ -150,12 +173,6 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-primary { border-color: va
 .moto-purchase-summary span { color: var(--moto-muted); font-size: 12px; }
 .moto-purchase-summary strong { color: var(--moto-ink); font-size: 17px; font-variant-numeric: tabular-nums; }
 .moto-purchase-summary p { grid-column: 1/-1; margin: 0; color: #a3382f; font-size: 12px; }
-.moto-side-form { position: sticky; top: 16px; }
-.moto-side-form > div:first-child { display: grid; gap: 5px; }
-.moto-side-form h2 { margin: 0; }
-.moto-selected-provider { display: grid; gap: 4px; padding: 11px 12px; border: 1px solid #b9dfcc; border-radius: 8px; background: #effaf4; }
-.moto-selected-provider span { color: #4f7962; font-size: 11px; }
-.moto-selected-provider strong { color: #226443; font-size: 13px; }
 .moto-document-search { display: flex; gap: 8px; }
 .moto-document-search input { min-width: 0; flex: 1; }
 .moto-document-search button { min-height: 45px; padding: 0 13px; border: 1px solid #d5e0ec; border-radius: 8px; background: var(--moto-surface); color: var(--moto-primary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -163,31 +180,16 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-primary { border-color: va
 html[data-theme="oscuro"] #root .mototaxis-page .moto-purchase-section-title > span { background: #203c58; color: #a9d0f4; }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-add-unit { border-color: #45627f; background: var(--moto-soft); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-add-unit:hover { background: #20374e; }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-selected-provider { border-color: #315c48; background: #18372b; }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-selected-provider span { color: #a3cbb2; }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-selected-provider strong { color: #c3ead1; }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-document-search button { border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-primary); }
-@media (max-width: 1000px) { .moto-purchase-layout { grid-template-columns: 1fr; }.moto-side-form { position: static; } }
+@media (max-width: 1000px) { .moto-purchase-layout { grid-template-columns: 1fr; } }
 @media (max-width: 1000px) { .moto-purchase-dialog .moto-purchase-layout { grid-template-columns: 1fr; } }
 @media (max-width: 520px) { .moto-purchase-summary { grid-template-columns: 1fr; gap: 10px; }.moto-purchase-summary > div { grid-template-columns: 1fr auto; align-items: center; }.moto-purchase-summary strong { font-size: 15px; } }
-@media (max-width: 750px) { .moto-claims-list > article { grid-template-columns: 1fr 1fr; }.moto-claim-main,.moto-claim-resolution { grid-column: 1/-1; }.moto-claim-status { justify-self: start; } }
-.moto-section-nav { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 18px; padding: 5px; border: 1px solid #e4eaf1; border-radius: 12px; background: #f7f9fc; }
-.moto-section-nav button { min-height: 36px; padding: 0 13px; border: 0; border-radius: 8px; background: transparent; color: #53677e; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: color .16s ease, background .16s ease, box-shadow .16s ease; }
-.moto-section-nav button:hover { background: #eaf0f6; color: #173d63; }
-.moto-section-nav button.is-active { background: #fff; box-shadow: 0 1px 4px #173d631c; color: #174a79; }
-html[data-theme="oscuro"] .moto-section-nav { border-color: #263d55; background: #13263a; }
-html[data-theme="oscuro"] .moto-section-nav button { color: #b5c5d7; }
-html[data-theme="oscuro"] .moto-section-nav button:hover { background: #1d354e; color: #e7f0fa; }
-html[data-theme="oscuro"] .moto-section-nav button.is-active { background: #254563; color: #fff; }
-
-.moto-purchase-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:1}
-.moto-purchase-actions input{width:min(320px,100%);min-height:40px;padding:0 12px;border:1px solid var(--moto-border);border-radius:8px;background:var(--moto-surface);color:var(--moto-ink);font:inherit;font-size:13px}
+@media (max-width: 750px) { .moto-claim-card { grid-template-columns: 1fr 1fr; }.moto-claim-main,.moto-claim-resolution { grid-column: 1/-1; }.moto-claim-status { justify-self: start; } }
 .moto-purchase-empty{gap:7px}
 .moto-purchase-empty>span{color:var(--moto-ink);font-weight:750}
 .moto-purchase-empty>p{max-width:450px;margin:0;color:var(--moto-muted);font-size:13px}
 .moto-purchase-empty>button{min-height:38px;margin-top:6px;padding:0 14px;border:0;border-radius:8px;background:var(--moto-primary);color:#fff;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
-html[data-theme="oscuro"] #root .moto-purchase-actions input{border-color:var(--moto-border);background:var(--moto-surface);color:var(--moto-ink)}
-@media(max-width:700px){.moto-purchases-heading{align-items:stretch;flex-direction:column}.moto-purchase-actions{align-items:stretch;flex-direction:column}.moto-purchase-actions input{width:100%;box-sizing:border-box}.moto-purchase-actions>button{width:100%}}
+@media(max-width:700px){.moto-purchases-heading{align-items:stretch;flex-direction:column}}
 
 /* Buscador visible y proveedor dentro del flujo de compra */
 .moto-purchase-search { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; margin: 16px 0 20px; border: 1px solid var(--moto-border); border-radius: 10px; background: var(--moto-surface); color: var(--moto-muted); }
@@ -227,30 +229,14 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-provider-control button { 
 html[data-theme="oscuro"] #root .mototaxis-page .moto-search-select > input,html[data-theme="oscuro"] #root .mototaxis-page .moto-search-results { border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-ink); }
 @media(max-width:650px) { .moto-provider-control.moto-search-select,.moto-model-control { grid-template-columns: 1fr; }.moto-provider-control .moto-search-results,.moto-model-control .moto-search-results { right: 0; }.moto-provider-control > button,.moto-model-control > button { width: 100%; } }
 
-/* Inventario de mototaxis con la jerarqu?a visual del directorio de clientes */
-.moto-unit-table-wrap { overflow: hidden; border: 1px solid #e0e8e5; border-radius: 12px; background: var(--moto-surface); box-shadow: 0 9px 24px #173c2f08; }
-.moto-unit-table-head,.moto-unit-table-row { display: grid; grid-template-columns: minmax(190px,1.25fr) minmax(190px,1.2fr) minmax(130px,.75fr) minmax(105px,.6fr) minmax(105px,.55fr); gap: 16px; align-items: center; }
-.moto-unit-table-head { min-height: 39px; padding: 0 18px; border-bottom: 1px solid #e8eeeb; background: #f6f9f7; color: #7c9085; font-size: 10px; font-weight: 850; letter-spacing: .09em; }
-.moto-unit-table-row { min-height: 68px; padding: 10px 18px; border-bottom: 1px solid #edf1ef; }
-.moto-unit-table-row:last-child { border-bottom: 0; }
-.moto-unit-table-row > div { display: grid; min-width: 0; gap: 4px; }
-.moto-unit-table-row strong { overflow: hidden; color: #254638; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.moto-unit-table-row small { overflow: hidden; color: #88968f; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .moto-unit-table-cost { text-align: right; }
-.moto-unit-table-actions { display: flex !important; flex-direction: row; justify-content: flex-end; gap: 6px !important; }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-table-wrap { border-color: var(--moto-border); }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-table-head { border-color: var(--moto-border); background: var(--moto-soft); color: var(--moto-muted); }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-table-row { border-color: var(--moto-border); }
-html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-table-row strong { color: var(--moto-ink); }
-@media(max-width:900px) { .moto-unit-table-head,.moto-unit-table-row { grid-template-columns: minmax(150px,1fr) minmax(170px,1fr) minmax(105px,.7fr) minmax(95px,.6fr); }.moto-unit-table-head > :nth-child(3),.moto-unit-table-row > :nth-child(3) { display: none !important; } }
-@media(max-width:650px) { .moto-unit-table-head { display: none; }.moto-unit-table-row { grid-template-columns: minmax(0,1fr) auto; gap: 10px 12px; padding: 13px; }.moto-unit-table-row > :nth-child(2) { grid-column: 1/-1; grid-row: 2; }.moto-unit-table-row > :nth-child(3) { display: grid !important; grid-column: 1; grid-row: 3; text-align: left; }.moto-unit-table-row > :nth-child(4) { grid-column: 2; grid-row: 1; justify-self: end; }.moto-unit-table-row > :nth-child(5) { grid-column: 2; grid-row: 3; }.moto-unit-table-actions { justify-content: flex-end; } }
-.moto-panel:has(.moto-unit-table-wrap) { padding: 0; border: 0; background: transparent; box-shadow: none; }
-.moto-panel:has(.moto-unit-table-wrap) > .moto-panel-heading { padding: 0 0 14px; }
-.moto-panel:has(.moto-unit-table-wrap) > .moto-filters { margin-bottom: 12px; }
-
-.moto-unit-table-head,.moto-unit-table-row { grid-template-columns: minmax(170px,1.15fr) minmax(185px,1.2fr) minmax(125px,.7fr) minmax(145px,.85fr) minmax(95px,.55fr) minmax(90px,.5fr); }
-.moto-unit-table-warranty { align-content: center; }
-.moto-unit-table-warranty button { justify-self: start; padding: 0; border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.moto-unit-table-warranty button { padding: 0; border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.listado-maestro-tabla.moto-unit-table { min-width: 1080px; }
+.listado-maestro-tabla.moto-unit-table td { line-height: 1.4; }
+.listado-maestro-tabla.moto-unit-table td > strong { display: block; color: var(--moto-ink); font-size: 12px; }
+.listado-maestro-tabla.moto-unit-table td > small { display: block; margin-top: 3px; color: var(--moto-muted); font-size: 10px; }
+.listado-maestro-tabla.moto-unit-table .moto-unit-table-name { min-width: 230px; }
+@media(max-width:760px) { .listado-maestro-tabla.moto-unit-table { min-width: 980px; } }
 .moto-unit-photos { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px !important; margin-top: 5px; }
 .moto-unit-photo { position: relative; display: block; width: 42px; height: 42px; overflow: hidden; border: 1px solid var(--moto-border); border-radius: 7px; background: var(--moto-soft); }
 .moto-unit-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -259,15 +245,3 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-unit-table-row strong { co
 .moto-unit-photo > .erp-icon-action.moto-photo-delete:hover:not(:disabled) { background: #ffe8ea; color: #a91b2b; }
 .moto-unit-photo-add { display: grid; width: 42px; height: 42px; place-items: center; border: 1px dashed var(--moto-border); border-radius: 7px; color: var(--moto-primary); font-size: 10px; font-weight: 750; cursor: pointer; }
 .moto-unit-photo-add input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
-@media(max-width:900px) {
-  .moto-unit-table-head,.moto-unit-table-row { grid-template-columns: minmax(145px,1fr) minmax(165px,1.1fr) minmax(130px,.85fr) minmax(90px,.6fr) minmax(90px,.55fr); }
-  .moto-unit-table-head > :nth-child(3),.moto-unit-table-row > :nth-child(3) { display: none !important; }
-}
-@media(max-width:650px) {
-  .moto-unit-table-row { grid-template-columns: minmax(0,1fr) auto; }
-  .moto-unit-table-row > :nth-child(2) { grid-column: 1/-1; grid-row: 2; }
-  .moto-unit-table-row > :nth-child(3) { display: grid !important; grid-column: 1; grid-row: 3; text-align: left; }
-  .moto-unit-table-row > :nth-child(4) { grid-column: 1/-1; grid-row: 4; }
-  .moto-unit-table-row > :nth-child(5) { grid-column: 2; grid-row: 1; justify-self: end; }
-  .moto-unit-table-row > :nth-child(6) { grid-column: 2; grid-row: 3; }
-}

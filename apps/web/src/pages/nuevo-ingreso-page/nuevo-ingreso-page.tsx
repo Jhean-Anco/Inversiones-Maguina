@@ -194,7 +194,6 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   buscarCodigoLectorRef.current = agregarCodigoLeido;
   useEffect(() => {
     const capturarLector = (evento: globalThis.KeyboardEvent) => {
-      const objetivo = evento.target;
       if (evento.key === "Enter" || evento.key === "Tab") {
         const codigo = codigoLector.current.trim(); codigoLector.current = "";
         const destino = objetivoLector.current;

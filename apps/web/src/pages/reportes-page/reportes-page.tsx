@@ -18,8 +18,6 @@ export function ReportesPage({ tipo }: { tipo: TipoReporte }) {
   const [inventario, setInventario] = useState<ReporteInventario | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
-  const titulo = tipo === "ingresos" ? "Reporte de ingresos" : "Reporte de inventario";
-
   useEffect(() => {
     let vigente = true;
     setCargando(true);
@@ -37,7 +35,6 @@ export function ReportesPage({ tipo }: { tipo: TipoReporte }) {
   }, [desde, hasta, tipo]);
 
   return <section className="report-page">
-    <header className="report-heading"><div><p className="page-eyebrow">REPORTES <span>·</span> {tipo === "ingresos" ? "VENTAS" : "EXISTENCIAS"}</p><h1>{titulo}</h1><p className="page-subtitle">{tipo === "ingresos" ? "Consulta ventas registradas, montos y medios de pago." : "Revisa existencias actuales y movimientos de stock del periodo."}</p></div></header>
     <div className="report-filters">
       <label>Desde<input type="date" value={desde} max={hasta} onChange={(evento) => setDesde(evento.target.value)} required /></label>
       <label>Hasta<input type="date" value={hasta} min={desde} max={hoy()} onChange={(evento) => setHasta(evento.target.value)} required /></label>

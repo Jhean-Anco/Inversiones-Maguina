@@ -10,6 +10,7 @@ const MovimientosStockPage = lazy(() => import("../movimientos-stock-page/movimi
 const NuevoIngresoPage = lazy(() => import("../nuevo-ingreso-page/nuevo-ingreso-page").then((modulo) => ({ default: modulo.NuevoIngresoPage })));
 const ClientesPage = lazy(() => import("../clientes-page/clientes-page").then((modulo) => ({ default: modulo.ClientesPage })));
 const ProveedoresPage = lazy(() => import("../proveedores-page/proveedores-page").then((modulo) => ({ default: modulo.ProveedoresPage })));
+const ConductoresPage = lazy(() => import("../conductores-page/conductores-page").then((modulo) => ({ default: modulo.ConductoresPage })));
 const ReportePage = lazy(() => import("../reportes-page/reportes-page").then((modulo) => ({ default: modulo.ReportesPage })));
 const DashboardPage = lazy(() => import("../dashboard-page/dashboard-page").then((modulo) => ({ default: modulo.DashboardPage })));
 const PerfilPage = lazy(() => import("../perfil-page/perfil-page").then((modulo) => ({ default: modulo.PerfilPage })));
@@ -23,12 +24,13 @@ import { useTema } from "../../components/tema-contexto/tema-contexto";
 import { servicioProductos, type AlertaStockBajo } from "../../services/inventario/productos.service";
 import { servicioReportes } from "../../services/reportes.service";
 import { useBorradoresDialogos } from "../../hooks/use-borradores-dialogos";
+import { AccionPrincipalProvider } from "../../components/ui/accion-principal/accion-principal";
 type PermisoNavegacion = "INGRESOS.CREAR" | "INGRESOS.LEER" | "EGRESOS.LEER" | "INVENTARIO.LEER" | "MOTOTAXIS.LEER" | "PERSONAS.LEER" | "FINANZAS.LEER";
 type SubmoduloAside = { nombre: string; ruta: string; permiso: PermisoNavegacion; rutasRelacionadas?: string[] };
 type ModuloAside = { nombre: string; icono: string; ruta?: string; hijos: SubmoduloAside[] };
 const elementosAside: ModuloAside[] = [
   { nombre: "Resumen", icono: "inicio", ruta: "/inicio", hijos: [] },
-  { nombre: "Ventas", icono: "venta", hijos: [
+  { nombre: "Ingresos", icono: "venta", hijos: [
     { nombre: "Venta de repuestos", ruta: "/ingresos/ventas/repuestos", rutasRelacionadas: ["/ingresos/nuevo/repuestos"], permiso: "INGRESOS.LEER" },
     { nombre: "Venta de mototaxis", ruta: "/ingresos/ventas/mototaxis", rutasRelacionadas: ["/ingresos/nuevo/mototaxis"], permiso: "INGRESOS.LEER" },
     { nombre: "Guías de remisión", ruta: "/ingresos/guias", permiso: "INGRESOS.LEER" },
@@ -52,6 +54,7 @@ const elementosAside: ModuloAside[] = [
   { nombre: "Contactos", icono: "personas", hijos: [
     { nombre: "Clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" },
     { nombre: "Proveedores", ruta: "/personas/proveedores", permiso: "PERSONAS.LEER" },
+    { nombre: "Conductores", ruta: "/personas/conductores", permiso: "PERSONAS.LEER" },
   ] },
   { nombre: "Finanzas", icono: "finanzas", hijos: [
     { nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" },
@@ -338,6 +341,7 @@ export function InicioPage() {
         </header>
 
         <div ref={contenidoRef} className={`erp-content${vistaInventario || vistaEgresos || vistaMototaxis || vistaAdminCatalogo ? " is-catalog-view" : ""}${vistaAdminCatalogo ? " is-catalog-admin-view" : ""}${vistaSubmoduloInventario ? " is-inventory-submodule-view" : ""}${ubicacion.pathname.startsWith("/ingresos/nuevo") ? " is-new-sale-view" : ""}`} aria-live="polite">
+          <AccionPrincipalProvider key={ubicacion.pathname}>
           <div key={ubicacion.pathname} className="modulo-route-transition">
           <Suspense fallback={(
             <div className="module-loading" role="status" aria-live="polite" aria-label="Cargando módulo">
@@ -349,10 +353,11 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
+          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
           </Suspense>
 
           </div>
+          </AccionPrincipalProvider>
         </div>
       </section>
       {confirmarCierreSesion && <div className="erp-logout-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setConfirmarCierreSesion(false); }}><div ref={dialogoCierreRef} className="erp-logout-dialog" role="alertdialog" aria-modal="true" aria-labelledby="erp-logout-title" aria-describedby="erp-logout-description"><span className="erp-logout-symbol" aria-hidden="true"><Icono nombre="salir" /></span><div className="erp-logout-copy"><span className="erp-logout-kicker">SESIÓN ACTUAL</span><h2 id="erp-logout-title">¿Cerrar sesión?</h2><p id="erp-logout-description">Saldrás de tu cuenta en este dispositivo.</p></div><footer><button ref={cancelarCierreRef} className="erp-logout-cancel" type="button" onClick={() => setConfirmarCierreSesion(false)}>Seguir aquí</button><button className="erp-logout-confirm" type="button" onClick={() => { setConfirmarCierreSesion(false); void salir(); }}><Icono nombre="salir" />Cerrar sesión</button></footer></div></div>}

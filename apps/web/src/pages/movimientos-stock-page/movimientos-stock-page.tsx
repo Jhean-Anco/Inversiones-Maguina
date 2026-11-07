@@ -15,14 +15,11 @@ function fuenteMovimiento(movimiento: MovimientoStock) {
   return movimiento.documentoOrigen ?? movimiento.origenTipo;
 }
 
-function TablaMovimientos({ movimientos }: { movimientos: MovimientoStock[] }) {
-  return <div className="stock-movement-table-wrap">
-    <table className="stock-movement-table">
-      <thead><tr><th>Fecha y hora</th><th>Repuesto</th><th>Tipo</th><th>Variación</th><th>Motivo u origen</th><th>Observación</th></tr></thead>
-      <tbody>{movimientos.map((movimiento) => {
-        const aumento = movimiento.tipo === "ENTRADA" || (movimiento.tipo === "AJUSTE" && movimiento.sentido === "INGRESO");
-        const tipo = movimiento.tipo === "AJUSTE" ? `Ajuste · ${aumento ? "aumento" : "disminución"}` : movimiento.tipo === "ENTRADA" ? "Entrada" : "Salida";
-        return <tr key={movimiento.id}>
+const encabezadoMovimientos = <tr><th>Fecha y hora</th><th>Repuesto</th><th>Tipo</th><th>Variación</th><th>Motivo u origen</th><th>Observación</th></tr>;
+function filaMovimiento(movimiento: MovimientoStock) {
+  const aumento = movimiento.tipo === "ENTRADA" || (movimiento.tipo === "AJUSTE" && movimiento.sentido === "INGRESO");
+  const tipo = movimiento.tipo === "AJUSTE" ? `Ajuste · ${aumento ? "aumento" : "disminución"}` : movimiento.tipo === "ENTRADA" ? "Entrada" : "Salida";
+  return <tr key={movimiento.id}>
           <td><time dateTime={movimiento.creadoEn}>{fechaHora.format(new Date(movimiento.creadoEn))}</time></td>
           <td><span className="stock-movement-table-product"><small>{movimiento.codigo}</small><strong>{movimiento.producto}</strong></span></td>
           <td><span className={`stock-movement-badge${aumento ? " is-increase" : " is-decrease"}`}>{tipo}</span></td>
@@ -30,9 +27,6 @@ function TablaMovimientos({ movimientos }: { movimientos: MovimientoStock[] }) {
           <td>{movimiento.motivo ? motivoVisible(movimiento.motivo) : fuenteMovimiento(movimiento)}</td>
           <td>{movimiento.observacion || "—"}</td>
         </tr>;
-      })}</tbody>
-    </table>
-  </div>;
 }
 
 export function MovimientosStockPage() {
@@ -50,11 +44,10 @@ export function MovimientosStockPage() {
     <CatalogoListado
       titulo="Movimientos y ajustes"
       descripcion="Consulta las variaciones de stock y registra correcciones con motivo y trazabilidad."
-      etiquetaCrear="Registrar ajuste"
+      etiquetaCrear="Crear ajuste de stock"
       tituloListado="Historial de movimientos"
       registros={modulo.movimientos}
       totalRegistros={modulo.total}
-      visibles={modulo.movimientos}
       cargando={modulo.cargando}
       mensajeCarga="Cargando movimientos…"
       error={modulo.modalAbierto ? "" : modulo.error}
@@ -74,7 +67,11 @@ export function MovimientosStockPage() {
       alCrear={modulo.abrirNuevo}
       alCambiarPagina={modulo.cambiarPagina}
       alCambiarTamanioPagina={modulo.cambiarPorPagina}
-      contenidoListado={<TablaMovimientos movimientos={modulo.movimientos} />}
+      variante="tabla"
+      encabezadoTabla={encabezadoMovimientos}
+      renderizarFila={filaMovimiento}
+      claseTabla="stock-movement-table"
+      claseContenedorTabla="stock-movement-table-wrap"
     />
     {modulo.modalAbierto && <AjusteStockFormulario {...modulo} />}
   </>;

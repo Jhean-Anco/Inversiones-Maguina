@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
+import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
 import { servicioProductos, type CatalogosProducto, type DatosProducto, type PaginaProductos, type Producto, type ProductoTarjeta } from "../services/inventario/productos.service";
 
 export function useProductos() {
   const navegar = useNavigate();
   const [catalogos, setCatalogos] = useState<CatalogosProducto>({ categorias: [], marcas: [], unidadesMedida: [], tiposListasPrecio: [] });
-  const [paginaDatos, setPaginaDatos] = useState<PaginaProductos>({ items: [], total: 0, pagina: 1, porPagina: 12, totalPaginas: 1 });
+  const [paginaDatos, setPaginaDatos] = useState<PaginaProductos>(() => ({ items: [], total: 0, pagina: 1, porPagina: tamanioTablaInicial(), totalPaginas: 1 }));
   const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(12);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
@@ -80,12 +81,6 @@ export function useProductos() {
     return { ...categoria, advertencia: resultado.advertencia };
   }, []);
 
-  const crearListaPrecio = useCallback(async (nombre: string) => {
-    const lista = await servicioProductos.crearListaPrecio(nombre.trim());
-    setCatalogos((actual) => ({ ...actual, tiposListasPrecio: [...actual.tiposListasPrecio, lista].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
-    return lista;
-  }, []);
-
   const cambiarEstado = useCallback(async (producto: Pick<ProductoTarjeta, "id" | "activo">) => {
     setError("");
     try { await servicioProductos.cambiarEstado(producto.id, !producto.activo); await cargarPagina(pagina, porPagina, busqueda); }
@@ -93,7 +88,7 @@ export function useProductos() {
   }, [pagina, porPagina, busqueda, cargarPagina, manejarError]);
 
   const cambiarPorPagina = useCallback((cantidad: number) => {
-    if (![12, 16, 20].includes(cantidad)) return;
+    if (![4, 6, 8, 10].includes(cantidad)) return;
     setPorPagina(cantidad); setPagina(1);
   }, []);
 
@@ -102,6 +97,6 @@ export function useProductos() {
     totalPaginas: paginaDatos.totalPaginas, desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0,
     hasta: Math.min(pagina * porPagina, paginaDatos.total), busqueda, setBusqueda,
     cargando: cargando || cargandoCatalogos, guardando, error, setError,
-    cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, crearListaPrecio, cambiarEstado,
+    cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, cambiarEstado,
   };
 }

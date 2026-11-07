@@ -1,6 +1,6 @@
 
 .producto-form { background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%); }
-.catalog-form .producto-tax-control input[type="checkbox"], .catalog-form .producto-check-label input[type="checkbox"] { width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: #155b9c; }
+.catalog-form .producto-check-label input[type="checkbox"]{ width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: #155b9c; }
 .catalog-form .producto-editor-table input:not([type="checkbox"]), .catalog-form .producto-editor-table select { min-width: 96px; min-height: 38px; padding: 0 8px; font-size: 12px; }
 .producto-editor-table input[type="checkbox"] { width: 16px; min-height: 16px; accent-color: #15569a; }
 @media (max-width: 700px) {
@@ -26,4 +26,19 @@
 }
 @media (max-width: 600px) {
   .producto-form-scroll { gap: 14px; padding: 24px 18px; }
+  .producto-modal .producto-table-wrap { overflow: visible; }
+  .producto-modal .producto-editor-table { display: block; width: 100%; min-width: 0; }
+  .producto-modal .producto-editor-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .producto-modal .producto-editor-table tbody { display: grid; gap: 8px; }
+  .producto-modal .producto-editor-table tbody tr { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; padding: 10px; border: 1px solid #e6edf4; border-radius: 10px; background: #fff; }
+  .producto-modal .producto-editor-table tbody td { display: grid; min-width: 0; align-content: start; gap: 4px; padding: 0; border: 0; font-size: 12px; }
+  .producto-modal .producto-editor-table tbody td::before { content: attr(data-label); color: #71839a; font-size: 9px; font-weight: 750; line-height: 1.25; }
+  .producto-modal .producto-editor-table input:not([type="checkbox"]), .producto-modal .producto-editor-table select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; padding-inline: 6px; font-size: 12px; }
+  .producto-modal .producto-editor-table td:nth-child(3) { grid-column: 1 / -1; }
+  .producto-modal .producto-editor-table td:has(input[type="checkbox"]) { grid-template-columns: 1fr auto; align-items: center; }
+  .producto-modal .producto-editor-table td:has(input[type="checkbox"])::before { grid-column: 1; }
+  .producto-modal .producto-editor-table td:has(input[type="checkbox"]) input { grid-column: 2; grid-row: 1; }
+  .producto-modal .producto-editor-table td:last-child { display: flex; align-items: flex-end; justify-content: flex-end; }
+  .producto-modal .producto-editor-table .producto-base-row { color: #29445f; }
+  html[data-theme="oscuro"] #root .producto-modal .producto-editor-table tbody tr { border-color: var(--tema-borde); background: var(--tema-superficie); }
 }

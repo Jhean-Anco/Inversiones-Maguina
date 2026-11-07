@@ -1,0 +1,178 @@
+.listado-maestro {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  overflow: visible;
+  border: 1px solid var(--border-color, #dce5ed);
+  border-radius: 16px;
+  background: var(--surface-primary, #fff);
+  box-shadow: 0 8px 24px #15344f0a;
+  color: var(--text-primary, #172033);
+}
+.listado-maestro-cabecera {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border-color, #e7edf2);
+  background: var(--surface-primary, #fff);
+}
+.listado-maestro-titulo { min-width: 150px; }
+.listado-maestro-titulo > span {
+  color: var(--text-secondary, #718797);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.listado-maestro-titulo h2 {
+  margin: 5px 0 0;
+  color: var(--text-primary, #173b5b);
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -.015em;
+}
+.listado-maestro-titulo p {
+  margin: 4px 0 0;
+  color: var(--text-secondary, #718797);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.listado-maestro-controles {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.listado-maestro-controles > label {
+  display: grid;
+  min-width: 140px;
+  gap: 4px;
+  color: var(--text-secondary, #718797);
+  font-size: 10px;
+  font-weight: 700;
+}
+.listado-maestro-controles > .listado-maestro-busqueda { width: min(340px, 100%); flex: 1 1 230px; }
+.listado-maestro-controles > .listado-maestro-filtro { width: min(190px, 100%); flex: 0 1 170px; }
+.listado-maestro-controles input,
+.listado-maestro-controles select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, #d9e3ec);
+  border-radius: 10px;
+  background: var(--surface-primary, #fff);
+  color: var(--text-primary, #233d53);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  outline: none;
+}
+.listado-maestro-controles input:focus,
+.listado-maestro-controles select:focus { border-color: #3d86c5; box-shadow: 0 0 0 3px #3d86c51c; }
+.listado-maestro-paginacion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary, #718797);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.listado-maestro-paginacion .the-pagination { margin-left: auto; }
+.listado-maestro-contenido {
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+.listado-maestro-tabla-scroll { width: 100%; overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; }
+.listado-maestro-tabla { width: 100%; border-collapse: collapse; }
+.listado-maestro-tabla th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color, #e5ebf2);
+  background: var(--surface-muted, #f6f8fb);
+  color: var(--text-secondary, #71849b);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.listado-maestro-tabla td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-color, #edf1f5);
+  color: var(--text-primary, #405a76);
+  font-size: 12px;
+  vertical-align: middle;
+}
+.listado-maestro-tabla tbody tr:last-child td { border-bottom: 0; }
+.listado-maestro-tabla tbody tr:hover { background: var(--surface-hover, #f8fbfd); }
+.listado-maestro-estado,
+.listado-maestro-vacio {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  padding: 24px;
+  color: var(--text-secondary, #718797);
+  text-align: center;
+}
+.listado-maestro-error {
+  margin: 12px 16px 0;
+  padding: 12px 15px;
+  border: 1px solid #f2c6cb;
+  border-radius: 9px;
+  background: #fff4f5;
+  color: #a61e2b;
+  font-size: 13px;
+}
+.listado-maestro-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(var(--listado-columnas, 3), minmax(0, 1fr));
+  align-content: start;
+  gap: 12px;
+  padding: 12px;
+}
+html[data-theme="oscuro"] #root .listado-maestro { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] #root .listado-maestro-cabecera { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] #root .listado-maestro-titulo h2,
+html[data-theme="oscuro"] #root .listado-maestro-controles,
+html[data-theme="oscuro"] #root .listado-maestro-paginacion,
+html[data-theme="oscuro"] #root .listado-maestro-tabla td,
+html[data-theme="oscuro"] #root .listado-maestro-estado,
+html[data-theme="oscuro"] #root .listado-maestro-vacio { color: var(--tema-texto); }
+html[data-theme="oscuro"] #root .listado-maestro-titulo > span,
+html[data-theme="oscuro"] #root .listado-maestro-paginacion,
+html[data-theme="oscuro"] #root .listado-maestro-titulo p { color: var(--tema-texto-secundario); }
+html[data-theme="oscuro"] #root .listado-maestro-tabla th { border-color: var(--tema-borde); background: #182639; color: var(--tema-texto-secundario); }
+html[data-theme="oscuro"] #root .listado-maestro-tabla td { border-color: var(--tema-borde); }
+html[data-theme="oscuro"] #root .listado-maestro-tabla tbody tr:hover { background: #1a2d41; }
+html[data-theme="oscuro"] #root .listado-maestro-controles > label { color: var(--tema-texto-secundario); }
+html[data-theme="oscuro"] #root .listado-maestro-controles input,
+html[data-theme="oscuro"] #root .listado-maestro-controles select { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+@media (max-width: 1000px) {
+  .listado-maestro-cabecera { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .listado-maestro-controles { width: 100%; justify-content: flex-start; }
+}
+@media (max-width: 700px) {
+  .listado-maestro-controles { align-items: stretch; flex-direction: column; }
+  .listado-maestro-paginacion { width: 100%; justify-content: space-between; gap: 8px; font-size: 11px; }
+  .listado-maestro-paginacion .the-pagination { margin-left: auto; }
+  .listado-maestro-tarjetas { grid-template-columns: repeat(min(2, var(--listado-columnas, 2)), minmax(0, 1fr)); gap: 10px; padding: 12px; }
+}
+@media (max-width: 480px) {
+  .listado-maestro-cabecera { padding: 13px; }
+  .listado-maestro-titulo h2 { font-size: 16px; }
+  .listado-maestro-paginacion { flex-wrap: wrap; }
+  .listado-maestro-tarjetas { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,104 +1,33 @@
+import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import "./catalogo-listado.css";
 import type { ReactNode } from "react";
-import { CatalogoLoading } from "../catalogo-loading/catalogo-loading";
-import { CatalogoPaginacion, SelectorTamanioPagina } from "../catalogo-paginacion/catalogo-paginacion";
+import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 
-type PropiedadesCatalogoListado<T> = {
-  titulo: string;
-  descripcion: string;
-  etiquetaCrear: string;
-  tituloListado: string;
-  registros: T[];
-  totalRegistros?: number;
-  visibles: T[];
-  cargando: boolean;
-  mensajeCarga: string;
-  error: string;
-  iconoVacio: ReactNode;
-  tituloVacio: string;
-  descripcionVacio: string;
-  pagina: number;
-  porPagina: number;
-  totalPaginas: number;
-  desde: number;
-  hasta: number;
-  alCrear: () => void;
-  alCambiarPagina: (pagina: number) => void;
-  alCambiarTamanioPagina: (cantidad: number) => void;
-  busqueda?: string;
-  alBuscar?: (valor: string) => void;
-  busquedaPlaceholder?: string;
-  busquedaAriaLabel?: string;
+type Base<T> = {
+  titulo: string; descripcion: string; etiquetaCrear: string; tituloListado: string; registros: T[]; totalRegistros?: number;
+  cargando: boolean; mensajeCarga: string; error: string; iconoVacio: ReactNode; tituloVacio: string; descripcionVacio: string;
+  pagina: number; porPagina: number; totalPaginas: number; desde: number; hasta: number;
+  alCrear: () => void; alCambiarPagina: (pagina: number) => void; alCambiarTamanioPagina: (cantidad: number) => void;
+  busqueda?: string; alBuscar?: (valor: string) => void; busquedaPlaceholder?: string; busquedaAriaLabel?: string;
   controlesFiltro?: ReactNode;
-  claseTarjetas?: string;
-  renderizarTarjeta?: (registro: T) => ReactNode;
-  contenidoListado?: ReactNode;
 };
-
-export function CatalogoListado<T>({
-  titulo,
-  descripcion,
-  etiquetaCrear,
-  tituloListado,
-  registros,
-  totalRegistros = registros.length,
-  visibles,
-  cargando,
-  mensajeCarga,
-  error,
-  iconoVacio,
-  tituloVacio,
-  descripcionVacio,
-  pagina,
-  porPagina,
-  totalPaginas,
-  desde,
-  hasta,
-  alCrear,
-  alCambiarPagina,
-  alCambiarTamanioPagina,
-  busqueda,
-  alBuscar,
-  busquedaPlaceholder = "Buscar por nombre, código o descripción",
-  busquedaAriaLabel = "Buscar productos",
-  controlesFiltro,
-  claseTarjetas,
-  renderizarTarjeta,
-  contenidoListado,
-}: PropiedadesCatalogoListado<T>) {
-  return (
-    <section className="catalog-content" aria-label={titulo} aria-description={descripcion}>
-      <button className="catalog-submit catalog-create-button erp-floating-action" type="button" onClick={alCrear} aria-label={etiquetaCrear} title={etiquetaCrear}>
-        <span className="erp-floating-action-icon" aria-hidden="true">+</span>
-        <span className="erp-floating-action-label">{etiquetaCrear}</span>
-      </button>
-
-      {error && <div className="catalog-alert" role="alert">{error}</div>}
-
-      <section className="catalog-list-section">
-        <div className="catalog-list-heading">
-          <div><span className="catalog-eyebrow">{totalRegistros} REGISTROS</span><h2>{tituloListado}</h2></div>
-          <div className="catalog-list-tools">
-            {controlesFiltro}
-            {alBuscar && <input className="catalog-search-input" type="search" value={busqueda ?? ""} onChange={(event) => alBuscar(event.target.value)} placeholder={busquedaPlaceholder} aria-label={busquedaAriaLabel} />}
-            <SelectorTamanioPagina valor={porPagina} onCambiar={alCambiarTamanioPagina} />
-          </div>
-        </div>
-
-        <div className="catalog-results-scroll">
-          {cargando ? <CatalogoLoading mensaje={mensajeCarga} /> : totalRegistros === 0 ? (
-            <div className="catalog-empty-state">
-              <span className="catalog-empty-icon">{iconoVacio}</span>
-              <strong>{tituloVacio}</strong>
-              <p>{descripcionVacio}</p>
-            </div>
-          ) : (
-            contenidoListado ?? <div className={`catalog-card-grid${claseTarjetas ? ` ${claseTarjetas}` : ""}`}>{renderizarTarjeta && visibles.map(renderizarTarjeta)}</div>
-          )}
-        </div>
-
-        {totalRegistros > 0 && <CatalogoPaginacion desde={desde} hasta={hasta} total={totalRegistros} pagina={pagina} totalPaginas={totalPaginas} onCambiar={alCambiarPagina} />}
-      </section>
-    </section>
-  );
+type PropiedadesCatalogoListado<T> = Base<T> & (
+  | { variante: "tabla"; encabezadoTabla: ReactNode; renderizarFila: (registro: T) => ReactNode; claseTabla?: string; claseContenedorTabla?: string }
+  | { variante: "tarjetas"; renderizarTarjeta: (registro: T) => ReactNode; columnasTarjetas: number; claseTarjeta?: string }
+);
+export function CatalogoListado<T>(props: PropiedadesCatalogoListado<T>) {
+  return <section className="catalog-content" aria-label={props.titulo} aria-description={props.descripcion}>
+    <RegistrarAccionPrincipal etiqueta={props.etiquetaCrear} onClick={props.alCrear} />
+    <ListadoMaestro
+      titulo={props.tituloListado}
+      etiqueta={props.titulo}
+      registros={props.registros}
+      cargando={props.cargando}
+      error={props.error}
+      vacio={<><span className="catalog-empty-icon">{props.iconoVacio}</span><strong>{props.tituloVacio}</strong><p>{props.descripcionVacio}</p></>}
+      controlesCabecera={<>{props.controlesFiltro}{props.alBuscar && <input className="catalog-search-input" type="search" value={props.busqueda ?? ""} onChange={(event) => props.alBuscar?.(event.target.value)} placeholder={props.busquedaPlaceholder ?? "Buscar por nombre, código o descripción"} aria-label={props.busquedaAriaLabel ?? "Buscar"} />}</>}
+      paginacion={{ modo: "remota", pagina: props.pagina, tamanio: props.porPagina, total: props.totalRegistros ?? props.registros.length, totalPaginas: props.totalPaginas, desde: props.desde, hasta: props.hasta, alCambiarPagina: props.alCambiarPagina, alCambiarTamanio: props.alCambiarTamanioPagina }}
+      {...(props.variante === "tabla" ? { variante: "tabla" as const, encabezadoTabla: props.encabezadoTabla, renderizarFila: props.renderizarFila, claseTabla: props.claseTabla, claseContenedor: props.claseContenedorTabla } : { variante: "tarjetas" as const, renderizarTarjeta: props.renderizarTarjeta, columnas: props.columnasTarjetas, claseTarjeta: props.claseTarjeta })}
+    />
+  </section>;
 }

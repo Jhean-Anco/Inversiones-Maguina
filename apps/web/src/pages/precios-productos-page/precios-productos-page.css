@@ -4,16 +4,8 @@
 .precios-productos-heading h1{margin:5px 0;color:#173b65;font-size:26px}
 .precios-productos-heading p{max-width:700px;margin:0;color:#71849b;font-size:14px;line-height:1.5}
 .precios-productos-heading>strong{padding:8px 12px;border:1px solid #dce6ef;border-radius:999px;background:#fff;font-size:12px;white-space:nowrap}
-.precios-productos-panel{display:grid;gap:14px;min-width:0;padding:16px;border:1px solid #dce6ef;border-radius:14px;background:#fff;box-shadow:0 10px 28px #183b5d0b}
-.precios-productos-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
-.precios-productos-toolbar label{display:grid;gap:6px;width:min(420px,100%);color:#526982;font-size:12px;font-weight:700}
-.precios-productos-toolbar input{width:100%;height:40px;box-sizing:border-box;padding:0 12px;border:1px solid #d5e0ec;border-radius:8px;color:#173b65;font:inherit;font-size:14px}
-.precios-productos-toolbar>span{padding-bottom:10px;color:#71849b;font-size:12px}
 .precios-productos-table-wrap{width:100%;overflow:auto}
-.precios-productos-table{width:100%;border-collapse:separate;border-spacing:0;min-width:780px}
-.precios-productos-table th{padding:10px 12px;border-bottom:1px solid #e5ebf2;color:#71849b;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
-.precios-productos-table td{padding:9px 12px;border-bottom:1px solid #edf1f5;color:#405a76;font-size:13px;vertical-align:middle}
-.precios-productos-table tr:last-child td{border-bottom:0}
+.precios-productos-table{width:100%;min-width:780px}
 .precios-productos-product{display:flex;align-items:center;gap:10px;min-width:230px}
 .precios-productos-product>span:last-child{display:grid;gap:4px;min-width:0}
 .precios-productos-product strong{overflow:hidden;color:#173b65;text-overflow:ellipsis;white-space:nowrap}
@@ -27,7 +19,6 @@
 .precios-productos-table tr.has-price-change .precios-productos-input input{border-color:#d5a547;background:#fffaf0}
 .precios-productos-table td>button{min-width:72px;min-height:34px;padding:0 10px;border:1px solid #cad9e8;border-radius:7px;background:#fff;color:#174a7a;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .precios-productos-table td>button:disabled{color:#91a0b2;cursor:default;opacity:.75}
-.precios-productos-table tr.is-inactive{background:#fafbfd}
 .precios-productos-table tr.is-inactive .precios-productos-product strong{color:#71849b}
 .precios-productos-current{display:block;margin-top:4px;color:#946c21}
 .precios-productos-message{margin:0;padding:10px 12px;border:1px solid;border-radius:8px;font-size:13px}
@@ -36,44 +27,30 @@
 .precios-productos-empty{display:grid;min-height:160px;place-content:center;gap:8px;color:#71849b;text-align:center}
 .precios-productos-empty strong{color:#173b65}
 .precios-productos-empty span{font-size:13px}
-.precios-productos-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px;color:#71849b;font-size:12px}
-.precios-productos-pagination>div{display:flex;gap:8px}
-.precios-productos-pagination button{min-height:34px;padding:0 12px;border:1px solid #d5e0ec;border-radius:7px;background:#fff;color:#174a7a;font:inherit;font-weight:650;cursor:pointer}
-.precios-productos-pagination button:disabled{color:#91a0b2;cursor:default}
 .precios-productos-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 html[data-theme="oscuro"] #root .precios-productos-page,html[data-theme="oscuro"] #root .precios-productos-heading h1{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-heading p,html[data-theme="oscuro"] #root .precios-productos-toolbar>span,html[data-theme="oscuro"] #root .precios-productos-table th,html[data-theme="oscuro"] #root .precios-productos-pagination{color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .precios-productos-heading>strong,html[data-theme="oscuro"] #root .precios-productos-panel{border-color:var(--tema-borde);background:var(--tema-superficie)}
-html[data-theme="oscuro"] #root .precios-productos-table td{border-color:var(--tema-borde);color:var(--tema-texto-secundario)}
+html[data-theme="oscuro"] #root .precios-productos-heading p{color:var(--tema-texto-secundario)}
+html[data-theme="oscuro"] #root .precios-productos-heading>strong{border-color:var(--tema-borde);background:var(--tema-superficie)}
 html[data-theme="oscuro"] #root .precios-productos-product strong,html[data-theme="oscuro"] #root .precios-productos-empty strong{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-toolbar input,html[data-theme="oscuro"] #root .precios-productos-input input,html[data-theme="oscuro"] #root .precios-productos-table td>button,html[data-theme="oscuro"] #root .precios-productos-pagination button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .precios-productos-input input,
+html[data-theme="oscuro"] #root .precios-productos-table td>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .precios-productos-image{border-color:var(--tema-borde);background:#1d2d42}
-html[data-theme="oscuro"] #root .precios-productos-row-actions>.erp-icon-action{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-row-actions>.erp-icon-action.is-danger{color:var(--action-primary)}
-@media(max-width:700px){.precios-productos-page{padding:14px 12px 24px}.precios-productos-heading{align-items:flex-start;flex-direction:column;gap:10px}.precios-productos-heading h1{font-size:23px}.precios-productos-panel{padding:12px}.precios-productos-toolbar{align-items:stretch;flex-direction:column;gap:4px}.precios-productos-toolbar>span{padding:0}}
-.precios-productos-heading-actions,.precios-productos-toolbar-actions,.precios-productos-row-actions{display:flex;align-items:center;gap:10px}
-.precios-productos-heading-actions>button,.precios-productos-toolbar-actions>button,.precios-productos-row-actions>button{min-height:40px;padding:0 14px;border:1px solid #d7e3ed;border-radius:10px;background:#fff;color:#154a75;font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
-.precios-productos-toolbar-actions .precios-productos-create{border-color:var(--action-primary-border);background:var(--action-primary-surface);color:var(--action-primary)}
-.precios-productos-toolbar-actions .precios-productos-create:hover:not(:disabled){border-color:var(--action-primary-border);background:var(--action-primary-hover-surface);color:var(--action-primary-hover)}
-.precios-productos-row-actions{justify-content:center;flex-wrap:wrap;gap:6px}
-.precios-productos-row-actions>button{min-height:34px;padding:0 10px;font-size:11px}
-.precios-productos-row-actions>.erp-icon-action{width:34px;height:34px;min-height:34px;flex:0 0 34px;padding:0;border-radius:9px;background:#fff;color:#315a7a}
-.precios-productos-row-actions>.erp-icon-action.is-danger{color:#b42335}
-.precios-productos-row-actions>.erp-icon-action.is-danger:hover:not(:disabled){border-color:var(--action-primary-border);background:var(--action-primary-surface);color:var(--action-primary-hover)}
-.precios-productos-row-actions>button.is-danger{color:#b42335}
-.precios-lista-backdrop{position:fixed;z-index:1400;inset:0;display:grid;place-items:center;padding:20px;background:#061c31a8;backdrop-filter:blur(4px)}
-.precios-lista-dialog{position:relative;width:min(100%,480px);padding:28px;border:1px solid #dce6ef;border-radius:20px;background:#fff;box-shadow:0 28px 90px #071d3350;color:#14324d}
-.precios-lista-dialog>span{color:#71869a;font-size:10px;font-weight:800;letter-spacing:.16em}
-.precios-lista-dialog h2{margin:8px 0;font-size:24px;letter-spacing:-.03em}
-.precios-lista-dialog p{margin:0 0 20px;color:#667d93;font-size:13px;line-height:1.5}
-.precios-lista-dialog label{display:grid;gap:7px;font-size:12px;font-weight:700}
-.precios-lista-dialog input{height:46px;padding:0 13px;border:1px solid #d6e1eb;border-radius:10px;font:inherit;font-weight:500}
-.precios-lista-dialog>div{display:flex;justify-content:flex-end;gap:9px;margin-top:22px}
-.precios-lista-dialog>div button{min-height:42px;padding:0 15px;border:1px solid #d7e3ed;border-radius:10px;background:#fff;color:#315675;font:inherit;font-weight:700;cursor:pointer}
-.precios-lista-dialog>div button[type=submit]{min-height:40px;padding:0 14px;border-color:var(--action-primary-border);border-radius:10px;background:var(--action-primary-surface);color:var(--action-primary)}
-.precios-lista-dialog>div button[type=submit]:hover:not(:disabled){border-color:var(--action-primary-border);background:var(--action-primary-hover-surface);color:var(--action-primary-hover)}
-.precios-lista-close{position:absolute;top:12px;right:14px;width:36px;height:36px;border:0;border-radius:9px;background:#f2f6f9;color:#526b82;font-size:22px;cursor:pointer}
-html[data-theme="oscuro"] #root .precios-lista-dialog{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-lista-dialog input,html[data-theme="oscuro"] #root .precios-productos-heading-actions>button,html[data-theme="oscuro"] #root .precios-productos-toolbar-actions>button,html[data-theme="oscuro"] #root .precios-productos-row-actions>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-toolbar-actions .precios-productos-create{border-color:var(--action-primary-border);background:var(--action-primary-surface);color:var(--action-primary)}
-@media(max-width:760px){.precios-productos-toolbar-actions{width:100%;flex-wrap:wrap}.precios-productos-toolbar-actions>span{width:100%;margin:2px 0}.repuestos-module .precios-productos-page.is-integrated .precios-productos-table{min-width:1120px}}
+@media(max-width:700px){.precios-productos-page{padding:14px 12px 24px}.precios-productos-heading{align-items:flex-start;flex-direction:column;gap:10px}.precios-productos-heading h1{font-size:23px}}
+.precios-productos-row-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px}
+@media(max-width:760px){
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table{display:block;width:100%;min-width:0;border-collapse:separate;border-spacing:0}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody{display:grid;gap:10px;padding:10px}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 10px;padding:12px;border:1px solid var(--border-color,#e3eaf1);border-radius:12px;background:var(--surface-primary,#fff)}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody td{display:grid;min-width:0;align-content:start;gap:4px;padding:0;border:0;color:var(--text-primary,#405a76);font-size:12px;overflow-wrap:anywhere}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody td::before{content:attr(data-label);color:var(--text-secondary,#71849b);font-size:10px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody td:first-child{grid-column:1/-1}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody td:first-child::before{display:none}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-product{min-width:0;align-items:flex-start}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-product strong{white-space:normal;overflow-wrap:anywhere}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-input{width:min(100%,130px)}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-table td>button{align-self:start}
+  .repuestos-module .precios-productos-page.is-integrated .precios-productos-row-actions{justify-content:flex-start}
+  html[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody tr{border-color:var(--tema-borde);background:var(--tema-superficie)}
+}
+.precios-productos-heading { display: none; }

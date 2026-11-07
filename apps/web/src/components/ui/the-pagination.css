@@ -1,0 +1,134 @@
+.the-pagination {
+  display: flex;
+  width: auto;
+  justify-content: center;
+}
+
+.the-pagination .pagination__content {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.the-pagination .pagination__item {
+  display: list-item;
+  list-style: none;
+}
+
+.the-pagination .pagination__ellipsis {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  color: #71849b;
+  font-size: 13px;
+}
+
+.the-pagination .pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #fff;
+  color: #315779;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.the-pagination .pagination__link[data-active="true"] {
+  border-color: #194d7e;
+  background: #194d7e;
+  color: #fff;
+}
+
+.the-pagination .pagination__link--nav {
+  min-width: 94px;
+  padding-inline: 10px;
+  border-color: #dce6f0;
+  background: #f8fafc;
+  color: #194d7e;
+  font-weight: 700;
+}
+
+.the-pagination .pagination__link:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #bdd0e0;
+  background: #edf4fb;
+}
+
+.the-pagination .pagination__link--nav:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #194d7e;
+  background: #e7f0f8;
+  color: #123b62;
+  box-shadow: 0 2px 7px #15344f14;
+}
+
+.the-pagination .pagination__link[data-active="true"]:hover {
+  background: #153f69;
+}
+
+.the-pagination .pagination__link:focus-visible {
+  outline: 3px solid #9fc1e0;
+  outline-offset: 2px;
+}
+
+.the-pagination .pagination__link:disabled,
+.the-pagination .pagination__link[aria-disabled="true"] {
+  border-color: #e6ebf0;
+  background: #f5f7f9;
+  color: #8292a1;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* Asegura que los botones de navegación conserven su aspecto en los listados,
+   aunque el reset global de HeroUI/Tailwind tenga distinta prioridad. */
+.listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav {
+  border: 1px solid #d2deea;
+  background: #f8fafc;
+  color: #194d7e;
+}
+
+.listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav:disabled,
+.listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav[aria-disabled="true"] {
+  border-color: #e6ebf0;
+  background: #f5f7f9;
+  color: #8292a1;
+}
+
+html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav {
+  border-color: #40536b;
+  background: #1a2a3d;
+  color: #d5e5f5;
+}
+
+html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #6d89a8;
+  background: #263d57;
+  color: #fff;
+}
+
+html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav:disabled,
+html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav[aria-disabled="true"] {
+  border-color: #34465c;
+  background: #172333;
+  color: #8597ab;
+}
+
+@media (max-width: 700px) {
+  .the-pagination .pagination__link--nav { min-width: 36px; padding-inline: 8px; }
+  .the-pagination .pagination__link--nav span {
+    display: none;
+  }
+}

@@ -1,82 +1,69 @@
-.repuestos-module{display:flex;width:100%;height:100%;min-width:0;min-height:0;flex:1 1 auto;flex-direction:column;overflow:hidden;color:#153654}
-.repuestos-module-tabs{display:flex;flex:0 0 auto;align-items:stretch;gap:8px;margin:0;padding:0 24px;border-bottom:1px solid #dbe5ed;background:linear-gradient(180deg,#fff,#f8fafc)}
-.repuestos-module-tabs button{position:relative;display:inline-flex;min-height:56px;align-items:center;gap:9px;padding:0 14px;border:0;background:transparent;color:#64788b;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
-.repuestos-module-tabs button::after{position:absolute;right:10px;bottom:-1px;left:10px;height:3px;border-radius:4px 4px 0 0;background:transparent;content:""}
-.repuestos-module-tabs button.is-active{color:#123f67}
-.repuestos-module-tabs button.is-active::after{background:#e52d3f}
-.repuestos-module-tabs button:focus-visible{outline:2px solid #2876b9;outline-offset:-3px}
-.repuestos-module-tabs button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.repuestos-module-tabs button small{display:grid;min-width:21px;height:21px;place-items:center;padding:0 5px;border-radius:999px;background:#eaf0f5;color:#526b82;font-size:10px;font-variant-numeric:tabular-nums}
-.repuestos-module-tabs button.is-active small{background:#e8f0f7;color:#164b77}
-.repuestos-module>[role="tabpanel"]{display:flex;width:100%;min-width:0;min-height:0;flex:1 1 0%;flex-direction:column;overflow:hidden}
-.erp-content.is-catalog-view .repuestos-module .catalog-content{width:100%;height:100%;min-height:0;box-sizing:border-box;flex:1 1 auto;margin:0;padding:18px 22px 22px;overflow:hidden}
-.erp-content.is-catalog-view .repuestos-module .catalog-list-section{min-height:0}
-.erp-content.is-catalog-view .repuestos-module .catalog-list-heading{gap:18px;margin-bottom:15px;padding:0 2px}
-.erp-content.is-catalog-view .repuestos-module .catalog-list-heading h2{font-size:18px}
-.erp-content.is-catalog-view .repuestos-module .catalog-list-tools{gap:10px}
-.erp-content.is-catalog-view .repuestos-module .catalog-search-input{width:min(330px,32vw)}
-.repuestos-module .catalog-card-grid.producto-card-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.repuestos-module .producto-card{border-color:#dfe7ee;border-radius:14px;box-shadow:0 5px 18px #17334a0b}
-.repuestos-module .producto-card:hover{transform:translateY(-2px);box-shadow:0 12px 25px #17334a16}
-.repuestos-module .producto-card-visual{aspect-ratio:1.6/1}
-.repuestos-module .producto-card-copy{min-height:216px;padding:13px 13px 11px}
-.repuestos-module .producto-card-tags{margin-bottom:7px}
-.repuestos-module .producto-card-copy h3{min-height:40px;font-size:14px}
-.repuestos-module .producto-card-copy p{min-height:29px;margin:4px 0 7px}
-.repuestos-module .producto-card-stock{margin:0 0 8px}
-.repuestos-module .producto-card-actions{padding:8px 10px}
-.repuestos-module-loading{display:grid;min-height:220px;flex:1;place-items:center;color:#71849b;font-size:13px}
-.erp-content.is-catalog-view .repuestos-module .precios-productos-page.is-integrated{display:flex;width:100%;height:100%;min-width:0;min-height:0;max-width:none;flex:1;flex-direction:column;box-sizing:border-box;margin:0;padding:18px 22px 22px;overflow:hidden}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-heading{display:none}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-panel{min-height:0;flex:1;grid-template-rows:auto auto minmax(0,1fr) auto;padding:16px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table-wrap{min-height:0;overflow:auto;overscroll-behavior:contain}
-html[data-theme="oscuro"] #root .repuestos-module{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .repuestos-module-tabs{border-color:var(--tema-borde);background:linear-gradient(180deg,var(--tema-superficie),#15253a)}
-html[data-theme="oscuro"] #root .repuestos-module-tabs button{color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .repuestos-module-tabs button.is-active{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .repuestos-module-tabs button small{background:#20344a;color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .repuestos-module .producto-card{border-color:var(--tema-borde);background:var(--tema-superficie)}
-@media(max-width:1200px){.repuestos-module .catalog-card-grid.producto-card-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:900px){.repuestos-module .catalog-card-grid.producto-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.erp-content.is-catalog-view .repuestos-module .catalog-search-input{width:min(100%,340px)}}
-@media(max-width:760px){.repuestos-module-tabs{padding:0 14px}.repuestos-module-tabs button{min-height:50px;padding:0 11px;font-size:12px}.erp-content.is-catalog-view .repuestos-module .catalog-content{padding:14px 14px 18px}.erp-content.is-catalog-view .repuestos-module .precios-productos-page.is-integrated{padding:14px}.repuestos-module .producto-card-visual{aspect-ratio:1.35/1}}
-@media(max-width:600px){.erp-content.is-catalog-view .repuestos-module .catalog-list-heading{align-items:stretch;flex-direction:column;gap:11px}.erp-content.is-catalog-view .repuestos-module .catalog-list-tools{display:grid;width:100%;grid-template-columns:minmax(0,1fr) auto;align-items:center}.erp-content.is-catalog-view .repuestos-module .catalog-search-input{width:100%;min-width:0}.erp-content.is-catalog-view .repuestos-module .catalog-list-section{padding:16px 14px 76px}.repuestos-module .catalog-card-grid.producto-card-grid{gap:10px}.repuestos-module .producto-card-copy{min-height:226px;padding:10px 9px 9px}.repuestos-module .producto-card-stock{grid-template-columns:minmax(0,1fr);gap:5px;padding:8px}.repuestos-module .producto-card-stock-min{grid-column:auto}.repuestos-module .producto-card-actions{gap:5px;padding:7px}.repuestos-module .producto-card-actions button{flex:1;padding:0 5px;font-size:9px}.repuestos-module .precios-productos-page.is-integrated .precios-productos-panel{padding:11px}.repuestos-module .precios-productos-page.is-integrated .precios-productos-table{min-width:740px}}
-@media(max-width:400px){.repuestos-module .catalog-card-grid.producto-card-grid{grid-template-columns:minmax(0,1fr)}.repuestos-module .producto-card-visual{aspect-ratio:1.8/1}.repuestos-module .producto-card-copy{min-height:0}.repuestos-module .producto-card-stock{grid-template-columns:minmax(0,1fr) auto}.repuestos-module .producto-card-stock-min{grid-column:1/-1}}
+.repuestos-module {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  overflow: visible;
+  color: #153654;
+}
 
-/* Repuestos: catálogo y precios en una página amplia con scroll natural. */
-.repuestos-module{display:block;height:auto;min-height:100%;overflow:visible;background:linear-gradient(180deg,#f8fafc,#f3f6f9)}
-.repuestos-module-tabs{position:sticky;z-index:5;top:0;padding-inline:clamp(20px,3vw,48px);box-shadow:0 4px 14px #17334a08}
-.repuestos-module>[role="tabpanel"]{display:block;height:auto;min-height:0;overflow:visible}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-content{height:auto;min-height:calc(100dvh - 150px);overflow:visible;padding:16px clamp(16px,2vw,30px) 120px}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-section{display:flex;height:auto;min-height:calc(100dvh - 290px);flex:0 0 auto;flex-direction:column;overflow:visible;padding:20px;border:1px solid #dce6ef;border-radius:18px;background:#fff;box-shadow:0 10px 34px #12314c0a}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-heading{align-items:center;margin-bottom:22px;padding:0 2px 18px;border-bottom:1px solid #e8eef3}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-heading h2{font-size:clamp(21px,2vw,27px);letter-spacing:-.025em}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-eyebrow{font-size:11px;letter-spacing:.12em}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-results-scroll{height:auto;min-height:0;flex:0 0 auto;padding-bottom:0;overflow:visible}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-card-grid.producto-card-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:18px}
-.repuestos-module .producto-card-copy{min-height:230px;padding:16px}
-.repuestos-module .producto-card-copy h3{font-size:16px;line-height:1.35}
-.erp-content.is-inventory-submodule-view .repuestos-module .catalog-pagination{position:static;z-index:auto;flex:0 0 auto;margin:22px 0 0;padding:16px 0 0;border-top:1px solid #e5edf3;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none}
-.erp-content.is-inventory-submodule-view .repuestos-module .precios-productos-page.is-integrated{display:block;height:auto;min-height:calc(100dvh - 190px);overflow:visible;padding:22px clamp(16px,2vw,30px) 56px}
-.erp-content.is-inventory-submodule-view .repuestos-module .precios-productos-page.is-integrated{min-height:calc(100dvh - 150px);padding:16px clamp(16px,2vw,30px) 120px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-panel{display:flex;height:auto;min-height:calc(100dvh - 290px);flex-direction:column;gap:16px;overflow:visible;padding:20px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar{align-items:center;padding-bottom:16px;border-bottom:1px solid #e8eef3}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar label{width:min(520px,100%);font-size:13px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar input{height:44px;border-radius:10px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar>span{padding:0;font-size:13px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table-wrap{width:100%;height:auto;min-height:0;flex:0 0 auto;overflow-x:auto;overflow-y:clip;overscroll-behavior-x:contain;overscroll-behavior-y:auto;border:1px solid #e5ebf2;border-radius:12px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table{min-width:820px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table th{padding:14px 16px;background:#f6f8fb;text-align:center}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table th:first-child{text-align:left}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table td{padding:13px 16px;text-align:center}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table td:first-child{text-align:left}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-table td:last-child{width:100px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-product{min-width:260px}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-input{margin-inline:auto}
-.repuestos-module .precios-productos-page.is-integrated .precios-productos-pagination{margin-top:0;padding-top:16px;border-top:1px solid #e5edf3}
-html[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar{border-color:var(--tema-borde)}
-html[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-table-wrap{border-color:var(--tema-borde)}
-html[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-table th{background:#182639}
-html[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-pagination{border-color:var(--tema-borde)}
-@media(max-width:760px){.erp-content.is-inventory-submodule-view .repuestos-module .precios-productos-page.is-integrated{min-height:calc(100dvh - 170px);padding:14px 12px 100px}.repuestos-module .precios-productos-page.is-integrated .precios-productos-panel{min-height:calc(100dvh - 230px);padding:14px}.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar{align-items:stretch}.repuestos-module .precios-productos-page.is-integrated .precios-productos-toolbar>span{font-size:12px}.repuestos-module .precios-productos-page.is-integrated .precios-productos-pagination{align-items:flex-start;flex-direction:column}.repuestos-module .precios-productos-page.is-integrated .precios-productos-pagination>div{width:100%;justify-content:space-between}}
-@media(max-width:760px){.repuestos-module-tabs{padding-inline:14px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-content,.erp-content.is-inventory-submodule-view .repuestos-module .precios-productos-page.is-integrated{padding:14px 12px 100px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-section{min-height:calc(100dvh - 220px);padding:16px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-tools{flex-direction:row;flex-wrap:wrap}}
-@media(max-width:600px){.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-heading{align-items:stretch}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-search-input{width:100%;box-sizing:border-box}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-list-section{padding:13px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-pagination{align-items:stretch;gap:12px}.erp-content.is-inventory-submodule-view .repuestos-module .catalog-pagination>div{justify-content:space-between}}
+.repuestos-module > [role="tabpanel"] {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.repuestos-module-loading {
+  display: grid;
+  min-height: 220px;
+  place-items: center;
+  color: #71849b;
+  font-size: 13px;
+}
+
+.repuestos-module .precios-productos-page.is-integrated {
+  display: block;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 clamp(17px, 2.2vw, 32px);
+  overflow: visible;
+}
+
+.repuestos-module .precios-productos-page.is-integrated .precios-productos-heading {
+  display: none;
+}
+
+.repuestos-module .precios-productos-page.is-integrated .precios-productos-table-wrap {
+  width: 100%;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: clip;
+  overscroll-behavior-x: contain;
+}
+
+.repuestos-module .precios-productos-page.is-integrated .precios-productos-table {
+  min-width: 820px;
+}
+
+.repuestos-module .precios-productos-page.is-integrated .precios-productos-product {
+  min-width: 260px;
+}
+
+.repuestos-module .precios-productos-page.is-integrated .precios-productos-input {
+  margin-inline: auto;
+}
+
+html[data-theme="oscuro"] #root .repuestos-module {
+  color: var(--tema-texto);
+}
+
+@media (max-width: 760px) {
+  .repuestos-module .precios-productos-page.is-integrated {
+    min-height: 0;
+    padding: 0 14px;
+  }
+}

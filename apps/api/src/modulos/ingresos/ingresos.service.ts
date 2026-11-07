@@ -65,9 +65,12 @@ const validarFecha = (fecha: string, nombre: string) => {
 };
 @Injectable()
 export class ServicioIngresos {
-  async listarGuias() {
-    const filas = await db.select().from(guiasRemision).orderBy(desc(guiasRemision.creadoEn)).limit(100);
-    return filas.map((fila) => {
+  async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string) {
+    const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
+    const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
+    const [{ total }] = await db.select({ total: count() }).from(guiasRemision);
+    const filas = await db.select().from(guiasRemision).orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
+    const items = filas.map((fila) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
       const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
       return { id: fila.id, tipo: fila.tipo, fecha: fila.fecha, codigo: `${fila.serie}-${String(fila.numero).padStart(6, "0")}`,
@@ -76,6 +79,7 @@ export class ServicioIngresos {
         enlaceXml: typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null,
         enlaceCdr: typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null };
     });
+    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
   }
 
   async emitirGuia(valor: unknown, usuarioId: string) {
@@ -209,7 +213,7 @@ export class ServicioIngresos {
     const tipoVenta = filtros.tipoVenta === "MOTOTAXIS" ? "MOTOTAXIS" : filtros.tipoVenta === "REPUESTOS" ? "REPUESTOS" : null;
     if (!tipoVenta) throw new BadRequestException("Selecciona si deseas consultar ventas de repuestos o de mototaxis.");
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const porPagina = Math.min(100, Math.max(1, Number.parseInt(filtros.porPagina ?? "20", 10) || 20));
+    const porPagina = Math.min(100, Math.max(1, Number.parseInt(filtros.porPagina ?? "10", 10) || 10));
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
     const ventaTieneMototaxi = exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle)
@@ -634,6 +638,40 @@ export class ServicioIngresos {
     const porPersona = new Map<string, { tipoDocumento: string; numeroDocumento: string }[]>();
     for (const documento of documentosAdicionales) porPersona.set(documento.personaId, [...(porPersona.get(documento.personaId) ?? []), { tipoDocumento: documento.tipoDocumento, numeroDocumento: documento.numeroDocumento }]);
     return clientesEncontrados.map((cliente) => ({ ...cliente, documentos: [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }, ...(porPersona.get(cliente.id) ?? [])] }));
+  }
+
+  async listarClientes(paginaEntrada?: string, porPaginaEntrada?: string, busquedaEntrada?: string) {
+    const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
+    const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
+    const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
+    const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
+    const filtroBusqueda = busqueda ? or(
+      ilike(personas.numeroDocumento, coincidencia), ilike(personas.razonSocial, coincidencia),
+      exists(db.select({ id: personasDocumentos.id }).from(personasDocumentos).where(and(eq(personasDocumentos.personaId, personas.id), ilike(personasDocumentos.numeroDocumento, coincidencia)))),
+      ilike(sql`concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno})`, coincidencia),
+      ilike(clientes.nombreComercial, coincidencia), ilike(clientes.contactoNombre, coincidencia), ilike(clientes.correo, coincidencia), ilike(clientes.telefono, coincidencia),
+    ) : undefined;
+    const condicion = and(eq(clientes.activo, true), eq(personas.activo, true), filtroBusqueda);
+    const [{ total }] = await db.select({ total: count() }).from(clientes)
+      .innerJoin(personas, eq(clientes.personaId, personas.id)).where(condicion);
+    const clientesEncontrados = await db.select({
+      id: personas.id, tipoPersona: tiposPersona.codigo, tipoDocumento: tiposDocumento.codigo,
+      numeroDocumento: personas.numeroDocumento, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno,
+      apellidoMaterno: personas.apellidoMaterno, fechaNacimiento: personas.fechaNacimiento, razonSocial: personas.razonSocial, nombreComercial: clientes.nombreComercial,
+      contactoNombre: clientes.contactoNombre, correo: clientes.correo, telefono: clientes.telefono,
+      direccion: clientes.direccionFiscal, direccionEntrega: clientes.direccionEntrega, observacion: clientes.observacion,
+    }).from(clientes).innerJoin(personas, eq(clientes.personaId, personas.id))
+      .innerJoin(tiposPersona, eq(personas.tipoPersonaId, tiposPersona.id))
+      .innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id))
+      .where(condicion).orderBy(desc(clientes.creadoEn), asc(personas.razonSocial), asc(personas.apellidoPaterno), asc(personas.nombres))
+      .limit(porPagina).offset((pagina - 1) * porPagina);
+    const documentosAdicionales = clientesEncontrados.length ? await db.select({ personaId: personasDocumentos.personaId, tipoDocumento: tiposDocumento.codigo, numeroDocumento: personasDocumentos.numeroDocumento })
+      .from(personasDocumentos).innerJoin(tiposDocumento, eq(personasDocumentos.tipoDocumentoId, tiposDocumento.id))
+      .where(inArray(personasDocumentos.personaId, clientesEncontrados.map((cliente) => cliente.id))) : [];
+    const porPersona = new Map<string, { tipoDocumento: string; numeroDocumento: string }[]>();
+    for (const documento of documentosAdicionales) porPersona.set(documento.personaId, [...(porPersona.get(documento.personaId) ?? []), { tipoDocumento: documento.tipoDocumento, numeroDocumento: documento.numeroDocumento }]);
+    const items = clientesEncontrados.map((cliente) => ({ ...cliente, documentos: [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }, ...(porPersona.get(cliente.id) ?? [])] }));
+    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
   }
 
   async consultarIdentidadCliente(tipoDocumento?: string, numeroDocumento?: string) {

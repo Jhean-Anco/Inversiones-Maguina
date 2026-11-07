@@ -1,5 +1,6 @@
 import "./entrada-stock-formulario.css";
 import type { FormEvent } from "react";
+import { createPortal } from "react-dom";
 import type { useEntradasStock } from "../../../hooks/use-entradas-stock";
 import { SelectorCuentaFinanciera } from "../../finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 
@@ -17,7 +18,7 @@ type Props = Pick<ModuloEntradas,
 
 export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, montoPagado, setMontoPagado, archivoEvidencia, seleccionarEvidencia, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto, detalles, setDetalles, totalBorrador, agregarDetalle, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, setDatosProveedorEditables, buscarProveedor, seleccionarProveedor }: Props) {
   function enviar(evento: FormEvent<HTMLFormElement>) { void guardar(evento); }
-  return <div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
+  return createPortal(<div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
     <section className="catalog-modal stock-entry-modal" role="dialog" aria-modal="true" aria-labelledby="stock-entry-title">
       <button className="catalog-modal-close" type="button" aria-label="Cerrar compra" onClick={cerrarModal}>×</button>
       <form className="catalog-form stock-entry-form" onSubmit={enviar}>
@@ -89,5 +90,5 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
         <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={cerrarModal}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || !detalles.length}>{guardando ? "Registrando…" : "Registrar compra"}</button></div>
       </form>
     </section>
-  </div>;
+  </div>, document.body);
 }

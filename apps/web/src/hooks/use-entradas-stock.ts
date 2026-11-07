@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
+import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
 import { servicioIdentidad } from "../services/identidad.service";
 import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
 
@@ -12,7 +13,7 @@ export function useEntradasStock() {
   const navegar = useNavigate();
   const [paginaDatos, setPaginaDatos] = useState({ items: [] as EntradaStock[], total: 0, totalPaginas: 1 });
   const [pagina, setPagina] = useState(1);
-  const [porPagina, setPorPagina] = useState(12);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -181,7 +182,7 @@ export function useEntradasStock() {
     } catch (problema) { manejarError(problema, "No se pudo registrar la compra."); }
     finally { setGuardando(false); }
   }
-  function cambiarPorPagina(cantidad: number) { if ([12, 16, 20].includes(cantidad)) { setPorPagina(cantidad); setPagina(1); } }
+  function cambiarPorPagina(cantidad: number) { if ([4, 6, 8, 10].includes(cantidad)) { setPorPagina(cantidad); setPagina(1); } }
 
   const totalBorrador = useMemo(() => detalles.reduce((total, fila) => total + Number(fila.cantidad) * Number(fila.costoUnitario), 0), [detalles]);
   return {

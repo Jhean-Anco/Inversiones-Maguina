@@ -1,6 +1,9 @@
 import "./ventas-page.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
+import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { FileCheck, FileCode, MessageCircle, Printer } from "lucide-react";
 import { ErrorApi, urlApi } from "../../services/api-cliente";
 import { servicioIngresos, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
@@ -33,13 +36,14 @@ const enlaces = (pdf: string | null, xml: string | null, cdr: string | null, cod
   {pdf && whatsapp && !pdf.startsWith("/") && <a href={`https://wa.me/?text=${encodeURIComponent(`Te comparto el comprobante ${codigo}: ${enlaceDocumento(pdf)}`)}`} target="_blank" rel="noreferrer" title={`Compartir ${codigo} por WhatsApp`} aria-label={`Compartir ${codigo} por WhatsApp`}><MessageCircle aria-hidden="true" size={16}/></a>}
 </span>;
 
+const encabezadoVentas = <tr><th>Fecha</th><th>Tipo</th><th>Nro. de documento</th><th>Cliente</th><th>Pago</th><th className="ventas-number">Total</th><th>Estado</th><th>Archivos y acciones</th></tr>;
 export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean }) {
   const navegar = useNavigate();
   const esMoto = tipoVenta === "MOTOTAXIS";
-  const titulo = esMoto ? "Venta de mototaxis" : "Venta de repuestos";
   const [ventas, setVentas] = useState<VentaListado[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -59,7 +63,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false }: 
     let vigente = true;
     const temporizador = window.setTimeout(() => {
       setCargando(true);
-      void servicioIngresos.listarVentas(tipoVenta, pagina, busqueda).then((resultado) => {
+      void servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda).then((resultado) => {
         if (!vigente) return;
         setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError("");
       }).catch((problema: unknown) => {
@@ -69,7 +73,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false }: 
       }).finally(() => { if (vigente) setCargando(false); });
     }, busqueda ? 220 : 0);
     return () => { vigente = false; window.clearTimeout(temporizador); };
-  }, [tipoVenta, pagina, busqueda, navegar]);
+  }, [tipoVenta, pagina, porPagina, busqueda, navegar]);
 
   useEffect(() => {
     if (!ventaSeleccionada) return;
@@ -93,7 +97,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false }: 
   const emitirNota = async (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     if (!ventaSeleccionada) return;
-    const lineas = Object.entries(lineasSeleccionadas).filter(([id, seleccionada]) => seleccionada).map(([detalleId]) => ({ detalleId, monto: ajustesNota[detalleId] ?? "" }));
+    const lineas = Object.entries(lineasSeleccionadas).filter(([, seleccionada]) => seleccionada).map(([detalleId]) => ({ detalleId, monto: ajustesNota[detalleId] ?? "" }));
     if (!lineas.length || lineas.some((linea) => !linea.monto || Number(linea.monto) <= 0)) { setErrorNota("Selecciona los productos que modificarás e indica el ajuste de cada uno."); return; }
     setGuardandoNota(true); setErrorNota("");
     try {
@@ -105,14 +109,24 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false }: 
     finally { setGuardandoNota(false); }
   };
 
+  const renderizarVenta = (venta: VentaListado) => <tr key={venta.id}><td className="ventas-date">{fecha(venta.fecha)}</td><td>{comprobante(venta.tipoComprobante)}</td><td><strong className="ventas-document-code" title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td><td><strong className="ventas-client-name">{venta.clienteNombre || "Cliente no especificado"}</strong>{venta.clienteNumeroDocumento && <small className="ventas-client-document">{venta.clienteNumeroDocumento}</small>}</td><td><span>{medioPago(venta.medioPago)}</span><small className="ventas-payment-condition">{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</small></td><td className="ventas-number ventas-total">{soles(venta.total)}</td><td><span className={"ventas-state" + (["ERROR_SUNAT", "RECHAZADO_SUNAT", "ERROR_NUBEFACT", "ERROR_EMISION"].includes(venta.estadoProveedor) || venta.estado.startsWith("ERROR") ? " is-error" : ["ACEPTADO_SUNAT", "EMITIDO"].includes(venta.estadoProveedor) || venta.estado.startsWith("EMITIDO") ? " is-success" : "")}>{estado(venta.estado, venta.estadoProveedor)}</span>{venta.detalleProveedor && <small className="ventas-status-detail" title={venta.detalleProveedor}>{venta.detalleProveedor}</small>}</td><td><div className="ventas-row-actions">{enlaces(venta.enlacePdf, venta.enlaceXml, venta.enlaceCdr, venta.codigoComprobante)}{puedeEmitirNotas && ["EMITIDO", "EMITIDO_DEMO"].includes(venta.estado) && venta.tipoComprobante !== "NOTA_VENTA" && <><button type="button" className="ventas-note-action is-credit" title="Emitir nota de crédito" aria-label={`Emitir nota de crédito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_CREDITO")}><span aria-hidden="true">NC</span></button><button type="button" className="ventas-note-action is-debit" title="Emitir nota de débito" aria-label={`Emitir nota de débito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_DEBITO")}><span aria-hidden="true">ND</span></button></>}</div></td></tr>;
+
   return <section className="ventas-page">
-    <header className="ventas-heading"><div><span>{esMoto ? "VENTAS · MOTOTAXIS" : "VENTAS · REPUESTOS"}</span><h1>{titulo}</h1><p>Consulta y busca las ventas registradas.</p></div>{puedeCrear && <button className="ventas-new-button" type="button" onClick={() => navegar(esMoto ? "/ingresos/nuevo/mototaxis" : "/ingresos/nuevo/repuestos")}><span className="erp-create-icon" aria-hidden="true">+</span>Nueva venta</button>}</header>
-    <section className="ventas-panel" aria-label={"Listado de " + titulo.toLocaleLowerCase("es-PE")}>
-      <div className="ventas-toolbar"><div><strong>{total.toLocaleString("es-PE")} venta{total === 1 ? "" : "s"}</strong><span>Historial de {esMoto ? "mototaxis" : "repuestos"}</span></div><label className="ventas-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label></div>
-      {error && <p className="ventas-message is-error" role="alert">{error}</p>}
-      <div className="ventas-table-scroll" aria-live="polite">{cargando ? <div className="ventas-empty" role="status">Cargando ventas…</div> : ventas.length ? <table className="ventas-table"><thead><tr><th>Fecha</th><th>Tipo</th><th>Nro. de documento</th><th>Cliente</th><th>Pago</th><th className="ventas-number">Total</th><th>Estado</th><th>Archivos y acciones</th></tr></thead><tbody>{ventas.map((venta) => <tr key={venta.id}><td className="ventas-date">{fecha(venta.fecha)}</td><td>{comprobante(venta.tipoComprobante)}</td><td><strong className="ventas-document-code" title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td><td><strong className="ventas-client-name">{venta.clienteNombre || "Cliente no especificado"}</strong>{venta.clienteNumeroDocumento && <small className="ventas-client-document">{venta.clienteNumeroDocumento}</small>}</td><td><span>{medioPago(venta.medioPago)}</span><small className="ventas-payment-condition">{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</small></td><td className="ventas-number ventas-total">{soles(venta.total)}</td><td><span className={"ventas-state" + (["ERROR_SUNAT", "RECHAZADO_SUNAT", "ERROR_NUBEFACT", "ERROR_EMISION"].includes(venta.estadoProveedor) || venta.estado.startsWith("ERROR") ? " is-error" : ["ACEPTADO_SUNAT", "EMITIDO"].includes(venta.estadoProveedor) || venta.estado.startsWith("EMITIDO") ? " is-success" : "")}>{estado(venta.estado, venta.estadoProveedor)}</span>{venta.detalleProveedor && <small className="ventas-status-detail" title={venta.detalleProveedor}>{venta.detalleProveedor}</small>}</td><td><div className="ventas-row-actions">{enlaces(venta.enlacePdf, venta.enlaceXml, venta.enlaceCdr, venta.codigoComprobante)}{puedeEmitirNotas && ["EMITIDO", "EMITIDO_DEMO"].includes(venta.estado) && venta.tipoComprobante !== "NOTA_VENTA" && <><button type="button" className="ventas-note-action is-credit" title="Emitir nota de crédito" aria-label={`Emitir nota de crédito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_CREDITO")}><span aria-hidden="true">NC</span></button><button type="button" className="ventas-note-action is-debit" title="Emitir nota de débito" aria-label={`Emitir nota de débito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_DEBITO")}><span aria-hidden="true">ND</span></button></>}</div></td></tr>)}</tbody></table> : <div className="ventas-empty"><strong>{busqueda ? "No se encontraron ventas" : "Todavía no hay ventas"}</strong><span>{busqueda ? "Prueba con otro código, cliente o artículo." : "Las ventas registradas aparecerán aquí."}</span></div>}</div>
-      {!cargando && total > 0 && <footer className="ventas-pagination"><span>Mostrando {((pagina - 1) * 20 + 1).toLocaleString("es-PE")}–{Math.min(pagina * 20, total).toLocaleString("es-PE")} de {total.toLocaleString("es-PE")}</span><div><button type="button" disabled={pagina <= 1} onClick={() => setPagina((actual) => actual - 1)}>Anterior</button><span>Página {pagina} de {totalPaginas}</span><button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((actual) => actual + 1)}>Siguiente</button></div></footer>}
-    </section>
+    {puedeCrear && <RegistrarAccionPrincipal etiqueta={esMoto ? "Crear venta de mototaxi" : "Crear venta de repuestos"} onClick={() => navegar(esMoto ? "/ingresos/nuevo/mototaxis" : "/ingresos/nuevo/repuestos")} />}
+    <ListadoMaestro
+      variante="tabla"
+      titulo={`Historial de ventas de ${esMoto ? "mototaxis" : "repuestos"}`}
+      registros={ventas}
+      cargando={cargando}
+      error={error}
+      vacio={<div className="ventas-empty"><strong>No hay ventas para mostrar</strong></div>}
+      controlesCabecera={<label className="ventas-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label>}
+      paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
+      encabezadoTabla={encabezadoVentas}
+      renderizarFila={renderizarVenta}
+      claseTabla="ventas-table"
+      claseContenedor="ventas-table-scroll"
+    />
     {ventaSeleccionada && <div className="ventas-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setVentaSeleccionada(null); }}>
       <section className="ventas-notes-modal" role="dialog" aria-modal="true" aria-labelledby="ventas-notes-title">
         <header><div><span>COMPROBANTE ORIGINAL · {ventaSeleccionada.tipoComprobante === "BOLETA" ? "BOLETA" : "FACTURA"}</span><h2 id="ventas-notes-title">{ventaSeleccionada.codigoComprobante}</h2></div><button type="button" aria-label="Cerrar" onClick={() => setVentaSeleccionada(null)}>×</button></header>

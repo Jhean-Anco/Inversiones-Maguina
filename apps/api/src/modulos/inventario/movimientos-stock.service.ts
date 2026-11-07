@@ -46,8 +46,8 @@ export class ServicioMovimientosStock {
 
   async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; tipo?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const solicitado = Number.parseInt(filtros.porPagina ?? "12", 10);
-    const porPagina = [12, 16, 20].includes(solicitado) ? solicitado : 12;
+    const solicitado = Number.parseInt(filtros.porPagina ?? "10", 10);
+    const porPagina = [4, 6, 8, 10].includes(solicitado) ? solicitado : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const tipo = filtros.tipo && tiposMovimiento.includes(filtros.tipo as typeof tiposMovimiento[number]) ? filtros.tipo : "";

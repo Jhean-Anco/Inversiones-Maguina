@@ -53,17 +53,6 @@ export class ServicioProductos {
     return { categorias, marcas, unidadesMedida: unidades, tiposListasPrecio: listas };
   }
 
-  async crearListaPrecio(nombreEntrada: unknown) {
-    const nombre = texto(nombreEntrada, "El nombre de la lista", 100, 2);
-    const [existente] = await db.select({ id: tiposListasPrecio.id }).from(tiposListasPrecio)
-      .where(eq(sql`lower(${tiposListasPrecio.nombre})`, nombre.toLocaleLowerCase("es-PE"))).limit(1);
-    if (existente) throw new ConflictException("Ya existe una lista con ese nombre.");
-    const baseCodigo = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleUpperCase("es-PE").replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 30) || "LISTA";
-    const codigo = `${baseCodigo}_${randomUUID().slice(0, 8).toUpperCase()}`;
-    const [creada] = await db.insert(tiposListasPrecio).values({ codigo, nombre }).returning({ id: tiposListasPrecio.id, codigo: tiposListasPrecio.codigo, nombre: tiposListasPrecio.nombre });
-    return creada;
-  }
-
   async alertasStockBajo() {
     const stockActual = sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`;
     return db.select({
@@ -82,8 +71,8 @@ export class ServicioProductos {
 
   async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const tamano = Number.parseInt(filtros.porPagina ?? "12", 10);
-    const porPagina = [12, 16, 20].includes(tamano) ? tamano : 12;
+    const tamano = Number.parseInt(filtros.porPagina ?? "10", 10);
+    const porPagina = [4, 6, 8, 10].includes(tamano) ? tamano : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condicion = coincidencia ? or(
@@ -113,9 +102,10 @@ export class ServicioProductos {
     return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
   }
 
-  async listarPrecios(filtros: { pagina?: string; busqueda?: string }) {
+  async listarPrecios(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
-    const porPagina = 50;
+    const tamano = Number.parseInt(filtros.porPagina ?? "10", 10);
+    const porPagina = [4, 6, 8, 10].includes(tamano) ? tamano : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condicion = coincidencia ? or(ilike(productos.nombre, coincidencia), ilike(productos.codigoInterno, coincidencia), ilike(marcasProductos.nombre, coincidencia)) : undefined;

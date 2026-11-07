@@ -2,7 +2,8 @@ import "./catalogo-admin-page.css";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { useCatalogo } from "../../../hooks/use-catalogo";
 import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
-import { usePaginacion } from "../../../hooks/use-paginacion";
+import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
+import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 import { srcImagen } from "../../../services/api-cliente";
 import { AccionIcono } from "../../ui/accion-icono";
 import type { RegistroCatalogo, ServicioCatalogo, UsoMarca } from "../../../services/inventario/catalogos.service";
@@ -39,7 +40,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const idArchivo = `catalogo-${tipo}-imagen`;
   const { registros, cargando, guardando, error, setError, guardar, cambiarEstado } = useCatalogo(servicio, mensajeCarga);
   const [busqueda, setBusqueda] = useState("");
-  const [filtro, setFiltro] = useState<FiltroEstado>("TODOS");
   const [nombre, setNombre] = useState("");
   const [rutaImagen, setRutaImagen] = useState("");
   const [imagen, setImagen] = useState<File | null>(null);
@@ -64,8 +64,8 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
       || (filtroTipo === "MOTOTAXIS" && (uso === "MOTOTAXIS" || uso === "AMBOS"));
     return coincideTexto && coincideEstado && coincideTipo;
   }), [registros, busqueda, filtroEstado, filtroTipo, esMarca]);
-  const porPaginaSegunPantalla = anchoViewport >= 1200 ? 12 : anchoViewport >= 900 ? 9 : anchoViewport >= 600 ? 6 : 4;
-  const paginacion = usePaginacion(filtrados, porPaginaSegunPantalla);
+  const [versionListado, setVersionListado] = useState(0);
+  const columnas = anchoViewport >= 1200 ? 4 : anchoViewport >= 900 ? 3 : anchoViewport >= 600 ? 2 : 1;
 
   useEffect(() => {
     const actualizarAncho = () => setAnchoViewport(window.innerWidth);
@@ -106,7 +106,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     void guardar(
       { nombre: nombre.trim(), ...(registroEditado ? { id: registroEditado.id } : {}), ...(esMarca && usoMarca ? { uso: usoMarca } : {}), ...(imagen ? { imagen } : {}) },
       (registro) => setRegistroEditado(registro),
-      () => { setModalAbierto(false); limpiarFormulario(); paginacion.cambiarPagina(1); },
+      () => { setModalAbierto(false); limpiarFormulario(); setVersionListado((version) => version + 1); },
     );
   }
 
@@ -123,24 +123,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     setConfirmacionEstado(null);
   }
 
-  return <section className={`catalog-manager ${esMarca ? "is-brand-manager" : "is-category-manager"}`} aria-label={plural}>
-    <div className="catalog-manager-toolbar">
-      <label className="catalog-manager-search"><Icono nombre="buscar"/><input type="search" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); paginacion.cambiarPagina(1); }} placeholder={`Buscar ${singular}…`} aria-label={`Buscar ${plural.toLocaleLowerCase("es-PE")}`} /></label>
-      <label className="catalog-manager-status-filter"><span>Estado</span><select value={filtroEstado} onChange={(evento) => { setFiltroEstado(evento.target.value as FiltroEstado); paginacion.cambiarPagina(1); }}><option value="TODOS">Todos</option><option value="ACTIVOS">Activas</option><option value="INACTIVOS">Inactivas</option></select></label>
-      {esMarca && <label className="catalog-manager-status-filter"><span>Tipo</span><select value={filtroTipo} onChange={(evento) => { setFiltroTipo(evento.target.value as FiltroTipoMarca); paginacion.cambiarPagina(1); }}><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="TODOS">Todos</option></select></label>}
-      <button className="catalog-manager-create" type="button" onClick={abrirNuevo} aria-label={`Nueva ${singular}`} title={`Nueva ${singular}`}><span className="erp-create-icon" aria-hidden="true">+</span><strong>Nueva {singular}</strong></button>
-    </div>
-    {error && !modalAbierto && <div className="catalog-manager-error" role="alert">{error}<button type="button" aria-label="Cerrar mensaje" onClick={() => setError("")}><Icono nombre="cerrar"/></button></div>}
-
-    <section className="catalog-manager-panel" aria-label={`Listado de ${plural.toLocaleLowerCase("es-PE")}`}>
-      <div className="catalog-manager-list" aria-live="polite">
-        {cargando ? <div className="catalog-manager-state" role="status"><span className="catalog-manager-spinner"/><strong>Cargando {plural.toLocaleLowerCase("es-PE")}…</strong></div> : filtrados.length === 0 ? (
-          <div className="catalog-manager-empty"><span className="catalog-manager-empty-icon"><Icono nombre={tipo}/></span><strong>{busqueda || filtroEstado !== "TODOS" ? "No hay resultados" : `Aún no hay ${plural.toLocaleLowerCase("es-PE")}`}</strong><p>{busqueda || filtroEstado !== "TODOS" ? "Prueba otra búsqueda o estado." : `Agrega una ${singular} para organizar el inventario.`}</p></div>
-        ) : (
-          <>
-          {!cargando && <div className="catalog-manager-results-bar"><span>{filtrados.length} {filtrados.length === 1 ? singular : plural.toLocaleLowerCase("es-PE")}</span><div className="catalog-manager-pagination"><button type="button" disabled={paginacion.pagina <= 1} onClick={() => paginacion.cambiarPagina(paginacion.pagina - 1)} aria-label="Página anterior">‹</button><span>{paginacion.pagina} / {paginacion.totalPaginas}</span><button type="button" disabled={paginacion.pagina >= paginacion.totalPaginas} onClick={() => paginacion.cambiarPagina(paginacion.pagina + 1)} aria-label="Página siguiente">›</button></div></div>}
-          <div className="catalog-manager-grid">
-            {paginacion.visibles.map((registro) => <article className="catalog-manager-card" key={registro.id}>
+  const renderizarTarjeta = (registro: T) => <article className="catalog-manager-card" key={registro.id}>
               <div className={`catalog-manager-thumbnail${esMarca ? " is-logo" : ""}`}>{registro.rutaImagen ? <img src={srcImagen(registro.rutaImagen)} alt="" loading="lazy" /> : <span>{registro.nombre.trim().slice(0, 1).toLocaleUpperCase("es-PE")}</span>}</div>
               <div className="catalog-manager-card-main"><strong className="catalog-manager-name">{registro.nombre}</strong>
                 {esMarca && <div className="catalog-manager-usage">{(registro.uso === "AMBOS" || registro.uso === "REPUESTOS") && <span>Repuestos</span>}{(registro.uso === "AMBOS" || registro.uso === "MOTOTAXIS") && <span>Mototaxis</span>}</div>}
@@ -150,12 +133,29 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
                 <AccionIcono accion="editar" etiqueta={`Editar ${singular} ${registro.nombre}`} onClick={() => abrirEdicion(registro)} />
                 <AccionIcono accion={registro.activo ? "desactivar" : "activar"} etiqueta={`${registro.activo ? "Desactivar" : "Activar"} ${singular} ${registro.nombre}`} onClick={() => setConfirmacionEstado(registro)} />
               </div>
-            </article>)}
-          </div>
-          </>
-        )}
-      </div>
-    </section>
+            </article>;
+
+  return <section className={`catalog-manager ${esMarca ? "is-brand-manager" : "is-category-manager"}`} aria-label={plural}>
+    <RegistrarAccionPrincipal etiqueta={`Crear ${singular}`} onClick={abrirNuevo} />
+    <ListadoMaestro
+      variante="tarjetas"
+      titulo={plural}
+      etiqueta={plural}
+      registros={filtrados}
+      cargando={cargando}
+      error={!modalAbierto ? error : ""}
+      vacio={<div className="catalog-manager-empty"><span className="catalog-manager-empty-icon"><Icono nombre={tipo}/></span><strong>{busqueda || filtroEstado !== "TODOS" ? "No hay resultados" : `Aún no hay ${plural.toLocaleLowerCase("es-PE")}`}</strong><p>{busqueda || filtroEstado !== "TODOS" ? "Prueba otra búsqueda o estado." : `Agrega una ${singular} para organizar el inventario.`}</p></div>}
+      controlesCabecera={<>
+        <label className="catalog-manager-search"><Icono nombre="buscar"/><input type="search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder={`Buscar ${singular}...`} aria-label={`Buscar ${plural.toLocaleLowerCase("es-PE")}`} /></label>
+        <label className="catalog-manager-status-filter"><span>Estado</span><select value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)}><option value="TODOS">Todos</option><option value="ACTIVOS">Activas</option><option value="INACTIVOS">Inactivas</option></select></label>
+        {esMarca && <label className="catalog-manager-status-filter"><span>Tipo</span><select value={filtroTipo} onChange={(evento) => setFiltroTipo(evento.target.value as FiltroTipoMarca)}><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="TODOS">Todos</option></select></label>}
+      </>}
+      paginacion={{ modo: "local" }}
+      resetKey={`${busqueda}|${filtroEstado}|${filtroTipo}|${filtrados.length}|${versionListado}`}
+      columnas={columnas}
+      renderizarTarjeta={renderizarTarjeta}
+      claseTarjeta="catalog-manager-grid"
+    />
 
     {modalAbierto && <div className="catalog-manager-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarModal(); }}>
       <section ref={dialogoRef} className="catalog-manager-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-manager-form-title">

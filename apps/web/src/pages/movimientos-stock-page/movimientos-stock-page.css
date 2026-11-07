@@ -1,0 +1,259 @@
+/* Cabecera del historial: filtros en una fila y paginación debajo. */
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+  align-items: center;
+  gap: 24px;
+  padding: 18px 22px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-titulo {
+  min-width: 220px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-titulo > span {
+  color: #58738f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-titulo h2 {
+  margin-top: 7px;
+  color: #173b5b;
+  font-size: 19px;
+  letter-spacing: -.02em;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+  display: grid;
+  flex: 1 1 700px;
+  grid-template-columns: minmax(190px, .95fr) minmax(260px, 1.55fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > select,
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > input {
+  width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > select {
+  padding-inline: 14px 38px;
+  border-color: #d8e3ee;
+  background-color: #fff;
+  color: #294765;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > input {
+  padding-inline: 14px;
+  border-color: #d8e3ee;
+  background: #fff;
+  font-size: 13px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-paginacion {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-titulo h2 {
+  color: var(--tema-texto);
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > select,
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > input {
+  border-color: var(--tema-borde);
+  background-color: var(--tema-superficie);
+  color: var(--tema-texto);
+}
+
+@media (max-width: 1000px) {
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+    align-items: flex-start;
+  }
+
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+    width: 100%;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(190px, .8fr) minmax(240px, 1.2fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+    gap: 14px;
+    padding: 15px;
+  }
+
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-titulo {
+    min-width: 0;
+  }
+
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-paginacion {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+}
+
+/* Filas del historial de inventario. */
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-wrap {
+  border-top: 1px solid #e8eef4;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table {
+  width: 100%;
+  min-width: 1120px;
+  table-layout: fixed;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th {
+  height: 42px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e2eaf2;
+  background: #f5f8fb;
+  color: #6e8298;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(1) { width: 16%; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(2) { width: 30%; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(3) { width: 10%; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(4) { width: 14%; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(5) { width: 18%; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th:nth-child(6) { width: 12%; }
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td {
+  height: 60px;
+  padding: 9px 16px;
+  border-bottom: 1px solid #e9eff5;
+  color: #38536f;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table tbody tr {
+  transition: background-color .14s ease;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table tbody tr:hover {
+  background: #f6f9fc;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:first-child time {
+  color: #59718a;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-product {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-product small {
+  width: fit-content;
+  color: #8293a6;
+  font-size: 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .025em;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-product strong {
+  overflow: hidden;
+  color: #173b5b;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge {
+  display: inline-flex;
+  min-height: 25px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-increase {
+  border-color: #cce8d7;
+  background: #eff9f2;
+  color: #287247;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-decrease {
+  border-color: #f0d8d7;
+  background: #fff5f4;
+  color: #a44b48;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:nth-child(4) > strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:nth-child(4) > strong.is-increase { color: #287247; }
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:nth-child(4) > strong.is-decrease { color: #a44b48; }
+
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:nth-child(5),
+.catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td:nth-child(6) {
+  overflow: hidden;
+  color: #647a91;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th {
+  border-color: var(--tema-borde);
+  background: #1c2b3e;
+  color: var(--tema-texto-secundario);
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td {
+  border-color: var(--tema-borde);
+  color: var(--tema-texto-secundario);
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table tbody tr:hover {
+  background: #1b2b40;
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-product strong {
+  color: var(--tema-texto);
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-increase {
+  border-color: #315844;
+  background: #1c3428;
+  color: #a3dbb7;
+}
+
+html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-decrease {
+  border-color: #664347;
+  background: #362529;
+  color: #e0a4a2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table tbody tr { transition: none; }
+}

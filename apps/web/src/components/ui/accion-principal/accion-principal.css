@@ -1,0 +1,82 @@
+.erp-accion-principal.is-floating {
+  position: fixed;
+  z-index: 90;
+  right: clamp(20px, 3vw, 44px);
+  bottom: clamp(20px, 3vh, 36px);
+  display: inline-flex;
+  width: max-content;
+  max-width: 56px;
+  height: 56px;
+  min-height: 56px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  overflow: hidden;
+  padding: 0 14px;
+  border: 1px solid #b91e30;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #d92c40, #bb1d30);
+  box-shadow: 0 7px 20px #8c1a2b35, inset 0 1px 0 #ffffff30;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: max-width 1s ease-in-out, gap 1s ease-in-out, padding 1s ease-in-out, border-radius 1s ease-in-out, box-shadow 1s ease-in-out, filter 1s ease-in-out;
+}
+
+.erp-accion-principal-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  color: inherit;
+  font-size: 31px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 1s ease-in-out;
+}
+
+.erp-accion-principal-label {
+  display: block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 1s ease-in-out, opacity 1s ease-in-out;
+}
+
+.erp-accion-principal.is-floating:hover:not(:disabled),
+.erp-accion-principal.is-floating:focus-visible {
+  max-width: calc(100vw - 36px);
+  gap: 10px;
+  padding-right: 20px;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px #8c1a2b40, inset 0 1px 0 #ffffff38;
+  filter: saturate(1.04);
+}
+
+.erp-accion-principal.is-floating:hover:not(:disabled) .erp-accion-principal-icon,
+.erp-accion-principal.is-floating:focus-visible .erp-accion-principal-icon { transform: rotate(180deg); }
+
+.erp-accion-principal.is-floating:hover:not(:disabled) .erp-accion-principal-label,
+.erp-accion-principal.is-floating:focus-visible .erp-accion-principal-label {
+  max-width: min(220px, calc(100vw - 100px));
+  opacity: 1;
+}
+
+.erp-accion-principal:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 4px; }
+.erp-accion-principal:disabled { opacity: .58; cursor: not-allowed; box-shadow: 0 4px 12px #8c1a2b20; }
+
+@media (max-width: 700px) {
+  .erp-accion-principal.is-floating { right: 18px; bottom: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .erp-accion-principal.is-floating,
+  .erp-accion-principal.is-floating .erp-accion-principal-icon,
+  .erp-accion-principal.is-floating .erp-accion-principal-label {
+    transition-duration: 1s !important;
+  }
+}
+

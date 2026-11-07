@@ -1,32 +1,18 @@
 /* Dark palette mappings for all current application components. */
-html[data-theme="oscuro"]{color-scheme:dark;--tema-superficie:#151f2e;--tema-borde:#2a394c;--tema-texto:#e4edf7;--tema-texto-secundario:#a0aec0;--blue:#78b8ff;--blue-deep:#e4edf7;--red:#ff7580;--muted:#a0aec0;--action-primary:#ff8996;--action-primary-hover:#ffb3bc;--action-primary-surface:#39242c;--action-primary-hover-surface:#48262f;--action-primary-border:#693641;--action-primary-focus:#ff899666}
+html[data-theme="oscuro"]{color-scheme:dark;--tema-superficie:#151f2e;--tema-borde:#2a394c;--tema-texto:#e4edf7;--tema-texto-secundario:#a0aec0;--blue:#78b8ff;--blue-deep:#e4edf7;--red:#ff7580;--muted:#a0aec0;--action-primary:#ff8996;--action-primary-hover:#ffb3bc;--action-primary-solid:#e3263b;--action-primary-solid-hover:#bd1d30;--action-primary-surface:#39242c;--action-primary-hover-surface:#48262f;--action-primary-border:#693641;--action-primary-focus:#ff899666}
 html[data-theme="oscuro"] #root .venta-page { --venta-ink: #e4edf7; --venta-muted: #a0aec0; --venta-line: #2a394c; }
-html[data-theme="oscuro"] #root .erp-topbar .topbar-avatar,
-html[data-theme="oscuro"] #root .profile-avatar { color: #fff !important; border-color: #ffffff26 !important; }
+html[data-theme="oscuro"] #root .erp-topbar .topbar-avatar{ color: #fff !important; border-color: #ffffff26 !important; }
 html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] #root .stock-product-empty-result button{border-color:var(--action-primary-border)!important;background:var(--action-primary-surface)!important;color:var(--action-primary)!important}
 html[data-theme="oscuro"] #root .stock-create-product:hover,html[data-theme="oscuro"] #root .stock-product-empty-result button:hover{border-color:var(--action-primary-border)!important;background:var(--action-primary-hover-surface)!important;color:var(--action-primary-hover)!important}
 html[data-theme="oscuro"] #root .stock-evidence-section{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input:hover{background:var(--tema-superficie)!important}
-
-
-
-html[data-theme="oscuro"] #root .producto-card-visual{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-form{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .login-panel{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .login-form input:not([type="checkbox"]){background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .erp-layout{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .erp-topbar{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .today-chip{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .module-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .module-icon-1{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .module-icon-2{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .module-icon-3{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .module-icon-4{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .erp-global-search{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-logout{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-logout:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .erp-content{background:var(--tema-superficie)!important}
 @media (max-width: 960px){html[data-theme="oscuro"] #root .erp-menu-toggle{background:var(--tema-superficie)!important}}
 html[data-theme="oscuro"] #root .producto-form-section{background:var(--tema-superficie)!important}
@@ -43,31 +29,13 @@ html[data-theme="oscuro"] #root .producto-add-row{background:var(--tema-superfic
 html[data-theme="oscuro"] #root .producto-add-row:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-remove-row{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-remove-row:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-detail-image{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-image-item{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-image-item > button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .producto-image-item > button:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-detail-thumbnails button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-page{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-topbar{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-back{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-form,html[data-theme="oscuro"] #root .catalog-list-section{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] #root .catalog-form{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-form-title > span{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-form input,html[data-theme="oscuro"] #root .catalog-form select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-item{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-item.is-inactive{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-category-icon{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-status{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-status.inactive{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-alert{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-page-size select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-card-image{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-brand-image{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-brand-image > span:first-child{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-card-action{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-card-action:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-card-action:last-child:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-loading-card{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-loading-image,html[data-theme="oscuro"] #root .catalog-loading-line,html[data-theme="oscuro"] #root .catalog-loading-actions i{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-upload-zone{background:var(--tema-superficie)!important}
@@ -77,30 +45,9 @@ html[data-theme="oscuro"] #root .catalog-upload-action{background:var(--tema-sup
 html[data-theme="oscuro"] #root .catalog-upload-preview{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-cancel{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-cancel:hover:not(:disabled){background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-detail-image{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-pagination button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card.is-inactive{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-placeholder{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-status{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-status.inactive{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-tags span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:last-child:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-icon{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-details-link{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-form .catalog-form-title > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-section{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-form label input,html[data-theme="oscuro"] #root .stock-entry-form label select{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-provider-identity > button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-provider-identity > button:hover:not(:disabled){background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-filter-select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-badge.is-increase{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-badge.is-decrease{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-observation{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-preview{background:var(--tema-superficie)!important}
@@ -112,50 +59,16 @@ html[data-theme="oscuro"] #root .stock-product-result:hover,html[data-theme="osc
 html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="oscuro"] #root .stock-product-selected{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-add-product{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-add-product:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-empty-lines{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-entry-lines th{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-detail-summary > div{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-detail-note{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal.producto-modal .producto-wizard-actions{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal-close:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .catalog-modal.stock-entry-modal .catalog-form-actions{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal.stock-adjustment-modal .catalog-form-actions{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-page{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-draft-chip{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-panel,html[data-theme="oscuro"] #root .income-summary{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-step{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-search-field{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-results{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-result{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-result:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-product-mark{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-empty-lines > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-number-input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-remove-line:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-fields-grid input,html[data-theme="oscuro"] #root .income-fields-grid select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-summary-title strong{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-alert{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-success{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-success-icon{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .income-success button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-panel{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-section,html[data-theme="oscuro"] #root .nf-advanced{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-field input,html[data-theme="oscuro"] #root .nf-field select,html[data-theme="oscuro"] #root .nf-field textarea{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-totals{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-item{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-add{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .nf-remove{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-status{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-section-title > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-doc-types button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-doc-types button.is-selected{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-note input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-search-results{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-search-results button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-search-results button:hover{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-alert{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-alert-ok{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .boleta-preview{background:var(--tema-superficie)!important}
@@ -167,52 +80,24 @@ html[data-theme="oscuro"] #root .venta-back:hover,html[data-theme="oscuro"] #roo
 html[data-theme="oscuro"] #root .venta-size-picker button.is-selected{background:var(--tema-superficie)!important}
 @media print{html[data-theme="oscuro"] #root .erp-layout,html[data-theme="oscuro"] #root .erp-main,html[data-theme="oscuro"] #root .erp-content{background:var(--tema-superficie)!important}}
 @media print{html[data-theme="oscuro"] #root .venta-page,html[data-theme="oscuro"] #root .is-preview-step,html[data-theme="oscuro"] #root .boleta-preview{background:var(--tema-superficie)!important}}
-html[data-theme="oscuro"] #root .emisor-environment{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-environment.is-production{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-status,html[data-theme="oscuro"] #root .emisor-info{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-status.is-ready{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-info{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .emisor-grid input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-count{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-search{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-message{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-empty{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-pagination button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-identity-search input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-identity-search > button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-field-primary select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-search{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-cart-summary{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-add-service:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-extra-fields input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-customer-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-identity-search input,html[data-theme="oscuro"] #root .venta-extra-fields input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-fields input:focus-visible,html[data-theme="oscuro"] #root .venta-fields select:focus-visible,html[data-theme="oscuro"] #root .venta-identity-search input:focus-visible,html[data-theme="oscuro"] #root .venta-extra-fields input:focus-visible{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-sale-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-empty{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] #root .venta-fields input:focus-visible,
+html[data-theme="oscuro"] #root .venta-fields select:focus-visible{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-form-paper{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-form-header-fields{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-form-body-heading > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-search{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-form-body .venta-empty{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-cart-summary{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-section-title > span,html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-note-fixed input,html[data-theme="oscuro"] #root .venta-customer-address input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-field-optional{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-picker{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-picker > input{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-selected{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-results{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-results button{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-results button:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-add-client{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-new-client{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-new-client-fields input,html[data-theme="oscuro"] #root .venta-new-client-fields select{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-inline-search button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-nubefact-status{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .clientes-secondary-action{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .clientes-alert{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .clientes-toolbar{background:var(--tema-superficie)!important}
@@ -220,29 +105,14 @@ html[data-theme="oscuro"] #root .clientes-search{background:var(--tema-superfici
 html[data-theme="oscuro"] #root .clientes-table-wrap{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .clientes-table-head{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .clientes-empty button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .clientes-modal{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .clientes-modal > header > button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .clientes-form-grid input,html[data-theme="oscuro"] #root .clientes-form-grid select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .clientes-doc-input button{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] .clientes-modal{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] .clientes-modal > header > button{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] .clientes-form-grid input,html[data-theme="oscuro"] .clientes-form-grid select{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .login-success-card{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .login-success-progress{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .report-filters{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .report-kpis article{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .report-panel{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .clientes-form-grid textarea{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-role{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-kpis article{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-panel{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-panel header button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-bar-track{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts button:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts button > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .dashboard-recent-mark{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-table-wrap{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-table th{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-movement-table tbody tr:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-note-fixed textarea{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] .clientes-form-grid textarea{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-results .venta-client-detail-trigger{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-results .venta-client-detail-trigger:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-detail-trigger{background:var(--tema-superficie)!important}
@@ -253,17 +123,10 @@ html[data-theme="oscuro"] #root .venta-client-detail-grid > div{background:var(-
 html[data-theme="oscuro"] #root .venta-client-detail-grid > label input,html[data-theme="oscuro"] #root .venta-client-detail-grid > label textarea{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-detail-secondary{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-layout.is-data-step .venta-table-head{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .egreso-card{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .egreso-form-grid input,html[data-theme="oscuro"] #root .egreso-form-grid select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .egreso-nota{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .egreso-form .catalog-form-actions{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-payment-fields{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-payment-fields input,html[data-theme="oscuro"] #root .stock-payment-fields select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-note-form{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-heading > button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-grid select,html[data-theme="oscuro"] #root .cpe-note-form-grid input{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-note-stock-info{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-footer button:first-child{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .module-loading-heading i,html[data-theme="oscuro"] #root .module-loading-cards i,html[data-theme="oscuro"] #root .module-loading-panel i{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .module-loading-panel{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .module-loading-panel i:first-child{background:var(--tema-superficie)!important}
@@ -274,13 +137,7 @@ html[data-theme="oscuro"] #root .topbar-theme-button:hover{background:var(--tema
 html[data-theme="oscuro"] #root .topbar-profile-trigger:hover,html[data-theme="oscuro"] #root .topbar-profile-trigger[aria-expanded="true"]{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .topbar-popover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .topbar-empty-notifications > span{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-profile-action{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-profile-action:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-action-icon{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .topbar-profile-action.is-logout .topbar-action-icon{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .login-form input:not([type='checkbox']){background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-client-document-choice select{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .venta-form-header-fields .venta-client-document-choice select{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .perfil-card{background:var(--tema-superficie)!important}
@@ -303,28 +160,11 @@ html[data-theme="oscuro"] #root .remember-option{color:#818b99!important}
 html[data-theme="oscuro"] #root .forgot-link{color:#4a8fcf!important}
 html[data-theme="oscuro"] #root .form-notice{color:#7f8b9e!important}
 html[data-theme="oscuro"] #root .erp-layout{color:#828b97!important}
-html[data-theme="oscuro"] #root .erp-company b{color:#7c8ca1!important}
-html[data-theme="oscuro"] #root .nav-section-label{color:#7c8ca2!important}
-html[data-theme="oscuro"] #root .breadcrumb strong{color:#808b9b!important}
-html[data-theme="oscuro"] #root .session-indicator{color:#7e8c9f!important}
 html[data-theme="oscuro"] #root .topbar-avatar{color:#768da4!important}
 html[data-theme="oscuro"] #root .page-eyebrow{color:#7d8ca1!important}
-html[data-theme="oscuro"] #root .page-heading h1{color:#7f8c9a!important}
 html[data-theme="oscuro"] #root .page-subtitle{color:#7e8c9f!important}
-html[data-theme="oscuro"] #root .today-chip{color:#7d8c9d!important}
-html[data-theme="oscuro"] #root .section-heading h2{color:#808c9a!important}
-html[data-theme="oscuro"] #root .module-icon-1{color:#e65c68!important}
-html[data-theme="oscuro"] #root .module-icon-2{color:#638ebb!important}
-html[data-theme="oscuro"] #root .module-icon-3{color:#459981!important}
-html[data-theme="oscuro"] #root .module-icon-4{color:#957fc1!important}
-html[data-theme="oscuro"] #root .module-card h3{color:#808b9b!important}
-html[data-theme="oscuro"] #root .module-card > p{color:#7f8c9c!important}
-@media (max-width: 760px){html[data-theme="oscuro"] #root .topbar-logout{color:#7b8c9f!important}}
-html[data-theme="oscuro"] #root .erp-global-search input{color:#808c99!important}
+@media (max-width: 760px){}
 html[data-theme="oscuro"] #root .topbar-user strong{color:#808c9a!important}
-html[data-theme="oscuro"] #root .topbar-logout{color:#7d8c9d!important}
-html[data-theme="oscuro"] #root .topbar-logout:hover{color:#d36a76!important}
-html[data-theme="oscuro"] #root .module-empty{color:#7e8ba1!important}
 @media (max-width: 960px){html[data-theme="oscuro"] #root .erp-menu-toggle{color:#768da5!important}}
 html[data-theme="oscuro"] #root .catalog-search-input{color:#7b8c9e!important}
 html[data-theme="oscuro"] #root .producto-form-section legend{color:#7b8c9e!important}
@@ -334,8 +174,6 @@ html[data-theme="oscuro"] #root .producto-wizard-step.is-complete{color:#708ea5!
 html[data-theme="oscuro"] #root .producto-wizard-hint{color:#7b8ca1!important}
 html[data-theme="oscuro"] #root .producto-brand-link{color:#5690be!important}
 html[data-theme="oscuro"] #root .producto-brand-link:hover{color:#ee5562!important}
-html[data-theme="oscuro"] #root .catalog-form .producto-tax-control{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .producto-tax-control > span{color:#7a8d9f!important}
 html[data-theme="oscuro"] #root .producto-scan-button{color:#6e8ea9!important}
 html[data-theme="oscuro"] #root .producto-brand-modal .catalog-form-title > span{color:#ee5562!important}
 html[data-theme="oscuro"] #root .producto-brand-modal label:not(.catalog-upload-zone){color:#7a8d9f!important}
@@ -348,88 +186,21 @@ html[data-theme="oscuro"] #root .producto-remove-row{color:#d06c76!important}
 html[data-theme="oscuro"] #root .producto-images-heading{color:#7a8d9f!important}
 html[data-theme="oscuro"] #root .producto-images-heading > span{color:#7b8c9f!important}
 html[data-theme="oscuro"] #root .producto-image-item > button{color:#c6727b!important}
-html[data-theme="oscuro"] #root .producto-detail-section h3{color:#7c8c9d!important}
-html[data-theme="oscuro"] #root .producto-detail-row{color:#7b8ca1!important}
-html[data-theme="oscuro"] #root .producto-detail-row strong{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .catalog-page{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .catalog-back{color:#788da2!important}
-html[data-theme="oscuro"] #root .catalog-eyebrow{color:#788ca4!important}
-html[data-theme="oscuro"] #root .catalog-heading h1{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .catalog-heading p{color:#7b8ca1!important}
-html[data-theme="oscuro"] #root .catalog-count,html[data-theme="oscuro"] #root .catalog-list-heading > span{color:#788ca4!important}
 html[data-theme="oscuro"] #root .catalog-form-title > span{color:#e55d69!important}
-html[data-theme="oscuro"] #root .catalog-form-title h2,html[data-theme="oscuro"] #root .catalog-list-heading h2{color:#7d8c9e!important}
+html[data-theme="oscuro"] #root .catalog-form-title h2{color:#7d8c9e!important}
 html[data-theme="oscuro"] #root .catalog-form-title p{color:#7b8c9f!important}
 html[data-theme="oscuro"] #root .catalog-form label{color:#7d8c9c!important}
 html[data-theme="oscuro"] #root .catalog-form input,html[data-theme="oscuro"] #root .catalog-form select{color:#7c8c9d!important}
-html[data-theme="oscuro"] #root .catalog-category-icon{color:#618eba!important}
-html[data-theme="oscuro"] #root .catalog-item-name h3{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .catalog-status{color:#439b6d!important}
-html[data-theme="oscuro"] #root .catalog-status.inactive{color:#7f8c9b!important}
-html[data-theme="oscuro"] #root .catalog-toggle{color:#6c8eaf!important}
-html[data-theme="oscuro"] #root .catalog-subitem{color:#7b8c9f!important}
 html[data-theme="oscuro"] #root .catalog-alert{color:#c7727a!important}
-html[data-theme="oscuro"] #root .catalog-page-size{color:#7b8ca0!important}
-html[data-theme="oscuro"] #root .catalog-page-size select{color:#7c8c9d!important}
-html[data-theme="oscuro"] #root .catalog-brand-image{color:#6a8eb0!important}
-html[data-theme="oscuro"] #root .catalog-card-image .catalog-status{color:#429b6d!important}
-html[data-theme="oscuro"] #root .catalog-card-image .catalog-status.inactive{color:#7e8c9d!important}
-html[data-theme="oscuro"] #root .catalog-card-copy h3{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .catalog-card-open-hint{color:#788da2!important}
-html[data-theme="oscuro"] #root .catalog-card-open-hint span{color:#e35e6c!important}
-html[data-theme="oscuro"] #root .catalog-card-action{color:#798ca2!important}
-html[data-theme="oscuro"] #root .catalog-card-action:hover{color:#5f8fb9!important}
-html[data-theme="oscuro"] #root .catalog-card-action:last-child:hover{color:#d96672!important}
 html[data-theme="oscuro"] #root .catalog-loading-message{color:#788ca4!important}
-html[data-theme="oscuro"] #root .catalog-card-meta{color:#768da3!important}
 html[data-theme="oscuro"] #root .catalog-upload-heading{color:#7d8c9c!important}
 html[data-theme="oscuro"] #root .catalog-upload-symbol{color:#628fb9!important}
 html[data-theme="oscuro"] #root .catalog-upload-copy{color:#7b8c9e!important}
 html[data-theme="oscuro"] #root .catalog-upload-action{color:#678eb2!important}
 html[data-theme="oscuro"] #root .catalog-cancel{color:#7b8c9f!important}
-html[data-theme="oscuro"] #root .catalog-detail-heading h2{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .catalog-detail-heading p{color:#7b8c9f!important}
-html[data-theme="oscuro"] #root .catalog-detail-list dt{color:#7b8ca1!important}
-html[data-theme="oscuro"] #root .catalog-detail-list dd{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .catalog-empty-state > strong{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .catalog-pagination{color:#7b8ca1!important}
-html[data-theme="oscuro"] #root .catalog-pagination button{color:#758da4!important}
-html[data-theme="oscuro"] #root .producto-card-placeholder{color:#608fb9!important}
-html[data-theme="oscuro"] #root .producto-card-status{color:#4d9974!important}
-html[data-theme="oscuro"] #root .producto-card-status.inactive{color:#7e8ba0!important}
-html[data-theme="oscuro"] #root .producto-card-code{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .producto-card-tags span{color:#768da4!important}
-html[data-theme="oscuro"] #root .producto-card-copy h3{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .producto-card-open{color:#638fb4!important}
-html[data-theme="oscuro"] #root .producto-card-open b{color:#ee5562!important}
-html[data-theme="oscuro"] #root .producto-card-actions button{color:#758da3!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:hover{color:#6b8eac!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:last-child:hover{color:#cd6e78!important}
-html[data-theme="oscuro"] #root .stock-entry-icon{color:#5690be!important}
-html[data-theme="oscuro"] #root .stock-entry-date{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .stock-entry-kicker{color:#718da9!important}
-html[data-theme="oscuro"] #root .stock-entry-card-heading > strong{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .stock-entry-card-doc > strong,html[data-theme="oscuro"] #root .stock-entry-card-meta > strong{color:#788d9f!important}
-html[data-theme="oscuro"] #root .stock-entry-card-meta > small{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .stock-entry-card-bottom > span{color:#798da1!important}
-html[data-theme="oscuro"] #root .stock-entry-card-bottom > strong{color:#758da4!important}
-html[data-theme="oscuro"] #root .stock-entry-details-link{color:#6c8eaa!important}
-html[data-theme="oscuro"] #root .stock-entry-details-link span{color:#ee5562!important}
-html[data-theme="oscuro"] #root .stock-entry-form .catalog-form-title > span{color:#5690be!important}
-html[data-theme="oscuro"] #root .stock-entry-section legend{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .stock-entry-form label{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-entry-form label input,html[data-theme="oscuro"] #root .stock-entry-form label select{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .stock-field-hint{color:#7a8ca0!important}
 html[data-theme="oscuro"] #root .stock-provider-identity > button{color:#5f8fb7!important}
 html[data-theme="oscuro"] #root .stock-provider-message{color:#bf767e!important}
 html[data-theme="oscuro"] #root .catalog-filter-select{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-movement-badge.is-increase{color:#4b9970!important}
-html[data-theme="oscuro"] #root .stock-movement-badge.is-decrease{color:#d36a74!important}
-html[data-theme="oscuro"] #root .stock-movement-product strong{color:#788da1!important}
-html[data-theme="oscuro"] #root .stock-movement-card-bottom strong{color:#798d9f!important}
-html[data-theme="oscuro"] #root .stock-movement-card-bottom strong.is-increase{color:#459a6e!important}
-html[data-theme="oscuro"] #root .stock-movement-card-bottom strong.is-decrease{color:#d36a74!important}
-html[data-theme="oscuro"] #root .stock-movement-observation{color:#798da0!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected span,html[data-theme="oscuro"] #root .stock-adjustment-selected small{color:#788da3!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected strong{color:#788d9f!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected button{color:#688eb0!important}
@@ -445,13 +216,6 @@ html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="o
 html[data-theme="oscuro"] #root .stock-product-selected{color:#67947f!important}
 html[data-theme="oscuro"] #root .stock-product-selected button{color:#608fb9!important}
 html[data-theme="oscuro"] #root .stock-add-product{color:#688faf!important}
-html[data-theme="oscuro"] #root .stock-entry-empty-lines > strong{color:#788d9f!important}
-html[data-theme="oscuro"] #root .stock-entry-lines{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .stock-entry-lines th{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .stock-entry-lines td:first-child strong{color:#798d9f!important}
-html[data-theme="oscuro"] #root .stock-entry-lines input{color:#798d9f!important}
-html[data-theme="oscuro"] #root .stock-entry-total{color:#798ca2!important}
-html[data-theme="oscuro"] #root .stock-entry-total strong{color:#748da5!important}
 html[data-theme="oscuro"] #root .stock-detail-heading h2{color:#7b8c9e!important}
 html[data-theme="oscuro"] #root .stock-detail-summary strong{color:#7a8d9e!important}
 html[data-theme="oscuro"] #root .stock-detail-summary small{color:#7a8ca0!important}
@@ -461,67 +225,17 @@ html[data-theme="oscuro"] #root .stock-detail-line > div > strong{color:#7a8d9e!
 html[data-theme="oscuro"] #root .stock-detail-line > strong{color:#748da5!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{color:#7a8ca0!important}
 html[data-theme="oscuro"] #root .catalog-modal-close:hover{color:#d96671!important}
-html[data-theme="oscuro"] #root .income-page{color:#7c8c9f!important}
-html[data-theme="oscuro"] #root .income-heading h1{color:#7f8c9c!important}
-html[data-theme="oscuro"] #root .income-draft-chip{color:#788da2!important}
-html[data-theme="oscuro"] #root .income-step{color:#648fb3!important}
-html[data-theme="oscuro"] #root .income-panel-heading h2{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .income-panel-heading p{color:#7c8ca1!important}
-html[data-theme="oscuro"] #root .income-search-wrap > label,html[data-theme="oscuro"] #root .income-fields-grid > label{color:#7a8ca1!important}
-html[data-theme="oscuro"] #root .income-search-field > span{color:#708dac!important}
-html[data-theme="oscuro"] #root .income-search-field input{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-product-mark{color:#648fb3!important}
-html[data-theme="oscuro"] #root .income-result-copy strong{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .income-result-price{color:#738daa!important}
-html[data-theme="oscuro"] #root .income-empty-lines > span{color:#6a8eae!important}
-html[data-theme="oscuro"] #root .income-empty-lines strong{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .income-line-concept > strong{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-line-concept input{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-number-input{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-line-price,html[data-theme="oscuro"] #root .income-line-total{color:#798da0!important}
-html[data-theme="oscuro"] #root .income-line-total{color:#738daa!important}
-html[data-theme="oscuro"] #root .income-remove-line:hover{color:#db6571!important}
-html[data-theme="oscuro"] #root .income-add-service{color:#678fb0!important}
-html[data-theme="oscuro"] #root .income-tax-toggle{color:#7c8ca1!important}
-html[data-theme="oscuro"] #root .income-fields-grid input,html[data-theme="oscuro"] #root .income-fields-grid select{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-summary-title span{color:#788ca4!important}
-html[data-theme="oscuro"] #root .income-summary-title strong{color:#738ea3!important}
-html[data-theme="oscuro"] #root .income-summary-count,html[data-theme="oscuro"] #root .income-summary-row{color:#7a8ca2!important}
-html[data-theme="oscuro"] #root .income-summary-count strong,html[data-theme="oscuro"] #root .income-summary-row strong{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .income-summary-total{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .income-summary-total strong{color:#738daa!important}
-html[data-theme="oscuro"] #root .income-alert{color:#cd6e77!important}
-html[data-theme="oscuro"] #root .income-success-icon{color:#4b9976!important}
-html[data-theme="oscuro"] #root .income-success strong{color:#5b967a!important}
-html[data-theme="oscuro"] #root .income-success p{color:#729182!important}
-html[data-theme="oscuro"] #root .income-success button{color:#65947d!important}
-html[data-theme="oscuro"] #root .nf-section h3{color:#798d9e!important}
-html[data-theme="oscuro"] #root .nf-field{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .nf-field input,html[data-theme="oscuro"] #root .nf-field select,html[data-theme="oscuro"] #root .nf-field textarea{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .nf-toggle{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .nf-advanced > summary,html[data-theme="oscuro"] #root .nf-item > summary{color:#6f8ea9!important}
-html[data-theme="oscuro"] #root .nf-totals{color:#768da2!important}
-html[data-theme="oscuro"] #root .nf-totals strong{color:#778da1!important}
-html[data-theme="oscuro"] #root .nf-add{color:#678fb0!important}
-html[data-theme="oscuro"] #root .nf-remove{color:#b87980!important}
 html[data-theme="oscuro"] #root .venta-page{color:#858b92!important}
 html[data-theme="oscuro"] #root .venta-status{color:#758da5!important}
-html[data-theme="oscuro"] #root .venta-section-title > span{color:#569685!important}
-html[data-theme="oscuro"] #root .venta-doc-types button{color:#838b94!important}
-html[data-theme="oscuro"] #root .venta-fields label,html[data-theme="oscuro"] #root .venta-note{color:#818c96!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-note input{color:#838b94!important}
-html[data-theme="oscuro"] #root .venta-search input{color:#828c95!important}
-html[data-theme="oscuro"] #root .venta-search-results strong{color:#828c96!important}
-html[data-theme="oscuro"] #root .venta-search-results b{color:#5b9586!important}
-html[data-theme="oscuro"] #root .venta-search-results p{color:#7f8c99!important}
+html[data-theme="oscuro"] #root .venta-fields label{color:#818c96!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{color:#838b94!important}
 html[data-theme="oscuro"] #root .venta-empty strong{color:#818c96!important}
 html[data-theme="oscuro"] #root .venta-line{color:#838b94!important}
 html[data-theme="oscuro"] #root .venta-line > strong{color:#828c95!important}
 html[data-theme="oscuro"] #root .venta-line > button:hover{color:#c67373!important}
-html[data-theme="oscuro"] #root .venta-add-service{color:#589684!important}
 html[data-theme="oscuro"] #root .venta-alert{color:#ba7a70!important}
 html[data-theme="oscuro"] #root .venta-alert-ok{color:#63957e!important}
-html[data-theme="oscuro"] #root .boleta-preview-top{color:#7f8c98!important}
 html[data-theme="oscuro"] #root .boleta-paper{color:#848b92!important}
 html[data-theme="oscuro"] #root .boleta-client small{color:#818c95!important}
 html[data-theme="oscuro"] #root .boleta-item{color:#828c93!important}
@@ -537,78 +251,30 @@ html[data-theme="oscuro"] #root .venta-size-picker button{color:#818c96!importan
 html[data-theme="oscuro"] #root .venta-size-picker button.is-selected{color:#559685!important}
 @media print{html[data-theme="oscuro"] #root .boleta-paper{color:#8b8b8b!important}}
 @media print{html[data-theme="oscuro"] #root .boleta-paper *{color:#8b8b8b!important}}
-html[data-theme="oscuro"] #root .emisor-page{color:#858b92!important}
-html[data-theme="oscuro"] #root .emisor-heading p:last-child{color:#808c99!important}
-html[data-theme="oscuro"] #root .emisor-environment{color:#a4864f!important}
-html[data-theme="oscuro"] #root .emisor-environment.is-production{color:#5e967f!important}
-html[data-theme="oscuro"] #root .emisor-status,html[data-theme="oscuro"] #root .emisor-info{color:#98896a!important}
-html[data-theme="oscuro"] #root .emisor-status strong,html[data-theme="oscuro"] #root .emisor-info strong{color:#828c95!important}
-html[data-theme="oscuro"] #root .emisor-status.is-ready{color:#6e9280!important}
-html[data-theme="oscuro"] #root .emisor-info{color:#7f8c97!important}
-html[data-theme="oscuro"] #root .emisor-grid label{color:#818c96!important}
-html[data-theme="oscuro"] #root .emisor-grid input{color:#838b94!important}
 html[data-theme="oscuro"] #root .emisor-loading{color:#788ca4!important}
-html[data-theme="oscuro"] #root .emisor-message.is-error{color:#ba7a70!important}
-html[data-theme="oscuro"] #root .emisor-message.is-success{color:#63957e!important}
-html[data-theme="oscuro"] #root .cpe-page{color:#858b92!important}
-html[data-theme="oscuro"] #root .cpe-heading p:last-child{color:#808c99!important}
-html[data-theme="oscuro"] #root .cpe-count{color:#7d8e86!important}
-html[data-theme="oscuro"] #root .cpe-search input{color:#828c95!important}
-html[data-theme="oscuro"] #root .cpe-card > header strong{color:#7a8f86!important}
-html[data-theme="oscuro"] #root .cpe-card-grid strong{color:#818d88!important}
-html[data-theme="oscuro"] #root .cpe-state.is-ok{color:#56977d!important}
-html[data-theme="oscuro"] #root .cpe-state.is-error{color:#be786d!important}
-html[data-theme="oscuro"] #root .cpe-card footer a{color:#559685!important}
-html[data-theme="oscuro"] #root .cpe-message{color:#9a8866!important}
-html[data-theme="oscuro"] #root .cpe-empty strong{color:#7d8e86!important}
-html[data-theme="oscuro"] #root .cpe-pagination{color:#808d88!important}
-html[data-theme="oscuro"] #root .cpe-pagination button{color:#769084!important}
-html[data-theme="oscuro"] #root .venta-identity-search > label{color:#818c96!important}
-html[data-theme="oscuro"] #root .venta-identity-search input{color:#838b94!important}
-html[data-theme="oscuro"] #root .venta-identity-search > button{color:#559685!important}
 html[data-theme="oscuro"] #root .venta-identity-status{color:#b67c6b!important}
 html[data-theme="oscuro"] #root .venta-identity-status.is-success{color:#5c9679!important}
 html[data-theme="oscuro"] #root .venta-field-primary select{color:#738daa!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{color:#539784!important}
-html[data-theme="oscuro"] #root .venta-cart-summary span{color:#7f8e86!important}
-html[data-theme="oscuro"] #root .venta-cart-summary strong{color:#838d88!important}
-html[data-theme="oscuro"] #root .venta-cart-summary .venta-cart-total strong{color:#738daa!important}
-html[data-theme="oscuro"] #root .venta-extra-fields summary{color:#799085!important}
-html[data-theme="oscuro"] #root .venta-extra-fields input{color:#838b94!important}
 html[data-theme="oscuro"] #root .venta-heading .page-eyebrow{color:#768da6!important}
 html[data-theme="oscuro"] #root .venta-heading h1{color:#7f8c96!important}
 html[data-theme="oscuro"] #root .venta-heading .page-subtitle{color:#7d8c99!important}
-html[data-theme="oscuro"] #root .venta-section-title h2{color:#7b8d98!important}
-html[data-theme="oscuro"] #root .venta-section-title p{color:#7d8d96!important}
 html[data-theme="oscuro"] #root .venta-fields label{color:#7e8d96!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-identity-search input,html[data-theme="oscuro"] #root .venta-extra-fields input{color:#7f8c95!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-search > span{color:#579683!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-empty strong{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-add-service{color:#5a9685!important}
-html[data-theme="oscuro"] #root .venta-cart-summary .venta-cart-total span{color:#768da4!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{color:#7f8c95!important}
 html[data-theme="oscuro"] #root .venta-form-body-heading h3{color:#7c8c9c!important}
 html[data-theme="oscuro"] #root .venta-form-body-heading > span{color:#7c8c9c!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-search > span{color:#718da9!important}
 html[data-theme="oscuro"] #root .venta-form-body .venta-empty strong{color:#7a8d9d!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-add-service{color:#6d8eaa!important}
-html[data-theme="oscuro"] #root .venta-section-title > span,html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{color:#738daa!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-search > span,html[data-theme="oscuro"] #root .venta-search-results b,html[data-theme="oscuro"] #root .venta-sale-card .venta-add-service{color:#678fb1!important}
 html[data-theme="oscuro"] #root .venta-line-price small{color:#7d8c9a!important}
-html[data-theme="oscuro"] #root .venta-note-fixed,html[data-theme="oscuro"] #root .venta-customer-address{color:#7e8c97!important}
-html[data-theme="oscuro"] #root .venta-note-fixed input,html[data-theme="oscuro"] #root .venta-customer-address input{color:#7f8c95!important}
-html[data-theme="oscuro"] #root .venta-field-optional{color:#7e8d96!important}
 html[data-theme="oscuro"] #root .venta-client-picker > label{color:#798f86!important}
 html[data-theme="oscuro"] #root .venta-client-selected strong{color:#798f88!important}
 html[data-theme="oscuro"] #root .venta-client-selected span{color:#7e8e87!important}
-html[data-theme="oscuro"] #root .venta-client-selected button,html[data-theme="oscuro"] #root .venta-guest-client{color:#559784!important}
+html[data-theme="oscuro"] #root .venta-client-selected button{color:#559784!important}
 html[data-theme="oscuro"] #root .venta-client-results button strong{color:#7d8e87!important}
 html[data-theme="oscuro"] #root .venta-client-results button span{color:#808e85!important}
-html[data-theme="oscuro"] #root .venta-add-client{color:#5b9586!important}
 html[data-theme="oscuro"] #root .venta-new-client-heading{color:#7a8f88!important}
 html[data-theme="oscuro"] #root .venta-new-client-fields label{color:#7d8e86!important}
 html[data-theme="oscuro"] #root .venta-new-client-fields input,html[data-theme="oscuro"] #root .venta-new-client-fields select{color:#808d88!important}
 html[data-theme="oscuro"] #root .venta-inline-search button{color:#5c9584!important}
-html[data-theme="oscuro"] #root .venta-nubefact-status{color:#9b8862!important}
 html[data-theme="oscuro"] #root .clientes-page{color:#7d8d98!important}
 html[data-theme="oscuro"] #root .clientes-heading .page-subtitle{color:#7e8c97!important}
 html[data-theme="oscuro"] #root .clientes-secondary-action{color:#808d88!important}
@@ -617,18 +283,14 @@ html[data-theme="oscuro"] #root .clientes-toolbar > label{color:#7c8f86!importan
 html[data-theme="oscuro"] #root .clientes-search{color:#5e9582!important}
 html[data-theme="oscuro"] #root .clientes-search input{color:#818d87!important}
 html[data-theme="oscuro"] #root .clientes-name strong,html[data-theme="oscuro"] #root .clientes-document strong{color:#7a8f86!important}
-html[data-theme="oscuro"] #root .clientes-address{color:#7f8e87!important}
 html[data-theme="oscuro"] #root .clientes-empty strong{color:#7d8e86!important}
 html[data-theme="oscuro"] #root .clientes-empty button{color:#5b9586!important}
-html[data-theme="oscuro"] #root .clientes-modal > header h2{color:#7b8f88!important}
-html[data-theme="oscuro"] #root .clientes-modal > header > button{color:#808e87!important}
-html[data-theme="oscuro"] #root .clientes-form-grid label{color:#7e8e86!important}
-html[data-theme="oscuro"] #root .clientes-form-grid input,html[data-theme="oscuro"] #root .clientes-form-grid select{color:#7f8e86!important}
-html[data-theme="oscuro"] #root .clientes-doc-input button{color:#5c9584!important}
-html[data-theme="oscuro"] #root .clientes-form-error{color:#ba7a70!important}
-html[data-theme="oscuro"] #root .clientes-modal .page-eyebrow{color:#709285!important}
-html[data-theme="oscuro"] #root .module-card-active .module-state{color:#569684!important}
-html[data-theme="oscuro"] #root .module-card-active .module-card-footer{color:#5a9685!important}
+html[data-theme="oscuro"] .clientes-modal > header h2{color:#7b8f88!important}
+html[data-theme="oscuro"] .clientes-modal > header > button{color:#808e87!important}
+html[data-theme="oscuro"] .clientes-form-grid label{color:#7e8e86!important}
+html[data-theme="oscuro"] .clientes-form-grid input,html[data-theme="oscuro"] .clientes-form-grid select{color:#7f8e86!important}
+html[data-theme="oscuro"] .clientes-form-error{color:#ba7a70!important}
+html[data-theme="oscuro"] .clientes-modal .page-eyebrow{color:#709285!important}
 html[data-theme="oscuro"] #root .login-success-card h2{color:#7f8c95!important}
 html[data-theme="oscuro"] #root .login-success-card p{color:#7d8c9a!important}
 html[data-theme="oscuro"] #root .report-page{color:#858b92!important}
@@ -643,35 +305,9 @@ html[data-theme="oscuro"] #root .report-table th{color:#7e8c99!important}
 html[data-theme="oscuro"] #root .report-table td{color:#828c95!important}
 html[data-theme="oscuro"] #root .report-stock-empty{color:#be7870!important}
 html[data-theme="oscuro"] #root .report-empty{color:#808c97!important}
-html[data-theme="oscuro"] #root .clientes-form-grid textarea{color:#7f8e86!important}
+html[data-theme="oscuro"] .clientes-form-grid textarea{color:#7f8e86!important}
 html[data-theme="oscuro"] #root .dashboard-page{color:#828c94!important}
-html[data-theme="oscuro"] #root .dashboard-heading h1{color:#7d8c9a!important}
-html[data-theme="oscuro"] #root .dashboard-heading p:last-child{color:#7d8c9b!important}
-html[data-theme="oscuro"] #root .dashboard-role{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .dashboard-kpis article > span{color:#7e8c9b!important}
-html[data-theme="oscuro"] #root .dashboard-kpis article > strong{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .dashboard-kpi-alert{color:#cd6e7b!important}
-html[data-theme="oscuro"] #root .dashboard-panel h2{color:#7d8c9a!important}
-html[data-theme="oscuro"] #root .dashboard-panel header button{color:#738ea4!important}
-html[data-theme="oscuro"] #root .dashboard-chart-column > strong{color:#808c98!important}
-html[data-theme="oscuro"] #root .dashboard-chart-column > small{color:#808c98!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts button > span{color:#d56976!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts strong{color:#7e8c98!important}
-html[data-theme="oscuro"] #root .dashboard-recent-mark{color:#4f9783!important}
-html[data-theme="oscuro"] #root .dashboard-recent-list strong{color:#808c97!important}
-html[data-theme="oscuro"] #root .dashboard-recent-list b{color:#788d9e!important}
-html[data-theme="oscuro"] #root .dashboard-top-items strong{color:#808c97!important}
-html[data-theme="oscuro"] #root .dashboard-top-items b{color:#788d9e!important}
-html[data-theme="oscuro"] #root .stock-movement-table th{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .stock-movement-table td{color:#7c8c9d!important}
-html[data-theme="oscuro"] #root .stock-movement-table time{color:#788da2!important}
-html[data-theme="oscuro"] #root .stock-movement-table-product strong{color:#788da1!important}
-html[data-theme="oscuro"] #root .stock-movement-table td > strong.is-increase{color:#459a6e!important}
-html[data-theme="oscuro"] #root .stock-movement-table td > strong.is-decrease{color:#d36a74!important}
 html[data-theme="oscuro"] #root .venta-form-header-fields .venta-client-picker > label{color:#7e8d96!important}
-html[data-theme="oscuro"] #root .venta-note-toggle{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .venta-note-fixed{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .venta-note-fixed textarea{color:#7f8c95!important}
 html[data-theme="oscuro"] #root .venta-client-results .venta-client-detail-trigger{color:#6b9385!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-detail-trigger{color:#6b9385!important}
 html[data-theme="oscuro"] #root .venta-client-detail-dialog > header small{color:#768da3!important}
@@ -682,28 +318,13 @@ html[data-theme="oscuro"] #root .venta-client-detail-grid > div strong{color:#7a
 html[data-theme="oscuro"] #root .venta-client-detail-grid > label input,html[data-theme="oscuro"] #root .venta-client-detail-grid > label textarea{color:#7c8c9c!important}
 html[data-theme="oscuro"] #root .venta-client-detail-error{color:#bf767d!important}
 html[data-theme="oscuro"] #root .venta-client-detail-secondary{color:#798d9f!important}
-html[data-theme="oscuro"] #root .egreso-card-top{color:#798ca2!important}
-html[data-theme="oscuro"] #root .egreso-card-top > span{color:#6c8ead!important}
-html[data-theme="oscuro"] #root .egreso-card h3{color:#7d8c9e!important}
-html[data-theme="oscuro"] #root .egreso-beneficiario,html[data-theme="oscuro"] #root .egreso-identificador{color:#788da1!important}
-html[data-theme="oscuro"] #root .egreso-documento{color:#788da1!important}
-html[data-theme="oscuro"] #root .egreso-card footer{color:#798da1!important}
-html[data-theme="oscuro"] #root .egreso-card footer strong{color:#758da4!important}
 html[data-theme="oscuro"] #root .egreso-form-grid label{color:#788d9f!important}
 html[data-theme="oscuro"] #root .egreso-form-grid input,html[data-theme="oscuro"] #root .egreso-form-grid select{color:#7c8c9d!important}
-html[data-theme="oscuro"] #root .egreso-nota{color:#788da1!important}
 html[data-theme="oscuro"] #root .stock-payment-fields label{color:#798d9f!important}
 html[data-theme="oscuro"] #root .stock-payment-fields input,html[data-theme="oscuro"] #root .stock-payment-fields select{color:#7c8c9d!important}
 html[data-theme="oscuro"] #root .stock-payment-fields small{color:#798da0!important}
 html[data-theme="oscuro"] #root .stock-payment-balance{color:#788da0!important}
 html[data-theme="oscuro"] #root .stock-payment-balance strong{color:#c0776b!important}
-html[data-theme="oscuro"] #root .stock-entry-payment{color:#758da2!important}
-html[data-theme="oscuro"] #root .stock-entry-payment small{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .cpe-note-form-heading span,html[data-theme="oscuro"] #root .cpe-note-stock-info{color:#7d8e86!important}
-html[data-theme="oscuro"] #root .cpe-note-form-heading > button{color:#7b8f87!important}
-html[data-theme="oscuro"] #root .cpe-note-form-grid label{color:#7c8f87!important}
-html[data-theme="oscuro"] #root .cpe-note-form-grid select,html[data-theme="oscuro"] #root .cpe-note-form-grid input{color:#828d88!important}
-html[data-theme="oscuro"] #root .cpe-note-form-footer button:first-child{color:#7f8e87!important}
 html[data-theme="oscuro"] #root .stock-quick-product-loading{color:#798d9f!important}
 html[data-theme="oscuro"] #root .module-loading{color:#858b92!important}
 html[data-theme="oscuro"] #root .module-loading-message{color:#788ca4!important}
@@ -716,16 +337,6 @@ html[data-theme="oscuro"] #root .topbar-profile-trigger{color:#808c9a!important}
 html[data-theme="oscuro"] #root .erp-topbar .topbar-user strong{color:#808c98!important}
 html[data-theme="oscuro"] #root .topbar-popover{color:#808c9a!important}
 html[data-theme="oscuro"] #root .topbar-empty-notifications > span{color:#778da1!important}
-html[data-theme="oscuro"] #root .topbar-profile-summary strong{color:#808c98!important}
-html[data-theme="oscuro"] #root .topbar-profile-action{color:#7e8c99!important}
-html[data-theme="oscuro"] #root .topbar-profile-action:hover{color:#738da6!important}
-html[data-theme="oscuro"] #root .topbar-action-icon{color:#798d9e!important}
-html[data-theme="oscuro"] #root .topbar-profile-action.is-logout{color:#bf767c!important}
-html[data-theme="oscuro"] #root .topbar-profile-action.is-logout .topbar-action-icon{color:#c87179!important}
-html[data-theme="oscuro"] #root .venta-client-document-choice{color:#7e8e87!important}
-html[data-theme="oscuro"] #root .venta-client-document-choice select{color:#719184!important}
-html[data-theme="oscuro"] #root .venta-form-header-fields .venta-client-document-choice{color:#7a8f85!important}
-html[data-theme="oscuro"] #root .venta-form-header-fields .venta-client-document-choice select{color:#7a8f86!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove{color:#bb787b!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove:hover{color:#b67b7f!important}
 html[data-theme="oscuro"] #root .perfil-page{color:#808c99!important}
@@ -745,16 +356,8 @@ html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-butt
 
 html[data-theme="oscuro"] #root .login-panel{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .login-form input:not([type="checkbox"]){border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .today-chip{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .welcome-decoration img{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .module-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .module-card:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .erp-global-search{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .topbar-avatar{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .topbar-logout{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .topbar-logout:hover{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .erp-content{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .module-empty{border-color:var(--tema-borde)!important}
 @media (max-width: 960px){html[data-theme="oscuro"] #root .erp-menu-toggle{border-color:var(--tema-borde)!important}}
 html[data-theme="oscuro"] #root .catalog-search-input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .producto-form-section{border-color:var(--tema-borde)!important}
@@ -765,22 +368,11 @@ html[data-theme="oscuro"] #root .producto-brand-modal{border-color:var(--tema-bo
 html[data-theme="oscuro"] #root .producto-brand-modal input:not([type="file"]){border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .producto-add-row{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .producto-remove-row{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-detail-image{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .producto-image-item{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .producto-image-item > button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-detail-thumbnails button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-back{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-form,html[data-theme="oscuro"] #root .catalog-list-section{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] #root .catalog-form{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-form input,html[data-theme="oscuro"] #root .catalog-form select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-item{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-alert{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-page-size select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-card:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-brand-image > span:first-child{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-card-action{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-card-action:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-card-action:last-child:hover{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-loading-card{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-loading-actions i{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-upload-zone{border-color:var(--tema-borde)!important}
@@ -788,27 +380,8 @@ html[data-theme="oscuro"] #root .catalog-upload-action{border-color:var(--tema-b
 html[data-theme="oscuro"] #root .catalog-upload-preview{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-cancel{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-cancel:hover:not(:disabled){border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-detail-image{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .catalog-pagination button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-placeholder{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-status{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-status.inactive{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-code{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-tags span{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .producto-card-actions button:last-child:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-card:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-icon{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-details-link{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-section{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-form label input,html[data-theme="oscuro"] #root .stock-entry-form label select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-provider-identity > button{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-filter-select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-movement-card{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-selected button{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-adjustment-preview{border-color:var(--tema-borde)!important}
@@ -818,36 +391,12 @@ html[data-theme="oscuro"] #root .stock-product-results{border-color:var(--tema-b
 html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="oscuro"] #root .stock-product-selected{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-add-product{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-add-product:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-empty-lines{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-lines-wrap{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-entry-lines input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-detail-summary > div{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-modal{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-page{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-draft-chip{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-panel,html[data-theme="oscuro"] #root .income-summary{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-search-field{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-results{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-number-input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-add-service span{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-fields-grid input,html[data-theme="oscuro"] #root .income-fields-grid select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-alert{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-success{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .income-success button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-panel{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-section,html[data-theme="oscuro"] #root .nf-advanced{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-field input,html[data-theme="oscuro"] #root .nf-field select,html[data-theme="oscuro"] #root .nf-field textarea{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-toggle{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-totals{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-item{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .nf-add{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-status{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-doc-types button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-note input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-search{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-search-results{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-empty{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-line input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-alert{border-color:var(--tema-borde)!important}
@@ -859,84 +408,41 @@ html[data-theme="oscuro"] #root .venta-data-footer{border-color:var(--tema-borde
 html[data-theme="oscuro"] #root .venta-preview-toolbar{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-back,html[data-theme="oscuro"] #root .venta-print{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-size-picker{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-environment{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-environment.is-production{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-status,html[data-theme="oscuro"] #root .emisor-info{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-status.is-ready{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-info{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .emisor-grid input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-count{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-search{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-message{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-empty{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-pagination button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-identity-search input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-identity-search > button{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-field-primary select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-sale-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-search{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-cart-summary{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-extra-fields input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-section-title > span{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-customer-card{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-fields input,html[data-theme="oscuro"] #root .venta-fields select,html[data-theme="oscuro"] #root .venta-identity-search input,html[data-theme="oscuro"] #root .venta-extra-fields input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-fields input:hover,html[data-theme="oscuro"] #root .venta-fields select:hover,html[data-theme="oscuro"] #root .venta-identity-search input:hover,html[data-theme="oscuro"] #root .venta-extra-fields input:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-sale-card .venta-empty{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-cart-summary .venta-cart-total{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] #root .venta-fields input,
+html[data-theme="oscuro"] #root .venta-fields select{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] #root .venta-fields input:hover,
+html[data-theme="oscuro"] #root .venta-fields select:hover{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-form-paper{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-search{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-form-body .venta-empty{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-form-body .venta-cart-summary{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-section-title > span,html[data-theme="oscuro"] #root .venta-sale-card .venta-section-title > span{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-note-fixed input,html[data-theme="oscuro"] #root .venta-customer-address input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-picker{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-picker > input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-selected{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-results{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-add-client{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-new-client{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-new-client-fields input,html[data-theme="oscuro"] #root .venta-new-client-fields select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-inline-search button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-nubefact-status{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .clientes-secondary-action{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .clientes-alert{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .clientes-toolbar{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .clientes-search{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .clientes-table-wrap{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .clientes-modal{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .clientes-form-grid input,html[data-theme="oscuro"] #root .clientes-form-grid select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .clientes-doc-input button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .module-card-active:hover,html[data-theme="oscuro"] #root .module-card-active:focus-visible{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] .clientes-modal{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] .clientes-form-grid input,html[data-theme="oscuro"] .clientes-form-grid select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .report-filters{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .report-filters input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .report-kpis article{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .report-panel{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .clientes-form-grid textarea{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .dashboard-role{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .dashboard-kpis article{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .dashboard-panel{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .dashboard-panel header button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .dashboard-shortcuts button:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-movement-table-wrap{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-note-fixed textarea{border-color:var(--tema-borde)!important}
+html[data-theme="oscuro"] .clientes-form-grid textarea{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-results .venta-client-detail-trigger{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-detail-trigger{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-detail-dialog{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-detail-grid > div{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-detail-grid > label input,html[data-theme="oscuro"] #root .venta-client-detail-grid > label textarea{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-detail-secondary{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-form-paper.comprobante-nota-debito .venta-form-heading{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .egreso-card{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .egreso-form-grid input,html[data-theme="oscuro"] #root .egreso-form-grid select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-payment-fields{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-payment-fields input,html[data-theme="oscuro"] #root .stock-payment-fields select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-note-form{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-heading > button{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-grid select,html[data-theme="oscuro"] #root .cpe-note-form-grid input{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .cpe-note-form-footer button:first-child{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .module-loading-cards i{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .module-loading-panel{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .topbar-notification-button{border-color:var(--tema-borde)!important}
@@ -947,8 +453,6 @@ html[data-theme="oscuro"] #root .erp-topbar .topbar-avatar{border-color:var(--te
 html[data-theme="oscuro"] #root .topbar-profile-trigger:hover,html[data-theme="oscuro"] #root .topbar-profile-trigger[aria-expanded="true"]{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .topbar-popover{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .login-form input:not([type='checkbox']){border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-client-document-choice select{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .venta-form-header-fields .venta-client-document-choice select{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .perfil-card{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .erp-content h1,
@@ -956,9 +460,44 @@ html[data-theme="oscuro"] #root .erp-content h2,
 html[data-theme="oscuro"] #root .erp-content h3,
 html[data-theme="oscuro"] #root .erp-content h4,
 html[data-theme="oscuro"] #root .login-panel h1 { color: #edf3fb !important; }
-html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action.is-danger { color: var(--action-primary) !important; }
-html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary-hover) !important; }
-html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action:not(.is-danger):last-child:hover:not(:disabled) { border-color: #49617b !important; background: #1d3046 !important; color: #c7e0f5 !important; }
 html[data-theme="oscuro"] #root .producto-remove-row.erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary-hover) !important; }
 html[data-theme="oscuro"] #root .moto-unit-photo > .erp-icon-action.moto-photo-delete { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary) !important; }
 html[data-theme="oscuro"] #root .moto-unit-photo > .erp-icon-action.moto-photo-delete:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-hover-surface) !important; color: var(--action-primary-hover) !important; }
+
+html[data-theme="oscuro"] .stock-entry-modal,
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form-title h2,
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form-title p,
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form label { color: var(--tema-texto); }
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form input,
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form select,
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form textarea { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-section { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-section legend,
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-upload { color: var(--tema-texto); }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-upload input { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form-actions { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] .egreso-modal,
+html[data-theme="oscuro"] .egreso-modal .egreso-form,
+html[data-theme="oscuro"] .egreso-modal .catalog-form-actions { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] .egreso-modal .catalog-form-title h2,
+html[data-theme="oscuro"] .egreso-modal .catalog-form-title p,
+html[data-theme="oscuro"] .egreso-modal .egreso-form-grid label { color: var(--tema-texto); }
+html[data-theme="oscuro"] .egreso-modal .egreso-form-grid input,
+html[data-theme="oscuro"] .egreso-modal .egreso-form-grid select,
+html[data-theme="oscuro"] .egreso-modal .egreso-form-grid textarea { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+
+html[data-theme="oscuro"] #root .perfil-card { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] #root .perfil-identity { background: linear-gradient(120deg, #10243b, #173553 72%, #164154); }
+html[data-theme="oscuro"] #root .perfil-identity-copy h1,
+html[data-theme="oscuro"] #root .perfil-access-summary strong { color: #f1f5f9; }
+html[data-theme="oscuro"] #root .perfil-identity .perfil-kicker { color: #a8bfd4; }
+html[data-theme="oscuro"] #root .perfil-role-chip { border-color: #ffffff30; background: #ffffff12; color: #e1eaf3; }
+html[data-theme="oscuro"] #root .perfil-access-summary { border-color: #ffffff28; background: #ffffff0d; }
+html[data-theme="oscuro"] #root .perfil-access-icon { background: #ffffff14; color: #d6e8f5; }
+html[data-theme="oscuro"] #root .perfil-access-summary > div > span { color: #b9cbd9; }
+html[data-theme="oscuro"] #root .perfil-section-heading h2 { color: #e1eaf3; }
+html[data-theme="oscuro"] #root .perfil-account-mark,
+html[data-theme="oscuro"] #root .perfil-details-grid > div { border-color: var(--tema-borde); background: #17263a; color: #d9e4ef; }
+html[data-theme="oscuro"] #root .perfil-details-grid dt { color: #9aabbd !important; }
+html[data-theme="oscuro"] #root .perfil-details-grid dd { color: #e1eaf3 !important; }

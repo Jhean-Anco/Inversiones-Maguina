@@ -1,0 +1,35 @@
+.conductores-page { display: grid; gap: 18px; padding: 28px clamp(18px, 4vw, 54px) 40px; color: var(--blue-deep, #163a60); }
+.conductores-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid #dce5ee; }
+.conductores-heading h1 { margin: 5px 0 4px; font-size: clamp(25px, 3vw, 34px); }
+.conductores-heading p { margin: 0; color: #71839a; font-size: 13px; }
+.conductores-kicker { color: #7187a0; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.conductores-fields input, .conductores-fields select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid #d5e0ea; border-radius: 9px; background: #fff; color: #1c3652; font: inherit; font-size: 13px; }
+.conductores-card { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 16px; border: 1px solid #dce5ee; border-radius: 13px; background: #fff; box-shadow: 0 4px 14px #17345108; }
+.conductores-avatar { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: #edf4fa; color: #174f88; font-weight: 800; }
+.conductores-info { min-width: 0; }
+.conductores-card h2 { margin: 0 0 5px; font-size: 14px; }
+.conductores-card p, .conductores-card small { display: block; margin: 0; color: #72849a; font-size: 11px; }
+.conductores-tag { margin-left: auto; padding: 5px 8px; border-radius: 20px; background: #eaf5ef; color: #24724f; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.conductores-alert { padding: 12px 14px; border-radius: 10px; background: #fff0ef; color: #a3382f; font-size: 13px; }
+.conductores-backdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: #071a2d80; }
+.conductores-form { width: min(620px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 22px; border: 1px solid #dce5ee; border-radius: 16px; background: #fff; box-shadow: 0 22px 70px #061a2d40; }
+.conductores-form > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.conductores-form h2 { margin: 4px 0 0; font-size: 20px; }
+.conductores-form > header > button { width: 38px; height: 38px; border: 1px solid #dce5ee; border-radius: 9px; background: #fff; color: #58708a; font-size: 20px; cursor: pointer; }
+.conductores-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.conductores-fields label { display: grid; gap: 6px; color: #526981; font-size: 12px; font-weight: 700; }
+.conductores-fields .conductores-wide { grid-column: 1 / -1; }
+.conductores-form > footer { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+.conductores-form > footer > button:first-child { padding: 0 14px; border: 1px solid #d5e0ea; border-radius: 9px; background: #fff; color: #49627b; font-weight: 700; cursor: pointer; }
+.conductores-primary { min-height: 40px; padding: 0 14px; border: 1px solid var(--action-primary-border); border-radius: 10px; background: var(--action-primary-surface); color: var(--action-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.conductores-primary:disabled { opacity: .65; cursor: wait; }
+.conductores-page :is(button, input, select):focus-visible { outline: 3px solid #3784bd55; outline-offset: 2px; }
+@media (max-width: 600px) { .conductores-page { padding: 20px 14px 30px; } .conductores-heading { align-items: flex-start; flex-direction: column; } .conductores-fields { grid-template-columns: 1fr; } .conductores-fields .conductores-wide { grid-column: auto; } .conductores-backdrop { align-items: end; padding: 8px; } .conductores-form { max-height: calc(100dvh - 16px); padding: 16px; border-radius: 16px 16px 10px 10px; } }
+html[data-theme="oscuro"] .conductores-page { color: #e1eaf4; }
+html[data-theme="oscuro"] .conductores-heading { border-color: #314761; }
+html[data-theme="oscuro"] .conductores-heading p, html[data-theme="oscuro"] .conductores-kicker, html[data-theme="oscuro"] .conductores-card p, html[data-theme="oscuro"] .conductores-card small { color: #a9bdd3; }
+html[data-theme="oscuro"] .conductores-card, html[data-theme="oscuro"] .conductores-form { border-color: #314761; background: #17263a; color: #e1eaf4; }
+html[data-theme="oscuro"] .conductores-fields label, html[data-theme="oscuro"] .conductores-card h2 { color: #d9e8f8; }
+html[data-theme="oscuro"] .conductores-fields input, html[data-theme="oscuro"] .conductores-fields select, html[data-theme="oscuro"] .conductores-form > header > button, html[data-theme="oscuro"] .conductores-form > footer > button:first-child { border-color: #314761; background: #142235; color: #e1eaf4; }
+html[data-theme="oscuro"] .conductores-avatar { background: #203b57; color: #9bcaff; }
+.conductores-heading { display: none; }

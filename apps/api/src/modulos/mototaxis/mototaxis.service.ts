@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, archivosDrive, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import { db, archivosDrive, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
 import type { FastifyRequest } from "fastify";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -128,6 +128,22 @@ export class ServicioMototaxis {
       .orderBy(asc(sql`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, ${personas.nombres})`)).limit(50);
   }
 
+  async listarDirectorioProveedores(paginaEntrada?: string, porPaginaEntrada?: string, busquedaEntrada?: string) {
+    const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
+    const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
+    const q = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
+    const filtroBusqueda = q ? or(ilike(personas.razonSocial, `%${q}%`), ilike(personas.nombres, `%${q}%`), ilike(personas.apellidoPaterno, `%${q}%`), ilike(personas.numeroDocumento, `%${q}%`)) : undefined;
+    const condicion = and(eq(proveedores.activo, true), filtroBusqueda);
+    const [{ total }] = await db.select({ total: count() }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).where(condicion);
+    const items = await db.select({ id: proveedores.personaId, nombre: sql<string>`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
+      razonSocial: personas.razonSocial, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno,
+      tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento })
+      .from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id))
+      .where(condicion).orderBy(asc(sql`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, ${personas.nombres})`))
+      .limit(porPagina).offset((pagina - 1) * porPagina);
+    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
+  }
+
   async crearProveedor(valor: unknown) {
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos del proveedor no son válidos.");
     const d = valor as Record<string, unknown>;
@@ -166,7 +182,7 @@ export class ServicioMototaxis {
     const porPagina = [12, 24, 48].includes(solicitado) ? solicitado : 12;
     const q = (filtros.busqueda ?? "").trim().slice(0, 100);
     const patron = q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : "";
-    const estados = ["DISPONIBLE", "RESERVADA", "VENDIDA", "GARANTIA", "USO_INTERNO", "BAJA"];
+    const estados = ["DISPONIBLE", "RESERVADA", "VENDIDA", "GARANTIA", "USO_INTERNO", "BAJA", "FALTANTE"];
     if (filtros.estado && filtros.estado !== "TODOS" && !estados.includes(filtros.estado)) throw new BadRequestException("El estado de mototaxi no es válido.");
     const condicion = and(filtros.estado && filtros.estado !== "TODOS" ? eq(unidadesMototaxis.estado, filtros.estado) : undefined,
       patron ? or(ilike(unidadesMototaxis.codigo, patron), ilike(unidadesMototaxis.vin, patron), ilike(unidadesMototaxis.numeroMotor, patron), ilike(unidadesMototaxis.placa, patron), ilike(modelosMototaxis.nombre, patron), ilike(marcasProductos.nombre, patron)) : undefined);
@@ -268,7 +284,7 @@ export class ServicioMototaxis {
       const proveedorId = d.proveedorPersonaId as string;
       const [proveedor] = await tx.select({ id: proveedores.personaId }).from(proveedores).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
       if (!proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
-      const modelos = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(and(eq(modelosMototaxis.activo, true), inArray(modelosMototaxis.id, [...new Set(unidades.map((u) => u.modeloId))])));
+      const modelos = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(and(eq(modelosMototaxis.activo, true), inArray(modelosMototaxis.id, [...new Set(unidades.map((u) => u.modeloId))]))).for("update");
       if (new Set(modelos.map((m) => m.id)).size !== new Set(unidades.map((u) => u.modeloId)).size) throw new BadRequestException("Cada unidad debe pertenecer a un modelo activo del catálogo de mototaxis.");
       const [compra] = await tx.insert(comprasMototaxis).values({ codigo, proveedorPersonaId: proveedorId, fecha, documentoTipo, documentoNumero: texto(d.documentoNumero, "El número del documento", 80), moneda: texto(d.moneda ?? "PEN", "La moneda", 3, true)!, total: total.toFixed(2), observacion: texto(d.observacion, "La observación", 2000), usuarioId }).returning();
       const detallePorModelo = new Map<string, string>();
@@ -352,11 +368,97 @@ export class ServicioMototaxis {
       const [unidad] = await tx.select().from(unidadesMototaxis).where(eq(unidadesMototaxis.id, id)).for("update").limit(1);
       if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
       if (["VENDIDA", "BAJA"].includes(unidad.estado)) throw new ConflictException("Una unidad vendida o dada de baja no puede cambiarse directamente. Registra la devolución o reversa correspondiente.");
+      if (unidad.estado === "FALTANTE") throw new ConflictException("La unidad está marcada como no encontrada. Para recuperarla, regístrala como encontrada en el siguiente reconteo del modelo.");
       const estado = d.estado as typeof estados[number];
       const [actualizada] = await tx.update(unidadesMototaxis).set({ estado }).where(eq(unidadesMototaxis.id, id)).returning();
       await tx.insert(movimientosMototaxis).values({ unidadId: id, tipo: "AJUSTE", estadoAnterior: unidad.estado, estadoNuevo: estado, motivo, observacion: texto(d.observacion, "La observación", 2000), usuarioId });
       return actualizada;
     });
+  }
+
+  async obtenerReconteoModelo(modeloId: string) {
+    if (!uuidValido(modeloId)) throw new BadRequestException("Selecciona un modelo de mototaxi válido.");
+    const [modelo] = await db.select({ id: modelosMototaxis.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre, version: modelosMototaxis.version })
+      .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).where(eq(modelosMototaxis.id, modeloId)).limit(1);
+    if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+    const unidades = await db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor, numeroChasis: unidadesMototaxis.numeroChasis, estado: unidadesMototaxis.estado })
+      .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modeloId), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).orderBy(asc(unidadesMototaxis.vin));
+    return { modelo, cantidadSistema: unidades.filter((unidad) => unidad.estado !== "FALTANTE").length, unidades };
+  }
+
+  async crearAjusteInventario(valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos del reconteo no son válidos.");
+    const d = valor as Record<string, unknown>;
+    if (!uuidValido(d.modeloId)) throw new BadRequestException("Selecciona un modelo de mototaxi válido.");
+    if (!Array.isArray(d.unidadesSistemaIds) || !Array.isArray(d.unidadesEncontradas) || !Array.isArray(d.unidadesNuevas)) throw new BadRequestException("Registra las unidades del sistema, las encontradas y los VIN nuevos del reconteo.");
+    if (d.unidadesNuevas.length > 50) throw new BadRequestException("Un ajuste permite incorporar hasta 50 VIN nuevos.");
+    const motivo = texto(d.motivo, "El motivo del ajuste", 120, true)!;
+    if (motivo.trim().length < 2) throw new BadRequestException("El motivo debe tener al menos dos caracteres.");
+    const observacion = texto(d.observacion, "La observación", 2000);
+    const idsEncontrados = d.unidadesEncontradas;
+    if (idsEncontrados.some((id) => !uuidValido(id)) || new Set(idsEncontrados).size !== idsEncontrados.length) throw new BadRequestException("La lista de unidades encontradas contiene identificadores inválidos o repetidos.");
+    const idsVistosEnFormulario = d.unidadesSistemaIds;
+    if (idsVistosEnFormulario.some((id) => !uuidValido(id)) || new Set(idsVistosEnFormulario).size !== idsVistosEnFormulario.length) throw new BadRequestException("La lista de unidades del reconteo contiene identificadores inválidos o repetidos.");
+    const nuevas = d.unidadesNuevas.map((entrada, indice) => {
+      if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`Completa los datos del VIN nuevo ${indice + 1}.`);
+      const unidad = entrada as Record<string, unknown>;
+      const vin = texto(unidad.vin, "El VIN", 40, true)!;
+      const motor = texto(unidad.numeroMotor, "El número de motor", 100, true)!;
+      const costo = importe(unidad.costoAdquisicion, "El costo de adquisición", 0.01);
+      const anio = unidad.anioModelo === "" || unidad.anioModelo == null ? null : Number(unidad.anioModelo);
+      if (anio !== null && (!Number.isInteger(anio) || anio < 1990 || anio > 2100)) throw new BadRequestException("El año del modelo debe estar entre 1990 y 2100.");
+      return { vin, motor, chasis: texto(unidad.numeroChasis, "El número de chasis", 100), color: texto(unidad.color, "El color", 60), anio, costo };
+    });
+    if (new Set(nuevas.map((u) => u.vin.toLocaleUpperCase())).size !== nuevas.length) throw new BadRequestException("Hay VIN repetidos entre las unidades nuevas.");
+    const codigo = `AI-${fechaActualPeru().replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
+    return db.transaction(async (tx) => {
+      const [modelo] = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(eq(modelosMototaxis.id, d.modeloId as string)).for("update").limit(1);
+      if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+      const unidadesModelo = await tx.select({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado })
+        .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modelo.id), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).for("update");
+      const idsSistema = new Set(unidadesModelo.map((unidad) => unidad.id));
+      if (idsEncontrados.some((id) => !idsSistema.has(id as string)) || idsVistosEnFormulario.length !== unidadesModelo.length || idsVistosEnFormulario.some((id) => !idsSistema.has(id as string))) throw new ConflictException("El inventario cambió mientras preparabas el reconteo. Recarga las unidades y vuelve a comparar.");
+      const activasSistema = unidadesModelo.filter((unidad) => unidad.estado !== "FALTANTE");
+      const faltantes = activasSistema.filter((unidad) => !idsEncontrados.includes(unidad.id));
+      const recuperadas = unidadesModelo.filter((unidad) => unidad.estado === "FALTANTE" && idsEncontrados.includes(unidad.id));
+      const cantidadContada = idsEncontrados.length + nuevas.length;
+      const [ajuste] = await tx.insert(ajustesInventarioMototaxis).values({ codigo, modeloId: modelo.id, cantidadSistema: activasSistema.length, cantidadContada, motivo, observacion, usuarioId }).returning();
+      for (const unidadFaltante of faltantes) {
+        const [actualizada] = await tx.update(unidadesMototaxis).set({ estado: "FALTANTE" }).where(eq(unidadesMototaxis.id, unidadFaltante.id)).returning({ id: unidadesMototaxis.id, vin: unidadesMototaxis.vin, codigo: unidadesMototaxis.codigo });
+        await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: actualizada.id, tipo: "FALTANTE" });
+        await tx.insert(movimientosMototaxis).values({ unidadId: actualizada.id, tipo: "AJUSTE", estadoAnterior: unidadFaltante.estado, estadoNuevo: "FALTANTE", motivo: "RECONTEO_FALTANTE", observacion: `Ajuste ${codigo}: VIN no encontrado en el reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
+      }
+      if (recuperadas.length) {
+        const movimientosPrevios = await tx.select({ unidadId: movimientosMototaxis.unidadId, estadoAnterior: movimientosMototaxis.estadoAnterior })
+          .from(movimientosMototaxis).where(and(inArray(movimientosMototaxis.unidadId, recuperadas.map((unidad) => unidad.id)), eq(movimientosMototaxis.motivo, "RECONTEO_FALTANTE"))).orderBy(desc(movimientosMototaxis.creadoEn));
+        const estadoPrevioPorUnidad = new Map<string, string>();
+        for (const movimiento of movimientosPrevios) if (movimiento.estadoAnterior && !estadoPrevioPorUnidad.has(movimiento.unidadId)) estadoPrevioPorUnidad.set(movimiento.unidadId, movimiento.estadoAnterior);
+        for (const unidadRecuperada of recuperadas) {
+          const estadoRestaurado = estadoPrevioPorUnidad.get(unidadRecuperada.id) ?? "DISPONIBLE";
+          await tx.update(unidadesMototaxis).set({ estado: estadoRestaurado }).where(eq(unidadesMototaxis.id, unidadRecuperada.id));
+          await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: unidadRecuperada.id, tipo: "RECUPERADA" });
+          await tx.insert(movimientosMototaxis).values({ unidadId: unidadRecuperada.id, tipo: "AJUSTE", estadoAnterior: "FALTANTE", estadoNuevo: estadoRestaurado, motivo: "RECONTEO_RECUPERADA", observacion: `Ajuste ${codigo}: VIN encontrado en un nuevo reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
+        }
+      }
+      for (const unidadNueva of nuevas) {
+        const codigoUnidad = `MT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
+        const [insertada] = await tx.insert(unidadesMototaxis).values({ codigo: codigoUnidad, compraDetalleId: null, modeloId: modelo.id, vin: unidadNueva.vin, numeroMotor: unidadNueva.motor, numeroChasis: unidadNueva.chasis, anioModelo: unidadNueva.anio, color: unidadNueva.color, costoAdquisicion: unidadNueva.costo.toFixed(2) }).returning({ id: unidadesMototaxis.id });
+        await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: insertada.id, tipo: "NUEVA" });
+        await tx.insert(movimientosMototaxis).values({ unidadId: insertada.id, tipo: "AJUSTE", estadoNuevo: "DISPONIBLE", motivo: "RECONTEO_NUEVA", observacion: `Ajuste ${codigo}: VIN incorporado por reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
+      }
+      return { id: ajuste.id, codigo, cantidadSistema: activasSistema.length, cantidadContada, nuevas: nuevas.length, faltantes: faltantes.length, recuperadas: recuperadas.length };
+    }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("Uno de los VIN nuevos, número de motor o chasis ya está registrado."); throw error; });
+  }
+
+  async listarAjustesInventario() {
+    const ajustes = await db.select({ id: ajustesInventarioMototaxis.id, codigo: ajustesInventarioMototaxis.codigo, modeloId: ajustesInventarioMototaxis.modeloId, marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, cantidadSistema: ajustesInventarioMototaxis.cantidadSistema, cantidadContada: ajustesInventarioMototaxis.cantidadContada, motivo: ajustesInventarioMototaxis.motivo, observacion: ajustesInventarioMototaxis.observacion, creadoEn: ajustesInventarioMototaxis.creadoEn })
+      .from(ajustesInventarioMototaxis).innerJoin(modelosMototaxis, eq(ajustesInventarioMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).orderBy(desc(ajustesInventarioMototaxis.creadoEn)).limit(100);
+    if (!ajustes.length) return [];
+    const detalles = await db.select({ ajusteId: ajustesInventarioMototaxisDetalle.ajusteId, tipo: ajustesInventarioMototaxisDetalle.tipo, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor })
+      .from(ajustesInventarioMototaxisDetalle).innerJoin(unidadesMototaxis, eq(ajustesInventarioMototaxisDetalle.unidadId, unidadesMototaxis.id)).where(inArray(ajustesInventarioMototaxisDetalle.ajusteId, ajustes.map((a) => a.id)));
+    const porAjuste = new Map<string, typeof detalles>();
+    for (const detalle of detalles) porAjuste.set(detalle.ajusteId, [...(porAjuste.get(detalle.ajusteId) ?? []), detalle]);
+    return ajustes.map((ajuste) => ({ ...ajuste, diferencias: porAjuste.get(ajuste.id) ?? [] }));
   }
 
   async listarMovimientos(unidadId: string) {

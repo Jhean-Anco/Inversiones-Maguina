@@ -13,6 +13,10 @@ export class ControladorDirectorioProveedores {
   @RequierePermiso("PERSONAS.LEER")
   listar(@Query("busqueda") busqueda?: string) { return this.mototaxis.listarProveedores(busqueda); }
 
+  @Get("listado")
+  @RequierePermiso("PERSONAS.LEER")
+  listarDirectorio(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) { return this.mototaxis.listarDirectorioProveedores(pagina, porPagina, busqueda); }
+
   @Post()
   @RequierePermiso("PERSONAS.CREAR")
   crear(@Body() datos: unknown) { return this.mototaxis.crearProveedor(datos); }

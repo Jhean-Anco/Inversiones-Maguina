@@ -32,25 +32,7 @@
   height: 18px;
 }
 
-.egreso-registrar-abono {
-  margin-top: 12px;
-  border: 1px solid var(--primary-600, #174b82);
-  border-radius: 9px;
-  padding: 8px 12px;
-  color: var(--primary-700, #123e6c);
-  background: var(--surface, #fff);
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.egreso-registrar-abono:hover {
-  color: #fff;
-  background: var(--primary-700, #123e6c);
-}
-
 @media (max-width: 600px) {
-  .egreso-registrar-abono { width: 100%; }
   .egreso-form fieldset { padding: 13px; }
 }
  .egreso-ruc-search { display: flex; gap: 8px; }
