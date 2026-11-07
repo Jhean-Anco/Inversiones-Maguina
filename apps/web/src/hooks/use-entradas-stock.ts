@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
+import { servicioIdentidad } from "../services/identidad.service";
 import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
 
 type DetalleBorrador = { clave: string; productoId: string; presentacionId: string; codigo: string; nombre: string; presentacion: string; unidad: string; cantidad: string; costoUnitario: string; factor: number };
@@ -120,6 +121,14 @@ export function useEntradasStock() {
       const unicos = [...new Map(coincidencias.map((entrada) => [`${entrada.proveedorTipoDocumento}:${entrada.proveedorNumeroDocumento}`, entrada])).values()];
       setProveedoresEncontrados(unicos);
       setProveedorNoEncontrado(unicos.length === 0);
+      if (!unicos.length && (proveedorTipoDocumento === "DNI" || proveedorTipoDocumento === "RUC")) {
+        const identidad = await servicioIdentidad.consultar(proveedorTipoDocumento, numero);
+        setProveedor(identidad.razonSocial || [identidad.nombres, identidad.apellidoPaterno, identidad.apellidoMaterno].filter(Boolean).join(" "));
+        setProveedorTipoPersona(identidad.tipoPersona);
+        setProveedorDireccion(identidad.direccion ?? "");
+        setDatosProveedorEditables(true);
+        setProveedorNoEncontrado(false);
+      }
     } catch (problema) { manejarError(problema, "No se pudo buscar el proveedor en compras anteriores."); }
     finally { setBuscandoProveedores(false); }
   }

@@ -13,6 +13,10 @@ export class ControladorProductos {
   @RequierePermiso("INVENTARIO.LEER")
   catalogos() { return this.productos.catalogos(); }
 
+  @Post("listas-precio")
+  @RequierePermiso("INVENTARIO.CREAR")
+  crearListaPrecio(@Body() datos: { nombre?: unknown }) { return this.productos.crearListaPrecio(datos?.nombre); }
+
   @Get("alertas-stock-bajo")
   @RequierePermiso("INVENTARIO.LEER")
   alertasStockBajo() { return this.productos.alertasStockBajo(); }
@@ -21,6 +25,18 @@ export class ControladorProductos {
   @RequierePermiso("INVENTARIO.LEER")
   listar(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) {
     return this.productos.listar({ pagina, porPagina, busqueda });
+  }
+
+  @Get("precios")
+  @RequierePermiso("INVENTARIO.LEER")
+  listarPrecios(@Query("pagina") pagina?: string, @Query("busqueda") busqueda?: string) {
+    return this.productos.listarPrecios({ pagina, busqueda });
+  }
+
+  @Patch("precios/:id")
+  @RequierePermiso("INVENTARIO.EDITAR")
+  actualizarPrecio(@Param("id") id: string, @Body() datos: { precio?: unknown }) {
+    return this.productos.actualizarPrecio(id, datos?.precio);
   }
 
   @Get(":id")

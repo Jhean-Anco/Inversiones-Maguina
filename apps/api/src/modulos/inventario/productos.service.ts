@@ -46,11 +46,22 @@ export class ServicioProductos {
   async catalogos() {
     const [categorias, marcas, unidades, listas] = await Promise.all([
       db.select({ id: categoriasProductos.id, nombre: categoriasProductos.nombre }).from(categoriasProductos).where(eq(categoriasProductos.activo, true)).orderBy(asc(categoriasProductos.nombre)),
-      db.select({ id: marcasProductos.id, nombre: marcasProductos.nombre }).from(marcasProductos).where(eq(marcasProductos.activo, true)).orderBy(asc(marcasProductos.nombre)),
+      db.select({ id: marcasProductos.id, nombre: marcasProductos.nombre }).from(marcasProductos).where(and(eq(marcasProductos.activo, true), or(eq(marcasProductos.uso, "REPUESTOS"), eq(marcasProductos.uso, "AMBOS")))).orderBy(asc(marcasProductos.nombre)),
       db.select({ codigo: unidadesMedida.codigo, nombre: unidadesMedida.nombre }).from(unidadesMedida).where(and(eq(unidadesMedida.activo, true), sql`${unidadesMedida.codigo} <> 'ZZ'`)).orderBy(asc(unidadesMedida.nombre)),
       db.select({ id: tiposListasPrecio.id, codigo: tiposListasPrecio.codigo, nombre: tiposListasPrecio.nombre }).from(tiposListasPrecio).where(eq(tiposListasPrecio.activo, true)).orderBy(asc(tiposListasPrecio.id)),
     ]);
     return { categorias, marcas, unidadesMedida: unidades, tiposListasPrecio: listas };
+  }
+
+  async crearListaPrecio(nombreEntrada: unknown) {
+    const nombre = texto(nombreEntrada, "El nombre de la lista", 100, 2);
+    const [existente] = await db.select({ id: tiposListasPrecio.id }).from(tiposListasPrecio)
+      .where(eq(sql`lower(${tiposListasPrecio.nombre})`, nombre.toLocaleLowerCase("es-PE"))).limit(1);
+    if (existente) throw new ConflictException("Ya existe una lista con ese nombre.");
+    const baseCodigo = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleUpperCase("es-PE").replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 30) || "LISTA";
+    const codigo = `${baseCodigo}_${randomUUID().slice(0, 8).toUpperCase()}`;
+    const [creada] = await db.insert(tiposListasPrecio).values({ codigo, nombre }).returning({ id: tiposListasPrecio.id, codigo: tiposListasPrecio.codigo, nombre: tiposListasPrecio.nombre });
+    return creada;
   }
 
   async alertasStockBajo() {
@@ -65,7 +76,7 @@ export class ServicioProductos {
     }).from(productos)
       .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
       .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
-      .where(and(eq(productos.activo, true), gt(productos.stockMinimo, "0"), lte(stockActual, productos.stockMinimo)))
+      .where(and(eq(productos.activo, true), or(lte(stockActual, "0"), and(gt(productos.stockMinimo, "0"), lte(stockActual, productos.stockMinimo)))))
       .orderBy(asc(sql`${stockActual} / nullif(${productos.stockMinimo}, 0)`), asc(productos.nombre));
   }
 
@@ -86,6 +97,7 @@ export class ServicioProductos {
       db.select({
         id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
         rutaImagen: productos.rutaImagen, activo: productos.activo, creadoEn: productos.creadoEn,
+        stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`, stockMinimo: productos.stockMinimo,
         categoriaId: categoriasProductos.id, categoria: categoriasProductos.nombre,
         marcaId: marcasProductos.id, marca: marcasProductos.nombre,
         unidadBaseCodigo: unidadesMedida.codigo, unidadBase: unidadesMedida.nombre,
@@ -93,11 +105,52 @@ export class ServicioProductos {
         .innerJoin(categoriasProductos, eq(productos.categoriaId, categoriasProductos.id))
         .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
         .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
+        .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
         .where(condicion).orderBy(asc(productos.nombre)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(productos).where(condicion),
     ]);
     const totalRegistros = total?.total ?? 0;
     return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
+  }
+
+  async listarPrecios(filtros: { pagina?: string; busqueda?: string }) {
+    const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
+    const porPagina = 50;
+    const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
+    const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
+    const condicion = coincidencia ? or(ilike(productos.nombre, coincidencia), ilike(productos.codigoInterno, coincidencia), ilike(marcasProductos.nombre, coincidencia)) : undefined;
+    const [items, [total]] = await Promise.all([
+      db.select({
+        id: preciosProductos.id, productoId: productos.id, codigo: productos.codigoInterno, producto: productos.nombre,
+        imagen: productos.rutaImagen, marca: marcasProductos.nombre, presentacion: productosPresentaciones.nombre,
+        presentacionBase: productosPresentaciones.esBase, listaPrecio: tiposListasPrecio.nombre,
+        precio: preciosProductos.precio, cantidadMinima: preciosProductos.cantidadMinima,
+        vigenteDesde: preciosProductos.vigenteDesde, vigenteHasta: preciosProductos.vigenteHasta,
+        precioActivo: preciosProductos.activo, productoActivo: productos.activo,
+      }).from(preciosProductos)
+        .innerJoin(productos, eq(preciosProductos.productoId, productos.id))
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
+        .innerJoin(productosPresentaciones, eq(preciosProductos.presentacionId, productosPresentaciones.id))
+        .innerJoin(tiposListasPrecio, eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id))
+        .where(condicion).orderBy(asc(productos.nombre), asc(tiposListasPrecio.nombre), asc(productosPresentaciones.nombre), asc(preciosProductos.cantidadMinima))
+        .limit(porPagina).offset((pagina - 1) * porPagina),
+      db.select({ total: count() }).from(preciosProductos)
+        .innerJoin(productos, eq(preciosProductos.productoId, productos.id))
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
+        .where(condicion),
+    ]);
+    const totalRegistros = total?.total ?? 0;
+    return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
+  }
+
+  async actualizarPrecio(idEntrada: string, valor: unknown) {
+    const id = uuid(idEntrada, "El precio");
+    const precio = decimal(valor, "El precio", 0, 2);
+    if (Math.round(Number(precio) * 100) % 10 !== 0) throw new BadRequestException("El precio debe avanzar en múltiplos de S/ 0.10.");
+    const [actualizado] = await db.update(preciosProductos).set({ precio, actualizadoEn: new Date() })
+      .where(eq(preciosProductos.id, id)).returning({ id: preciosProductos.id, precio: preciosProductos.precio });
+    if (!actualizado) throw new NotFoundException("No se encontró el precio del producto.");
+    return actualizado;
   }
 
   async consultar(idEntrada: string) {
@@ -106,12 +159,14 @@ export class ServicioProductos {
       id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
       categoriaId: productos.categoriaId, marcaId: productos.marcaId,
       unidadBaseCodigo: productos.unidadBaseCodigo, stockMinimo: productos.stockMinimo, afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv, rutaImagen: productos.rutaImagen,
+      stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`,
       fichaTecnica: productos.fichaTecnica, activo: productos.activo, creadoEn: productos.creadoEn, actualizadoEn: productos.actualizadoEn,
       categoria: categoriasProductos.nombre, marca: marcasProductos.nombre, unidadBase: unidadesMedida.nombre,
     }).from(productos)
       .innerJoin(categoriasProductos, eq(productos.categoriaId, categoriasProductos.id))
       .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
       .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
+      .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
       .where(eq(productos.id, id)).limit(1);
     if (!producto) throw new NotFoundException("No se encontró el producto.");
 
@@ -239,10 +294,12 @@ export class ServicioProductos {
     const precio = valor as RegistroPrecio;
     const presentacionClave = texto(precio.presentacionClave, "La presentación del precio", 60);
     if (!presentaciones.some((item) => item.clave === presentacionClave)) throw new BadRequestException("El precio referencia una presentación que no existe.");
+    const precioSoles = decimal(precio.precio, "El precio", 0, 2);
+    if (Math.round(Number(precioSoles) * 100) % 10 !== 0) throw new BadRequestException("El precio debe avanzar en múltiplos de S/ 0.10.");
     return {
       presentacionClave,
       tipoListaPrecioId: uuid(precio.tipoListaPrecioId, "La lista de precios"),
-      precio: decimal(precio.precio, "El precio", 0, 2),
+      precio: precioSoles,
       cantidadMinima: decimal(precio.cantidadMinima ?? "1", "La cantidad mínima", 0.001, 3),
       vigenteDesde: this.fechaOpcional(precio.vigenteDesde),
       vigenteHasta: this.fechaOpcional(precio.vigenteHasta),
@@ -259,7 +316,7 @@ export class ServicioProductos {
   private async insertarRelaciones(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], productoId: string, datos: ReturnType<ServicioProductos["validarDatos"]>) {
     const catalogos = await Promise.all([
       tx.select({ id: categoriasProductos.id }).from(categoriasProductos).where(and(eq(categoriasProductos.id, datos.categoriaId), eq(categoriasProductos.activo, true))).limit(1),
-      tx.select({ id: marcasProductos.id }).from(marcasProductos).where(and(eq(marcasProductos.id, datos.marcaId), eq(marcasProductos.activo, true))).limit(1),
+      tx.select({ id: marcasProductos.id }).from(marcasProductos).where(and(eq(marcasProductos.id, datos.marcaId), eq(marcasProductos.activo, true), or(eq(marcasProductos.uso, "REPUESTOS"), eq(marcasProductos.uso, "AMBOS")))).limit(1),
       tx.select({ codigo: unidadesMedida.codigo }).from(unidadesMedida).where(and(eq(unidadesMedida.codigo, datos.unidadBaseCodigo), eq(unidadesMedida.activo, true))).limit(1),
     ]);
     if (catalogos.some((catalogo) => !catalogo.length)) throw new BadRequestException("Selecciona una categoría, marca y unidad activos.");

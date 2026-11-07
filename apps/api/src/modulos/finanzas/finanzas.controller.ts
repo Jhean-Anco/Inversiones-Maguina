@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
@@ -23,6 +23,13 @@ export class ControladorFinanzas {
   @Get("resumen")
   @RequierePermiso("FINANZAS.LEER")
   resumen() { return this.finanzas.resumenDelMes(); }
+
+  @Get("movimientos")
+  @RequierePermiso("FINANZAS.LEER")
+  movimientos(@Query("periodo") periodo?: string, @Query("fecha") fecha?: string) {
+    if (!periodo || !fecha) throw new BadRequestException("Indica el periodo y la fecha que quieres consultar.");
+    return this.finanzas.movimientosPorPeriodo(periodo, fecha);
+  }
 
   @Post()
   @RequierePermiso("FINANZAS.ADMINISTRAR")

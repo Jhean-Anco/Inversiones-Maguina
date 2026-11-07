@@ -77,6 +77,59 @@ export class ServicioFinanzas {
     return { periodo: new Date().toISOString().slice(0, 7), items };
   }
 
+  async movimientosPorPeriodo(periodoEntrada: string, fechaEntrada: string) {
+    let desde: string;
+    let hasta: string;
+    if (periodoEntrada === "DIA" && /^\d{4}-\d{2}-\d{2}$/.test(fechaEntrada)) {
+      const fecha = new Date(`${fechaEntrada}T00:00:00.000Z`);
+      if (Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== fechaEntrada) throw new BadRequestException("Selecciona una fecha válida.");
+      desde = fechaEntrada;
+      hasta = fechaEntrada;
+    } else if (periodoEntrada === "MES" && /^\d{4}-\d{2}$/.test(fechaEntrada)) {
+      const fecha = new Date(`${fechaEntrada}-01T00:00:00.000Z`);
+      if (Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 7) !== fechaEntrada) throw new BadRequestException("Selecciona un mes válido.");
+      desde = `${fechaEntrada}-01`;
+      fecha.setUTCMonth(fecha.getUTCMonth() + 1);
+      fecha.setUTCDate(0);
+      hasta = fecha.toISOString().slice(0, 10);
+    } else if (periodoEntrada === "ANIO" && /^\d{4}$/.test(fechaEntrada) && Number(fechaEntrada) >= 1900 && Number(fechaEntrada) <= 9999) {
+      desde = `${fechaEntrada}-01-01`;
+      hasta = `${fechaEntrada}-12-31`;
+    } else {
+      throw new BadRequestException("Selecciona el filtro día, mes o año y un periodo válido.");
+    }
+
+    const [cuentas, filas] = await Promise.all([
+      this.listar(),
+      db.execute(sql`
+        SELECT cuenta_id, sentido,
+          COALESCE(SUM(importe), 0)::numeric(14,2)::text AS importe
+        FROM (
+          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+        ) AS pagos
+        WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
+        GROUP BY cuenta_id, sentido
+      `) as unknown as Array<{ cuenta_id: string; sentido: "INGRESO" | "EGRESO"; importe: string }>,
+    ]);
+    const porCuenta = new Map<string, { ingresos: number; egresos: number }>();
+    for (const fila of filas) {
+      const actual = porCuenta.get(fila.cuenta_id) ?? { ingresos: 0, egresos: 0 };
+      if (fila.sentido === "INGRESO") actual.ingresos += Number(fila.importe);
+      else actual.egresos += Number(fila.importe);
+      porCuenta.set(fila.cuenta_id, actual);
+    }
+    const items = cuentas.map((cuenta) => {
+      const movimientos = porCuenta.get(cuenta.id) ?? { ingresos: 0, egresos: 0 };
+      return { id: cuenta.id, nombre: cuenta.nombre, tipo: cuenta.tipo, moneda: cuenta.moneda, activa: cuenta.activa,
+        ingresos: movimientos.ingresos.toFixed(2), egresos: movimientos.egresos.toFixed(2), neto: (movimientos.ingresos - movimientos.egresos).toFixed(2) };
+    });
+    return { periodo: periodoEntrada, fecha: fechaEntrada, desde, hasta,
+      totales: { ingresos: items.reduce((suma, item) => suma + Number(item.ingresos), 0).toFixed(2), egresos: items.reduce((suma, item) => suma + Number(item.egresos), 0).toFixed(2), neto: items.reduce((suma, item) => suma + Number(item.neto), 0).toFixed(2) }, items };
+  }
+
   async crear(entrada: unknown, usuarioId: string) {
     const datos = validar(entrada);
     const [cuenta] = await db.insert(cuentasFinancieras).values({ ...datos, usuarioId }).returning();

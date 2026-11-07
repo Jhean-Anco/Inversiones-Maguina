@@ -1,0 +1,203 @@
+.erp-content.is-catalog-view.is-catalog-admin-view {
+  display: block;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  overscroll-behavior-y: contain;
+}
+.erp-content.is-catalog-view.is-catalog-admin-view > .modulo-route-transition {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+.erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 24px clamp(17px, 2.2vw, 32px) 90px;
+  color: #183958;
+}
+
+.catalog-manager-toolbar { position: sticky; z-index: 5; top: 0; display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 11px; margin: -8px 0 14px; padding: 8px 0; background: #fff; }
+.catalog-manager-search { position: relative; display: flex; width: min(100%, 450px); min-width: 220px; align-items: center; }
+.catalog-manager-search > svg { position: absolute; left: 12px; width: 17px; height: 17px; fill: none; stroke: #8194a8; stroke-linecap: round; stroke-width: 1.7; pointer-events: none; }
+.catalog-manager-search input { width: 100%; height: 46px; box-sizing: border-box; border: 1px solid #dce5ef; border-radius: 9px; padding: 0 12px 0 38px; background: #fff; color: #193957; font: inherit; font-size: 14px; outline: 0; }
+.catalog-manager-search input:focus { border-color: #3984c4; box-shadow: 0 0 0 3px #3984c41a; }
+.catalog-manager-status-filter { display: flex; align-items: center; gap: 9px; color: #586f85; font-size: 14px; font-weight: 650; }
+.catalog-manager-status-filter select,.catalog-manager-name-field select { height: 44px; border: 1px solid #dce5ef; border-radius: 8px; padding: 0 32px 0 12px; background: #fff; color: #264662; font: inherit; font-size: 14px; }
+.catalog-manager-status-filter select:focus,.catalog-manager-name-field select:focus { border-color: #3984c4; outline: 3px solid #3984c41a; }
+
+.catalog-manager-create { position: fixed; z-index: 130; right: 27px; bottom: 26px; display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 9px; padding: 0 16px 0 12px; border: 1px solid var(--action-primary-border); border-radius: 12px; background: var(--action-primary-surface); box-shadow: 0 4px 12px #a51f3210; color: var(--action-primary); cursor: pointer; transition: transform .16s ease, background .16s ease, box-shadow .16s ease; }
+.catalog-manager-create:hover { transform: translateY(-1px); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); box-shadow: 0 7px 16px #a51f3218; }
+.catalog-manager-create:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 3px; }
+.catalog-manager-create > span { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #c91f3212; color: inherit; font-size: 21px; font-weight: 500; line-height: 1; }
+.catalog-manager-create > strong { font-size: 12px; font-weight: 750; white-space: nowrap; }
+
+.catalog-manager-error,.catalog-manager-dialog-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #f0c3c7; border-left: 4px solid #db3443; border-radius: 9px; padding: 9px 11px; background: #fff5f5; color: #a72f3d; font-size: 11px; }
+.catalog-manager-error { margin: 0 0 12px; }
+.catalog-manager-error button { display: grid; width: 25px; height: 25px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 7px; background: transparent; color: inherit; cursor: pointer; }
+.catalog-manager-error svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+.catalog-manager-panel { min-width: 0; border: 1px solid #dce5ef; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px #17375308; }
+.catalog-manager-list { min-width: 0; }
+.catalog-manager-results-bar { display: flex; min-height: 56px; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #e8edf2; padding: 0 16px; color: #647b91; font-size: 14px; }
+.catalog-manager-results-bar > span { font-weight: 700; }
+.catalog-manager-pagination { display: flex; align-items: center; gap: 9px; color: #4e657b; font-size: 14px; font-variant-numeric: tabular-nums; }
+.catalog-manager-pagination button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #dce5ed; border-radius: 8px; background: #fff; color: #315a7a; font: inherit; font-size: 21px; line-height: 1; cursor: pointer; }
+.catalog-manager-pagination button:hover:not(:disabled) { border-color: #b9d1e3; background: #f3f8fc; }
+.catalog-manager-pagination button:disabled { opacity: .4; cursor: default; }
+.catalog-manager-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 265px), 1fr)); gap: 13px; padding: 16px; }
+.catalog-manager-card { display: grid; min-width: 0; min-height: 160px; grid-template-columns: 78px minmax(0,1fr) auto; grid-template-rows: minmax(72px, auto) auto; align-items: center; gap: 10px 15px; border: 1px solid #e1e8ef; border-radius: 11px; padding: 16px; background: #fff; transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease; }
+.catalog-manager-card:hover { transform: translateY(-1px); border-color: #cddce8; box-shadow: 0 5px 15px #193b570d; }
+.catalog-manager-thumbnail { display: grid; width: 74px; height: 74px; grid-row: 1 / span 2; place-items: center; overflow: hidden; border: 1px solid #e1e8ef; border-radius: 10px; background: #f3f7fa; color: #416887; }
+.catalog-manager-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+.catalog-manager-thumbnail.is-logo { background: #f8fafc; }
+.catalog-manager-thumbnail.is-logo img { box-sizing: border-box; padding: 6px; object-fit: contain; }
+.catalog-manager-thumbnail > span { font-size: 19px; font-weight: 850; }
+.catalog-manager-card-main { display: grid; min-width: 0; align-content: center; gap: 7px; }
+.catalog-manager-name { overflow: hidden; color: #1a3a57; font-size: 18px; font-weight: 780; text-overflow: ellipsis; white-space: nowrap; }
+.catalog-manager-usage { display: flex; flex-wrap: wrap; gap: 5px; }
+.catalog-manager-usage span { display: inline-flex; align-items: center; border: 1px solid #dbe7f0; border-radius: 999px; padding: 5px 9px; background: #f4f8fb; color: #4f6c83; font-size: 12px; font-weight: 700; }
+.catalog-manager-status { display: inline-flex; grid-column: 2; grid-row: 2; justify-self: start; align-items: center; gap: 7px; border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 750; white-space: nowrap; }
+.catalog-manager-status i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.catalog-manager-status.is-active { background: #edf9f3; color: #167c55; }
+.catalog-manager-status.is-inactive { background: #f1f3f5; color: #738193; }
+.catalog-manager-row-actions { display: flex; grid-column: 3; grid-row: 2; justify-content: flex-end; gap: 5px; }
+.catalog-manager-row-actions button { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #e1e8ef; border-radius: 8px; background: #fff; color: #607990; cursor: pointer; transition: background .14s ease, border-color .14s ease, color .14s ease; }
+.catalog-manager-row-actions button:hover { border-color: #c5d7e7; background: #f2f8fc; color: #175581; }
+.catalog-manager-row-actions button.is-danger:hover { border-color: #f1c8cc; background: #fff3f4; color: #bd3846; }
+.catalog-manager-row-actions button.is-positive:hover { border-color: #cce9dc; background: #f0faf5; color: #167c55; }
+.catalog-manager-row-actions svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.catalog-manager-row-actions button:focus-visible { outline: 2px solid #3984c4; outline-offset: 2px; }
+.catalog-manager-row-actions .erp-icon-action { width: 34px; height: 34px; flex-basis: 34px; place-items: center; border-radius: 9px; background: #fff; color: #315a7a; }
+.catalog-manager-row-actions .erp-icon-action.is-danger { color: #b42335; }
+.catalog-manager-row-actions .erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary-hover); }
+
+.catalog-manager-state,.catalog-manager-empty { display: grid; min-height: 220px; align-content: center; justify-items: center; gap: 9px; color: #74889d; text-align: center; }
+.catalog-manager-state strong,.catalog-manager-empty strong { color: #264662; font-size: 13px; }
+.catalog-manager-state { grid-auto-flow: column; justify-content: center; }
+.catalog-manager-spinner { width: 18px; height: 18px; border: 2px solid #d9e4ed; border-top-color: #176190; border-radius: 50%; animation: catalog-manager-spin .8s linear infinite; }
+@keyframes catalog-manager-spin { to { transform: rotate(360deg); } }
+.catalog-manager-empty-icon { display: grid; width: 46px; height: 46px; place-items: center; border: 1px solid #e1e9f1; border-radius: 13px; background: #f8fafc; color: #28648e; }
+.catalog-manager-empty-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.catalog-manager-empty p { max-width: 330px; margin: 0; color: #8192a4; font-size: 11px; line-height: 1.5; }
+
+.catalog-manager-backdrop { position: fixed; z-index: 180; inset: 0; display: grid; place-items: center; overflow: auto; padding: 20px; background: #081a2db8; backdrop-filter: blur(5px); }
+.catalog-manager-dialog { position: relative; width: min(520px, 100%); max-height: min(740px, calc(100dvh - 40px)); overflow: auto; border: 1px solid #dce5ee; border-radius: 16px; background: #fff; box-shadow: 0 26px 78px #071a2f45; }
+.catalog-manager-confirm-dialog { width: min(460px, 100%); box-sizing: border-box; border: 1px solid #dce5ee; border-radius: 16px; padding: 24px; background: #fff; box-shadow: 0 26px 78px #071a2f45; }
+.catalog-manager-confirm-icon { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 13px; }
+.catalog-manager-confirm-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.catalog-manager-confirm-icon.is-disable { background: #fff1f2; color: #c83a48; }
+.catalog-manager-confirm-icon.is-enable { background: #eaf8f0; color: #16845a; }
+.catalog-manager-confirm-dialog h2 { margin: 16px 0 8px; color: #173653; font-size: 22px; letter-spacing: -.025em; }
+.catalog-manager-confirm-dialog p { margin: 0; color: #5d7388; font-size: 15px; line-height: 1.55; }
+.catalog-manager-confirm-dialog p strong { color: #1b3d5a; }
+.catalog-manager-confirm-dialog footer { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; border-top: 1px solid #e9eef3; padding-top: 15px; }
+.catalog-manager-save.is-destructive { border-color: #e7aeb4; background: #fff3f4; color: #b42335; box-shadow: none; }
+.catalog-manager-save.is-destructive:hover:not(:disabled) { border-color: #d98b94; background: #ffe8ea; color: #941b2a; }
+.catalog-manager-dialog-head { display: grid; grid-template-columns: 40px minmax(0,1fr) 32px; align-items: center; gap: 11px; border-bottom: 1px solid #e8edf2; padding: 17px 19px 15px; }
+.catalog-manager-dialog-symbol { display: grid; width: 39px; height: 39px; place-items: center; border: 1px solid #d8e8f2; border-radius: 11px; background: #edf6fb; color: #1c618a; }
+.catalog-manager-dialog-symbol.is-brand { border-color: #dce2f2; background: #f1f3fb; color: #4e5898; }
+.catalog-manager-dialog-symbol svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; }
+.catalog-manager-dialog-head h2 { margin: 0 0 3px; color: #163754; font-size: 20px; letter-spacing: -.03em; }
+.catalog-manager-dialog-head p { margin: 0; color: #7a8da1; font-size: 13px; }
+.catalog-manager-dialog-head > button { display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid #e2e8ef; border-radius: 9px; background: #fff; color: #75879a; cursor: pointer; }
+.catalog-manager-dialog-head > button:hover { border-color: #efc7cb; background: #fff5f5; color: #c43d4b; }
+.catalog-manager-dialog-head > button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.catalog-manager-dialog-error { margin: 13px 19px 0; }
+.catalog-manager-form { display: grid; gap: 16px; padding: 18px 19px 20px; }
+.catalog-manager-name-field,.catalog-manager-image-label { display: grid; gap: 7px; color: #294762; font-size: 14px; font-weight: 750; }
+.catalog-manager-name-field > span,.catalog-manager-image-label > span { display: flex; align-items: center; gap: 4px; }
+.catalog-manager-name-field b,.catalog-manager-image-label b { color: #d93443; }
+.catalog-manager-name-field input { width: 100%; height: 44px; box-sizing: border-box; border: 1px solid #dce5ed; border-radius: 9px; padding: 0 12px; background: #fbfcfe; color: #193957; font: inherit; font-size: 14px; outline: 0; }
+.catalog-manager-name-field select { width: 100%; }
+.catalog-manager-name-field input:focus { border-color: #3984c4; background: #fff; box-shadow: 0 0 0 3px #3984c41a; }
+.catalog-manager-image-field { display: grid; gap: 8px; }
+.catalog-manager-image-label { display: flex; align-items: center; justify-content: space-between; }
+.catalog-manager-image-label small { color: #8998a8; font-size: 10px; font-weight: 500; }
+.catalog-manager-dropzone { display: flex; min-height: 96px; align-items: center; gap: 12px; border: 1px dashed #c8d6e3; border-radius: 11px; padding: 11px; background: #f9fbfd; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.catalog-manager-dropzone:hover,.catalog-manager-dropzone.is-dragging { border-color: #3e8ab9; background: #f1f8fc; }
+.catalog-manager-dropzone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); clip-path: inset(50%); white-space: nowrap; }
+.catalog-manager-dropzone:focus-within { outline: 3px solid #3984c433; outline-offset: 2px; }
+.catalog-manager-preview { display: grid; width: 70px; height: 66px; flex: 0 0 auto; place-items: center; overflow: hidden; border: 1px solid #e1e8ef; border-radius: 8px; background: #eef3f7; }
+.catalog-manager-preview img { width: 100%; height: 100%; object-fit: cover; }
+.catalog-manager-preview.is-logo { background: #fff; }
+.catalog-manager-preview.is-logo img { box-sizing: border-box; padding: 6px; object-fit: contain; }
+.catalog-manager-drop-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.catalog-manager-drop-copy strong { overflow: hidden; color: #2c4e6b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.catalog-manager-drop-copy small { color: #8595a6; font-size: 12px; }
+.catalog-manager-upload-icon { display: grid; width: 35px; height: 35px; flex: 0 0 auto; place-items: center; border: 1px solid #dce8f1; border-radius: 10px; background: #fff; color: #24638a; }
+.catalog-manager-upload-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.catalog-manager-upload-action { flex: 0 0 auto; border: 1px solid #d8e5ef; border-radius: 7px; padding: 7px 9px; background: #fff; color: #245779; font-size: 10px; font-weight: 750; }
+.catalog-manager-form-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e9eef3; padding-top: 13px; }
+.catalog-manager-cancel,.catalog-manager-save { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; border-radius: 10px; padding: 0 14px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.catalog-manager-cancel { border: 1px solid #dfe6ed; background: #fff; color: #5b7187; }
+.catalog-manager-save { border: 1px solid var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary); box-shadow: 0 3px 8px #a51f3210; }
+.catalog-manager-save:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); }
+.catalog-manager-save:focus-visible,.catalog-manager-create:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 3px; }
+.catalog-manager-save:disabled,.catalog-manager-cancel:disabled { opacity: .55; cursor: wait; }
+
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { color: #e2eaf4; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-toolbar { background: #0c1421; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-panel,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog { border-color: var(--tema-borde); background: #151f2e; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog { border-color: var(--tema-borde); background: #151f2e; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog h2 { color: #e4edf7; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog p { color: #b3c0d0; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-card { border-color: var(--tema-borde); background: #151f2e; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog-head h2 { color: #e4edf7; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-search input,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-status-filter select,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name-field select,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog-head > button,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name-field input,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dropzone { border-color: var(--tema-borde); background: #101a28; color: #e4edf7; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-row-actions button,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-cancel,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-pagination button { border-color: var(--tema-borde); background: #182639; color: #c1cedb; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-thumbnail { border-color: var(--tema-borde); background: #1c2a3b; }
+html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-usage span { border-color: var(--tema-borde); background: #1c2a3b; color: #c1cedb; }
+
+@media (max-width: 760px) {
+  .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding: 16px 14px 92px; }
+  .catalog-manager-toolbar { align-items: center; gap: 8px; padding: 8px 0; }
+  .catalog-manager-search { width: 100%; min-width: 0; flex: 1 1 100%; }
+  .catalog-manager-status-filter { margin-left: auto; }
+  .catalog-manager-create { right: 72px; bottom: 14px; width: 48px; height: 48px; }
+  .catalog-manager-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr)); gap: 10px; padding: 12px; }
+  .catalog-manager-results-bar { min-height: 48px; padding-inline: 12px; }
+  .catalog-manager-card { min-height: 146px; grid-template-columns: 68px minmax(0,1fr) auto; grid-template-rows: minmax(60px, auto) auto; gap: 7px 10px; padding: 11px; }
+  .catalog-manager-thumbnail { width: 64px; height: 64px; }
+}
+@media (max-width: 430px) {
+  .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding-inline: 10px; }
+  .catalog-manager-status-filter { width: 100%; justify-content: space-between; margin: 0; }
+  .catalog-manager-status-filter select { flex: 1; max-width: 180px; }
+  .catalog-manager-grid { grid-template-columns: minmax(0,1fr); padding: 7px; }
+  .catalog-manager-card { min-height: 118px; grid-template-columns: 56px minmax(0,1fr) auto; gap: 6px 9px; }
+  .catalog-manager-thumbnail { width: 52px; height: 52px; }
+  .catalog-manager-name { font-size: 14px; }
+  .catalog-manager-usage span { padding: 3px 6px; }
+  .catalog-manager-dialog-head { grid-template-columns: 36px minmax(0,1fr) 30px; gap: 8px; padding: 14px 13px 12px; }
+  .catalog-manager-dialog-symbol { width: 35px; height: 35px; }
+  .catalog-manager-form { gap: 14px; padding: 14px 13px; }
+  .catalog-manager-dropzone { min-height: 84px; gap: 8px; padding: 8px; }
+  .catalog-manager-preview { width: 58px; height: 56px; }
+  .catalog-manager-upload-icon { width: 32px; height: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .catalog-manager *, .catalog-manager-create { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Mantén el listado dentro del alto visible y deja que la paginación gestione el resto. */
+.erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding-bottom: 26px; }
+.catalog-manager-panel { container-type: inline-size; }
+.catalog-manager-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; padding: 12px; }
+.catalog-manager-card { min-height: 120px; grid-template-columns: 58px minmax(0,1fr) auto; grid-template-rows: minmax(52px,auto) auto; gap: 6px 10px; padding: 10px 12px; }
+.catalog-manager-thumbnail { width: 56px; height: 56px; border-radius: 9px; }
+.catalog-manager-card-main { gap: 4px; }
+.catalog-manager-name { font-size: 16px; }
+.catalog-manager-status { padding: 4px 8px; font-size: 11px; }
+.catalog-manager-row-actions { gap: 4px; }
+.catalog-manager-row-actions button { width: 32px; height: 32px; }
+.catalog-manager-usage span { padding: 3px 7px; font-size: 10px; }
+@container (max-width: 1100px) { .catalog-manager-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }.catalog-manager-card { min-height: 104px; grid-template-columns: 50px minmax(0,1fr) auto; grid-template-rows: minmax(44px,auto) auto; gap: 4px 8px; padding: 8px 9px; }.catalog-manager-thumbnail { width: 48px; height: 48px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 29px; height: 29px; } }
+@container (max-width: 760px) { .catalog-manager-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 10px; }.catalog-manager-card { min-height: 108px; grid-template-columns: 52px minmax(0,1fr) auto; grid-template-rows: minmax(46px,auto) auto; gap: 5px 8px; padding: 9px; }.catalog-manager-thumbnail { width: 50px; height: 50px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 30px; height: 30px; } }
+@container (max-width: 480px) { .catalog-manager-grid { grid-template-columns: minmax(0,1fr); gap: 7px; padding: 8px; }.catalog-manager-card { min-height: 96px; grid-template-columns: 48px minmax(0,1fr) auto; grid-template-rows: minmax(42px,auto) auto; gap: 4px 8px; padding: 8px; }.catalog-manager-thumbnail { width: 46px; height: 46px; }.catalog-manager-name { font-size: 13px; }.catalog-manager-status { font-size: 10px; }.catalog-manager-row-actions button { width: 28px; height: 28px; } }

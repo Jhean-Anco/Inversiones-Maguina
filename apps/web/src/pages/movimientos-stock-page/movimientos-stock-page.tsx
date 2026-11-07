@@ -7,7 +7,7 @@ import type { MovimientoStock } from "../../services/inventario/movimientos-stoc
 
 const numero = new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const fechaHora = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" });
-const motivoVisible = (codigo: string | null) => ({ INVENTARIO_FISICO: "Conteo de inventario", MERMA: "Merma", DANIO: "Producto dañado", PERDIDA: "Pérdida", DEVOLUCION: "Devolución", CORRECCION: "Corrección de registro", OTRO: "Otro motivo" }[codigo ?? ""] ?? codigo ?? "—");
+const motivoVisible = (codigo: string | null) => ({ INVENTARIO_FISICO: "Conteo de inventario", MERMA: "Merma", DANIO: "Repuesto dañado", PERDIDA: "Pérdida", DEVOLUCION: "Devolución", CORRECCION: "Corrección de registro", OTRO: "Otro motivo" }[codigo ?? ""] ?? codigo ?? "—");
 
 function fuenteMovimiento(movimiento: MovimientoStock) {
   if (movimiento.origenTipo === "ENTRADA_STOCK") return movimiento.documentoOrigen ? `Entrada ${movimiento.documentoOrigen}` : "Entrada de stock";
@@ -18,7 +18,7 @@ function fuenteMovimiento(movimiento: MovimientoStock) {
 function TablaMovimientos({ movimientos }: { movimientos: MovimientoStock[] }) {
   return <div className="stock-movement-table-wrap">
     <table className="stock-movement-table">
-      <thead><tr><th>Fecha y hora</th><th>Producto</th><th>Tipo</th><th>Variación</th><th>Motivo u origen</th><th>Observación</th></tr></thead>
+      <thead><tr><th>Fecha y hora</th><th>Repuesto</th><th>Tipo</th><th>Variación</th><th>Motivo u origen</th><th>Observación</th></tr></thead>
       <tbody>{movimientos.map((movimiento) => {
         const aumento = movimiento.tipo === "ENTRADA" || (movimiento.tipo === "AJUSTE" && movimiento.sentido === "INGRESO");
         const tipo = movimiento.tipo === "AJUSTE" ? `Ajuste · ${aumento ? "aumento" : "disminución"}` : movimiento.tipo === "ENTRADA" ? "Entrada" : "Salida";
@@ -51,7 +51,6 @@ export function MovimientosStockPage() {
       titulo="Movimientos y ajustes"
       descripcion="Consulta las variaciones de stock y registra correcciones con motivo y trazabilidad."
       etiquetaCrear="Registrar ajuste"
-      entidadSingular="ajuste de inventario"
       tituloListado="Historial de movimientos"
       registros={modulo.movimientos}
       totalRegistros={modulo.total}
@@ -68,7 +67,7 @@ export function MovimientosStockPage() {
       desde={modulo.desde}
       hasta={modulo.hasta}
       busqueda={modulo.busqueda}
-      busquedaPlaceholder="Buscar producto, código o motivo"
+      busquedaPlaceholder="Buscar repuesto, código o motivo"
       busquedaAriaLabel="Buscar movimientos de stock"
       controlesFiltro={<select className="catalog-filter-select" value={modulo.tipo} onChange={(evento) => modulo.filtrarTipo(evento.target.value)} aria-label="Filtrar por tipo de movimiento"><option value="">Todos los movimientos</option><option value="ENTRADA">Entradas</option><option value="SALIDA">Salidas</option><option value="AJUSTE">Ajustes</option></select>}
       alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}

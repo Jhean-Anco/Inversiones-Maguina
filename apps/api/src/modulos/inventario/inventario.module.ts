@@ -13,9 +13,10 @@ import { ControladorEntradasStock } from "./entradas-stock.controller";
 import { ServicioEntradasStock } from "./entradas-stock.service";
 import { ControladorMovimientosStock } from "./movimientos-stock.controller";
 import { ServicioMovimientosStock } from "./movimientos-stock.service";
+import { ModuloGoogleDrive } from "../google-drive/google-drive.module";
 
 @Module({
-  imports: [ModuloAutenticacion],
+  imports: [ModuloAutenticacion, ModuloGoogleDrive],
   controllers: [ControladorCategorias, ControladorMarcas, ControladorProductos, ControladorEntradasStock, ControladorImagenesCatalogo, ControladorMovimientosStock],
   providers: [ServicioCategorias, ServicioMarcas, ServicioProductos, ServicioEntradasStock, ServicioImagenesCatalogo, ServicioMovimientosStock, GuardiaSesion],
 })

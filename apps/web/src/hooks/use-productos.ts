@@ -80,7 +80,13 @@ export function useProductos() {
     return { ...categoria, advertencia: resultado.advertencia };
   }, []);
 
-  const cambiarEstado = useCallback(async (producto: ProductoTarjeta) => {
+  const crearListaPrecio = useCallback(async (nombre: string) => {
+    const lista = await servicioProductos.crearListaPrecio(nombre.trim());
+    setCatalogos((actual) => ({ ...actual, tiposListasPrecio: [...actual.tiposListasPrecio, lista].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
+    return lista;
+  }, []);
+
+  const cambiarEstado = useCallback(async (producto: Pick<ProductoTarjeta, "id" | "activo">) => {
     setError("");
     try { await servicioProductos.cambiarEstado(producto.id, !producto.activo); await cargarPagina(pagina, porPagina, busqueda); }
     catch (problema) { manejarError(problema, "No se pudo actualizar el estado del producto."); }
@@ -96,6 +102,6 @@ export function useProductos() {
     totalPaginas: paginaDatos.totalPaginas, desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0,
     hasta: Math.min(pagina * porPagina, paginaDatos.total), busqueda, setBusqueda,
     cargando: cargando || cargandoCatalogos, guardando, error, setError,
-    cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, cambiarEstado,
+    cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, crearListaPrecio, cambiarEstado,
   };
 }

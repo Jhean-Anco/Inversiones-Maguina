@@ -13,6 +13,13 @@
   --blue-deep: #071e3c;
   --red: #ed2535;
   --muted: #7b879a;
+  --action-primary: #c91f32;
+  --action-primary-hover: #a91b2b;
+  --action-primary-surface: #fff4f5;
+  --action-primary-hover-surface: #ffe8ea;
+  --action-primary-border: #edbbc1;
+  --action-primary-focus: #c91f3266;
+  --action-secondary: #174b78;
 }
 * {
   box-sizing: border-box;
@@ -28,6 +35,51 @@ input {
 }
 button {
   cursor: pointer;
+}
+.erp-icon-action {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #d8e3ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #315a7a;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease, transform .15s ease;
+}
+.erp-icon-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #a9bfd2;
+  background: #f3f8fc;
+  color: var(--blue);
+}
+.erp-icon-action.is-danger { color: #b42335; }
+.erp-icon-action.is-danger:hover:not(:disabled) {
+  border-color: var(--action-primary-border);
+  background: var(--action-primary-surface);
+  color: var(--action-primary-hover);
+}
+.erp-icon-action:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 2px; }
+.erp-icon-action:disabled { cursor: not-allowed; opacity: .48; transform: none; }
+.erp-icon-action svg { display: block; pointer-events: none; }
+html[data-theme="oscuro"] #root .erp-icon-action { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+html[data-theme="oscuro"] #root .erp-icon-action:hover:not(:disabled) { border-color: #49617b; background: #1d3046; color: #c7e0f5; }
+html[data-theme="oscuro"] #root .erp-icon-action.is-danger { color: var(--action-primary); }
+html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary-hover); }
+.erp-create-icon {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: #c91f3212;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
 }
 .login-layout {
   display: grid;
@@ -1634,7 +1686,7 @@ button {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #1766a6;
+  color: var(--action-primary);
   font: inherit;
   font-size: 12px;
   font-weight: 750;
@@ -1642,7 +1694,7 @@ button {
   cursor: pointer;
 }
 .producto-brand-link:hover {
-  color: #e9293a;
+  color: var(--action-primary-hover);
   text-decoration: underline;
 }
 .catalog-form .producto-tax-control {
@@ -1857,16 +1909,18 @@ button {
 .producto-add-row {
   min-height: 34px;
   margin-top: 10px;
-  border: 1px solid #dce5ef;
-  border-radius: 7px;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 9px;
   padding: 0 11px;
-  background: #fff;
-  color: #195b99;
+  background: var(--action-primary-surface);
+  color: var(--action-primary);
   font-size: 12px;
   font-weight: 750;
 }
 .producto-add-row:hover {
-  background: #f3f8fd;
+  border-color: var(--action-primary-border);
+  background: var(--action-primary-hover-surface);
+  color: var(--action-primary-hover);
 }
 .producto-row {
   display: grid;
@@ -2645,19 +2699,34 @@ button {
   box-shadow: 0 0 0 3px #2d75bf1c;
 }
 .catalog-submit {
-  min-height: 44px;
+  min-height: 40px;
   margin-top: 20px;
-  border: 0;
-  border-radius: 8px;
-  padding: 0 17px;
-  background: #e52b3b;
-  color: #fff;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: var(--action-primary-surface);
+  color: var(--action-primary);
   font: inherit;
+  font-size: 12px;
   font-weight: 750;
   cursor: pointer;
 }
 .catalog-submit-blue {
-  background: #15569a;
+  background: var(--action-secondary);
+}
+.catalog-submit:not(:disabled):hover {
+  border-color: var(--action-primary-border);
+  background: var(--action-primary-hover-surface);
+  color: var(--action-primary-hover);
+}
+.catalog-submit-blue:not(:disabled):hover {
+  filter: brightness(0.92);
+}
+.catalog-submit:focus-visible,
+.clientes-primary-action:focus-visible,
+.clientes-secondary-action:focus-visible {
+  outline: 3px solid var(--action-primary-focus);
+  outline-offset: 2px;
 }
 .catalog-submit:disabled {
   cursor: wait;
@@ -3232,6 +3301,7 @@ button {
 .catalog-form-actions .catalog-submit {
   margin-top: 12px;
 }
+.catalog-form-actions .erp-icon-action { width: 34px; height: 34px; flex-basis: 34px; align-self: center; }
 .catalog-cancel {
   min-height: 44px;
   margin-top: 12px;
@@ -3676,6 +3746,9 @@ button {
   background: #fff4f5;
   color: #b52635;
 }
+.producto-card-actions .erp-icon-action { width: 34px; height: 34px; flex: 0 0 34px; padding: 0; border-radius: 9px; }
+.producto-card-actions .erp-icon-action.is-danger:last-child:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary-hover); }
+.producto-card-actions .erp-icon-action:not(.is-danger):last-child:hover:not(:disabled) { border-color: #a9bfd2; background: #f3f8fc; color: var(--blue); }
 @media (max-width: 1200px) {
   .catalog-card-grid.producto-card-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4593,10 +4666,16 @@ button {
   width: min(540px, 100%);
   max-height: min(780px, calc(100dvh - 40px));
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 28px 90px #06172b55;
+}
+.catalog-modal :is(button, input, select, textarea):focus-visible {
+  outline: 3px solid #3784bd66;
+  outline-offset: 2px;
 }
 .catalog-modal.producto-modal {
   width: min(980px, 100%);
@@ -6099,6 +6178,25 @@ button {
   font-size: 12px;
   font-weight: 800;
 }
+
+.boleta-payment-terms {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 9px;
+  border-top: 1px solid #d8d8d8;
+  font-size: 10px;
+}
+
+.boleta-payment-terms > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.boleta-payment-terms strong {
+  text-align: right;
+}
 .boleta-total strong {
   color: #176c57;
   font-size: 16px;
@@ -6131,16 +6229,17 @@ button {
   justify-content: space-between;
   align-items: center;
   padding: 0 15px;
-  border: 0;
-  border-radius: 9px;
-  background: #176f59;
-  color: #fff;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 10px;
+  background: var(--action-primary-surface);
+  color: var(--action-primary);
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
 }
 .venta-submit:hover:not(:disabled) {
-  background: #105d49;
+  background: var(--action-primary-hover-surface);
+  color: var(--action-primary-hover);
 }
 .venta-submit:disabled {
   opacity: 0.55;
@@ -8002,15 +8101,19 @@ button {
   cursor: not-allowed;
 }
 .venta-save-client {
-  height: 38px;
-  padding: 0 13px;
-  border: 0;
-  border-radius: 8px;
-  background: #176f59;
-  color: #fff;
-  font-size: 11px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 10px;
+  background: var(--action-primary-surface);
+  color: var(--action-primary);
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+}
+.venta-save-client:hover:not(:disabled) {
+  background: var(--action-primary-hover-surface);
+  color: var(--action-primary-hover);
 }
 @media (max-width: 560px) {
   .venta-new-client-fields {
@@ -8064,28 +8167,30 @@ button {
 .clientes-primary-action,
 .clientes-secondary-action {
   min-height: 40px;
-  padding: 0 15px;
-  border: 1px solid #14674f;
-  border-radius: 8px;
-  background: linear-gradient(130deg, #16775d, #0d624d);
-  color: #fff;
+  padding: 0 14px;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 10px;
+  background: var(--action-primary-surface);
+  color: var(--action-primary);
   font: inherit;
   font-size: 12px;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: 0 4px 10px #145e4b20;
+  box-shadow: 0 4px 10px #a51f3220;
 }
 .clientes-primary-action:hover:not(:disabled) {
-  background: linear-gradient(130deg, #1b8466, #0d654e);
+  border-color: var(--action-primary-border);
+  background: var(--action-primary-hover-surface);
+  color: var(--action-primary-hover);
 }
 .clientes-primary-action:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .clientes-secondary-action {
-  border-color: #d8e1de;
+  border-color: #d8e1ec;
   background: #fff;
-  color: #52645c;
+  color: var(--action-secondary);
   box-shadow: none;
 }
 .clientes-alert {
@@ -8241,6 +8346,9 @@ button {
   background: #0b1d3680;
 }
 .clientes-modal {
+  box-sizing: border-box;
+  max-width: calc(100vw - 32px);
+  overflow-x: hidden;
   display: grid;
   gap: 17px;
   width: min(100%, 600px);
@@ -8273,6 +8381,7 @@ button {
   cursor: pointer;
 }
 .clientes-form-grid {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -8683,6 +8792,9 @@ button {
   background: #ffffff09;
   color: #fff;
 }
+.clientes-table:has(.clientes-row-account) > .clientes-table-head {
+  grid-template-columns: minmax(175px, 1.2fr) minmax(130px, 1fr) minmax(125px, 0.65fr) minmax(160px, 1fr);
+}
 .clientes-row-account {
   grid-template-columns:
     minmax(175px, 1.2fr) minmax(130px, 1fr) minmax(125px, 0.65fr)
@@ -8710,6 +8822,7 @@ button {
   max-height: 94svh;
 }
 @media (max-width: 900px) {
+  .clientes-table:has(.clientes-row-account) > .clientes-table-head { display: none; }
   .clientes-row-account {
     grid-template-columns: minmax(140px, 1fr) minmax(120px, 1fr);
   }
@@ -11263,3 +11376,11 @@ html[data-theme="oscuro"] #root .login-success-overlay { background: #07101dcc !
   font-size: 13px;
   font-weight: 700;
 }
+
+.clientes-form-grid > label { min-width: 0; }
+.clientes-form-grid :is(input,select,textarea) { box-sizing: border-box; min-width: 0; max-width: 100%; }
+.clientes-modal-backdrop { overflow-x: hidden; }
+
+/* Páginas completas de Inventario: el main concentra el scroll vertical. */
+.erp-content.is-inventory-submodule-view{display:block;min-height:0;padding-top:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.erp-content.is-inventory-submodule-view>.modulo-route-transition{display:block;width:100%;height:auto;min-height:100%;overflow:visible}

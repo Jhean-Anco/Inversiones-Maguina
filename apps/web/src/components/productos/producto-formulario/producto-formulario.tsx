@@ -1,9 +1,10 @@
 import "./producto-formulario.css";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { CatalogosProducto, Producto } from "../../../services/inventario/productos.service";
+import { redondearPrecioADecimos, type CatalogosProducto, type Producto } from "../../../services/inventario/productos.service";
 import { useProductoFormulario } from "../../../hooks/use-producto-formulario";
 import { ProductoCategoriaModal } from "../producto-categoria-modal/producto-categoria-modal";
 import { srcImagen } from "../../../services/api-cliente";
+import { AccionIcono } from "../../ui/accion-icono";
 
 type PropiedadesProductoFormulario = {
   catalogos: CatalogosProducto;
@@ -48,7 +49,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
       {(error || formulario.errorLocal) && <div className="catalog-alert catalog-modal-alert" role="alert">{formulario.errorLocal || error}</div>}
       <form className="catalog-form producto-form" onSubmit={manejarEnvio}>
         <div className="producto-form-scroll" ref={desplazamientoFormulario}>
-        <div className="catalog-form-title"><span>▧</span><div><h2 id="producto-form-title">{formulario.modoEdicion ? "Editar producto" : "Nuevo producto"}</h2><p>Registra los datos de catálogo, venta y presentaciones del producto.</p></div></div>
+        <div className="catalog-form-title"><span>▧</span><div><h2 id="producto-form-title">{formulario.modoEdicion ? "Editar repuesto" : "Nuevo repuesto"}</h2><p>Registra los datos de catálogo, venta y presentaciones del repuesto.</p></div></div>
         <nav className="producto-wizard" aria-label="Pasos del producto">
           {["Datos básicos", "Inventario y venta", "Detalles opcionales"].map((titulo, indice) => {
             const numero = indice + 1;
@@ -57,12 +58,12 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             </div>;
           })}
         </nav>
-        <p className="producto-wizard-hint">Paso {paso} de 3 · {paso === 1 ? "Comienza con lo esencial para reconocer el producto." : paso === 2 ? "Define cómo controlarás y venderás las existencias." : "Códigos, ficha técnica e imagen son opcionales; puedes completarlos después."}</p>
+        <p className="producto-wizard-hint">Paso {paso} de 3 · {paso === 1 ? "Comienza con lo esencial para reconocer el repuesto." : paso === 2 ? "Define cómo controlarás y venderás las existencias." : "Códigos, ficha técnica e imagen son opcionales; puedes completarlos después."}</p>
         {paso === 1 && (
           <fieldset className="producto-form-section">
             <legend>Identificación</legend>
             <div className="producto-form-grid">
-              <label className="producto-span-2">Nombre del producto<input value={formulario.nombre} onChange={(event) => formulario.setNombre(event.target.value)} required minLength={2} maxLength={180} placeholder="Ej. Pastilla de freno delantero Honda Wave" /></label>
+              <label className="producto-span-2">Nombre del repuesto<input value={formulario.nombre} onChange={(event) => formulario.setNombre(event.target.value)} required minLength={2} maxLength={180} placeholder="Ej. Pastilla de freno delantero Honda Wave" /></label>
               <div className="producto-brand-field"><label>Categoría<select value={formulario.categoriaId} onChange={(event) => formulario.setCategoriaId(event.target.value)} required><option value="">Selecciona categoría</option>{catalogos.categorias.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.nombre}</option>)}</select></label><button className="producto-brand-link" type="button" onClick={() => { formulario.setErrorLocal(""); formulario.setCategoriaModalAbierto(true); }}>+ Agregar categoría</button></div>
               <div className="producto-brand-field"><label>Marca<select value={formulario.marcaId} onChange={(event) => formulario.setMarcaId(event.target.value)} required><option value="">Selecciona marca</option>{catalogos.marcas.map((opcion) => <option key={opcion.id} value={opcion.id}>{opcion.nombre}</option>)}</select></label><button className="producto-brand-link" type="button" onClick={() => { formulario.setErrorLocal(""); formulario.setMarcaModalAbierto(true); }}>+ Agregar marca</button></div>
               <label className="producto-span-2">Descripción para búsqueda<input value={formulario.descripcion} onChange={(event) => formulario.setDescripcion(event.target.value)} maxLength={3000} placeholder="Describe cómo es, para qué sirve o cómo identificarlo" /></label>
@@ -89,7 +90,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
                 <td><input aria-label="Factor de conversión" type="number" min="0.000001" step="0.000001" value={presentacion.factorAUnidadBase} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, factorAUnidadBase: event.target.value } : fila))} /></td>
                 <td><input aria-label="Se compra en esta presentación" type="checkbox" checked={presentacion.seCompra} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seCompra: event.target.checked } : fila))} /></td>
                 <td><input aria-label="Se vende en esta presentación" type="checkbox" checked={presentacion.seVende} onChange={(event) => formulario.setPresentaciones((actual) => actual.map((fila, i) => i === indice ? { ...fila, seVende: event.target.checked } : fila))} /></td>
-                <td><button type="button" className="producto-remove-row" aria-label="Eliminar presentación" onClick={() => formulario.setPresentaciones((actual) => actual.filter((_, i) => i !== indice))}>×</button></td>
+                <td><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar presentación" onClick={() => formulario.setPresentaciones((actual) => actual.filter((_, i) => i !== indice))} /></td>
               </tr>)}
             </tbody></table></div>
             <button type="button" className="producto-add-row" onClick={formulario.agregarPresentacion}>+ Agregar presentación</button>
@@ -101,9 +102,9 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
               {formulario.precios.map((precio, indice) => <tr key={precio.clave}>
                 <td><select aria-label="Tipo de lista de precio" value={precio.tipoListaPrecioId} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipoListaPrecioId: event.target.value } : fila))}><option value="">Selecciona lista</option>{catalogos.tiposListasPrecio.map((lista) => <option key={lista.id} value={lista.id}>{lista.nombre}</option>)}</select></td>
                 <td><select aria-label="Presentación con precio" value={precio.presentacionClave} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, presentacionClave: event.target.value } : fila))}><option value="base">Unidad base ({formulario.unidadBaseCodigo})</option>{formulario.presentaciones.map((item) => <option key={item.clave} value={item.clave}>{item.nombre}</option>)}</select></td>
-                <td><input aria-label="Precio en soles" type="number" min="0" step="0.01" value={precio.precio} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: event.target.value } : fila))} placeholder="0.00" /></td>
+                <td><input aria-label="Precio en soles" type="number" min="0" step="0.10" value={precio.precio} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: event.target.value } : fila))} onBlur={(event) => { const precioRedondeado = redondearPrecioADecimos(event.currentTarget.value); formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, precio: precioRedondeado } : fila)); }} placeholder="0.00" /></td>
                 <td><input aria-label="Cantidad mínima" type="number" min="0.001" step="0.001" value={precio.cantidadMinima} onChange={(event) => formulario.setPrecios((actual) => actual.map((fila, i) => i === indice ? { ...fila, cantidadMinima: event.target.value } : fila))} /></td>
-                <td><button type="button" className="producto-remove-row" aria-label="Eliminar precio" onClick={() => formulario.setPrecios((actual) => actual.filter((_, i) => i !== indice))}>×</button></td>
+                <td><AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar precio" onClick={() => formulario.setPrecios((actual) => actual.filter((_, i) => i !== indice))} /></td>
               </tr>)}
             </tbody></table></div>
             <button type="button" className="producto-add-row" onClick={formulario.agregarPrecio}>+ Agregar precio</button>
@@ -118,27 +119,27 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
                 <select aria-label="Tipo de código" value={codigo.tipo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipo: event.target.value as typeof fila.tipo } : fila))}><option value="FABRICANTE">Fabricante / OEM</option><option value="BARRAS">Código de barras</option><option value="GTIN">GTIN</option></select>
                 <input id={codigo.tipo === "BARRAS" ? `codigo-barras-${codigo.clave}` : undefined} aria-label={codigo.tipo === "BARRAS" ? "Código de barras, listo para lector" : "Código"} value={codigo.codigo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: event.target.value } : fila))} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} autoComplete="off" maxLength={100} placeholder={codigo.tipo === "BARRAS" ? "Enfoca aquí el lector o escribe el código" : "Código"} />
                 {codigo.tipo === "BARRAS" && <button type="button" className="producto-scan-button" onClick={() => document.getElementById(`codigo-barras-${codigo.clave}`)?.focus()}>Enfocar lector</button>}
-                <button type="button" className="producto-remove-row" aria-label="Eliminar código" onClick={() => formulario.setCodigos((actual) => actual.filter((_, i) => i !== indice))}>×</button>
+                <AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar código" onClick={() => formulario.setCodigos((actual) => actual.filter((_, i) => i !== indice))} />
               </div>)}
             </div>
             <div className="producto-code-actions"><button type="button" className="producto-add-row" onClick={() => formulario.setCodigos((actual) => [...actual, { clave: crypto.randomUUID(), tipo: "FABRICANTE", codigo: "" }])}>+ Agregar código</button><button type="button" className="producto-add-row" onClick={() => formulario.setCodigos((actual) => [...actual, { clave: crypto.randomUUID(), tipo: "BARRAS", codigo: "" }])}>+ Agregar código de barras</button></div>
           </fieldset>
           <fieldset className="producto-form-section">
             <legend>Ficha técnica</legend>
-            <p className="producto-section-help">Añade solo las características que correspondan al producto; por ejemplo, viscosidad, voltaje, medidas o aplicación.</p>
+            <p className="producto-section-help">Añade solo las características que correspondan al repuesto; por ejemplo, viscosidad, voltaje, medidas o aplicación.</p>
             <div className="producto-spec-list">{formulario.ficha.map((dato, indice) => <div className="producto-row" key={`${dato.clave}-${indice}`}>
               <input aria-label="Característica técnica" value={dato.clave} onChange={(event) => formulario.setFicha((actual) => actual.map((fila, i) => i === indice ? { ...fila, clave: event.target.value } : fila))} maxLength={60} placeholder="Característica" />
               <input aria-label="Valor de característica" value={dato.valor} onChange={(event) => formulario.setFicha((actual) => actual.map((fila, i) => i === indice ? { ...fila, valor: event.target.value } : fila))} maxLength={300} placeholder="Valor" />
-              <button type="button" className="producto-remove-row" aria-label="Eliminar característica" onClick={() => formulario.setFicha((actual) => actual.filter((_, i) => i !== indice))}>×</button>
+              <AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar característica" onClick={() => formulario.setFicha((actual) => actual.filter((_, i) => i !== indice))} />
             </div>)}</div>
             <button type="button" className="producto-add-row" onClick={() => formulario.setFicha((actual) => [...actual, { clave: "", valor: "" }])}>+ Agregar característica</button>
           </fieldset>
           <fieldset className="producto-form-section">
             <legend>Imágenes y estado</legend>
-            <div className="producto-images-heading"><strong>Imágenes del producto</strong><span>{cantidadImagenes} de 5</span></div>
+            <div className="producto-images-heading"><strong>Imágenes del repuesto</strong><span>{cantidadImagenes} de 5</span></div>
             {cantidadImagenes > 0 && <div className="producto-image-grid">
               {imagenesExistentes.map((imagen, indice) => <figure className="producto-image-item" key={imagen.id}>
-                <img src={srcImagen(imagen.rutaImagen)} alt={`Imagen ${indice + 1} de ${producto?.nombre ?? "producto"}`} />
+                <img src={srcImagen(imagen.rutaImagen)} alt={`Imagen ${indice + 1} de ${producto?.nombre ?? "repuesto"}`} />
                 <button type="button" aria-label={`Quitar imagen ${indice + 1}`} onClick={() => formulario.quitarImagenExistente(imagen.id)}>Quitar</button>
               </figure>)}
               {formulario.imagenesNuevas.map((imagen, indice) => <figure className="producto-image-item" key={`${imagen.name}-${indice}`}>

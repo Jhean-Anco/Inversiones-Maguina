@@ -45,6 +45,7 @@ export const personas = pgTable("personas", {
   nombres: varchar("nombres", { length: 120 }),
   apellidoPaterno: varchar("apellido_paterno", { length: 120 }),
   apellidoMaterno: varchar("apellido_materno", { length: 120 }),
+  fechaNacimiento: date("fecha_nacimiento"),
   razonSocial: varchar("razon_social", { length: 180 }),
   tipoDocumentoId: uuid("tipo_documento_id").notNull().references(() => tiposDocumento.id, { onDelete: "restrict" }),
   numeroDocumento: varchar("numero_documento", { length: 30 }).notNull(),
@@ -59,7 +60,6 @@ export const personas = pgTable("personas", {
     OR (${tabla.razonSocial} IS NOT NULL AND ${tabla.nombres} IS NULL AND ${tabla.apellidoPaterno} IS NULL AND ${tabla.apellidoMaterno} IS NULL)
   )`),
 ]);
-
 export const personasDocumentos = pgTable("personas_documentos", {
   id: uuid("id").defaultRandom().primaryKey(),
   personaId: uuid("persona_id").notNull().references(() => personas.id, { onDelete: "cascade" }),
@@ -200,12 +200,16 @@ export const categoriasProductos = pgTable("categorias_productos", {
 export const marcasProductos = pgTable("marcas_productos", {
   id: uuid("id").defaultRandom().primaryKey(),
   nombre: varchar("nombre", { length: 100 }).notNull(),
+  uso: varchar("uso", { length: 12 }).notNull().default("AMBOS"),
   descripcion: varchar("descripcion", { length: 240 }),
   rutaImagen: text("ruta_imagen"),
   activo: boolean("activo").notNull().default(true),
   creadoEn: fechaCreacion(),
   actualizadoEn: fechaActualizacion(),
-}, (tabla) => [uniqueIndex("marcas_productos_nombre_lower_unico").on(sql`lower(${tabla.nombre})`)]);
+}, (tabla) => [
+  uniqueIndex("marcas_productos_nombre_lower_unico").on(sql`lower(${tabla.nombre})`),
+  check("marcas_productos_uso_ck", sql`${tabla.uso} IN ('REPUESTOS', 'MOTOTAXIS', 'AMBOS')`),
+]);
 
 export const unidadesMedida = pgTable("unidades_medida", {
   codigo: varchar("codigo", { length: 3 }).primaryKey(),
@@ -244,20 +248,13 @@ export const productos = pgTable("productos", {
   check("productos_afectacion_igv_ck", sql`${tabla.afectacionIgv} IN ('GRAVADO', 'EXONERADO', 'INAFECTO')`),
 ]);
 
-export const marcasMototaxis = pgTable("marcas_mototaxis", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  nombre: varchar("nombre", { length: 100 }).notNull(),
-  activo: boolean("activo").notNull().default(true),
-  creadoEn: fechaCreacion(),
-  actualizadoEn: fechaActualizacion(),
-}, (tabla) => [uniqueIndex("marcas_mototaxis_nombre_lower_unico").on(sql`lower(${tabla.nombre})`)]);
-
 export const modelosMototaxis = pgTable("modelos_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigo: varchar("codigo", { length: 40 }).notNull().unique(),
-  marcaId: uuid("marca_id").notNull().references(() => marcasMototaxis.id, { onDelete: "restrict" }),
+  marcaId: uuid("marca_id").notNull().references(() => marcasProductos.id, { onDelete: "restrict" }),
   nombre: varchar("nombre", { length: 120 }).notNull(),
   version: varchar("version", { length: 80 }),
+  precioVenta: numeric("precio_venta", { precision: 14, scale: 2 }),
   categoriaVehicular: varchar("categoria_vehicular", { length: 10 }).notNull().default("L5"),
   fabricante: varchar("fabricante", { length: 160 }),
   paisFabricacion: varchar("pais_fabricacion", { length: 100 }),
@@ -279,6 +276,7 @@ export const modelosMototaxis = pgTable("modelos_mototaxis", {
   check("modelos_mototaxis_categoria_ck", sql`${tabla.categoriaVehicular} IN ('L1', 'L2', 'L3', 'L4', 'L5')`),
   check("modelos_mototaxis_cilindrada_ck", sql`${tabla.cilindradaCc} IS NULL OR ${tabla.cilindradaCc} > 0`),
   check("modelos_mototaxis_capacidades_ck", sql`(${tabla.capacidadAsientos} IS NULL OR ${tabla.capacidadAsientos} > 0) AND (${tabla.capacidadCargaKg} IS NULL OR ${tabla.capacidadCargaKg} > 0)`),
+  check("modelos_mototaxis_precio_venta_ck", sql`${tabla.precioVenta} IS NULL OR ${tabla.precioVenta} > 0`),
 ]);
 
 export const cuentasFinancieras = pgTable("cuentas_financieras", {
@@ -446,6 +444,47 @@ export const productosImagenes = pgTable("productos_imagenes", {
   uniqueIndex("productos_imagenes_producto_orden_unico").on(tabla.productoId, tabla.orden),
   index("productos_imagenes_producto_idx").on(tabla.productoId),
   check("productos_imagenes_orden_ck", sql`${tabla.orden} BETWEEN 1 AND 5`),
+]);
+
+export const carpetasDrive = pgTable("carpetas_drive", {
+  clave: varchar("clave", { length: 80 }).primaryKey(),
+  nombre: varchar("nombre", { length: 180 }).notNull(),
+  rutaLogica: text("ruta_logica").notNull(),
+  driveFolderId: varchar("drive_folder_id", { length: 255 }).notNull().unique(),
+  driveFolderUrl: text("drive_folder_url").notNull(),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+});
+
+export const archivosDrive = pgTable("archivos_drive", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tipoArchivo: varchar("tipo_archivo", { length: 50 }).notNull(),
+  entidadTipo: varchar("entidad_tipo", { length: 40 }).notNull(),
+  entidadId: uuid("entidad_id").notNull(),
+  carpetaClave: varchar("carpeta_clave", { length: 80 }).notNull().references(() => carpetasDrive.clave, { onDelete: "restrict" }),
+  driveFolderId: varchar("drive_folder_id", { length: 255 }).notNull(),
+  driveFileId: varchar("drive_file_id", { length: 255 }).notNull().unique(),
+  nombre: varchar("nombre", { length: 240 }).notNull(),
+  mimeType: varchar("mime_type", { length: 150 }).notNull(),
+  tamanoBytes: integer("tamano_bytes").notNull(),
+  sha256: varchar("sha256", { length: 64 }),
+  urlFuente: text("url_fuente"),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  index("archivos_drive_entidad_idx").on(tabla.entidadTipo, tabla.entidadId, tabla.tipoArchivo),
+  index("archivos_drive_carpeta_idx").on(tabla.driveFolderId, tabla.creadoEn),
+]);
+
+export const imagenesMototaxis = pgTable("imagenes_mototaxis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  unidadId: uuid("unidad_id").notNull().references(() => unidadesMototaxis.id, { onDelete: "cascade" }),
+  archivoId: uuid("archivo_id").notNull().unique().references(() => archivosDrive.id, { onDelete: "restrict" }),
+  orden: integer("orden").notNull(),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("imagenes_mototaxis_unidad_orden_unico").on(tabla.unidadId, tabla.orden),
+  index("imagenes_mototaxis_unidad_idx").on(tabla.unidadId),
+  check("imagenes_mototaxis_orden_ck", sql`${tabla.orden} BETWEEN 1 AND 5`),
 ]);
 
 export const productosCodigos = pgTable("productos_codigos", {
@@ -725,6 +764,33 @@ export const ingresos = pgTable("ingresos", {
   check("ingresos_tasa_igv_ck", sql`${tabla.tasaIgv} >= 0 AND ${tabla.tasaIgv} <= 100`),
 ]);
 
+export const correlativosDocumentosInternos = pgTable("correlativos_documentos_internos", {
+  tipo: varchar("tipo", { length: 30 }).primaryKey(),
+  ultimoNumero: integer("ultimo_numero").notNull().default(0),
+}, (tabla) => [
+  check("correlativos_documentos_internos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
+]);
+
+export const guiasRemision = pgTable("guias_remision", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tipo: varchar("tipo", { length: 20 }).notNull(),
+  fecha: date("fecha").notNull(),
+  ambiente: varchar("ambiente", { length: 20 }).notNull(),
+  serie: varchar("serie", { length: 4 }).notNull(),
+  numero: integer("numero").notNull(),
+  estado: varchar("estado", { length: 30 }).notNull().default("NUBEFACT_PENDIENTE"),
+  datosNubefact: jsonb("datos_nubefact").$type<Record<string, unknown> | null>(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  index("guias_remision_fecha_idx").on(tabla.fecha),
+  index("guias_remision_tipo_estado_idx").on(tabla.tipo, tabla.estado),
+  uniqueIndex("guias_remision_correlativo_unico").on(tabla.ambiente, tabla.tipo, tabla.serie, tabla.numero),
+  check("guias_remision_tipo_ck", sql`${tabla.tipo} IN ('REMITENTE', 'TRANSPORTISTA')`),
+  check("guias_remision_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
+  check("guias_remision_numero_ck", sql`${tabla.numero} > 0`),
+]);
+
 export const ingresosDetalle = pgTable("ingresos_detalle", {
   id: uuid("id").defaultRandom().primaryKey(),
   ingresoId: uuid("ingreso_id").notNull().references(() => ingresos.id, { onDelete: "cascade" }),
@@ -757,6 +823,47 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
   check("ingresos_detalle_precio_no_negativo_ck", sql`${tabla.precioUnitario} >= 0`),
   check("ingresos_detalle_descuento_valido_ck", sql`${tabla.descuento} >= 0 AND ${tabla.descuento} <= round(${tabla.cantidad} * ${tabla.precioUnitario}, 2)`),
   check("ingresos_detalle_totales_no_negativos_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} >= 0`),
+]);
+
+export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ingresoOrigenId: uuid("ingreso_origen_id").notNull().references(() => ingresos.id, { onDelete: "restrict" }),
+  tipoComprobante: varchar("tipo_comprobante", { length: 20 }).notNull(),
+  codigoMotivo: integer("codigo_motivo").notNull(),
+  motivo: varchar("motivo", { length: 240 }).notNull(),
+  fecha: date("fecha").notNull(),
+  ambiente: varchar("ambiente", { length: 12 }).notNull(),
+  serie: varchar("serie", { length: 4 }).notNull(),
+  numero: integer("numero").notNull(),
+  subtotal: numeric("subtotal", { precision: 14, scale: 2 }).notNull(),
+  igv: numeric("igv", { precision: 14, scale: 2 }).notNull(),
+  total: numeric("total", { precision: 14, scale: 2 }).notNull(),
+  estado: varchar("estado", { length: 24 }).notNull(),
+  inventarioDevuelto: boolean("inventario_devuelto").notNull().default(false),
+  huellaSolicitud: varchar("huella_solicitud", { length: 64 }),
+  datosNubefact: jsonb("datos_nubefact").$type<Record<string, unknown> | null>(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  index("comprobantes_relacionados_origen_idx").on(tabla.ingresoOrigenId, tabla.creadoEn),
+  uniqueIndex("comprobantes_relacionados_serie_numero_unico").on(tabla.ambiente, tabla.tipoComprobante, tabla.serie, tabla.numero),
+  uniqueIndex("comprobantes_relacionados_huella_uq").on(tabla.ingresoOrigenId, tabla.huellaSolicitud).where(sql`${tabla.huellaSolicitud} IS NOT NULL`),
+  check("comprobantes_relacionados_tipo_ck", sql`${tabla.tipoComprobante} IN ('NOTA_CREDITO', 'NOTA_DEBITO')`),
+  check("comprobantes_relacionados_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
+  check("comprobantes_relacionados_motivo_ck", sql`${tabla.codigoMotivo} > 0`),
+  check("comprobantes_relacionados_importes_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} > 0`),
+]);
+
+export const comprobantesRelacionadosDetalle = pgTable("comprobantes_relacionados_detalle", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  comprobanteRelacionadoId: uuid("comprobante_relacionado_id").notNull().references(() => comprobantesRelacionados.id, { onDelete: "restrict" }),
+  ingresoDetalleId: uuid("ingreso_detalle_id").notNull().references(() => ingresosDetalle.id, { onDelete: "restrict" }),
+  cantidad: numeric("cantidad", { precision: 14, scale: 3 }).notNull(),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("comprobantes_relacionados_detalle_unico").on(tabla.comprobanteRelacionadoId, tabla.ingresoDetalleId),
+  index("comprobantes_relacionados_detalle_origen_idx").on(tabla.ingresoDetalleId),
+  check("comprobantes_relacionados_detalle_cantidad_ck", sql`${tabla.cantidad} > 0`),
 ]);
 
 export const movimientosMototaxisVentas = pgTable("movimientos_mototaxis_ventas", {
@@ -820,4 +927,3 @@ export const configuracionEmisorFacturacion = pgTable("configuracion_emisor_fact
   check("configuracion_emisor_codigo_ck", sql`${tabla.codigo} = 'PRINCIPAL'`),
   check("configuracion_emisor_ruc_ck", sql`${tabla.ruc} ~ '^[0-9]{11}$'`),
 ]);
-

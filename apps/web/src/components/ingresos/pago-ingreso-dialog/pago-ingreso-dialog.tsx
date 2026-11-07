@@ -44,7 +44,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
     finally { setGuardando(false); }
   }
 
-  return <div className="pago-dialog-backdrop" role="presentation"><section className="pago-dialog" role="dialog" aria-modal="true" aria-labelledby="pago-dialog-title">
+  return <div className="pago-dialog-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onClose(); }}><section className="pago-dialog" role="dialog" aria-modal="true" aria-labelledby="pago-dialog-title">
     <header><div><span>VENTA</span><h2 id="pago-dialog-title">Registrar pago</h2><p>Total {`S/ ${Number(total).toFixed(2)}`} · saldo pendiente {`S/ ${saldo.toFixed(2)}`}</p></div><button type="button" onClick={onClose} aria-label="Cerrar">×</button></header>
     {error && <p role="alert">{error}</p>}
     {cargando ? <p>Cargando pagos…</p> : <section className="pago-history"><h3>Pagos registrados</h3>{items.length ? items.map((item) => <article key={item.id}><strong>{new Date(`${item.fechaPago}T00:00:00`).toLocaleDateString("es-PE")} · S/ {Number(item.importeAplicado).toFixed(2)}</strong><span>{item.medioPago}</span></article>) : <p>Aún no se registraron pagos.</p>}</section>}

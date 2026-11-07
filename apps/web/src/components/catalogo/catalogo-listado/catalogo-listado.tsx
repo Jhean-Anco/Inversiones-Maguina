@@ -7,7 +7,6 @@ type PropiedadesCatalogoListado<T> = {
   titulo: string;
   descripcion: string;
   etiquetaCrear: string;
-  entidadSingular: string;
   tituloListado: string;
   registros: T[];
   totalRegistros?: number;
@@ -40,7 +39,6 @@ export function CatalogoListado<T>({
   titulo,
   descripcion,
   etiquetaCrear,
-  entidadSingular,
   tituloListado,
   registros,
   totalRegistros = registros.length,
@@ -69,15 +67,11 @@ export function CatalogoListado<T>({
   contenidoListado,
 }: PropiedadesCatalogoListado<T>) {
   return (
-    <section className="catalog-content">
-      <div className="catalog-heading">
-        <div>
-          <span className="catalog-eyebrow">INVENTARIO · CATÁLOGO</span>
-          <h1>{titulo}</h1>
-          <p>{descripcion}</p>
-        </div>
-        <button className="catalog-submit catalog-create-button" type="button" onClick={alCrear}>+ {etiquetaCrear}</button>
-      </div>
+    <section className="catalog-content" aria-label={titulo} aria-description={descripcion}>
+      <button className="catalog-submit catalog-create-button erp-floating-action" type="button" onClick={alCrear} aria-label={etiquetaCrear} title={etiquetaCrear}>
+        <span className="erp-floating-action-icon" aria-hidden="true">+</span>
+        <span className="erp-floating-action-label">{etiquetaCrear}</span>
+      </button>
 
       {error && <div className="catalog-alert" role="alert">{error}</div>}
 
@@ -97,7 +91,6 @@ export function CatalogoListado<T>({
               <span className="catalog-empty-icon">{iconoVacio}</span>
               <strong>{tituloVacio}</strong>
               <p>{descripcionVacio}</p>
-              <button className="catalog-submit" type="button" onClick={alCrear}>Crear {entidadSingular.toLocaleLowerCase("es-PE")}</button>
             </div>
           ) : (
             contenidoListado ?? <div className={`catalog-card-grid${claseTarjetas ? ` ${claseTarjetas}` : ""}`}>{renderizarTarjeta && visibles.map(renderizarTarjeta)}</div>

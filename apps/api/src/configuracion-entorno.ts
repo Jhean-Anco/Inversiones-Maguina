@@ -71,8 +71,17 @@ export function validarConfiguracionEntorno() {
 
   const ambienteNubefact = texto("NUBEFACT_AMBIENTE") || "DEMO";
   if (ambienteNubefact !== "DEMO" && ambienteNubefact !== "PRODUCCION") throw new Error("NUBEFACT_AMBIENTE solo puede ser DEMO o PRODUCCION.");
+  const regimenTributario = texto("REGIMEN_TRIBUTARIO") || "NRUS";
+  if (!["NRUS", "RER", "RMT", "GENERAL"].includes(regimenTributario)) throw new Error("REGIMEN_TRIBUTARIO debe ser NRUS, RER, RMT o GENERAL.");
   const serieBoleta = texto("NUBEFACT_SERIE_BOLETA");
   if (serieBoleta && !/^[A-Z0-9]{1,4}$/.test(serieBoleta)) throw new Error("NUBEFACT_SERIE_BOLETA debe tener entre 1 y 4 letras o números en mayúscula.");
+  const serieFactura = texto("NUBEFACT_SERIE_FACTURA");
+  if (serieFactura && !/^F[A-Z0-9]{0,3}$/.test(serieFactura)) throw new Error("NUBEFACT_SERIE_FACTURA debe comenzar con F y tener hasta 4 letras o números en mayúscula.");
+  const serieGuiaRemitente = texto("NUBEFACT_SERIE_GUIA_REMITENTE");
+  if (serieGuiaRemitente && !/^T[A-Z0-9]{3}$/.test(serieGuiaRemitente)) throw new Error("NUBEFACT_SERIE_GUIA_REMITENTE debe comenzar con T y tener 4 caracteres.");
+  const serieGuiaTransportista = texto("NUBEFACT_SERIE_GUIA_TRANSPORTISTA");
+  if (serieGuiaTransportista && !/^V[A-Z0-9]{3}$/.test(serieGuiaTransportista)) throw new Error("NUBEFACT_SERIE_GUIA_TRANSPORTISTA debe comenzar con V y tener 4 caracteres.");
+  if (ambiente === "production" && ambienteNubefact === "PRODUCCION" && regimenTributario !== "NRUS") requerido("NUBEFACT_SERIE_FACTURA");
 
   return { ambiente, puerto, origenes, segundosSesion, segundosSesionRecordada, timeoutNubefactMs, maximoImagenBytes, carpetaSubidas, descuentoMaximoPorcentaje };
 }

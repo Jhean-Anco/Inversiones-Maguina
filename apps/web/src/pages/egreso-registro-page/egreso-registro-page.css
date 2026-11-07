@@ -53,3 +53,7 @@
   .egreso-registrar-abono { width: 100%; }
   .egreso-form fieldset { padding: 13px; }
 }
+ .egreso-ruc-search { display: flex; gap: 8px; }
+ .egreso-ruc-search input { min-width: 0; flex: 1; }
+ .egreso-ruc-search button { min-width: 86px; padding: 0 12px; border: 1px solid #cbd8e5; border-radius: 8px; background: #f7f9fc; color: #1b5387; font: inherit; font-weight: 700; cursor: pointer; }
+ .egreso-ruc-search button:disabled { opacity: .55; cursor: wait; }

@@ -45,6 +45,7 @@ export type Producto = {
   marcaId: string;
   marca: string;
   unidadBaseCodigo: string;
+  stockActual: string;
   stockMinimo: string;
   unidadBase: string;
   afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO";
@@ -59,8 +60,14 @@ export type Producto = {
   presentaciones: PresentacionProducto[];
   precios: PrecioProducto[];
 };
-export type ProductoTarjeta = Pick<Producto, "id" | "codigoInterno" | "nombre" | "descripcion" | "rutaImagen" | "activo" | "categoriaId" | "categoria" | "marcaId" | "marca" | "unidadBaseCodigo" | "unidadBase" | "creadoEn">;
+export type ProductoTarjeta = Pick<Producto, "id" | "codigoInterno" | "nombre" | "descripcion" | "rutaImagen" | "activo" | "categoriaId" | "categoria" | "marcaId" | "marca" | "unidadBaseCodigo" | "unidadBase" | "creadoEn" | "stockActual" | "stockMinimo">;
 export type PaginaProductos = { items: ProductoTarjeta[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
+export type PrecioCatalogo = {
+  id: string; productoId: string; codigo: string; producto: string; imagen: string | null; marca: string;
+  presentacion: string; presentacionBase: boolean; listaPrecio: string; precio: string; cantidadMinima: string;
+  vigenteDesde: string | null; vigenteHasta: string | null; precioActivo: boolean; productoActivo: boolean;
+};
+export type PaginaPreciosCatalogo = { items: PrecioCatalogo[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
 export type AlertaStockBajo = { id: string; codigo: string; nombre: string; stockActual: string; stockMinimo: string; unidad: string };
 export type DatosProducto = {
   nombre: string;
@@ -78,13 +85,31 @@ export type DatosProducto = {
   activo?: boolean;
 };
 
+export function redondearPrecioADecimos(valor: string) {
+  if (!valor.trim()) return valor;
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero < 0) return valor;
+  const centimos = Math.round(numero * 100);
+  return (Math.ceil(centimos / 10) * 10 / 100).toFixed(2);
+}
+
 export const servicioProductos = {
   catalogos: () => solicitarApi<CatalogosProducto>("/inventario/productos/catalogos"),
+  crearListaPrecio: (nombre: string) => solicitarApi<OpcionCatalogo>("/inventario/productos/listas-precio", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre }),
+  }),
   alertasStockBajo: () => solicitarApi<AlertaStockBajo[]>("/inventario/productos/alertas-stock-bajo"),
   listar: (pagina: number, porPagina: number, busqueda: string) => {
     const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda });
     return solicitarApi<PaginaProductos>(`/inventario/productos?${parametros.toString()}`);
   },
+  listarPrecios: (pagina: number, busqueda: string) => {
+    const parametros = new URLSearchParams({ pagina: String(pagina), busqueda });
+    return solicitarApi<PaginaPreciosCatalogo>(`/inventario/productos/precios?${parametros.toString()}`);
+  },
+  actualizarPrecio: (id: string, precio: string) => solicitarApi<{ id: string; precio: string }>(`/inventario/productos/precios/${id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ precio }),
+  }),
   consultar: (id: string) => solicitarApi<Producto>(`/inventario/productos/${id}`),
   async guardar(datos: DatosProducto, id?: string, imagenesNuevas: File[] = [], imagenesEliminadas: string[] = []) {
     const producto = await solicitarApi<Producto>(`/inventario/productos${id ? `/${id}` : ""}`, {

@@ -50,9 +50,19 @@ export class ServicioReportes {  async resumenGerencial() {
     };
   }
 
+  async resumenIngresosMes() {
+    const hasta = fechaActualPeru();
+    const desde = hasta.slice(0, 8) + "01";
+    const [resumen] = await db.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` })
+      .from(ingresos)
+      .where(and(gte(ingresos.fecha, desde), lte(ingresos.fecha, hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])));
+    return { desde, hasta, total: resumen?.total ?? "0.00" };
+  }
+
   async ingresos(rango: RangoFechas) {
     const condicion = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesVenta);
-    const [resumen, pagos, productosMasVendidos, porDia, notasInternas] = await Promise.all([
+    const condicionDetalle = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]));
+    const [resumen, pagos, productosMasVendidos, porDia, flujoPorComprobante, flujoPorConcepto, notasInternas] = await Promise.all([
       db.select({
         ventas: sql<number>`count(*)::int`,
         subtotal: sql<string>`coalesce(sum(${ingresos.subtotal}), 0)::numeric(16,2)`,
@@ -66,10 +76,18 @@ export class ServicioReportes {  async resumenGerencial() {
         unidades: sql<string>`sum(${ingresosDetalle.cantidad})::numeric(16,3)`,
         ventas: sql<number>`count(distinct ${ingresosDetalle.ingresoId})::int`,
         total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)`,
-      }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(condicion)
+      }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(condicionDetalle)
         .groupBy(ingresosDetalle.descripcion, ingresosDetalle.tipo).orderBy(desc(sql`sum(${ingresosDetalle.total})`)).limit(10),
       db.select({ fecha: ingresos.fecha, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
         .from(ingresos).where(condicion).groupBy(ingresos.fecha).orderBy(asc(ingresos.fecha)),
+      db.select({ fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
+        .from(ingresos)
+        .where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])))
+        .groupBy(ingresos.fecha, ingresos.tipoComprobante).orderBy(asc(ingresos.fecha), asc(ingresos.tipoComprobante)),
+      db.select({ fecha: ingresos.fecha, tipo: ingresosDetalle.tipo, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` })
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])))
+        .groupBy(ingresos.fecha, ingresosDetalle.tipo).orderBy(asc(ingresos.fecha), asc(ingresosDetalle.tipo)),
       db.select({ notas: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}),0)::numeric(16,2)`, productos: sql<number>`count(*) filter (where exists (select 1 from ingresos_detalle d where d.ingreso_id = ${ingresos.id} and d.tipo = 'PRODUCTO'))::int`, serviciosOMototaxis: sql<number>`count(*) filter (where exists (select 1 from ingresos_detalle d where d.ingreso_id = ${ingresos.id} and d.tipo in ('SERVICIO','MOTOTAXI')))::int` })
         .from(ingresos).where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), eq(ingresos.tipoComprobante, "NOTA_VENTA"))),
     ]);
@@ -81,6 +99,8 @@ export class ServicioReportes {  async resumenGerencial() {
       porMedioPago: pagos,
       productosMasVendidos,
       porDia,
+      flujoPorComprobante,
+      flujoPorConcepto,
     };
   }
 
@@ -90,8 +110,8 @@ export class ServicioReportes {  async resumenGerencial() {
     finPeriodo.setUTCDate(finPeriodo.getUTCDate() + 1);
     const movimientos = db.select({
       productoId: movimientosStock.productoId,
-      entradas: sql<string>`coalesce(sum(case when ${movimientosStock.tipo} = 'ENTRADA' or (${movimientosStock.tipo} = 'AJUSTE' and ${movimientosStock.sentido} = 'INGRESO') then ${movimientosStock.cantidadBase} else 0 end), 0)::numeric(18,3)`,
-      salidas: sql<string>`coalesce(sum(case when ${movimientosStock.tipo} = 'SALIDA' or (${movimientosStock.tipo} = 'AJUSTE' and ${movimientosStock.sentido} = 'RETIRO') then ${movimientosStock.cantidadBase} else 0 end), 0)::numeric(18,3)`,
+      entradas: sql<string>`coalesce(sum(case when ${movimientosStock.tipo} = 'ENTRADA' or (${movimientosStock.tipo} = 'AJUSTE' and ${movimientosStock.sentido} = 'INGRESO') then ${movimientosStock.cantidadBase} else 0 end), 0)::numeric(18,3)`.as("entradas"),
+      salidas: sql<string>`coalesce(sum(case when ${movimientosStock.tipo} = 'SALIDA' or (${movimientosStock.tipo} = 'AJUSTE' and ${movimientosStock.sentido} = 'RETIRO') then ${movimientosStock.cantidadBase} else 0 end), 0)::numeric(18,3)`.as("salidas"),
     }).from(movimientosStock)
       .where(and(gte(movimientosStock.creadoEn, inicioPeriodo), lt(movimientosStock.creadoEn, finPeriodo)))
       .groupBy(movimientosStock.productoId).as("movimientos_periodo");

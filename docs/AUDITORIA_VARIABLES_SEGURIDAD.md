@@ -41,7 +41,6 @@ Las respuestas de estado exponen solamente el ambiente y booleanos (`credenciale
 - [main.ts](../apps/api/src/main.ts) configura CORS por orígenes explícitos, confianza de proxy y límite multipart.
 - [autenticacion.controller.ts](../apps/api/src/modulos/autenticacion/autenticacion.controller.ts) emite cookies HttpOnly, SameSite Lax y Secure en producción.
 - [guardia-permiso.ts](../apps/api/src/modulos/autenticacion/guardia-permiso.ts) valida permisos en la API según el rol persistido.
-- [facturación del emisor](../apps/api/src/modulos/facturacion-electronica/emisor.service.ts) no devuelve secretos y valida los datos básicos del emisor antes de guardar.
 - [docker-compose.yml](../docker-compose.yml) requiere `POSTGRES_PASSWORD` y publica los puertos de desarrollo en loopback.
 
 ## Riesgos y tareas pendientes

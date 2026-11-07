@@ -1,5 +1,17 @@
 
 .producto-card-visual { background: radial-gradient(ellipse at 50% 20%, #fff 0, #f7f9fc 55%, #edf2f8 100%); }
+.producto-card-stock{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;margin:2px 0 10px;padding:9px 10px;border:1px solid #e5ecf3;border-radius:9px;background:#f8fafc}
+.producto-card-stock>span:first-child{display:grid;gap:2px;min-width:0}
+.producto-card-stock>span:first-child>small,.producto-card-stock-min{color:#71849b;font-size:9px;font-weight:650}
+.producto-card-stock>span:first-child>strong{color:#153b64;font-size:15px;font-variant-numeric:tabular-nums}
+.producto-card-stock>span:first-child>strong i{color:#71849b;font-size:9px;font-style:normal;font-weight:650}
+.producto-card-stock-state{padding:4px 7px;border:1px solid #cfe7d9;border-radius:999px;background:#f0faf4;color:#28764b;font-size:9px;font-weight:800;white-space:nowrap}
+.producto-card-stock.is-low{border-color:#f0e0bd;background:#fffaf0}
+.producto-card-stock.is-low .producto-card-stock-state{border-color:#eed8a7;background:#fff5dc;color:#936316}
+.producto-card-stock.is-out{border-color:#f0d2d4;background:#fff7f7}
+.producto-card-stock.is-out>span:first-child>strong,.producto-card-stock.is-out .producto-card-stock-state{color:#ae303a}
+.producto-card-stock.is-out .producto-card-stock-state{border-color:#edc9cc;background:#fff0f1}
+.producto-card-stock-min{grid-column:1/-1}
 @media (max-width: 600px) { .producto-card-copy { min-height: 145px; padding: 12px 11px 10px; } }
 @media (max-width: 600px) { .producto-card-actions { gap: 5px; padding: 8px; } }
-@media (max-width: 600px) { .producto-card-actions button { flex: 1; padding: 0 5px; font-size: 9px; } }
+@media (max-width: 600px) { .producto-card-actions .erp-icon-action { flex: 0 0 34px; padding: 0; } }

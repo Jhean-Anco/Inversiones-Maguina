@@ -1,9 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, marcasMototaxis, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import { db, archivosDrive, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import type { FastifyRequest } from "fastify";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
+import { ServicioGoogleDrive } from "../google-drive/google-drive.service";
 
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
@@ -29,51 +31,91 @@ function fechaValida(valor: unknown, campo: string) {
   return valor;
 }
 
+function validarModelo(valor: unknown) {
+  if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("La ficha del modelo no es válida.");
+  const d = valor as Record<string, unknown>;
+  if (!uuidValido(d.marcaId)) throw new BadRequestException("Selecciona una marca válida.");
+  const nombre = texto(d.nombre, "El modelo", 120, true)!;
+  const categoriaVehicular = texto(d.categoriaVehicular ?? "L5", "La categoría vehicular", 10, true)!;
+  if (!["L1", "L2", "L3", "L4", "L5"].includes(categoriaVehicular)) throw new BadRequestException("Selecciona una categoría vehicular válida.");
+  const cilindradaCc = d.cilindradaCc === "" || d.cilindradaCc == null ? null : Number(d.cilindradaCc);
+  const capacidadAsientos = d.capacidadAsientos === "" || d.capacidadAsientos == null ? null : Number(d.capacidadAsientos);
+  const capacidadCargaKg = d.capacidadCargaKg === "" || d.capacidadCargaKg == null ? null : Number(d.capacidadCargaKg);
+  if (cilindradaCc !== null && (!Number.isSafeInteger(cilindradaCc) || cilindradaCc <= 0 || cilindradaCc > 2_147_483_647)) throw new BadRequestException("La cilindrada debe ser un entero positivo válido.");
+  if (capacidadAsientos !== null && (!Number.isSafeInteger(capacidadAsientos) || capacidadAsientos <= 0 || capacidadAsientos > 2_147_483_647)) throw new BadRequestException("La capacidad de asientos debe ser un entero positivo válido.");
+  if (capacidadCargaKg !== null && (!Number.isFinite(capacidadCargaKg) || capacidadCargaKg <= 0 || capacidadCargaKg > 99_999_999.99 || Number(capacidadCargaKg.toFixed(2)) !== capacidadCargaKg)) throw new BadRequestException("La capacidad de carga debe ser positiva y tener hasta dos decimales.");
+  const precioVenta = importe(d.precioVenta, "El precio de venta", 0.01);
+  if (precioVenta > 999_999_999_999.99) throw new BadRequestException("El precio de venta supera el máximo permitido.");
+  return {
+    marcaId: d.marcaId, nombre, version: texto(d.version, "La versión", 80), precioVenta: precioVenta.toFixed(2), categoriaVehicular,
+    fabricante: texto(d.fabricante, "El fabricante", 160), paisFabricacion: texto(d.paisFabricacion, "El país de fabricación", 100),
+    marcaMotor: texto(d.marcaMotor, "La marca del motor", 100), modeloMotor: texto(d.modeloMotor, "El modelo del motor", 100), cilindradaCc,
+    combustible: texto(d.combustible, "El combustible", 40), transmision: texto(d.transmision, "La transmisión", 60), carroceria: texto(d.carroceria, "La carrocería", 80),
+    capacidadAsientos, capacidadCargaKg: capacidadCargaKg === null ? null : String(capacidadCargaKg),
+    especificacionesAdicionales: texto(d.especificacionesAdicionales, "Las especificaciones adicionales", 2000),
+  };
+}
+
 @Injectable()
 export class ServicioMototaxis {
-  listarMarcas() { return db.select().from(marcasMototaxis).orderBy(asc(marcasMototaxis.nombre)); }
+  constructor(private readonly drive: ServicioGoogleDrive) {}
+  listarMarcas() { return db.select().from(marcasProductos).where(or(eq(marcasProductos.uso, "MOTOTAXIS"), eq(marcasProductos.uso, "AMBOS"))).orderBy(asc(marcasProductos.nombre)); }
 
   async crearMarca(valor: unknown) {
     const datos = valor as Record<string, unknown>;
     const nombre = texto(datos?.nombre, "El nombre de marca", 100, true)!;
-    try { const [marca] = await db.insert(marcasMototaxis).values({ nombre }).returning(); return marca; }
-    catch (error) { if (this.esDuplicado(error)) throw new ConflictException("Ya existe esa marca de mototaxi."); throw error; }
+    try { const [marca] = await db.insert(marcasProductos).values({ nombre, uso: "MOTOTAXIS" }).returning(); return marca; }
+    catch (error) { if (this.esDuplicado(error)) throw new ConflictException("Ya existe esa marca en el catálogo compartido."); throw error; }
   }
 
-  listarModelos(busqueda = "") {
+  listarModelos(busqueda = "", incluirInactivos = false) {
     const q = busqueda.trim().slice(0, 100);
-    return db.select({ id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marcaId: marcasMototaxis.id, marca: marcasMototaxis.nombre, nombre: modelosMototaxis.nombre,
-      version: modelosMototaxis.version, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
+    return db.select({ id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marcaId: marcasProductos.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre,
+      version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
       marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
       transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
       capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
-      .from(modelosMototaxis).innerJoin(marcasMototaxis, eq(modelosMototaxis.marcaId, marcasMototaxis.id))
-      .where(q ? and(eq(modelosMototaxis.activo, true), or(ilike(modelosMototaxis.nombre, `%${q}%`), ilike(modelosMototaxis.codigo, `%${q}%`), ilike(marcasMototaxis.nombre, `%${q}%`))) : eq(modelosMototaxis.activo, true))
-      .orderBy(asc(marcasMototaxis.nombre), asc(modelosMototaxis.nombre));
+      .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
+      .where(and(incluirInactivos ? undefined : eq(modelosMototaxis.activo, true), q ? or(ilike(modelosMototaxis.nombre, `%${q}%`), ilike(modelosMototaxis.codigo, `%${q}%`), ilike(marcasProductos.nombre, `%${q}%`)) : undefined))
+      .orderBy(asc(marcasProductos.nombre), asc(modelosMototaxis.nombre));
   }
 
   async crearModelo(valor: unknown) {
-    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("La ficha del modelo no es válida.");
-    const d = valor as Record<string, unknown>;
-    if (!uuidValido(d.marcaId)) throw new BadRequestException("Selecciona una marca válida.");
-    const nombre = texto(d.nombre, "El modelo", 120, true)!;
-    const categoriaVehicular = texto(d.categoriaVehicular ?? "L5", "La categoría vehicular", 10, true)!;
-    if (!["L1", "L2", "L3", "L4", "L5"].includes(categoriaVehicular)) throw new BadRequestException("Selecciona una categoría vehicular válida.");
-    const cilindradaCc = d.cilindradaCc === "" || d.cilindradaCc == null ? null : Number(d.cilindradaCc);
-    const capacidadAsientos = d.capacidadAsientos === "" || d.capacidadAsientos == null ? null : Number(d.capacidadAsientos);
-    const capacidadCargaKg = d.capacidadCargaKg === "" || d.capacidadCargaKg == null ? null : Number(d.capacidadCargaKg);
-    if (cilindradaCc !== null && (!Number.isInteger(cilindradaCc) || cilindradaCc <= 0)) throw new BadRequestException("La cilindrada debe ser un entero positivo.");
-    if (capacidadAsientos !== null && (!Number.isInteger(capacidadAsientos) || capacidadAsientos <= 0)) throw new BadRequestException("La capacidad de asientos debe ser un entero positivo.");
-    if (capacidadCargaKg !== null && (!Number.isFinite(capacidadCargaKg) || capacidadCargaKg <= 0)) throw new BadRequestException("La capacidad de carga debe ser positiva.");
+    const datos = validarModelo(valor);
+    await this.validarMarcaModelo(datos.marcaId);
     const codigo = `MOT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
     try {
-      const [modelo] = await db.insert(modelosMototaxis).values({ codigo, marcaId: d.marcaId, nombre, version: texto(d.version, "La versión", 80), categoriaVehicular,
-        fabricante: texto(d.fabricante, "El fabricante", 160), paisFabricacion: texto(d.paisFabricacion, "El país de fabricación", 100), marcaMotor: texto(d.marcaMotor, "La marca del motor", 100),
-        modeloMotor: texto(d.modeloMotor, "El modelo del motor", 100), cilindradaCc, combustible: texto(d.combustible, "El combustible", 40), transmision: texto(d.transmision, "La transmisión", 60),
-        carroceria: texto(d.carroceria, "La carrocería", 80), capacidadAsientos, capacidadCargaKg: capacidadCargaKg === null ? null : String(capacidadCargaKg),
-        especificacionesAdicionales: texto(d.especificacionesAdicionales, "Las especificaciones adicionales", 2000) }).returning();
-      return modelo;
+      const [modelo] = await db.insert(modelosMototaxis).values({ codigo, ...datos }).returning({ id: modelosMototaxis.id });
+      return this.obtenerModelo(modelo.id);
     } catch (error) { if (this.esDuplicado(error)) throw new ConflictException("Ya existe este modelo y versión para la marca seleccionada."); throw error; }
+  }
+
+  async actualizarModelo(id: string, valor: unknown) {
+    if (!uuidValido(id)) throw new BadRequestException("El modelo seleccionado no es válido.");
+    const datos = validarModelo(valor);
+    await this.validarMarcaModelo(datos.marcaId);
+    try {
+      const [modelo] = await db.update(modelosMototaxis).set({ ...datos, actualizadoEn: new Date() }).where(eq(modelosMototaxis.id, id)).returning({ id: modelosMototaxis.id });
+      if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+      return this.obtenerModelo(modelo.id);
+    } catch (error) { if (this.esDuplicado(error)) throw new ConflictException("Ya existe este modelo y versión para la marca seleccionada."); throw error; }
+  }
+
+  private async validarMarcaModelo(marcaId: string) {
+    const [marca] = await db.select({ id: marcasProductos.id }).from(marcasProductos)
+      .where(and(eq(marcasProductos.id, marcaId), or(eq(marcasProductos.uso, "MOTOTAXIS"), eq(marcasProductos.uso, "AMBOS")))).limit(1);
+    if (!marca) throw new BadRequestException("La marca seleccionada no está habilitada para mototaxis.");
+  }
+
+  private async obtenerModelo(id: string) {
+    const [modelo] = await db.select({ id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marcaId: marcasProductos.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre,
+      version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
+      marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
+      transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
+      capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
+      .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).where(eq(modelosMototaxis.id, id)).limit(1);
+    if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+    return modelo;
   }
 
   async listarProveedores(busqueda = "") {
@@ -127,17 +169,72 @@ export class ServicioMototaxis {
     const estados = ["DISPONIBLE", "RESERVADA", "VENDIDA", "GARANTIA", "USO_INTERNO", "BAJA"];
     if (filtros.estado && filtros.estado !== "TODOS" && !estados.includes(filtros.estado)) throw new BadRequestException("El estado de mototaxi no es válido.");
     const condicion = and(filtros.estado && filtros.estado !== "TODOS" ? eq(unidadesMototaxis.estado, filtros.estado) : undefined,
-      patron ? or(ilike(unidadesMototaxis.codigo, patron), ilike(unidadesMototaxis.vin, patron), ilike(unidadesMototaxis.numeroMotor, patron), ilike(unidadesMototaxis.placa, patron), ilike(modelosMototaxis.nombre, patron), ilike(marcasMototaxis.nombre, patron)) : undefined);
+      patron ? or(ilike(unidadesMototaxis.codigo, patron), ilike(unidadesMototaxis.vin, patron), ilike(unidadesMototaxis.numeroMotor, patron), ilike(unidadesMototaxis.placa, patron), ilike(modelosMototaxis.nombre, patron), ilike(marcasProductos.nombre, patron)) : undefined);
     const [items, [total]] = await Promise.all([
-      db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, modeloId: modelosMototaxis.id, marca: marcasMototaxis.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version,
+      db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, modeloId: modelosMototaxis.id, marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta,
         vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor, numeroChasis: unidadesMototaxis.numeroChasis, anioModelo: unidadesMototaxis.anioModelo, color: unidadesMototaxis.color,
         placa: unidadesMototaxis.placa, estado: unidadesMototaxis.estado, costoAdquisicion: unidadesMototaxis.costoAdquisicion, compraDetalleId: unidadesMototaxis.compraDetalleId })
-        .from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasMototaxis, eq(modelosMototaxis.marcaId, marcasMototaxis.id))
+        .from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
         .where(condicion).orderBy(desc(unidadesMototaxis.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
-      db.select({ total: count() }).from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasMototaxis, eq(modelosMototaxis.marcaId, marcasMototaxis.id)).where(condicion),
+      db.select({ total: count() }).from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).where(condicion),
     ]);
     const n = Number(total?.total ?? 0);
-    return { items, total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)) };
+    const ids = items.map((item) => item.id);
+    const imagenes = ids.length ? await db.select({ unidadId: imagenesMototaxis.unidadId, id: imagenesMototaxis.id, archivoId: archivosDrive.id, ruta: sql<string>`'/integraciones/archivos/' || ${archivosDrive.id} || '/contenido'`, orden: imagenesMototaxis.orden })
+      .from(imagenesMototaxis).innerJoin(archivosDrive, eq(imagenesMototaxis.archivoId, archivosDrive.id)).where(inArray(imagenesMototaxis.unidadId, ids)).orderBy(asc(imagenesMototaxis.orden)) : [];
+    const imagenesPorUnidad = new Map<string, typeof imagenes>();
+    for (const imagen of imagenes) imagenesPorUnidad.set(imagen.unidadId, [...(imagenesPorUnidad.get(imagen.unidadId) ?? []), imagen]);
+    return { items: items.map((item) => ({ ...item, imagenes: (imagenesPorUnidad.get(item.id) ?? []).map(({ id, archivoId, ruta, orden }) => ({ id, archivoId, ruta, orden })) })), total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)) };
+  }
+
+  async listarImagenesUnidad(idEntrada: string) {
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El identificador de la unidad no es válido.");
+    const [unidad] = await db.select({ id: unidadesMototaxis.id }).from(unidadesMototaxis).where(eq(unidadesMototaxis.id, idEntrada)).limit(1);
+    if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
+    return db.select({ id: imagenesMototaxis.id, archivoId: archivosDrive.id, ruta: sql<string>`'/integraciones/archivos/' || ${archivosDrive.id} || '/contenido'`, orden: imagenesMototaxis.orden })
+      .from(imagenesMototaxis).innerJoin(archivosDrive, eq(imagenesMototaxis.archivoId, archivosDrive.id)).where(eq(imagenesMototaxis.unidadId, idEntrada)).orderBy(asc(imagenesMototaxis.orden));
+  }
+
+  async guardarImagenUnidad(idEntrada: string, solicitud: FastifyRequest) {
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El identificador de la unidad no es válido.");
+    const [unidad] = await db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo }).from(unidadesMototaxis).where(eq(unidadesMototaxis.id, idEntrada)).limit(1);
+    if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
+    const actuales = await db.select({ orden: imagenesMototaxis.orden }).from(imagenesMototaxis).where(eq(imagenesMototaxis.unidadId, idEntrada));
+    const orden = [1, 2, 3, 4, 5].find((valor) => !actuales.some((imagen) => imagen.orden === valor));
+    if (!orden) throw new BadRequestException("Cada mototaxi admite como máximo cinco fotografías.");
+    const archivo = await solicitud.file();
+    if (!archivo) throw new BadRequestException("Selecciona una fotografía para subir.");
+    const formatos: Record<string, { extension: string; valido: (b: Buffer) => boolean }> = {
+      "image/jpeg": { extension: ".jpg", valido: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+      "image/png": { extension: ".png", valido: (b) => b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) },
+      "image/webp": { extension: ".webp", valido: (b) => b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP" },
+    };
+    const formato = formatos[archivo.mimetype];
+    if (!formato) throw new BadRequestException("La fotografía debe ser JPG, PNG o WebP.");
+    const contenido = await archivo.toBuffer();
+    if (contenido.length > 10 * 1024 * 1024) throw new BadRequestException("La fotografía supera el máximo de 10 MB.");
+    if (!formato.valido(contenido)) throw new BadRequestException("El contenido no coincide con el formato de imagen seleccionado.");
+    const guardado = await this.drive.guardarArchivo("FOTO_MOTOTAXI", "FOTO_MOTOTAXI", "MOTOTAXI", idEntrada, `${unidad.codigo}-${randomUUID()}${formato.extension}`, archivo.mimetype, contenido);
+    try {
+      const [imagen] = await db.insert(imagenesMototaxis).values({ unidadId: idEntrada, archivoId: guardado.id, orden }).returning({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId, orden: imagenesMototaxis.orden });
+      return { ...imagen, ruta: guardado.ruta };
+    } catch (error) {
+      await this.drive.eliminarArchivoRegistrado(guardado.id).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async eliminarImagenUnidad(idEntrada: string, idImagenEntrada: string) {
+    if (![idEntrada, idImagenEntrada].every(uuidValido)) throw new BadRequestException("Los identificadores de la fotografía no son válidos.");
+    const [imagen] = await db.select({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId, driveFileId: archivosDrive.driveFileId }).from(imagenesMototaxis)
+      .where(and(eq(imagenesMototaxis.id, idImagenEntrada), eq(imagenesMototaxis.unidadId, idEntrada))).limit(1);
+    if (!imagen) throw new NotFoundException("No se encontró la fotografía de la mototaxi.");
+    await this.drive.enviarAPapelera(imagen.driveFileId);
+    await db.transaction(async (tx) => {
+      await tx.delete(imagenesMototaxis).where(eq(imagenesMototaxis.id, idImagenEntrada));
+      await tx.delete(archivosDrive).where(eq(archivosDrive.id, imagen.archivoId));
+    });
+    return { eliminado: true };
   }
 
   async crearCompra(valor: unknown, usuarioId: string) {
@@ -147,7 +244,7 @@ export class ServicioMototaxis {
     const fecha = fechaValida(d.fecha, "La fecha de compra");
     if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha de compra no puede ser posterior a hoy.");
     const documentoTipo = texto(d.documentoTipo, "El tipo de documento", 20, true)!;
-    if (!["FACTURA", "BOLETA", "NOTA", "OTRO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
+    if (!["FACTURA", "BOLETA", "NOTA", "OTRO", "SIN_DOCUMENTO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
     if (!Array.isArray(d.unidades) || d.unidades.length < 1 || d.unidades.length > 30) throw new BadRequestException("Registra entre 1 y 30 unidades por compra.");
     const inicial = importe(d.importePagoInicial ?? 0, "El pago inicial");
     const medioPago = texto(d.medioPago ?? "EFECTIVO", "El medio de pago", 30, true)!;
@@ -269,11 +366,11 @@ export class ServicioMototaxis {
 
   async listarGarantias() {
     return db.select({ id: garantiasMototaxis.id, unidadId: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin,
-      marca: marcasMototaxis.nombre, modelo: modelosMototaxis.nombre, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
+      marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
       porcentajeProveedor: garantiasMototaxis.porcentajeProveedor, mesesVigencia: garantiasMototaxis.mesesVigencia, iniciaEn: garantiasMototaxis.iniciaEn, terminaEn: garantiasMototaxis.terminaEn,
       alcance: garantiasMototaxis.alcance, exclusiones: garantiasMototaxis.exclusiones })
       .from(garantiasMototaxis).innerJoin(unidadesMototaxis, eq(garantiasMototaxis.unidadId, unidadesMototaxis.id)).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id))
-      .innerJoin(marcasMototaxis, eq(modelosMototaxis.marcaId, marcasMototaxis.id)).innerJoin(personas, eq(garantiasMototaxis.proveedorPersonaId, personas.id)).orderBy(asc(garantiasMototaxis.terminaEn));
+      .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).innerJoin(personas, eq(garantiasMototaxis.proveedorPersonaId, personas.id)).orderBy(asc(garantiasMototaxis.terminaEn));
   }
 
   async crearReclamo(valor: unknown, usuarioId: string) {

@@ -1037,6 +1037,69 @@
       "when": 1793641000000,
       "tag": "0147_financial_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1793644000000,
+      "tag": "0148_shared_product_brands_for_mototaxis",
+      "breakpoints": true
+    },
+    {
+      "idx": 149,
+      "version": "7",
+      "when": 1793645000000,
+      "tag": "0149_remove_legacy_mototaxi_brands",
+      "breakpoints": true
+    },
+    {
+      "idx": 150,
+      "version": "7",
+      "when": 1793646000000,
+      "tag": "0150_personas_fecha_nacimiento",
+      "breakpoints": true
+    },
+    {
+      "idx": 151,
+      "version": "7",
+      "when": 1793647000000,
+      "tag": "0151_round_all_product_prices_up_to_tenth",
+      "breakpoints": true
+    },
+    {
+      "idx": 152,
+      "version": "7",
+      "when": 1793648000000,
+      "tag": "0152_mototaxi_model_sale_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 153,
+      "version": "7",
+      "when": 1793800000000,
+      "tag": "0153_internal_note_correlative",
+      "breakpoints": true
+    },
+    {
+      "idx": 154,
+      "version": "7",
+      "when": 1793800600000,
+      "tag": "0154_drive_assets_and_folders",
+      "breakpoints": true
+    },
+    {
+      "idx": 155,
+      "version": "7",
+      "when": 1793840000000,
+      "tag": "0155_brand_usage_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 156,
+      "version": "7",
+      "when": 1794009600000,
+      "tag": "0156_guias_remision",
+      "breakpoints": true
     }
   ]
 }

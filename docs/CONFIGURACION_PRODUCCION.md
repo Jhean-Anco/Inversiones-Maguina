@@ -20,6 +20,8 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 | `NUBEFACT_RUTA` | URL HTTPS de la cuenta productiva | Endpoint asignado por NubeFact. |
 | `NUBEFACT_TOKEN` | Secreto del proveedor | Autenticación API solo servidor. |
 | `NUBEFACT_SERIE_BOLETA` | Serie productiva autorizada para boletas | El código asigna el correlativo por ambiente y serie. |
+| `NUBEFACT_SERIE_FACTURA` | Serie de factura asignada en NubeFact, con prefijo `F` | Opcional mientras el régimen sea NRUS; requerida para habilitar facturas en producción después del cambio de régimen. En DEMO permite probar el flujo con la serie DEMO de la cuenta. |
+| `REGIMEN_TRIBUTARIO` | `NRUS`, `RER`, `RMT` o `GENERAL` | Por defecto `NRUS`. En DEMO pueden probarse facturas; en PRODUCCIÓN solo se habilitan cuando se configura un régimen que permite facturarlas. |
 | `NUBEFACT_TIMEOUT_MS` | Milisegundos | Límite de espera a NubeFact. |
 | `APIS_PERU_TOKEN` | Token de dniruc.apisperu.com | Habilita las consultas de DNI/RUC desde el servidor; nunca se envía al navegador ni en registros de URL. |
 | `UPLOADS_DIR` | Ruta absoluta en volumen persistente | Imágenes del catálogo; un filesystem efímero no es suficiente. |

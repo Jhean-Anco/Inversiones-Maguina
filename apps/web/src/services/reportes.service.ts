@@ -8,6 +8,8 @@ export type ReporteIngresos = {
   porMedioPago: Array<{ medioPago: string; ventas: number; total: string }>;
   productosMasVendidos: Array<{ descripcion: string; tipo: string; unidades: string; ventas: number; total: string }>;
   porDia: Array<{ fecha: string; ventas: number; total: string }>;
+  flujoPorComprobante: Array<{ fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; ventas: number; total: string }>;
+  flujoPorConcepto: Array<{ fecha: string; tipo: "PRODUCTO" | "SERVICIO" | "MOTOTAXI"; total: string }>;
 };
 export type ReporteInventario = {
   rango: FiltroReporte;
@@ -17,6 +19,7 @@ export type ReporteInventario = {
 
 const parametros = ({ desde, hasta }: FiltroReporte) => new URLSearchParams({ desde, hasta }).toString();
 export const servicioReportes = {
+  resumenIngresosMes: () => solicitarApi<{ desde: string; hasta: string; total: string }>("/reportes/ingresos/resumen-mes"),
   ingresos: (filtro: FiltroReporte) => solicitarApi<ReporteIngresos>("/reportes/ingresos?" + parametros(filtro)),
   inventario: (filtro: FiltroReporte) => solicitarApi<ReporteInventario>("/reportes/inventario?" + parametros(filtro)),
 };

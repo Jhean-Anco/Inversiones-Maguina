@@ -1,10 +1,10 @@
 /* Dark palette mappings for all current application components. */
-html[data-theme="oscuro"]{color-scheme:dark;--tema-superficie:#151f2e;--tema-borde:#2a394c;--tema-texto:#e4edf7;--tema-texto-secundario:#a0aec0;--blue:#78b8ff;--blue-deep:#e4edf7;--red:#ff7580;--muted:#a0aec0}
+html[data-theme="oscuro"]{color-scheme:dark;--tema-superficie:#151f2e;--tema-borde:#2a394c;--tema-texto:#e4edf7;--tema-texto-secundario:#a0aec0;--blue:#78b8ff;--blue-deep:#e4edf7;--red:#ff7580;--muted:#a0aec0;--action-primary:#ff8996;--action-primary-hover:#ffb3bc;--action-primary-surface:#39242c;--action-primary-hover-surface:#48262f;--action-primary-border:#693641;--action-primary-focus:#ff899666}
 html[data-theme="oscuro"] #root .venta-page { --venta-ink: #e4edf7; --venta-muted: #a0aec0; --venta-line: #2a394c; }
 html[data-theme="oscuro"] #root .erp-topbar .topbar-avatar,
 html[data-theme="oscuro"] #root .profile-avatar { color: #fff !important; border-color: #ffffff26 !important; }
-html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] #root .stock-product-empty-result button{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-create-product:hover,html[data-theme="oscuro"] #root .stock-product-empty-result button:hover{background:var(--tema-superficie)!important}
+html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] #root .stock-product-empty-result button{border-color:var(--action-primary-border)!important;background:var(--action-primary-surface)!important;color:var(--action-primary)!important}
+html[data-theme="oscuro"] #root .stock-create-product:hover,html[data-theme="oscuro"] #root .stock-product-empty-result button:hover{border-color:var(--action-primary-border)!important;background:var(--action-primary-hover-surface)!important;color:var(--action-primary-hover)!important}
 html[data-theme="oscuro"] #root .stock-evidence-section{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{background:var(--tema-superficie)!important}
@@ -286,7 +286,6 @@ html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-rem
 html[data-theme="oscuro"] #root .perfil-card{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .perfil-identity{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-product-search-row > label{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] #root .stock-product-empty-result button{color:#688faf!important}
 html[data-theme="oscuro"] #root .stock-evidence-section legend{color:#788da0!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload{color:#7a8d9f!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{color:#798d9f!important}
@@ -738,7 +737,6 @@ html[data-theme="oscuro"] #root .perfil-identity p{color:#7b8c9f!important}
 html[data-theme="oscuro"] #root .perfil-details dt{color:#7c8c9e!important}
 html[data-theme="oscuro"] #root .perfil-details dd{color:#7d8c9b!important}
 /* Muted light-mode borders for dark surfaces. */
-html[data-theme="oscuro"] #root .stock-create-product,html[data-theme="oscuro"] #root .stock-product-empty-result button{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-evidence-section{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{border-color:var(--tema-borde)!important}
@@ -958,3 +956,9 @@ html[data-theme="oscuro"] #root .erp-content h2,
 html[data-theme="oscuro"] #root .erp-content h3,
 html[data-theme="oscuro"] #root .erp-content h4,
 html[data-theme="oscuro"] #root .login-panel h1 { color: #edf3fb !important; }
+html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action.is-danger { color: var(--action-primary) !important; }
+html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary-hover) !important; }
+html[data-theme="oscuro"] #root .producto-card-actions .erp-icon-action:not(.is-danger):last-child:hover:not(:disabled) { border-color: #49617b !important; background: #1d3046 !important; color: #c7e0f5 !important; }
+html[data-theme="oscuro"] #root .producto-remove-row.erp-icon-action.is-danger:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary-hover) !important; }
+html[data-theme="oscuro"] #root .moto-unit-photo > .erp-icon-action.moto-photo-delete { border-color: var(--action-primary-border) !important; background: var(--action-primary-surface) !important; color: var(--action-primary) !important; }
+html[data-theme="oscuro"] #root .moto-unit-photo > .erp-icon-action.moto-photo-delete:hover:not(:disabled) { border-color: var(--action-primary-border) !important; background: var(--action-primary-hover-surface) !important; color: var(--action-primary-hover) !important; }

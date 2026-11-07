@@ -25,7 +25,6 @@
 | Mototaxis | Resumen · Modelos · Unidades · Compras y recepción · Movimientos y ajustes · Garantías | Catálogo y ciclo de vida de cada unidad. |
 | Contactos | Clientes · Proveedores | Directorio compartido; la misma persona puede tener ambos roles. |
 | Reportes | Ventas · Productos · Mototaxis · Compras · Garantías | Vistas gerenciales con métricas definidas por dominio. |
-| Facturación electrónica | Emisor · Comprobantes emitidos | Configuración y respuesta de NubeFact para boletas. |
 
 “Compras” de productos y “Compras y recepción” de mototaxis deben mostrarse en lugares diferenciados porque generan existencias distintas. El proveedor, sin embargo, pertenece al directorio común.
 

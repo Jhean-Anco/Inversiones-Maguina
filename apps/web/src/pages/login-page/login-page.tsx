@@ -2,6 +2,7 @@ import "./login-page.css";
 import logoTransparente from "./logo-transparente.png";
 import { useState, type FormEvent } from "react";
 import { useInicioSesion } from "../../hooks/use-inicio-sesion";
+import { SparklesCore } from "../../components/ui/sparkles";
 
 function IconoUsuario() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20v-1.5a7 7 0 0 1 14 0V20z" /></svg>;
@@ -30,6 +31,9 @@ export function LoginPage() {
 
   return (
     <main className="login-layout">
+      <div className="login-sparkles" aria-hidden="true">
+        <SparklesCore />
+      </div>
       <section className="login-panel" aria-labelledby="login-title">
         <img className="login-mobile-logo" src={logoTransparente} alt="Logo de Inversiones Maguiña" />
         <div className="login-content">

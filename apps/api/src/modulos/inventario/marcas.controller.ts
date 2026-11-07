@@ -4,7 +4,7 @@ import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequierePermiso } from "../autenticacion/permisos";
 import { ServicioMarcas } from "./marcas.service";
 
-type DatosMarca = { nombre?: unknown; descripcion?: unknown; activo?: unknown };
+type DatosMarca = { nombre?: unknown; descripcion?: unknown; uso?: unknown; activo?: unknown };
 
 @Controller("inventario/marcas")
 @UseGuards(GuardiaSesion, GuardiaPermiso)

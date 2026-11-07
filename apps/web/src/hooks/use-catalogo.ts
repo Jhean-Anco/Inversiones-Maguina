@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
-import type { RegistroCatalogo, ServicioCatalogo } from "../services/inventario/catalogos.service";
+import type { RegistroCatalogo, ServicioCatalogo, UsoMarca } from "../services/inventario/catalogos.service";
 
 export function useCatalogo<T extends RegistroCatalogo>(servicio: ServicioCatalogo<T>, mensajeCarga: string) {
   const navegar = useNavigate();
@@ -34,14 +34,14 @@ export function useCatalogo<T extends RegistroCatalogo>(servicio: ServicioCatalo
   useEffect(() => { void cargar(); }, [cargar]);
 
   const guardar = useCallback(async (
-    datos: { nombre: string; id?: string; imagen?: File },
+    datos: { nombre: string; id?: string; imagen?: File; uso?: UsoMarca },
     alCrear?: (registro: T) => void,
     alCompletar?: () => void,
   ) => {
     setError("");
     setGuardando(true);
     try {
-      const registro = await servicio.guardar({ nombre: datos.nombre, ...(datos.id ? { id: datos.id } : {}) });
+      const registro = await servicio.guardar({ nombre: datos.nombre, ...(datos.id ? { id: datos.id } : {}), ...(datos.uso ? { uso: datos.uso } : {}) });
       if (!datos.id) alCrear?.(registro);
       if (datos.imagen) await servicio.subirImagen(registro.id, datos.imagen);
       await cargar();

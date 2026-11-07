@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@magina/contracts": "workspace:*",
+    "@tsparticles/engine": "^4.5.3",
+    "@tsparticles/react": "^4.5.3",
+    "@tsparticles/slim": "^4.5.3",
     "@vitejs/plugin-react": "^5.0.4",
     "lucide-react": "1.66.0",
     "react": "^19.1.1",
