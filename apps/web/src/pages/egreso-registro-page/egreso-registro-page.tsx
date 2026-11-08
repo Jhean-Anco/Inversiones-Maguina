@@ -9,6 +9,7 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioEgresos, type DatosEgreso, type Egreso, type TipoEgreso } from "../../services/egresos.service";
 import { servicioIdentidad } from "../../services/identidad.service";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
+import { SelectorComprobanteProveedor } from "../../components/egresos/selector-comprobante-proveedor/selector-comprobante-proveedor";
 
 const fechaHoy = () => {
   const fecha = new Date();
@@ -45,10 +46,12 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
   const [beneficiario, setBeneficiario] = useState("");
   const [documentoTipo, setDocumentoTipo] = useState("");
   const [documentoNumero, setDocumentoNumero] = useState("");
+  const [documentoRecibidoId, setDocumentoRecibidoId] = useState("");
   const [proveedorRuc, setProveedorRuc] = useState("");
   const [buscandoIdentidadProveedor, setBuscandoIdentidadProveedor] = useState(false);
   const [medioPago, setMedioPago] = useState("EFECTIVO");
   const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
+  const [registrarPagoInicial, setRegistrarPagoInicial] = useState(false);
   const [monto, setMonto] = useState("");
   const [importeInicial, setImporteInicial] = useState("");
   const [identificadorActivo, setIdentificadorActivo] = useState("");
@@ -82,10 +85,18 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
 
   useEffect(() => { const timer = window.setTimeout(() => { void cargar(); }, busqueda ? 200 : 0); return () => window.clearTimeout(timer); }, [cargar, busqueda]);
 
+  function seleccionarComprobante(documento: { id: string; fechaEmision: string | null; emisorNombre: string | null; emisorRuc: string; tipoDocumento: string; serie: string; correlativo: string; total: string | null }) {
+    setFecha(documento.fechaEmision ?? fechaHoy()); setBeneficiario(documento.emisorNombre ?? ""); setProveedorRuc(documento.emisorRuc);
+    setDocumentoTipo(documento.tipoDocumento === "01" ? "FACTURA" : documento.tipoDocumento === "03" ? "BOLETA" : "NOTA");
+    setDocumentoNumero(`${documento.serie}-${documento.correlativo}`); setMonto(documento.total ?? ""); setDocumentoRecibidoId(documento.id);
+    setConcepto(tipo === "ACTIVO_HERRAMIENTA" ? "Compra de activo o herramienta según comprobante" : "Gasto según comprobante");
+    if (tipo === "ACTIVO_HERRAMIENTA") setIdentificadorActivo("");
+    setRegistrarPagoInicial(false); setImporteInicial(""); setError("");
+  }
   function abrirFormulario() {
     setFecha(fechaHoy()); setCategoria(categoriasPorTipo[tipo][0]); setConcepto(""); setBeneficiario("");
-    setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO"); setCuentaFinancieraId("");
-    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setMototaxiMarca(""); setMototaxiModelo("");
+    setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO"); setCuentaFinancieraId(""); setRegistrarPagoInicial(false);
+    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setDocumentoRecibidoId(""); setMototaxiMarca(""); setMototaxiModelo("");
     setMototaxiNumeroMotor(""); setMototaxiNumeroChasis(""); setObservacion(""); setError(""); setModal(true);
   }
 
@@ -101,14 +112,15 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setError("");
-    const importe = Number(monto); const inicial = importeInicial ? Number(importeInicial) : importe;
+    const importe = Number(monto); const inicial = registrarPagoInicial && importeInicial.trim() ? Number(importeInicial) : registrarPagoInicial ? NaN : 0;
     if (!Number.isFinite(importe) || importe <= 0 || Number(importe.toFixed(2)) !== importe) { setError("Ingresa un importe mayor que cero con hasta dos decimales."); return; }
-    if (!Number.isFinite(inicial) || inicial <= 0 || inicial > importe || Number(inicial.toFixed(2)) !== inicial) { setError("El primer pago debe ser positivo y no superar el importe registrado."); return; }
+    if (registrarPagoInicial && (!Number.isFinite(inicial) || inicial <= 0 || inicial > importe || Number(inicial.toFixed(2)) !== inicial)) { setError("El pago inicial debe ser positivo y no superar el importe registrado."); return; }
     const datos: DatosEgreso = {
       tipo, fecha, categoria, concepto: tipo === "MOTOTAXI" ? "Compra de mototaxi " + mototaxiMarca.trim() + " " + mototaxiModelo.trim() : concepto.trim(), beneficiario: beneficiario.trim() || null,
       documentoTipo: documentoTipo || null, documentoNumero: documentoNumero.trim() || null,
-      proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", medioPago, cuentaFinancieraId, monto: importe.toFixed(2),
-      importePagoInicial: inicial.toFixed(2), identificadorActivo: tipo === "ACTIVO_HERRAMIENTA" ? identificadorActivo.trim() || null : null,
+      proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", ...(registrarPagoInicial ? { medioPago, cuentaFinancieraId, importePagoInicial: inicial.toFixed(2) } : {}), monto: importe.toFixed(2),
+      ...(documentoRecibidoId ? { documentoRecibidoId } : {}),
+      identificadorActivo: tipo === "ACTIVO_HERRAMIENTA" ? identificadorActivo.trim() || null : null,
       mototaxiMarca: tipo === "MOTOTAXI" ? mototaxiMarca.trim() : null,
       mototaxiModelo: tipo === "MOTOTAXI" ? mototaxiModelo.trim() : null,
       mototaxiNumeroMotor: tipo === "MOTOTAXI" ? mototaxiNumeroMotor.trim() : null,
@@ -134,7 +146,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
   return <>
     <CatalogoListado
       titulo={tipo === "GASTO_OPERATIVO" ? "Gastos operativos" : esMototaxi ? (esVistaInventario ? "Mototaxis" : "Compras de mototaxis") : "Activos y herramientas"}
-      descripcion={esMototaxi ? (esVistaInventario ? "Consulta las unidades registradas con su identificaci?n y costo de compra." : "Registra cada mototaxi como una unidad identificable, con sus datos y pagos.") : "Registra los pagos y egresos operativos del negocio."}
+      descripcion={esMototaxi ? (esVistaInventario ? "Consulta las unidades registradas con su identificación y costo de compra." : "Registra cada mototaxi como una unidad identificable, con sus datos y pagos.") : "Registra los pagos y egresos operativos del negocio."}
       etiquetaCrear={esMototaxi ? (esVistaInventario ? "Crear mototaxi" : "Crear compra de mototaxi") : "Crear egreso"}
       tituloListado={esMototaxi ? (esVistaInventario ? "Unidades registradas" : "Historial de mototaxis comprados") : "Historial de egresos"}
       registros={items}
@@ -159,7 +171,7 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       claseTabla="egresos-table"
       claseContenedorTabla="egresos-table-scroll"
       encabezadoTabla={<tr><th>Fecha</th><th>{esMototaxi ? "Mototaxi" : "Concepto"}</th><th>Proveedor o beneficiario</th><th>Documento</th><th>Pagos</th><th className="is-number">Total</th><th>Saldo</th><th>Acciones</th></tr>}
-      renderizarFila={(item) => <tr key={item.id}><td>{new Date(`${item.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{item.tipo === "MOTOTAXI" ? `${item.mototaxiMarca ?? "Mototaxi"} ${item.mototaxiModelo ?? ""}` : item.concepto}</strong><small>{item.categoria}{item.tipo === "MOTOTAXI" ? ` · Motor ${item.mototaxiNumeroMotor || "—"} · Chasis ${item.mototaxiNumeroChasis || "—"}` : item.identificadorActivo ? ` · ${item.identificadorActivo}` : ""}</small></td><td>{item.beneficiario || "No especificado"}{item.proveedorRuc && <small>RUC {item.proveedorRuc}</small>}</td><td>{item.documentoTipo || "Sin documento"}<small>{item.documentoNumero || "—"}</small></td><td><strong>{soles(item.importePagadoAcumulado)}</strong><small>{item.pagos.length} pago{item.pagos.length === 1 ? "" : "s"} · {item.medioPago}</small></td><td className="is-number"><strong>{soles(item.monto)}</strong></td><td><span className={`egresos-status${Number(item.saldoPendiente) > 0 ? " is-pending" : " is-paid"}`}>{Number(item.saldoPendiente) > 0 ? soles(item.saldoPendiente) : "Pagado"}</span></td><td>{Number(item.saldoPendiente) > 0 ? <button className="egresos-row-button is-primary" type="button" onClick={() => { setAbono(item); setFechaAbono(fechaHoy()); setImporteAbono(""); setCuentaAbonoId(""); setError(""); }}><span className="erp-create-icon" aria-hidden="true">+</span>Registrar abono</button> : <span className="egresos-row-complete">Completo</span>}</td></tr>}
+      renderizarFila={(item) => <tr key={item.id}><td>{new Date(`${item.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{item.tipo === "MOTOTAXI" ? `${item.mototaxiMarca ?? "Mototaxi"} ${item.mototaxiModelo ?? ""}` : item.concepto}</strong><small>{item.categoria}{item.tipo === "MOTOTAXI" ? ` · Motor ${item.mototaxiNumeroMotor || "—"} · Chasis ${item.mototaxiNumeroChasis || "—"}` : item.identificadorActivo ? ` · ${item.identificadorActivo}` : ""}</small></td><td>{item.beneficiario || "No especificado"}{item.proveedorRuc && <small>RUC {item.proveedorRuc}</small>}</td><td>{item.documentoTipo || "Sin documento"}<small>{item.documentoNumero || "—"}</small></td><td><strong>{soles(item.importePagadoAcumulado)}</strong><small>{item.pagos.length ? `${item.pagos.length} pago${item.pagos.length === 1 ? "" : "s"} · ${item.medioPago || ""}` : "Sin pagos registrados"}</small></td><td className="is-number"><strong>{soles(item.monto)}</strong></td><td><span className={`egresos-status${Number(item.saldoPendiente) > 0 ? " is-pending" : " is-paid"}`}>{Number(item.saldoPendiente) > 0 ? soles(item.saldoPendiente) : "Pagado"}</span></td><td>{Number(item.saldoPendiente) > 0 ? <button className="egresos-row-button is-primary" type="button" onClick={() => { setAbono(item); setFechaAbono(fechaHoy()); setImporteAbono(""); setCuentaAbonoId(""); setError(""); }}><span className="erp-create-icon" aria-hidden="true">+</span>Registrar abono</button> : <span className="egresos-row-complete">Completo</span>}</td></tr>}
     />
     {modal && createPortal(<div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) setModal(false); }}><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-form-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardar(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-form-title">{tipo === "MOTOTAXI" ? "Registrar compra de mototaxi" : tipo === "ACTIVO_HERRAMIENTA" ? "Registrar activo o herramienta" : "Registrar egreso"}</h2><p>{tipo === "MOTOTAXI" ? "Una unidad por registro. No se agrega al stock de repuestos." : tipo === "ACTIVO_HERRAMIENTA" ? "Registra la compra y los datos de identificación del activo." : "Control operativo del negocio"}</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid">
       <label>Fecha<input required type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} /></label>
@@ -173,11 +185,15 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       <label className="egreso-full">Proveedor o beneficiario<input value={beneficiario} onChange={(evento) => setBeneficiario(evento.target.value)} maxLength={180} /></label>
       <label>Documento<select value={documentoTipo} onChange={(evento) => setDocumentoTipo(evento.target.value)}><option value="">Sin documento</option><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="NOTA">Nota</option><option value="OTRO">Otro</option></select></label>
       <label>Número de documento<input value={documentoNumero} onChange={(evento) => setDocumentoNumero(evento.target.value)} maxLength={60} /></label>
+      <SelectorComprobanteProveedor destino={tipo === "MOTOTAXI" ? "MOTOTAXI" : tipo} bloqueado={guardando} alSeleccionar={seleccionarComprobante} />
       {documentoTipo === "FACTURA" && <label>RUC del proveedor<span className="egreso-ruc-search"><input required disabled={buscandoIdentidadProveedor} inputMode="numeric" pattern="[0-9]{11}" maxLength={11} value={proveedorRuc} onChange={(evento) => setProveedorRuc(evento.target.value.replace(/\D/g, "").slice(0, 11))} /><button type="button" disabled={buscandoIdentidadProveedor || proveedorRuc.length !== 11} onClick={() => void buscarIdentidadProveedor()}>{buscandoIdentidadProveedor ? "Consultando…" : "Buscar"}</button></span></label>}
       {tipo === "ACTIVO_HERRAMIENTA" && <label className="egreso-full">Modelo o identificación<input required maxLength={100} value={identificadorActivo} onChange={(evento) => setIdentificadorActivo(evento.target.value)} /></label>}
-      <SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} />
       <label>Importe total (S/)<input required type="number" min="0.01" step="0.01" value={monto} onChange={(evento) => setMonto(evento.target.value)} /></label>
-      <label>Primer pago (S/)<input type="number" min="0.01" max={monto || undefined} step="0.01" value={importeInicial} onChange={(evento) => setImporteInicial(evento.target.value)} placeholder="Vacío: pago completo" /></label>
+      <label className="egreso-full egreso-payment-toggle"><input type="checkbox" checked={registrarPagoInicial} onChange={(evento) => { setRegistrarPagoInicial(evento.target.checked); setImporteInicial(""); setCuentaFinancieraId(""); }} /> Registrar un pago ahora</label>
+      {registrarPagoInicial && <>
+        <div className="egreso-full"><SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} /></div>
+        <label>Importe pagado (S/)<input required type="number" min="0.01" max={monto || undefined} step="0.01" value={importeInicial} onChange={(evento) => setImporteInicial(evento.target.value)} /></label>
+      </>}
       <label className="egreso-full">Observación<input maxLength={2000} value={observacion} onChange={(evento) => setObservacion(evento.target.value)} /></label>
     </div></div><div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={() => setModal(false)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : tipo === "ACTIVO_HERRAMIENTA" ? "Guardar activo" : "Guardar egreso"}</button></div></form></section></div>, document.body)}
     {abono && createPortal(<div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) setAbono(null); }}><section className="catalog-modal egreso-modal" role="dialog" aria-modal="true" aria-labelledby="egreso-payment-title"><form className="catalog-form egreso-form" onSubmit={(evento) => void guardarAbono(evento)}><div className="egreso-form-scroll"><div className="catalog-form-title"><div><h2 id="egreso-payment-title">Registrar abono</h2><p>{abono.concepto} · saldo {soles(abono.saldoPendiente)}</p></div></div>{error && <div className="catalog-alert" role="alert">{error}</div>}<div className="egreso-form-grid"><label>Fecha<input required type="date" value={fechaAbono} onChange={(evento) => setFechaAbono(evento.target.value)} /></label><label>Importe (S/)<input required type="number" min="0.01" max={abono.saldoPendiente} step="0.01" value={importeAbono} onChange={(evento) => setImporteAbono(evento.target.value)} /></label><div className="egreso-full"><SelectorCuentaFinanciera value={cuentaAbonoId} medioActual={medioAbono} onChange={(id, medio) => { setCuentaAbonoId(id); setMedioAbono(medio); }} /></div></div></div><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setAbono(null)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar abono"}</button></div></form></section></div>, document.body)}

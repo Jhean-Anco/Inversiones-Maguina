@@ -1,0 +1,1 @@
+ALTER TABLE "documentos_recibidos" ALTER COLUMN "ticket_sire" SET DATA TYPE varchar(14);

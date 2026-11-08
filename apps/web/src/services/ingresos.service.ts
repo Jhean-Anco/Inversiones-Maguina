@@ -60,8 +60,8 @@ export const servicioIngresos = {
   estadoNubefact() { return solicitarApi<EstadoNubefact>("/ingresos/nubefact/estado"); },
   numeraciones() { return solicitarApi<NumeracionesIngreso>("/ingresos/series"); },
   controlNrus(fecha: string) { return solicitarApi<ControlNrus>(`/ingresos/control-nrus?fecha=${encodeURIComponent(fecha)}`); },
-  buscarProductos(busqueda: string, catalogo = false) {
-    return solicitarApi<ProductoParaIngreso[]>(`/ingresos/productos?busqueda=${encodeURIComponent(busqueda)}&limite=8${catalogo ? "&catalogo=1" : ""}`);
+  buscarProductos(busqueda: string, catalogo = false, escaneo = false) {
+    return solicitarApi<ProductoParaIngreso[]>(`/ingresos/productos?busqueda=${encodeURIComponent(busqueda)}&limite=8${catalogo ? "&catalogo=1" : ""}${escaneo ? "&escaneo=1" : ""}`);
   },
   buscarMototaxis(busqueda: string) { return solicitarApi<MototaxiParaIngreso[]>(`/ingresos/mototaxis?busqueda=${encodeURIComponent(busqueda)}`); },
   buscarClientes(busqueda: string) {

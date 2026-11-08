@@ -158,9 +158,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   async function agregarCodigoLeido(codigo: string) {
     setMostrarCamara(false);
     try {
-      const coincidencias = await servicioIngresos.buscarProductos(codigo, true);
-      const consulta = codigo.trim().toLocaleLowerCase("es-PE");
-      const producto = coincidencias.find((item) => item.codigo.toLocaleLowerCase("es-PE") === consulta) ?? (coincidencias.length === 1 ? coincidencias[0] : null);
+      const coincidencias = await servicioIngresos.buscarProductos(codigo, false, true);
+      const producto = coincidencias.length === 1 ? coincidencias[0] : null;
       if (producto) venta.agregarProducto(producto);
       else venta.setBusqueda(codigo);
     } catch (problema) {

@@ -34,6 +34,8 @@ export function useEntradasStock() {
   const [medioPago, setMedioPago] = useState("");
   const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
   const [montoPagado, setMontoPagado] = useState("0.00");
+  const [totalDocumento, setTotalDocumento] = useState("");
+  const [documentoRecibidoId, setDocumentoRecibidoId] = useState("");
   const [observacion, setObservacion] = useState("");
   const [productoBusqueda, setProductoBusqueda] = useState("");
   const [productosEncontrados, setProductosEncontrados] = useState<ProductoParaCompra[]>([]);
@@ -145,8 +147,17 @@ export function useEntradasStock() {
   }
 
   function abrirNuevo() {
-    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); setProveedor(""); setProveedorTipoPersona(""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(""); setProveedorDireccion(""); setProveedoresEncontrados([]); setBuscandoProveedores(false); setProveedorNoEncontrado(false); setDatosProveedorEditables(false); setMedioPago(""); setCuentaFinancieraId(""); setMontoPagado("0.00"); setArchivoEvidencia(null); setObservacion("");
+    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); setProveedor(""); setProveedorTipoPersona(""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(""); setProveedorDireccion(""); setProveedoresEncontrados([]); setBuscandoProveedores(false); setProveedorNoEncontrado(false); setDatosProveedorEditables(false); setMedioPago(""); setCuentaFinancieraId(""); setMontoPagado("0.00"); setTotalDocumento(""); setDocumentoRecibidoId(""); setArchivoEvidencia(null); setObservacion("");
     setProductoBusqueda(""); setProductosEncontrados([]); setProductoElegido(""); setCantidadProducto("1"); setCostoProducto(""); setDetalles([]); setModalAbierto(true);
+  }
+  function seleccionarComprobante(documento: { id: string; emisorNombre: string | null; emisorRuc: string; tipoDocumento: string; serie: string; correlativo: string; fechaEmision: string | null; total: string | null }) {
+    const tipo = documento.tipoDocumento === "01" ? "FACTURA" : documento.tipoDocumento === "03" ? "BOLETA" : "NOTA";
+    setDocumentoRecibidoId(documento.id); setTipoDocumento(tipo); setNumeroDocumento(`${documento.serie}-${documento.correlativo}`);
+    setProveedor(documento.emisorNombre ?? ""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(documento.emisorRuc);
+    setProveedorTipoPersona(documento.emisorRuc.startsWith("20") ? "JURIDICA" : "NATURAL"); setDatosProveedorEditables(true);
+    setFecha(documento.fechaEmision ?? fechaHoy()); setTotalDocumento(documento.total ?? ""); setMontoPagado("0.00");
+    setProveedoresEncontrados([]); setProveedorNoEncontrado(false); setArchivoEvidencia(null); setModalAbierto(true);
+    setObservacion("Recepción física pendiente de confirmación a partir del documento recibido.");
   }
   function agregarDetalle() {
     const producto = productosEncontrados.find((fila) => fila.presentacionId === productoElegido);
@@ -168,7 +179,7 @@ export function useEntradasStock() {
     const pago = Number(montoPagado);
     if (!Number.isFinite(pago) || pago < 0 || Number(pago.toFixed(2)) !== pago || pago > totalBorrador) { setError("El monto abonado debe ser válido y no puede superar el total de la compra."); return; }
     if (pago > 0 && (!medioPago || !cuentaFinancieraId)) { setError("Selecciona la cuenta de dinero desde donde se paga este abono."); return; }
-    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: proveedor.trim(), proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento: proveedorNumeroDocumento.trim(), proveedorDireccion: proveedorDireccion.trim(), medioPago: medioPago || null, cuentaFinancieraId: cuentaFinancieraId || null, montoPagado: pago.toFixed(2), observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario }) => ({ productoId, presentacionId, cantidad, costoUnitario })) };
+    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: proveedor.trim(), proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento: proveedorNumeroDocumento.trim(), proveedorDireccion: proveedorDireccion.trim(), medioPago: medioPago || null, cuentaFinancieraId: cuentaFinancieraId || null, montoPagado: pago.toFixed(2), ...(documentoRecibidoId ? { documentoRecibidoId } : {}), ...(totalDocumento.trim() ? { totalDocumento: totalDocumento.trim() } : {}), observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario }) => ({ productoId, presentacionId, cantidad, costoUnitario })) };
     setGuardando(true);
     try {
       const creada = await servicioEntradasStock.crear(datos);
@@ -189,8 +200,9 @@ export function useEntradasStock() {
     entradas: paginaDatos.items, total: paginaDatos.total, pagina, porPagina, totalPaginas: paginaDatos.totalPaginas,
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, error, setError, busqueda, setBusqueda, cambiarPagina: setPagina, cambiarPorPagina,
-    modalAbierto, abrirNuevo, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
+    modalAbierto, abrirNuevo, seleccionarComprobante, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
     fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, montoPagado, setMontoPagado,
+    totalDocumento, setTotalDocumento, documentoRecibidoId,
     proveedorTipoPersona, setProveedorTipoPersona,
     proveedorTipoDocumento, setProveedorTipoDocumento,
     proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion,

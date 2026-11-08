@@ -5,7 +5,7 @@ export type PagoEgreso = { id: string; egresoId: string; fechaPago: string; impo
 export type Egreso = {
   id: string; codigo: string; tipo: TipoEgreso; fecha: string; categoria: string; concepto: string;
   beneficiario: string | null; proveedorRuc: string | null; documentoTipo: string | null; documentoNumero: string | null;
-  moneda: string; medioPago: string; monto: string; identificadorActivo: string | null;
+  moneda: string; medioPago: string | null; monto: string; identificadorActivo: string | null;
   mototaxiMarca: string | null; mototaxiModelo: string | null; mototaxiNumeroMotor: string | null; mototaxiNumeroChasis: string | null;
   observacion: string | null;
   pagos: PagoEgreso[]; importePagadoAcumulado: string; saldoPendiente: string; creadoEn: string;
@@ -14,7 +14,8 @@ export type PaginaEgresos = { items: Egreso[]; total: number; pagina: number; po
 export type DatosEgreso = {
   tipo: TipoEgreso; fecha: string; categoria: string; concepto: string; beneficiario: string | null;
   proveedorRuc: string | null; documentoTipo: string | null; documentoNumero: string | null;
-  moneda: "PEN"; medioPago: string; cuentaFinancieraId: string; monto: string; importePagoInicial: string;
+  documentoRecibidoId?: string;
+  moneda: "PEN"; medioPago?: string; cuentaFinancieraId?: string; monto: string; importePagoInicial?: string;
   identificadorActivo: string | null; mototaxiMarca: string | null; mototaxiModelo: string | null;
   mototaxiNumeroMotor: string | null; mototaxiNumeroChasis: string | null; observacion: string | null;
 };

@@ -689,7 +689,7 @@ export const egresosRegistros = pgTable("egresos_registros", {
   documentoTipo: varchar("documento_tipo", { length: 30 }),
   documentoNumero: varchar("documento_numero", { length: 60 }),
   moneda: varchar("moneda", { length: 3 }).notNull().default("PEN"),
-  medioPago: varchar("medio_pago", { length: 30 }).notNull(),
+  medioPago: varchar("medio_pago", { length: 30 }),
   cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   monto: numeric("monto", { precision: 14, scale: 2 }).notNull(),
   identificadorActivo: varchar("identificador_activo", { length: 100 }),
@@ -713,6 +713,36 @@ export const egresosRegistros = pgTable("egresos_registros", {
   check("egresos_registros_mototaxi_datos_ck", sql`(${tabla.tipo} <> 'MOTOTAXI') OR (${tabla.mototaxiMarca} IS NOT NULL AND ${tabla.mototaxiModelo} IS NOT NULL AND ${tabla.mototaxiNumeroMotor} IS NOT NULL AND ${tabla.mototaxiNumeroChasis} IS NOT NULL)`),
   uniqueIndex("egresos_registros_mototaxi_motor_unique").on(tabla.mototaxiNumeroMotor).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
   uniqueIndex("egresos_registros_mototaxi_chasis_unique").on(tabla.mototaxiNumeroChasis).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
+]);
+
+export const documentosRecibidos = pgTable("documentos_recibidos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  periodoSire: varchar("periodo_sire", { length: 6 }),
+  ticketSire: varchar("ticket_sire", { length: 14 }),
+  emisorRuc: varchar("emisor_ruc", { length: 11 }).notNull(),
+  emisorNombre: varchar("emisor_nombre", { length: 240 }),
+  tipoDocumento: varchar("tipo_documento", { length: 10 }).notNull(),
+  serie: varchar("serie", { length: 30 }).notNull(),
+  correlativo: varchar("correlativo", { length: 40 }).notNull(),
+  fechaEmision: date("fecha_emision"),
+  moneda: varchar("moneda", { length: 3 }),
+  total: numeric("total", { precision: 14, scale: 2 }),
+  estado: varchar("estado", { length: 30 }).notNull().default("PENDIENTE_REVISION"),
+  destino: varchar("destino", { length: 30 }),
+  datosOrigen: jsonb("datos_origen").notNull().default({}),
+  egresoId: uuid("egreso_id").references(() => egresosRegistros.id, { onDelete: "set null" }),
+  entradaStockId: uuid("entrada_stock_id").references(() => entradasStock.id, { onDelete: "set null" }),
+  compraMototaxiId: uuid("compra_mototaxi_id").references(() => comprasMototaxis.id, { onDelete: "set null" }),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  importadoEn: timestamp("importado_en", { withTimezone: true, precision: 3 }).notNull().defaultNow(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  index("documentos_recibidos_estado_fecha_idx").on(tabla.estado, tabla.fechaEmision),
+  index("documentos_recibidos_periodo_idx").on(tabla.periodoSire),
+  uniqueIndex("documentos_recibidos_identidad_unique").on(tabla.emisorRuc, tabla.tipoDocumento, tabla.serie, tabla.correlativo),
+  check("documentos_recibidos_estado_ck", sql`${tabla.estado} IN ('PENDIENTE_REVISION', 'OBSERVADO', 'PENDIENTE_RECEPCION', 'REGISTRADO', 'DESCARTADO')`),
+  check("documentos_recibidos_destino_ck", sql`${tabla.destino} IS NULL OR ${tabla.destino} IN ('REPUESTOS', 'MOTOTAXI', 'GASTO_OPERATIVO', 'ACTIVO_HERRAMIENTA')`),
+  check("documentos_recibidos_ruc_ck", sql`${tabla.emisorRuc} ~ '^[0-9]{11}$'`),
 ]);
 
 export const egresosPagos = pgTable("egresos_pagos", {

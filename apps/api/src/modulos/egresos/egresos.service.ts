@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, egresosPagos, egresosRegistros, entradasStock } from "@magina/database";
+import { db, documentosRecibidos, egresosPagos, egresosRegistros, entradasStock } from "@magina/database";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -9,7 +9,7 @@ import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 const tiposEgreso = ["GASTO_OPERATIVO", "ACTIVO_HERRAMIENTA", "MOTOTAXI"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 type TipoEgreso = typeof tiposEgreso[number];
-type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
+type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; documentoRecibidoId?: unknown; moneda?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
 
 function texto(valor: unknown, etiqueta: string, maximo: number, requerido = false) {
   if (valor === undefined || valor === null) {
@@ -72,12 +72,13 @@ export class ServicioEgresos {
     if (typeof datos.tipo !== "string" || !(tiposEgreso as readonly string[]).includes(datos.tipo)) throw new BadRequestException("Selecciona un submódulo de egresos válido.");
     const tipo = datos.tipo as TipoEgreso;
     if (typeof datos.fecha !== "string" || !fechaValida(datos.fecha) || datos.fecha > fechaActualPeru()) throw new BadRequestException("Indica una fecha válida que no sea futura.");
-    if (typeof datos.medioPago !== "string" || !(mediosPago as readonly string[]).includes(datos.medioPago)) throw new BadRequestException("Selecciona un medio de pago.");
     const monto = typeof datos.monto === "number" ? datos.monto : typeof datos.monto === "string" && datos.monto.trim() ? Number(datos.monto) : NaN;
     if (!Number.isFinite(monto) || monto <= 0 || Number(monto.toFixed(2)) !== monto) throw new BadRequestException("El importe debe ser mayor que cero y tener hasta dos decimales.");
-    const importePagoInicial = datos.importePagoInicial === undefined || datos.importePagoInicial === null || datos.importePagoInicial === "" ? monto : Number(datos.importePagoInicial);
-    if (!Number.isFinite(importePagoInicial) || importePagoInicial <= 0 || Number(importePagoInicial.toFixed(2)) !== importePagoInicial || importePagoInicial > monto) throw new BadRequestException("El primer pago debe ser positivo y no superar el importe del egreso.");
-    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, datos.medioPago, true);
+    const importePagoInicial = datos.importePagoInicial === undefined || datos.importePagoInicial === null || datos.importePagoInicial === "" ? 0 : Number(datos.importePagoInicial);
+    if (!Number.isFinite(importePagoInicial) || importePagoInicial < 0 || Number(importePagoInicial.toFixed(2)) !== importePagoInicial || importePagoInicial > monto) throw new BadRequestException("El pago inicial no puede ser negativo ni superar el importe del egreso.");
+    const medioPago: string | null = importePagoInicial > 0 && typeof datos.medioPago === "string" ? datos.medioPago : null;
+    if (importePagoInicial > 0 && (!medioPago || !(mediosPago as readonly string[]).includes(medioPago))) throw new BadRequestException("Selecciona un medio de pago para el pago inicial.");
+    const cuentaFinancieraId = importePagoInicial > 0 ? await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, true) : null;
     const categoria = texto(datos.categoria, "la categoría", 80, true)!;
     const concepto = texto(datos.concepto, "el concepto", 240, true)!;
     const beneficiario = texto(datos.beneficiario, "el proveedor o beneficiario", 180, tipo !== "GASTO_OPERATIVO");
@@ -96,29 +97,45 @@ export class ServicioEgresos {
     const mototaxiNumeroMotor = texto(datos.mototaxiNumeroMotor, "el número de motor", 100, tipo === "MOTOTAXI")?.toUpperCase() ?? null;
     const mototaxiNumeroChasis = texto(datos.mototaxiNumeroChasis, "el número de chasis", 100, tipo === "MOTOTAXI")?.toUpperCase() ?? null;
     const codigo = `EGR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
+    const documentoRecibidoId = datos.documentoRecibidoId === undefined || datos.documentoRecibidoId === null || datos.documentoRecibidoId === "" ? null : texto(datos.documentoRecibidoId, "el documento recibido", 36, true);
+    if (documentoRecibidoId && !/^[0-9a-f-]{36}$/i.test(documentoRecibidoId)) throw new BadRequestException("El identificador del documento recibido no es válido.");
     return db.transaction(async (tx) => {
+      if (documentoRecibidoId) {
+        const [documento] = await tx.select({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, destino: documentosRecibidos.destino, estado: documentosRecibidos.estado })
+          .from(documentosRecibidos).where(eq(documentosRecibidos.id, documentoRecibidoId)).for("update").limit(1);
+        const tipoEsperado = documento?.tipoDocumento === "01" ? "FACTURA" : documento?.tipoDocumento === "03" ? "BOLETA" : documento?.tipoDocumento === "07" || documento?.tipoDocumento === "08" ? "NOTA" : "";
+        const estadoEsperado = tipo === "GASTO_OPERATIVO" ? "PENDIENTE_REVISION" : "PENDIENTE_RECEPCION";
+        if (!documento || documento.estado !== estadoEsperado || documento.destino !== tipo) throw new ConflictException("El comprobante ya no está pendiente de registro para este destino.");
+        if (documento.emisorRuc !== proveedorRuc || documentoTipo !== tipoEsperado || documentoNumero !== `${documento.serie}-${documento.correlativo}`) throw new BadRequestException("Los datos del proveedor o comprobante no coinciden con el documento recibido seleccionado.");
+      }
       if (tipo === "MOTOTAXI" && mototaxiNumeroMotor && mototaxiNumeroChasis) {
         const [duplicado] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
           .where(and(eq(egresosRegistros.tipo, "MOTOTAXI"), or(eq(egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroMotor), eq(egresosRegistros.mototaxiNumeroChasis, mototaxiNumeroChasis)))).limit(1);
         if (duplicado) throw new ConflictException("Ya existe una compra registrada con ese número de motor o chasis.");
       }
-      if (documentoTipo === "FACTURA" && proveedorRuc && documentoNumero) {
-        const clave = `COMPROBANTE_COMPRA:${proveedorRuc}:${documentoNumero}`;
+      if ((documentoTipo === "FACTURA" || documentoTipo === "BOLETA") && proveedorRuc && documentoNumero) {
+        const clave = `COMPROBANTE_COMPRA:${proveedorRuc}:${documentoTipo}:${documentoNumero}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${clave}, 0))`);
         const [duplicadoCompra] = await tx.select({ id: entradasStock.id }).from(entradasStock)
-          .where(and(eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorRuc), eq(entradasStock.numeroDocumento, documentoNumero))).limit(1);
+          .where(and(eq(entradasStock.tipoDocumento, documentoTipo), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorRuc), eq(entradasStock.numeroDocumento, documentoNumero))).limit(1);
         const [duplicadoEgreso] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
-          .where(and(eq(egresosRegistros.proveedorRuc, proveedorRuc), eq(egresosRegistros.documentoNumero, documentoNumero))).limit(1);
+          .where(and(eq(egresosRegistros.documentoTipo, documentoTipo), eq(egresosRegistros.proveedorRuc, proveedorRuc), eq(egresosRegistros.documentoNumero, documentoNumero))).limit(1);
         if (duplicadoCompra || duplicadoEgreso) throw new ConflictException("Esta factura ya está registrada en Compras o en otro egreso.");
       }
       const [registro] = await tx.insert(egresosRegistros).values({ codigo, tipo, fecha: datos.fecha as string, categoria,
         concepto, beneficiario, proveedorRuc, documentoTipo, documentoNumero, moneda,
-        medioPago: datos.medioPago as string, cuentaFinancieraId, monto: monto.toFixed(2), identificadorActivo,
+        medioPago, cuentaFinancieraId, monto: monto.toFixed(2), identificadorActivo,
         mototaxiMarca, mototaxiModelo, mototaxiNumeroMotor, mototaxiNumeroChasis,
         observacion: texto(datos.observacion, "la observación", 2000), usuarioId }).returning({ id: egresosRegistros.id });
-      await tx.insert(egresosPagos).values({ egresoId: registro.id, fechaPago: datos.fecha as string,
-        importePagado: importePagoInicial.toFixed(2), medioPago: datos.medioPago as string, cuentaFinancieraId,
+      if (importePagoInicial > 0 && medioPago) await tx.insert(egresosPagos).values({ egresoId: registro.id, fechaPago: datos.fecha as string,
+        importePagado: importePagoInicial.toFixed(2), medioPago, cuentaFinancieraId,
         claveIdempotencia: randomUUID(), usuarioId });
+      if (documentoRecibidoId) {
+        const [enlace] = await tx.update(documentosRecibidos).set({ egresoId: registro.id, estado: "REGISTRADO" })
+          .where(and(eq(documentosRecibidos.id, documentoRecibidoId), eq(documentosRecibidos.destino, tipo)))
+          .returning({ id: documentosRecibidos.id });
+        if (!enlace) throw new ConflictException("El comprobante fue procesado en otra operación; el egreso no se registró.");
+      }
       return this.obtenerRegistro(registro.id);
     });
   }

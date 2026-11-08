@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, archivosDrive, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import { db, archivosDrive, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, documentosRecibidos, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
 import type { FastifyRequest } from "fastify";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -279,11 +279,20 @@ export class ServicioMototaxis {
     });
     const total = redondear(unidades.reduce((s, u) => s + u.costo, 0));
     if (inicial > total) throw new BadRequestException("El pago inicial supera el total de compra.");
+    const documentoRecibidoId = d.documentoRecibidoId === undefined || d.documentoRecibidoId === null || d.documentoRecibidoId === "" ? null : String(d.documentoRecibidoId);
+    if (documentoRecibidoId && !uuidValido(documentoRecibidoId)) throw new BadRequestException("El comprobante recibido no es válido.");
     const codigo = `CM-${fecha.replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     return db.transaction(async (tx) => {
       const proveedorId = d.proveedorPersonaId as string;
-      const [proveedor] = await tx.select({ id: proveedores.personaId }).from(proveedores).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
+      const [proveedor] = await tx.select({ id: proveedores.personaId, numeroDocumento: personas.numeroDocumento, tipoDocumento: tiposDocumento.codigo }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
       if (!proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
+      if (documentoRecibidoId) {
+        const [documento] = await tx.select({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, destino: documentosRecibidos.destino, estado: documentosRecibidos.estado })
+          .from(documentosRecibidos).where(eq(documentosRecibidos.id, documentoRecibidoId)).for("update").limit(1);
+        const tipoEsperado = documento?.tipoDocumento === "01" ? "FACTURA" : documento?.tipoDocumento === "03" ? "BOLETA" : documento?.tipoDocumento === "07" || documento?.tipoDocumento === "08" ? "NOTA" : "";
+        if (!documento || documento.estado !== "PENDIENTE_RECEPCION" || documento.destino !== "MOTOTAXI") throw new ConflictException("El comprobante ya no está pendiente de recepción de mototaxi.");
+        if (proveedor.tipoDocumento !== "RUC" || proveedor.numeroDocumento !== documento.emisorRuc || documentoTipo !== tipoEsperado || texto(d.documentoNumero, "El número del documento", 80) !== `${documento.serie}-${documento.correlativo}`) throw new BadRequestException("El proveedor o comprobante no coincide con el documento recibido seleccionado.");
+      }
       const modelos = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(and(eq(modelosMototaxis.activo, true), inArray(modelosMototaxis.id, [...new Set(unidades.map((u) => u.modeloId))]))).for("update");
       if (new Set(modelos.map((m) => m.id)).size !== new Set(unidades.map((u) => u.modeloId)).size) throw new BadRequestException("Cada unidad debe pertenecer a un modelo activo del catálogo de mototaxis.");
       const [compra] = await tx.insert(comprasMototaxis).values({ codigo, proveedorPersonaId: proveedorId, fecha, documentoTipo, documentoNumero: texto(d.documentoNumero, "El número del documento", 80), moneda: texto(d.moneda ?? "PEN", "La moneda", 3, true)!, total: total.toFixed(2), observacion: texto(d.observacion, "La observación", 2000), usuarioId }).returning();
@@ -304,6 +313,12 @@ export class ServicioMototaxis {
         await tx.insert(garantiasMototaxis).values({ unidadId: insertada.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(unidad.porcentaje), mesesVigencia: unidad.meses, iniciaEn, terminaEn: termina });
       }
       if (inicial > 0) await tx.insert(pagosComprasMototaxis).values({ compraId: compra.id, fechaPago: fecha, importePagado: inicial.toFixed(2), medioPago, cuentaFinancieraId, claveIdempotencia: uuidValido(d.claveIdempotencia) ? d.claveIdempotencia : randomUUID(), usuarioId });
+      if (documentoRecibidoId) {
+        const [enlace] = await tx.update(documentosRecibidos).set({ compraMototaxiId: compra.id, estado: "REGISTRADO" })
+          .where(and(eq(documentosRecibidos.id, documentoRecibidoId), eq(documentosRecibidos.destino, "MOTOTAXI"), eq(documentosRecibidos.estado, "PENDIENTE_RECEPCION")))
+          .returning({ id: documentosRecibidos.id });
+        if (!enlace) throw new ConflictException("El comprobante fue procesado en otra compra; la recepción no se registró.");
+      }
       return { id: compra.id, codigo, fecha, total: compra.total, unidades: unidades.length, importePagado: inicial.toFixed(2), saldoPendiente: (total - inicial).toFixed(2) };
     }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("El VIN, la placa u otro identificador de la unidad ya está registrado."); throw error; });
   }

@@ -1,0 +1,1 @@
+ALTER TABLE "egresos_registros" ALTER COLUMN "medio_pago" DROP NOT NULL;

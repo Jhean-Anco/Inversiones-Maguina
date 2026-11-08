@@ -1,0 +1,29 @@
+.selector-comprobante { grid-column: 1 / -1; display: grid; gap: 10px; min-width: 0; }
+.selector-comprobante-trigger { justify-self: start; min-height: 38px; border: 1px solid var(--border-color, #d7e2ee); border-radius: 9px; padding: 0 12px; background: var(--surface-primary, #fff); color: var(--action-primary, #1b5387); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.selector-comprobante-trigger:hover:not(:disabled) { background: var(--action-primary-surface, #f2f7fd); }
+.selector-comprobante-trigger:disabled { cursor: not-allowed; opacity: .6; }
+.selector-comprobante-panel { display: grid; min-width: 0; gap: 11px; border: 1px solid var(--border-color, #d9e3ec); border-radius: 12px; padding: 13px; background: var(--surface-secondary, #f8fafc); }
+.selector-comprobante-toolbar { display: flex; align-items: end; gap: 9px; flex-wrap: wrap; }
+.selector-comprobante-toolbar > label { display: grid; gap: 5px; color: var(--text-secondary, #60758b); font-size: 11px; font-weight: 700; }
+.selector-comprobante-toolbar input { min-height: 36px; border: 1px solid var(--border-color, #d9e3ec); border-radius: 8px; padding: 0 9px; background: var(--surface-primary, #fff); color: var(--text-primary, #233d53); font: inherit; font-size: 12px; }
+.selector-comprobante-toolbar > button { min-height: 36px; border: 1px solid var(--action-primary-border, #c9d8e7); border-radius: 8px; padding: 0 11px; background: var(--action-primary-surface, #f2f7fd); color: var(--action-primary, #1b5387); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.selector-comprobante-toolbar > button:disabled { cursor: not-allowed; opacity: .55; }
+.selector-comprobante-estado { min-height: 29px; display: inline-flex; align-items: center; border: 1px solid #e4d8b4; border-radius: 999px; padding: 0 9px; background: #fff8e9; color: #87651d; font-size: 10px; font-weight: 750; }
+.selector-comprobante-estado.is-ready { border-color: #c6e7d2; background: #edf9f1; color: #247347; }
+.selector-comprobante-estado.is-missing { border-color: #e4d8b4; background: #fff8e9; color: #87651d; }
+.selector-comprobante-busqueda { display: grid; gap: 5px; color: var(--text-secondary, #60758b); font-size: 11px; font-weight: 700; }
+.selector-comprobante-busqueda input { width: 100%; min-height: 38px; box-sizing: border-box; border: 1px solid var(--border-color, #d9e3ec); border-radius: 8px; padding: 0 10px; background: var(--surface-primary, #fff); color: var(--text-primary, #233d53); font: inherit; font-size: 12px; }
+.selector-comprobante-resultados { display: grid; max-height: 220px; gap: 6px; overflow: auto; }
+.selector-comprobante-resultados > button { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--border-color, #e0e8ef); border-radius: 9px; padding: 9px 11px; background: var(--surface-primary, #fff); color: var(--text-primary, #28455f); font: inherit; text-align: left; cursor: pointer; }
+.selector-comprobante-resultados > button:hover:not(:disabled) { border-color: #9ab7d0; background: #f4f8fc; }
+.selector-comprobante-resultados > button:disabled { cursor: wait; opacity: .6; }
+.selector-comprobante-resultados > button > span { display: grid; min-width: 0; gap: 4px; }
+.selector-comprobante-resultados small { color: var(--text-secondary, #70849a); font-size: 10px; font-weight: 500; }
+.selector-comprobante-total { flex: 0 0 auto; text-align: right; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.selector-comprobante-mensaje,.selector-comprobante-error,.selector-comprobante-vacio { margin: 0; color: var(--text-secondary, #63798f); font-size: 11px; line-height: 1.45; }
+.selector-comprobante-error { color: #bf2638; }
+html[data-theme="oscuro"] .selector-comprobante-panel { border-color: var(--tema-borde); background: var(--tema-superficie); }
+html[data-theme="oscuro"] .selector-comprobante-resultados > button,
+html[data-theme="oscuro"] .selector-comprobante-toolbar input,
+html[data-theme="oscuro"] .selector-comprobante-busqueda input { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+@media (max-width: 600px) { .selector-comprobante-trigger { width: 100%; } .selector-comprobante-resultados > button { align-items: flex-start; } .selector-comprobante-resultados small { line-height: 1.35; } }

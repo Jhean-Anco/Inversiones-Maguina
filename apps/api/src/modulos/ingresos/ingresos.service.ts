@@ -796,13 +796,23 @@ export class ServicioIngresos {
     return cliente;
   }
 
-  async buscarProductos(busquedaEntrada?: string, incluirCatalogo = false, limiteEntrada?: string) {
+  async buscarProductos(busquedaEntrada?: string, incluirCatalogo = false, limiteEntrada?: string, escaneoExacto = false) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
     if (busqueda.length < 4 && !incluirCatalogo) return [];
     const limiteSolicitado = Number.parseInt(limiteEntrada ?? "8", 10);
     const limiteResultados = Number.isFinite(limiteSolicitado) ? Math.max(1, Math.min(8, limiteSolicitado)) : 8;
     const textoBusqueda = normalizarTextoBusqueda(busqueda);
     const coincidencia = `%${textoBusqueda.replace(/[\\%_]/g, "\\$&")}%`;
+    const codigosExactos = escaneoExacto && busqueda ? await db.selectDistinct({ productoId: productosCodigos.productoId })
+      .from(productosCodigos)
+      .where(and(inArray(productosCodigos.tipo, ["BARRAS", "GTIN"]), sql`lower(${productosCodigos.codigo}) = lower(${busqueda})`))
+      .limit(2) : [];
+    if (codigosExactos.length > 1) return [];
+    const productoPorCodigoInterno = escaneoExacto && codigosExactos.length === 0 && busqueda
+      ? (await db.select({ id: productos.id }).from(productos).where(sql`lower(${productos.codigoInterno}) = lower(${busqueda})`).limit(1))[0]?.id
+      : undefined;
+    if (escaneoExacto && codigosExactos.length === 0 && !productoPorCodigoInterno) return [];
+    const productoPorCodigoExacto = codigosExactos[0]?.productoId ?? productoPorCodigoInterno;
     const ahora = new Date();
     return db.select({
       productoId: productos.id, codigo: productos.codigoInterno, nombre: productos.nombre, marca: marcasProductos.nombre, rutaImagen: productos.rutaImagen,
@@ -819,7 +829,7 @@ export class ServicioIngresos {
       .innerJoin(tiposListasPrecio, and(eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id), eq(tiposListasPrecio.codigo, "GENERAL"), eq(tiposListasPrecio.activo, true)))
       .leftJoin(saldosStock, eq(saldosStock.productoId, productos.id))
       .where(and(eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seVende, true), lte(preciosProductos.cantidadMinima, "1"),
-        incluirCatalogo && !busqueda ? undefined : or(contieneSinTildes(productos.nombre, coincidencia), contieneSinTildes(productos.descripcion, coincidencia), contieneSinTildes(productos.codigoInterno, coincidencia), contieneSinTildes(marcasProductos.nombre, coincidencia),
+        productoPorCodigoExacto ? and(eq(productos.id, productoPorCodigoExacto), eq(productosPresentaciones.esBase, true)) : incluirCatalogo && !busqueda ? undefined : or(contieneSinTildes(productos.nombre, coincidencia), contieneSinTildes(productos.descripcion, coincidencia), contieneSinTildes(productos.codigoInterno, coincidencia), contieneSinTildes(marcasProductos.nombre, coincidencia),
           exists(db.select({ id: productosCodigos.id }).from(productosCodigos).where(and(eq(productosCodigos.productoId, productos.id), contieneSinTildes(productosCodigos.codigo, coincidencia)))),
         ),
         or(isNull(preciosProductos.vigenteDesde), lte(preciosProductos.vigenteDesde, ahora)),

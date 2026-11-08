@@ -1,6 +1,7 @@
 import "./compras-page.css";
 import "../../styles/egresos-tabla.css";
 import { useEffect, useState } from "react";
+
 import { CatalogoListado } from "../../components/catalogo/catalogo-listado/catalogo-listado";
 import { EntradaStockDetalle } from "../../components/inventario/entrada-stock-detalle/entrada-stock-detalle";
 import { EntradaStockFormulario } from "../../components/inventario/entrada-stock-formulario/entrada-stock-formulario";

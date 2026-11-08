@@ -75,6 +75,8 @@ export type DatosEntradaStock = {
   medioPago: string | null;
   cuentaFinancieraId: string | null;
   montoPagado: string;
+  documentoRecibidoId?: string;
+  totalDocumento?: string | null;
   observacion: string;
   detalles: Array<{ productoId: string; presentacionId: string; cantidad: string; costoUnitario: string }>;
 };

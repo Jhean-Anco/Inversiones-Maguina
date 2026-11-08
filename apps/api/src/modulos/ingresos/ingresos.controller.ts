@@ -17,7 +17,7 @@ export class ControladorIngresos {
     return this.ingresos.listarVentas({ tipoVenta, pagina, porPagina, busqueda });
   }
 
-  @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite); }
+  @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string, @Query("escaneo") escaneo?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite, escaneo === "1"); }
   @Get("mototaxis") @RequierePermiso("INGRESOS.CREAR") buscarMototaxisVenta(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarMototaxisVenta(busqueda); }
   @Get("series") @RequierePermiso("INGRESOS.CREAR") obtenerNumeraciones() { return this.ingresos.obtenerNumeraciones(); }
   @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }

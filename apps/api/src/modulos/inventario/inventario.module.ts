@@ -13,13 +13,13 @@ import { ControladorEntradasStock } from "./entradas-stock.controller";
 import { ServicioEntradasStock } from "./entradas-stock.service";
 import { ControladorMovimientosStock } from "./movimientos-stock.controller";
 import { ServicioMovimientosStock } from "./movimientos-stock.service";
-import { ControladorSunatSire } from "./sunat-sire.controller";
+import { ControladorDocumentosRecibidos, ControladorSunatSire } from "./sunat-sire.controller";
 import { ServicioSunatSire } from "./sunat-sire.service";
 import { ModuloGoogleDrive } from "../google-drive/google-drive.module";
 
 @Module({
   imports: [ModuloAutenticacion, ModuloGoogleDrive],
-  controllers: [ControladorCategorias, ControladorMarcas, ControladorProductos, ControladorEntradasStock, ControladorImagenesCatalogo, ControladorMovimientosStock, ControladorSunatSire],
+  controllers: [ControladorCategorias, ControladorMarcas, ControladorProductos, ControladorEntradasStock, ControladorImagenesCatalogo, ControladorMovimientosStock, ControladorSunatSire, ControladorDocumentosRecibidos],
   providers: [ServicioCategorias, ServicioMarcas, ServicioProductos, ServicioEntradasStock, ServicioImagenesCatalogo, ServicioMovimientosStock, ServicioSunatSire, GuardiaSesion],
 })
 export class ModuloInventario {}

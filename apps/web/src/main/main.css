@@ -2457,6 +2457,54 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   max-height: calc(100dvh - 20px);
   overflow: hidden;
 }
+.catalog-modal.stock-entry-modal {
+  display: flex;
+  width: min(900px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  flex-direction: column;
+  overflow: hidden;
+}
+.catalog-modal.stock-entry-modal .stock-entry-form {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  max-height: calc(100dvh - 40px);
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.stock-entry-form-scroll {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 28px 30px 20px;
+}
+.stock-entry-section {
+  min-width: 0;
+  box-sizing: border-box;
+}
+.stock-entry-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.stock-entry-form .stock-provider-identity {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.catalog-modal.stock-entry-modal .catalog-form-actions {
+  position: relative;
+  bottom: auto;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin: 0;
+  border-top: 1px solid #e8edf3;
+  padding: 12px 26px 18px;
+  background: #fff;
+}
 .catalog-modal.stock-adjustment-modal .stock-adjustment-form {
   display: flex;
   min-height: 0;
@@ -2484,6 +2532,17 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   background: #fff;
 }
 @media (max-width: 700px) {
+  .catalog-modal.stock-entry-modal {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+  .stock-entry-form .stock-provider-identity {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stock-entry-form .stock-provider-identity > button {
+    grid-column: auto;
+    width: 100%;
+  }
   .catalog-modal.stock-entry-modal .stock-entry-form {
     max-height: calc(100dvh - 20px);
   }
@@ -2504,6 +2563,7 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   .catalog-modal.stock-adjustment-modal .catalog-form-actions {
     padding: 10px 16px 14px;
   }
+  .catalog-modal.stock-entry-modal .stock-entry-form-scroll { padding: 22px 16px; }
 }
 @media (max-width: 700px) {
   .catalog-search-input,
