@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 
 export interface UsuarioAutenticado {
   id: string;
+  permisos?: string[];
 }
 
 type SolicitudConUsuario = FastifyRequest & { usuario: UsuarioAutenticado };

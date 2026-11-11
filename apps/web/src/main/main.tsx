@@ -23,6 +23,8 @@ function App() {
           <Route path="/ingresos/nuevo/repuestos" element={<InicioPage />} />
           <Route path="/ingresos/nuevo/mototaxis" element={<InicioPage />} />
           <Route path="/ingresos/guias" element={<InicioPage />} />
+          <Route path="/ingresos/ordenes-servicio" element={<InicioPage />} />
+          <Route path="/ingresos/cotizaciones" element={<InicioPage />} />
           <Route path="/ingresos/ventas/repuestos" element={<InicioPage />} />
           <Route path="/ingresos/ventas/mototaxis" element={<InicioPage />} />
           <Route path="/reportes/inventario" element={<InicioPage />} />

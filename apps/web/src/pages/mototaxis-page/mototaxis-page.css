@@ -245,3 +245,5 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-search-select > input,html
 .moto-unit-photo > .erp-icon-action.moto-photo-delete:hover:not(:disabled) { background: #ffe8ea; color: #a91b2b; }
 .moto-unit-photo-add { display: grid; width: 42px; height: 42px; place-items: center; border: 1px dashed var(--moto-border); border-radius: 7px; color: var(--moto-primary); font-size: 10px; font-weight: 750; cursor: pointer; }
 .moto-unit-photo-add input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+\r\n

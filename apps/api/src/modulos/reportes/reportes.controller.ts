@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Get, Query, UseGuards } from "@nestjs/
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequierePermiso } from "../autenticacion/permisos";
+import { UsuarioActual, type UsuarioAutenticado } from "../autenticacion/usuario-actual";
 import { ServicioReportes } from "./reportes.service";
 
 function validarRango(desde?: string, hasta?: string) {
@@ -24,5 +25,5 @@ export class ControladorReportes {
   @Get("ingresos") @RequierePermiso("INGRESOS.LEER") ingresos(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.ingresos(validarRango(desde, hasta)); }
   @Get("ingresos/resumen-mes") @RequierePermiso("INGRESOS.LEER") resumenIngresosMes() { return this.reportes.resumenIngresosMes(); }
   @Get("inventario") @RequierePermiso("INVENTARIO.LEER") inventario(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.inventario(validarRango(desde, hasta)); }
-  @Get("resumen") resumen() { return this.reportes.resumenGerencial(); }
+  @Get("resumen") resumen(@UsuarioActual() usuario: UsuarioAutenticado) { return this.reportes.resumenGerencial(usuario.permisos ?? []); }
 }

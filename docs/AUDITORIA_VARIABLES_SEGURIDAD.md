@@ -30,7 +30,6 @@ Las respuestas de estado exponen solamente el ambiente y booleanos (`credenciale
 - Navegador/build: `VITE_API_URL`; es público y queda compilado en el bundle. En producción admite HTTPS o cadena vacía para mismo origen; bloquea localhost y HTTP.
 - Sesión: `AUTENTICACION_DURACION_SEGUNDOS`, `AUTENTICACION_DURACION_RECORDAR_SEGUNDOS`.
 - PostgreSQL/contenedor local: `DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_SECONDS`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PORT`.
-- Redis local: `REDIS_URL`, `REDIS_PORT`. Redis no se usa actualmente para trabajos; no es dependencia productiva de la aplicación.
 - Archivos: `UPLOADS_DIR`, `IMAGEN_MAXIMO_BYTES`. Producción exige ruta absoluta para ubicar un volumen persistente.
 - Política comercial: `DESCUENTO_MAXIMO_PORCENTAJE`; producción lo limita por línea y, si no se define, queda en 0 %.
 
@@ -50,7 +49,7 @@ Las respuestas de estado exponen solamente el ambiente y booleanos (`credenciale
 4. `UPLOADS_DIR` requiere volumen persistente y respaldo. El código local no configura S3, restauración ni replicación.
 5. El `POSTGRES_PASSWORD=postgres` del `.env.example` es exclusivamente una conveniencia local; no es una contraseña de despliegue.
 6. No hay CI, escaneo automatizado de secretos ni repositorio Git verificable en este checkout. Activa secret scanning y protección de ramas al restaurar/publicar el repositorio.
-7. Los scripts `lint` aún son marcadores y no hay pruebas automatizadas; build y TypeScript no sustituyen tests de seguridad, autorización ni integraciones.
+7. No hay comandos de `lint` configurados ni pruebas automatizadas; build y TypeScript no sustituyen tests de seguridad, autorización ni integraciones.
 
 ## Regla para preparar producción
 

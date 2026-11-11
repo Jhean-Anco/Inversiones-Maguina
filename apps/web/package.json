@@ -5,13 +5,11 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "typecheck": "tsc --noEmit",
-    "lint": "echo Configure ESLint"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@heroui/react": "^3.2.7",
     "@heroui/styles": "^3.2.7",
-    "@magina/contracts": "workspace:*",
     "@tsparticles/engine": "^4.5.3",
     "@tsparticles/react": "^4.5.3",
     "@tsparticles/slim": "^4.5.3",

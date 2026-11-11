@@ -72,3 +72,209 @@ html[data-theme="oscuro"] .stock-purchase-products-section .stock-entry-empty-li
 html[data-theme="oscuro"] .stock-purchase-products-section .stock-entry-total strong { color: #e0ebf3; }
 html[data-theme="oscuro"] .stock-purchase-products-section .stock-payment-fields { border-color: #344e63; background: #192e42; }
 @media (max-width: 600px) { .stock-purchase-products-section { padding: 13px 12px 14px; border-radius: 13px; } .stock-purchase-products-section .stock-payment-fields { padding: 12px; } .stock-purchase-products-section .stock-entry-total strong { font-size: 20px; } }
+
+/* Presentación integral del formulario de compra de repuestos. */
+.catalog-modal.stock-entry-modal {
+  width: min(980px, calc(100vw - 48px));
+  max-height: min(920px, calc(100dvh - 32px));
+  border: 1px solid #d9e5ef;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 95px #071a2d52;
+}
+.catalog-modal.stock-entry-modal .stock-entry-form { background: #f8fafc; }
+.stock-entry-modal .stock-entry-form-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 106px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #dce6ef;
+  padding: 19px 28px;
+  background: linear-gradient(112deg, #f1f7fb 0%, #fff 76%);
+}
+.stock-entry-modal .stock-entry-form-icon {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  place-items: center;
+  border: 1px solid #d0e1ed;
+  border-radius: 15px;
+  background: #e9f3f9;
+  color: #1d6090;
+  font-size: 25px;
+  font-weight: 800;
+}
+.stock-entry-modal .stock-entry-form-head > div { min-width: 0; }
+.stock-entry-modal .stock-entry-form-kicker { color: #69849a; font-size: 9px; font-weight: 850; letter-spacing: .13em; }
+.stock-entry-modal .stock-entry-form-head h2 { margin: 3px 0 2px; color: #143752; font-size: 23px; letter-spacing: -.035em; }
+.stock-entry-modal .stock-entry-form-head p { margin: 0; color: #6d8295; font-size: 12px; line-height: 1.45; }
+.stock-entry-modal .stock-entry-form-head .catalog-modal-close { position: static; flex: 0 0 auto; margin: 0 0 0 auto; }
+.stock-entry-modal .stock-entry-form-scroll { gap: 15px; padding: 21px 26px 24px; background: #f7f9fb; }
+.stock-entry-modal .stock-entry-section {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #dfe7ee;
+  border-radius: 15px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 4px 14px #17354b08;
+}
+.stock-entry-modal .stock-entry-section > legend { padding: 0 8px; color: #1b405e; font-size: 14px; font-weight: 800; letter-spacing: -.015em; }
+.stock-entry-modal .stock-entry-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px; }
+.stock-entry-modal .stock-entry-fields > label,
+.stock-entry-modal .stock-provider-identity > label,
+.stock-entry-modal .stock-entry-add-fields > label,
+.stock-entry-modal .stock-payment-fields > label {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 7px;
+  color: #36536d;
+  font-size: 11px;
+  font-weight: 750;
+}
+.stock-entry-modal .stock-entry-fields input:not([type="file"]),
+.stock-entry-modal .stock-entry-fields select,
+.stock-entry-modal .stock-provider-identity input,
+.stock-entry-modal .stock-provider-identity select,
+.stock-entry-modal .stock-entry-add-fields input,
+.stock-entry-modal .stock-payment-fields input,
+.stock-entry-modal .stock-payment-fields select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 43px;
+  border: 1px solid #d7e2eb;
+  border-radius: 9px;
+  padding: 0 11px;
+  background: #fbfdff;
+  color: #213f59;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.stock-entry-modal .stock-entry-fields :is(input, select):focus,
+.stock-entry-modal .stock-provider-identity :is(input, select):focus,
+.stock-entry-modal .stock-entry-add-fields input:focus,
+.stock-entry-modal .stock-payment-fields :is(input, select):focus { border-color: #5e9bc8; outline: 0; background: #fff; box-shadow: 0 0 0 3px #5e9bc81a; }
+.stock-entry-modal .stock-entry-observation { grid-column: 1 / -1; }
+.stock-entry-modal .selector-comprobante-trigger { justify-self: start; min-height: 40px; border-color: #d2e1eb; background: #f3f8fb; color: #255d84; }
+.stock-entry-modal .selector-comprobante-trigger:hover:not(:disabled) { border-color: #a8c7dc; background: #eaf4fa; color: #194d72; }
+.stock-entry-modal .stock-entry-observation > span { color: #8a9aaa; font-size: 10px; font-weight: 550; }
+.stock-entry-modal .stock-provider-identity { grid-template-columns: minmax(0, .72fr) minmax(200px, 1fr) auto; align-items: end; gap: 10px; }
+.stock-entry-modal .stock-provider-identity > button,
+.stock-entry-modal .stock-provider-add { min-height: 43px; border: 1px solid #d0dfeb; border-radius: 9px; padding: 0 13px; background: #f1f7fb; color: #255d84; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.stock-entry-modal .stock-provider-identity > button:hover:not(:disabled),
+.stock-entry-modal .stock-provider-add:hover { border-color: #a8c7dc; background: #eaf4fa; }
+.stock-entry-modal .stock-purchase-products-section { border-color: #d5e3ed; background: linear-gradient(145deg, #fff, #fbfdff); }
+.stock-entry-modal .stock-purchase-products-section > legend { color: #194362; }
+.stock-entry-modal .stock-purchase-products-help { margin: 0 0 15px; color: #72879a; font-size: 11px; line-height: 1.5; }
+.stock-entry-modal .stock-product-search-row { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.stock-entry-modal .stock-product-search-row > label { gap: 7px; color: #36536d; font-size: 11px; font-weight: 750; }
+.stock-entry-modal .stock-product-search-row input { min-height: 45px; border-color: #d4e1eb; border-radius: 10px; background: #fff; }
+.stock-entry-modal .stock-create-product { min-height: 43px; border-radius: 9px; }
+.stock-entry-modal .stock-entry-add-fields { display: grid; grid-template-columns: minmax(130px, .8fr) minmax(170px, 1fr) auto; align-items: end; gap: 12px; margin-top: 14px; }
+.stock-entry-modal .stock-add-product { min-height: 43px; align-self: end; border-radius: 9px; padding-inline: 14px; font-size: 11px; font-weight: 800; }
+.stock-entry-modal .stock-entry-empty-lines { min-height: 118px; margin-top: 15px; border: 1px dashed #d3e0e9; border-radius: 12px; background: #f9fbfd; }
+.stock-entry-modal .stock-entry-lines-wrap { margin-top: 15px; overflow: auto; border: 1px solid #e0e8ef; border-radius: 11px; }
+.stock-entry-modal .stock-entry-lines { min-width: 760px; border-collapse: separate; border-spacing: 0; }
+.stock-entry-modal .stock-entry-lines th { padding: 10px 11px; background: #f2f6f9; color: #71869a; font-size: 9px; font-weight: 850; letter-spacing: .07em; text-align: left; text-transform: uppercase; white-space: nowrap; }
+.stock-entry-modal .stock-entry-lines td { border-top: 1px solid #edf1f4; padding: 10px 11px; color: #39566f; font-size: 11px; vertical-align: middle; }
+.stock-entry-modal .stock-entry-lines td strong { color: #20445f; }
+.stock-entry-modal .stock-entry-lines td small { display: block; margin-top: 3px; color: #8293a3; font-size: 9px; }
+.stock-entry-modal .stock-entry-lines td input { box-sizing: border-box; width: 92px; min-height: 34px; border: 1px solid #dce5ed; border-radius: 7px; padding: 0 7px; color: #2d4c66; font: inherit; font-size: 11px; }
+.stock-entry-modal .stock-entry-total { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 17px; border-top: 1px solid #e4ebf0; padding: 14px 2px 0; color: #627b90; font-size: 12px; font-weight: 700; }
+.stock-entry-modal .stock-entry-total strong { color: #174f79; font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.stock-entry-modal .stock-payment-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(160px, .8fr); align-items: end; gap: 12px; margin-top: 12px; border: 1px solid #dce7ee; border-radius: 12px; padding: 13px; background: #f5f9fb; }
+.stock-entry-modal .stock-payment-balance { min-height: 43px; align-content: center; gap: 4px; border: 1px solid #dfe8ee; border-radius: 9px; padding: 8px 11px; background: #fff; }
+.stock-entry-modal .stock-payment-balance span { color: #768b9e; font-size: 9px; font-weight: 700; }
+.stock-entry-modal .stock-payment-balance strong { color: #245b80; font-size: 14px; font-variant-numeric: tabular-nums; }
+.stock-entry-modal .stock-evidence-section { border-style: dashed; background: #fcfdff; }
+.stock-entry-modal .stock-evidence-section > legend { color: #385772; font-size: 12px; }
+.stock-entry-modal .stock-evidence-upload { gap: 7px; color: #405d75; font-size: 11px; }
+.stock-entry-modal .stock-evidence-upload input { min-height: 45px; border-radius: 9px; background: #fff; }
+.stock-entry-modal .stock-upload-hint { color: #8293a2; font-size: 10px; font-weight: 500; }
+.stock-entry-modal .stock-evidence-name { display: inline-flex; max-width: 100%; margin-top: 9px; border: 1px solid #d5e5ed; border-radius: 8px; padding: 7px 9px; background: #f3f9fb; color: #38667f; font-size: 10px; overflow-wrap: anywhere; }
+.catalog-modal.stock-entry-modal .catalog-form-actions { min-height: 68px; align-items: center; border-color: #dfe7ee; padding: 11px 26px; background: #fff; }
+.stock-entry-modal .catalog-form-actions .catalog-cancel,
+.stock-entry-modal .catalog-form-actions .catalog-submit { min-height: 42px; margin: 0; border-radius: 9px; padding-inline: 18px; font-size: 12px; font-weight: 800; }
+.stock-entry-modal .catalog-form-actions .catalog-submit { box-shadow: 0 5px 14px #1a5a861c; }
+
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-head { border-color: #30465c; background: linear-gradient(112deg, #1a3044, #172638); }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-icon { border-color: #37536d; background: #203a52; color: #a9d7f7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-kicker,
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-head p { color: #9db2c4; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-head h2,
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-section > legend { color: #e1edf7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-form-scroll { background: #101d2b; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-section { border-color: #30465c; background: #152537; box-shadow: none; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-fields > label,
+html[data-theme="oscuro"] .stock-entry-modal .stock-provider-identity > label,
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-add-fields > label,
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-fields > label,
+html[data-theme="oscuro"] .stock-entry-modal .stock-product-search-row > label { color: #cad9e7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-fields :is(input, select),
+html[data-theme="oscuro"] .stock-entry-modal .stock-provider-identity :is(input, select),
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-add-fields input,
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-fields :is(input, select) { border-color: #3b5268 !important; background: #192b3e !important; color: #e1edf7 !important; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-purchase-products-help,
+html[data-theme="oscuro"] .stock-entry-modal .stock-upload-hint { color: #9db1c4; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-product-search-row input { border-color: #3b5268; background: #192b3e; color: #e1edf7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-empty-lines,
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-lines-wrap { border-color: #344b61; background: #192b3e; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-lines th { background: #1d3146; color: #a9bed1; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-lines td { border-color: #2a4055; color: #c3d4e3; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-lines td strong,
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-total strong,
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-balance strong { color: #b7dcf5; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-total { border-color: #30465c; color: #a8bdcf; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-fields { border-color: #344b61; background: #192b3e; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-balance { border-color: #3b5268; background: #152537; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-payment-balance span { color: #a8bdcf; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-upload,
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-section > legend { color: #cad9e7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-upload input { border-color: #3b5268; background: #192b3e; color: #dce8f2; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-name { border-color: #3b586e; background: #1b3044; color: #b5d6eb; }
+html[data-theme="oscuro"] .stock-entry-modal .catalog-form-actions { border-color: #30465c; background: #152537; }
+
+@media (max-width: 700px) {
+  .catalog-modal.stock-entry-modal { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: 16px; }
+  .stock-entry-modal .stock-entry-form-head { min-height: 82px; gap: 11px; padding: 13px 15px; }
+  .stock-entry-modal .stock-entry-form-icon { width: 40px; height: 40px; flex-basis: 40px; border-radius: 12px; }
+  .stock-entry-modal .stock-entry-form-head h2 { font-size: 18px; }
+  .stock-entry-modal .stock-entry-form-head p { max-width: 38ch; font-size: 10px; }
+  .stock-entry-modal .stock-entry-form-scroll { gap: 12px; padding: 14px 13px 18px; }
+  .stock-entry-modal .stock-entry-section { padding: 14px; border-radius: 13px; }
+  .stock-entry-modal .stock-entry-fields { gap: 12px; }
+  .stock-entry-modal .stock-entry-add-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stock-entry-modal .stock-add-product { grid-column: 1 / -1; width: 100%; }
+  .stock-entry-modal .stock-payment-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stock-entry-modal .stock-payment-fields > :last-child { grid-column: 1 / -1; }
+  .catalog-modal.stock-entry-modal .catalog-form-actions { min-height: 60px; padding: 9px 13px; }
+}
+@media (max-width: 480px) {
+  .stock-entry-modal .stock-entry-form-head { align-items: flex-start; }
+  .stock-entry-modal .stock-entry-form-icon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 10px; font-size: 19px; }
+  .stock-entry-modal .stock-entry-form-head .catalog-modal-close { width: 30px; height: 30px; }
+  .stock-entry-modal .stock-entry-form-head h2 { max-width: 22ch; font-size: 16px; line-height: 1.2; }
+  .stock-entry-modal .stock-entry-form-head p { font-size: 9px; }
+  .stock-entry-modal .stock-entry-fields { grid-template-columns: minmax(0, 1fr); }
+  .stock-entry-modal .stock-entry-observation { grid-column: auto; }
+  .stock-entry-modal .stock-provider-identity { grid-template-columns: minmax(0, 1fr); }
+  .stock-entry-modal .stock-provider-identity > button,
+  .stock-entry-modal .stock-provider-add { width: 100%; }
+  .stock-entry-modal .stock-product-search-row { grid-template-columns: minmax(0, 1fr); }
+  .stock-entry-modal .stock-create-product { justify-self: start; }
+  .stock-entry-modal .stock-entry-add-fields,
+  .stock-entry-modal .stock-payment-fields { grid-template-columns: minmax(0, 1fr); }
+  .stock-entry-modal .stock-add-product,
+  .stock-entry-modal .stock-payment-fields > :last-child { grid-column: auto; }
+  .stock-entry-modal .stock-payment-balance { min-height: 48px; }
+  .catalog-modal.stock-entry-modal .catalog-form-actions { justify-content: stretch; gap: 8px; }
+  .stock-entry-modal .catalog-form-actions > button { flex: 1 1 0; padding-inline: 8px; font-size: 11px; }
+}

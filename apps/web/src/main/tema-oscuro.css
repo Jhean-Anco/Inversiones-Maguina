@@ -59,8 +59,6 @@ html[data-theme="oscuro"] #root .stock-product-result:hover,html[data-theme="osc
 html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="oscuro"] #root .stock-product-selected{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-add-product{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .stock-add-product:hover{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-detail-summary > div{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-detail-note{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal.producto-modal .producto-wizard-actions{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{background:var(--tema-superficie)!important}
@@ -142,11 +140,6 @@ html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-rem
 html[data-theme="oscuro"] #root .venta-client-selected-actions .venta-client-remove:hover{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .perfil-card{background:var(--tema-superficie)!important}
 html[data-theme="oscuro"] #root .perfil-identity{background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] #root .stock-product-search-row > label{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-evidence-section legend{color:#788da0!important}
-html[data-theme="oscuro"] #root .stock-evidence-upload{color:#7a8d9f!important}
-html[data-theme="oscuro"] #root .stock-evidence-upload input{color:#798d9f!important}
-html[data-theme="oscuro"] #root .stock-evidence-upload input::file-selector-button{color:#688eb0!important}
 
 
 
@@ -216,13 +209,6 @@ html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="o
 html[data-theme="oscuro"] #root .stock-product-selected{color:#67947f!important}
 html[data-theme="oscuro"] #root .stock-product-selected button{color:#608fb9!important}
 html[data-theme="oscuro"] #root .stock-add-product{color:#688faf!important}
-html[data-theme="oscuro"] #root .stock-detail-heading h2{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .stock-detail-summary strong{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .stock-detail-summary small{color:#7a8ca0!important}
-html[data-theme="oscuro"] #root .stock-detail-note{color:#7b8c9e!important}
-html[data-theme="oscuro"] #root .stock-detail-lines-title{color:#7b8d9d!important}
-html[data-theme="oscuro"] #root .stock-detail-line > div > strong{color:#7a8d9e!important}
-html[data-theme="oscuro"] #root .stock-detail-line > strong{color:#748da5!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{color:#7a8ca0!important}
 html[data-theme="oscuro"] #root .catalog-modal-close:hover{color:#d96671!important}
 html[data-theme="oscuro"] #root .venta-page{color:#858b92!important}
@@ -391,7 +377,6 @@ html[data-theme="oscuro"] #root .stock-product-results{border-color:var(--tema-b
 html[data-theme="oscuro"] #root .stock-product-search-message,html[data-theme="oscuro"] #root .stock-product-selected{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-add-product{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .stock-add-product:hover{border-color:var(--tema-borde)!important}
-html[data-theme="oscuro"] #root .stock-detail-summary > div{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-modal{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .catalog-modal-close{border-color:var(--tema-borde)!important}
 html[data-theme="oscuro"] #root .venta-status{border-color:var(--tema-borde)!important}

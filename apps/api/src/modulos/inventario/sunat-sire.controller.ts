@@ -24,11 +24,14 @@ export class ControladorSunatSire {
 
   @Get("propuesta") @RequiereCualquieraPermiso("INVENTARIO.LEER", "EGRESOS.CREAR") solicitarPropuesta(
     @Query("periodo") periodo?: string,
-    @Query("fechaInicio") fechaInicio?: string,
-    @Query("fechaFin") fechaFin?: string,
+    @Query("rucProveedor") rucProveedor?: string,
+    @Query("tipoDocumento") tipoDocumento?: string,
+    @Query("serie") serie?: string,
+    @Query("correlativo") correlativo?: string,
   ) {
     if (!periodo) throw new BadRequestException("Indica el periodo tributario con formato AAAAMM.");
-    return this.sire.solicitarPropuesta(periodo, fechaInicio, fechaFin);
+    if (!rucProveedor || !tipoDocumento || !serie || !correlativo) throw new BadRequestException("Indica RUC, tipo, serie y número del comprobante que deseas consultar.");
+    return this.sire.solicitarPropuesta(periodo, { rucProveedor, tipoDocumento, serie, correlativo });
   }
 
   @Get("ticket") @RequiereCualquieraPermiso("INVENTARIO.LEER", "EGRESOS.LEER") consultarTicket(@Query("periodo") periodo?: string, @Query("numero") numero?: string) {
@@ -79,7 +82,7 @@ export class ControladorDocumentosRecibidos {
   importar(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
     if (typeof datos !== "object" || datos === null || Array.isArray(datos)) throw new BadRequestException("Los datos de importación no son válidos.");
     const entrada = datos as Record<string, unknown>;
-    if (![entrada.periodo, entrada.ticket, entrada.nombre, entrada.tipo].every((valor) => typeof valor === "string" && valor.trim())) throw new BadRequestException("Indica el periodo, ticket y archivo del SIRE.");
-    return this.sire.importarPropuesta(entrada.periodo as string, entrada.ticket as string, entrada.nombre as string, entrada.tipo as string, solicitud.usuario);
+    if (![entrada.periodo, entrada.ticket, entrada.nombre, entrada.tipo, entrada.rucProveedor, entrada.tipoDocumento, entrada.serie, entrada.correlativo].every((valor) => typeof valor === "string" && valor.trim())) throw new BadRequestException("Indica el periodo, documento y archivo de SIRE que corresponde.");
+    return this.sire.importarPropuesta(entrada.periodo as string, entrada.ticket as string, entrada.nombre as string, entrada.tipo as string, { rucProveedor: entrada.rucProveedor as string, tipoDocumento: entrada.tipoDocumento as string, serie: entrada.serie as string, correlativo: entrada.correlativo as string }, solicitud.usuario);
   }
 }

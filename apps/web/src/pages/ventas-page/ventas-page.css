@@ -124,18 +124,12 @@ html[data-theme="oscuro"] #root .ventas-notes-origin{border-color:var(--tema-bor
 
 /* Cabecera del historial: buscador y rango como un solo bloque alineado. */
 .ventas-page .listado-maestro-cabecera{align-items:center;gap:24px;padding:18px 20px}
-.ventas-page .listado-maestro-titulo{min-width:0}
-.ventas-page .listado-maestro-titulo>span{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:999px;background:#f0f5fa;color:#57718b;font-size:10px;letter-spacing:.075em}
-.ventas-page .listado-maestro-titulo h2{margin-top:7px;color:#173b5b;font-size:19px;letter-spacing:-.02em}
 .ventas-page .listado-maestro-controles{flex:0 1 390px;align-items:stretch;flex-direction:column;gap:8px}
 .ventas-page .listado-maestro-controles>.ventas-search{display:flex;grid-template-columns:none;width:100%;min-width:0;max-width:390px;height:44px;flex:0 1 auto;gap:10px;padding:0 13px;border-color:#d8e3ee;border-radius:12px;background:#fff;box-shadow:0 2px 8px #173b6308}
 .ventas-page .listado-maestro-controles>.ventas-search input{height:100%;padding:0;border:0;border-radius:0;box-shadow:none;font-size:13px}
 .ventas-page .listado-maestro-controles>.ventas-search input:focus{border:0;box-shadow:none}
 .ventas-page .listado-maestro-paginacion{width:100%;justify-content:flex-end;gap:9px;font-size:11px}
 .ventas-page .listado-maestro-paginacion .the-pagination{margin-left:0}
-html[data-theme="oscuro"] #root .ventas-page .listado-maestro-titulo>span{background:#24364b;color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .ventas-page .listado-maestro-titulo h2{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .ventas-page .listado-maestro-controles>.ventas-search{background:var(--tema-superficie);box-shadow:none}
 @media(max-width:1000px){.ventas-page .listado-maestro-controles{width:100%;max-width:none;flex:1 1 auto;align-items:flex-start}.ventas-page .listado-maestro-controles>.ventas-search{max-width:none}.ventas-page .listado-maestro-paginacion{justify-content:flex-start}}
 @media(max-width:700px){.ventas-page .listado-maestro-cabecera{gap:14px;padding:15px}.ventas-page .listado-maestro-controles>.ventas-search{width:100%}.ventas-page .listado-maestro-paginacion{justify-content:space-between}}
-@media(max-width:480px){.ventas-page .listado-maestro-titulo h2{font-size:17px}}

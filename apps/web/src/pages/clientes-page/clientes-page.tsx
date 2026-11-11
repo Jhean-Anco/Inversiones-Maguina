@@ -53,12 +53,13 @@ export function ClientesPage() {
   </div>;
 }
 
-function FormularioCliente({ onGuardar, onCancelar }: { onGuardar: (datos: DatosClienteNuevo) => Promise<string | null>; onCancelar: () => void }) {
+export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicial = "" }: { onGuardar: (datos: DatosClienteNuevo) => Promise<string | null>; onCancelar: () => void; numeroDocumentoInicial?: string }) {
   const dialogoRef = useRef<HTMLFormElement>(null);
   useDialogoFlotante(dialogoRef, true, onCancelar);
-  const [tipoPersona, setTipoPersona] = useState<"NATURAL" | "JURIDICA">("NATURAL");
-  const [tipoDocumento, setTipoDocumento] = useState<DatosClienteNuevo["tipoDocumento"]>("DNI");
-  const [numeroDocumento, setNumeroDocumento] = useState(""); const [fechaNacimiento, setFechaNacimiento] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombreComercial, setNombreComercial] = useState(""); const [contactoNombre, setContactoNombre] = useState(""); const [correo, setCorreo] = useState(""); const [telefono, setTelefono] = useState(""); const [direccion, setDireccion] = useState(""); const [direccionEntrega, setDireccionEntrega] = useState(""); const [observacion, setObservacion] = useState("");
+  const documentoInicialEsRuc = numeroDocumentoInicial.length === 11;
+  const [tipoPersona, setTipoPersona] = useState<"NATURAL" | "JURIDICA">(documentoInicialEsRuc && numeroDocumentoInicial.startsWith("20") ? "JURIDICA" : "NATURAL");
+  const [tipoDocumento, setTipoDocumento] = useState<DatosClienteNuevo["tipoDocumento"]>(documentoInicialEsRuc ? "RUC" : "DNI");
+  const [numeroDocumento, setNumeroDocumento] = useState(numeroDocumentoInicial); const [fechaNacimiento, setFechaNacimiento] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombreComercial, setNombreComercial] = useState(""); const [contactoNombre, setContactoNombre] = useState(""); const [correo, setCorreo] = useState(""); const [telefono, setTelefono] = useState(""); const [direccion, setDireccion] = useState(""); const [direccionEntrega, setDireccionEntrega] = useState(""); const [observacion, setObservacion] = useState("");
   const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
   const [buscandoIdentidad, setBuscandoIdentidad] = useState(false);
   const esJuridica = tipoPersona === "JURIDICA";
@@ -96,9 +97,9 @@ function FormularioCliente({ onGuardar, onCancelar }: { onGuardar: (datos: Datos
       {!esJuridica && <label>Fecha de nacimiento<input type="date" max={new Date().toISOString().slice(0, 10)} value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} /></label>}
       <label>Teléfono<input type="tel" maxLength={30} value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
       {esJuridica && <><label className="clientes-form-wide">Nombre comercial<input maxLength={180} value={nombreComercial} onChange={(e) => setNombreComercial(e.target.value)} placeholder="Opcional: nombre comercial" /></label>
-      <label className="clientes-form-wide">Persona de contacto<input maxLength={180} value={contactoNombre} onChange={(e) => setContactoNombre(e.target.value)} placeholder="Compras, administracióí…" /></label>
-      <label className="clientes-form-wide">Direccióín fiscal<input maxLength={240} value={direccion} onChange={(e) => setDireccion(e.target.value)} /></label>
-      <label className="clientes-form-wide">Direccióín de entrega<input maxLength={240} value={direccionEntrega} onChange={(e) => setDireccionEntrega(e.target.value)} /></label>
+      <label className="clientes-form-wide">Persona de contacto<input maxLength={180} value={contactoNombre} onChange={(e) => setContactoNombre(e.target.value)} placeholder="Compras, administración…" /></label>
+      <label className="clientes-form-wide">Dirección fiscal<input maxLength={240} value={direccion} onChange={(e) => setDireccion(e.target.value)} /></label>
+      <label className="clientes-form-wide">Dirección de entrega<input maxLength={240} value={direccionEntrega} onChange={(e) => setDireccionEntrega(e.target.value)} /></label>
       <label className="clientes-form-wide">Nota interna<textarea maxLength={1000} rows={3} value={observacion} onChange={(e) => setObservacion(e.target.value)} placeholder="Dato útil para futuras ventas" /></label></>}
       <label className="clientes-form-wide">Correo electrónico<input type="email" maxLength={254} value={correo} onChange={(e) => setCorreo(e.target.value)} /></label>
     </div>{error && <p className="clientes-form-error" role="alert">{error}</p>}<footer><button className="clientes-secondary-action" type="button" onClick={onCancelar}>Cancelar</button><button className="clientes-primary-action" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cliente"}</button></footer></form></div>;

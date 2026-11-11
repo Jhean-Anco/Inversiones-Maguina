@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
-import { servicioIngresos, type ClienteRegistrado, type ControlNrus, type DatosClienteNuevo, type DatosNuevoIngreso, type EstadoNubefact, type IngresoCreado, type LineaIngreso, type MototaxiParaIngreso, type ProductoParaIngreso } from "../services/ingresos.service";
+import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo, type DatosNuevoIngreso, type EstadoNubefact, type IngresoCreado, type LineaIngreso, type MototaxiParaIngreso, type ProductoParaIngreso } from "../services/ingresos.service";
 
 type ValorNubefact = string | number | boolean | null;
 
@@ -49,7 +49,6 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
   const [importePagoInicial, setImportePagoInicial] = useState("");
   const [guardando, setGuardando] = useState(false); const [error, setError] = useState(""); const [exito, setExito] = useState<IngresoCreado | null>(null);
   const [estadoNubefact, setEstadoNubefact] = useState<EstadoNubefact | null>(null);
-  const [controlNrus, setControlNrus] = useState<ControlNrus | null>(null);
   const [camposNubefact, setCamposNubefact] = useState<Record<string, ValorNubefact>>({ cliente_tipo_de_documento: "0", cliente_numero_de_documento: "", cliente_denominacion: "", cliente_direccion: "" });
   const [cuotasNubefact, setCuotasNubefact] = useState<{ cuota: string; fecha_de_pago: string; importe: string }[]>([{ cuota: "1", fecha_de_pago: sumarDiasFecha(fechaHoy(), 15), importe: "" }]);
   const consulta = useRef(0);
@@ -57,12 +56,6 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
   const consultaClientes = useRef(0);
 
   useEffect(() => { void servicioIngresos.estadoNubefact().then(setEstadoNubefact).catch(() => setEstadoNubefact(null)); }, []);
-
-  useEffect(() => {
-    let vigente = true;
-    void servicioIngresos.controlNrus(fecha).then((control) => { if (vigente) setControlNrus(control); }).catch(() => { if (vigente) setControlNrus(null); });
-    return () => { vigente = false; };
-  }, [fecha, exito?.id]);
 
 
   useEffect(() => {
@@ -235,8 +228,6 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
     suma[clave] = redondear(suma[clave] + totalLinea - igvLinea);
     return suma;
   }, { total: 0, igv: 0, gravada: 0, exonerada: 0, inafecta: 0 });
-  const ingresoBrutoProyectadoNrus = estadoNubefact?.regimenTributario === "NRUS" && tipoComprobante === "BOLETA" && controlNrus?.periodo === fecha.slice(0, 7) ? redondear(controlNrus.ingresoBruto + totales.total) : null;
-  const superaLimiteMensualNrus = tipoComprobante === "BOLETA" && ingresoBrutoProyectadoNrus !== null && ingresoBrutoProyectadoNrus >= (controlNrus?.limiteMensual ?? 8000);
   function actualizarCuotaCredito(indice: number, campo: "fecha_de_pago" | "importe", valor: string) {
     setCuotasNubefact((actuales) => actuales.map((cuota, i) => i === indice ? { ...cuota, [campo]: valor } : cuota));
     if (campo === "fecha_de_pago" && indice === cuotasNubefact.length - 1) setFechaVencimientoPago(valor);
@@ -258,5 +249,5 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
     setFechaVencimientoPago(siguiente.at(-1)!.fecha_de_pago);
   }
   const fechaMinimaComprobante = sumarDiasFecha(fechaHoy(), tipoComprobante === "FACTURA" ? -3 : -5);
-  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, busquedaMototaxi, setBusquedaMototaxi, resultadosMototaxi, buscandoMototaxis, agregarMototaxi, agregarServicio, actualizarLinea, quitarLinea, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, fechaMinimaComprobante, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, controlNrus, ingresoBrutoProyectadoNrus, superaLimiteMensualNrus, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, buscandoClientes, registrandoCliente, clienteSeleccionado, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
+  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, busquedaMototaxi, setBusquedaMototaxi, resultadosMototaxi, buscandoMototaxis, agregarMototaxi, agregarServicio, actualizarLinea, quitarLinea, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, fechaMinimaComprobante, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, buscandoClientes, registrandoCliente, clienteSeleccionado, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
 }

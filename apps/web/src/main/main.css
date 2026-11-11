@@ -635,6 +635,7 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   background: #8b9db1;
 }
 .erp-main {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 0;
@@ -2140,113 +2141,6 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   border-color: #a9c4dc;
   background: #f0f7fd;
 }
-.stock-detail-content {
-  padding: 30px;
-}
-.stock-detail-heading {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding-right: 35px;
-}
-.stock-detail-heading h2 {
-  margin: 4px 0 2px;
-  color: #102f50;
-  font-size: 23px;
-}
-.stock-detail-heading p {
-  margin: 0;
-  color: #7a8da2;
-  font-size: 12px;
-}
-.stock-detail-summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 22px 0;
-}
-.stock-detail-summary > div {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-  border: 1px solid #e6ecf2;
-  border-radius: 10px;
-  padding: 12px;
-  background: #f9fbfd;
-}
-.stock-detail-summary span {
-  color: #8191a3;
-  font-size: 10px;
-}
-.stock-detail-summary strong {
-  overflow: hidden;
-  color: #24435f;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.stock-detail-summary small {
-  overflow-wrap: anywhere;
-  color: #72869b;
-  font-size: 10px;
-}
-.stock-detail-note {
-  border-left: 3px solid #8eb6d8;
-  padding: 8px 12px;
-  background: #f5f9fc;
-  color: #5c7188;
-  font-size: 12px;
-}
-.stock-detail-lines-title {
-  margin: 22px 0 10px;
-  color: #173653;
-  font-size: 14px;
-}
-.stock-detail-lines {
-  display: grid;
-  max-height: 330px;
-  overflow-y: auto;
-}
-.stock-detail-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  border-top: 1px solid #edf1f5;
-  padding: 12px 2px;
-}
-.stock-detail-line > div {
-  display: grid;
-  gap: 4px;
-}
-.stock-detail-line > div > strong {
-  color: #24435f;
-  font-size: 12px;
-}
-.stock-detail-line small {
-  color: #7d8fa2;
-  font-size: 10px;
-}
-.stock-detail-line > strong {
-  color: #123e66;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.stock-detail-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-top: 15px;
-  border-top: 1px solid #edf1f5;
-  padding-top: 10px;
-}
-.stock-detail-footer > span {
-  color: #7c8ea1;
-  font-size: 10px;
-}
-.stock-detail-footer .catalog-cancel {
-  margin: 0;
-}
 @media (max-width: 700px) {
   .catalog-modal .stock-entry-form {
     padding: 24px 16px;
@@ -2283,16 +2177,6 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   }
   .stock-add-product {
     grid-column: 1 / -1;
-  }
-  .stock-detail-content {
-    padding: 24px 17px;
-  }
-  .stock-detail-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .stock-detail-footer {
-    align-items: start;
-    flex-direction: column;
   }
 }
 @media (max-width: 480px) {

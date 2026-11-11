@@ -10,6 +10,7 @@ const URL_SIRE = "https://api-sire.sunat.gob.pe/v1/contribuyente/migeigv/libros"
 const TIMEOUT_MS = 25000;
 
 type Json = Record<string, unknown>;
+type ConsultaDocumentoSire = { rucProveedor: string; tipoDocumento: string; serie: string; correlativo: string };
 
 function objeto(valor: unknown): Json {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor) ? valor as Json : {};
@@ -102,21 +103,24 @@ export class ServicioSunatSire {
     return datos;
   }
 
-  async solicitarPropuesta(periodoEntrada: string, fechaInicio?: string, fechaFin?: string) {
+  private validarConsultaDocumento(entrada: ConsultaDocumentoSire): ConsultaDocumentoSire {
+    const consulta = { rucProveedor: entrada.rucProveedor.trim(), tipoDocumento: entrada.tipoDocumento.trim(), serie: entrada.serie.trim().toUpperCase(), correlativo: entrada.correlativo.trim().toUpperCase() };
+    if (!/^\d{11}$/.test(consulta.rucProveedor) || !["01", "03", "07", "08"].includes(consulta.tipoDocumento) || !/^[A-Z0-9-]{1,20}$/.test(consulta.serie) || !/^[A-Z0-9-]{1,40}$/.test(consulta.correlativo)) {
+      throw new BadRequestException("El comprobante debe tener RUC de 11 dígitos, tipo válido, serie y número.");
+    }
+    return consulta;
+  }
+
+  async solicitarPropuesta(periodoEntrada: string, consultaEntrada: ConsultaDocumentoSire) {
     const periodo = this.validarPeriodo(periodoEntrada);
-    const inicioDefault = `${periodo.slice(0, 4)}-${periodo.slice(4)}-01`;
-    const finDefault = new Date(Date.UTC(Number(periodo.slice(0, 4)), Number(periodo.slice(4)), 0)).toISOString().slice(0, 10);
-    const inicio = fechaInicio || inicioDefault;
-    const fin = fechaFin || finDefault;
-    const validaFecha = (fecha: string) => /^\d{4}-\d{2}-\d{2}$/.test(fecha) && fecha.startsWith(`${periodo.slice(0, 4)}-${periodo.slice(4)}`) && !Number.isNaN(Date.parse(`${fecha}T00:00:00Z`));
-    if (!validaFecha(inicio) || !validaFecha(fin) || inicio > fin) throw new BadRequestException("Las fechas deben ser válidas, pertenecer al periodo indicado y estar en orden.");
+    const consulta = this.validarConsultaDocumento(consultaEntrada);
     const token = await this.obtenerToken();
-    const parametros = new URLSearchParams({ codTipoArchivo: "1", codOrigenEnvio: "2", fecEmisionIni: inicio, fecEmisionFin: fin });
+    const parametros = new URLSearchParams({ codTipoArchivo: "1", codOrigenEnvio: "2", codTipoCDP: consulta.tipoDocumento, numSerieCDP: consulta.serie, numCDP: consulta.correlativo });
     const ruta = `rce/propuesta/web/propuesta/${periodo}/exportacioncomprobantepropuesta?${parametros}`;
     const { datos } = await this.sire<Json>(ruta, token);
     const ticket = datos.numTicket;
     if (typeof ticket !== "string" || !ticket) throw new BadGatewayException("SUNAT no devolvió un ticket para la descarga de la propuesta.");
-    return { periodo, ticket, formato: "CSV", mensaje: "Solicitud enviada. Consulta el estado del ticket y descarga el archivo cuando figure como terminado." };
+    return { periodo, ticket, formato: "CSV", documentoConsultado: consulta, mensaje: "Consulta puntual enviada. Descarga únicamente el comprobante solicitado cuando SUNAT termine de procesarla." };
   }
 
   async consultarTicket(periodoEntrada: string, ticketEntrada: string) {
@@ -171,8 +175,9 @@ export class ServicioSunatSire {
     return { contenido, nombre };
   }
 
-  async importarPropuesta(periodoEntrada: string, ticket: string, nombre: string, tipo: string, usuario: UsuarioAutenticado) {
+  async importarPropuesta(periodoEntrada: string, ticket: string, nombre: string, tipo: string, consultaEntrada: ConsultaDocumentoSire, usuario: UsuarioAutenticado) {
     const periodo = this.validarPeriodo(periodoEntrada);
+    const consulta = this.validarConsultaDocumento(consultaEntrada);
     const archivo = await this.descargarArchivo(periodo, ticket, nombre, tipo);
     if (archivo.contenido.byteLength > 25 * 1024 * 1024) throw new BadRequestException("El archivo de SUNAT supera el límite de 25 MB.");
     let zip: Record<string, Uint8Array>;
@@ -196,25 +201,28 @@ export class ServicioSunatSire {
     };
     let importados = 0;
     let omitidos = 0;
+    let documentoConsultado: { id: string; emisorRuc: string; emisorNombre: string | null; tipoDocumento: string; serie: string; correlativo: string; fechaEmision: string | null; moneda: string | null; total: string | null; estado: string; periodoSire: string | null; destino: string | null } | null = null;
     for (const fila of filas) {
       const ruc = elegir(fila, ["numDocIdentidadProveedor", "numRucProveedor", "numRuc", "rucEmisor", "rucProveedor", "numeroRucProveedor", "RUC del proveedor"]);
       const tipoDocumento = elegir(fila, ["codTipoCDP", "tipoDocumento", "codTipoComprobante"]);
       const serie = elegir(fila, ["numSerieCDP", "serie", "numeroSerie"]);
       const correlativo = elegir(fila, ["numCDP", "correlativo", "numeroDocumento"]);
       if (!/^\d{11}$/.test(ruc) || !tipoDocumento || !serie || !correlativo) { omitidos++; continue; }
+      const codigoTipo = /^\d{1,2}$/.test(tipoDocumento) ? tipoDocumento.padStart(2, "0") : tipoDocumento;
+      if (ruc !== consulta.rucProveedor || codigoTipo !== consulta.tipoDocumento || serie.trim().toUpperCase() !== consulta.serie || correlativo.trim().toUpperCase() !== consulta.correlativo) { omitidos++; continue; }
       const fechaRaw = elegir(fila, ["fecEmision", "fechaEmision", "fechaEmisionComprobante"]);
       const fechaEmision = /^\d{2}[/-]\d{2}[/-]\d{4}$/.test(fechaRaw) ? `${fechaRaw.slice(6)}-${fechaRaw.slice(3, 5)}-${fechaRaw.slice(0, 2)}` : /^\d{4}-\d{2}-\d{2}$/.test(fechaRaw) ? fechaRaw : null;
       const totalRaw = elegir(fila, ["mtoTotalCP", "mtoTotal", "importeTotal", "totalComprobante", "montoTotal"]);
       const total = /^-?\d+(?:[.,]\d{1,2})?$/.test(totalRaw) ? totalRaw.replace(",", ".") : null;
       const emisor = elegir(fila, ["nomRazonSocialProveedor", "nomRazonSocial", "razonSocial", "nomEmisor", "nombreProveedor"]);
       const moneda = elegir(fila, ["codMoneda", "moneda"]).toUpperCase().slice(0, 3) || null;
-      const resultado = await db.insert(documentosRecibidos).values({ periodoSire: periodo, ticketSire: ticket, emisorRuc: ruc, emisorNombre: emisor || null, tipoDocumento, serie, correlativo, fechaEmision, moneda, total, datosOrigen: fila, usuarioId: usuario.id })
+      const resultado = await db.insert(documentosRecibidos).values({ periodoSire: periodo, ticketSire: ticket, emisorRuc: ruc, emisorNombre: emisor || null, tipoDocumento: codigoTipo, serie: serie.trim().toUpperCase(), correlativo: correlativo.trim(), fechaEmision, moneda, total, datosOrigen: fila, usuarioId: usuario.id })
         .onConflictDoUpdate({ target: [documentosRecibidos.emisorRuc, documentosRecibidos.tipoDocumento, documentosRecibidos.serie, documentosRecibidos.correlativo], set: { periodoSire: periodo, ticketSire: ticket, emisorNombre: emisor || null, fechaEmision, moneda, total, datosOrigen: fila } })
-        .returning({ id: documentosRecibidos.id });
-      if (resultado.length) importados++;
+        .returning({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, emisorNombre: documentosRecibidos.emisorNombre, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, fechaEmision: documentosRecibidos.fechaEmision, moneda: documentosRecibidos.moneda, total: documentosRecibidos.total, estado: documentosRecibidos.estado, periodoSire: documentosRecibidos.periodoSire, destino: documentosRecibidos.destino });
+      if (resultado[0]) { importados++; documentoConsultado = resultado[0]; }
     }
-    if (filas.length > 0 && importados === 0) throw new BadGatewayException("No se pudo identificar ningún comprobante válido en el archivo del SIRE. Revisa la estructura del CSV antes de volver a importar.");
-    return { periodo, ticket, documentosProcesados: filas.length, documentosGuardados: importados, documentosOmitidos: omitidos };
+    if (!documentoConsultado) throw new NotFoundException("SUNAT no devolvió un comprobante que coincida exactamente con el RUC, tipo, serie y número consultados.");
+    return { periodo, ticket, documentoConsultado, documentosGuardados: importados, documentosOmitidos: omitidos };
   }
 
   async listarDocumentos(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estado?: string; periodo?: string; destino?: string; tipoDocumento?: string }) {

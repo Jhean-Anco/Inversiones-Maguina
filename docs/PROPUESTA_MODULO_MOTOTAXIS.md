@@ -7,7 +7,7 @@
 
 - La **boleta de venta** se emite mediante NubeFact y es el único documento que alimenta el indicador operativo NRUS solicitado en el sistema.
 - La **nota de venta** es un documento interno de una venta: identifica cliente, fecha, líneas vendidas, total y pago. Se muestra en el dashboard e informes gerenciales y no se envía a SUNAT.
-- El indicador operativo presenta las boletas del mes, con alertas alrededor de S/ 5,000 y antes de S/ 8,000, y bloqueo al alcanzar/superar el máximo configurado. Las notas se reportan por separado.
+- El indicador operativo presenta las boletas del mes; no genera alertas ni bloqueos de venta por acumulados mensuales. Las notas se reportan por separado.
 - Los reportes gerenciales deben permitir ver el total de boletas, las notas internas y el total comercial combinado, sin mezclar sus métricas.
 - Las mototaxis son unidades serializadas con un catálogo de modelos; no son productos con cantidad abstracta.
 - La venta mantiene un solo proceso para líneas de producto, servicio y mototaxi. La selección de una mototaxi cambia el estado de esa unidad y no el saldo de repuestos.

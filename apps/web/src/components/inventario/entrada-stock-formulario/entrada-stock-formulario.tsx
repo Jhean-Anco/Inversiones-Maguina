@@ -22,10 +22,13 @@ export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, s
   function enviar(evento: FormEvent<HTMLFormElement>) { void guardar(evento); }
   return createPortal(<div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
     <section className="catalog-modal stock-entry-modal" role="dialog" aria-modal="true" aria-labelledby="stock-entry-title">
-      <button className="catalog-modal-close" type="button" aria-label="Cerrar compra" onClick={cerrarModal}>×</button>
       <form className="catalog-form stock-entry-form" onSubmit={enviar}>
+        <header className="stock-entry-form-head">
+          <span className="stock-entry-form-icon" aria-hidden="true">↓</span>
+          <div><span className="stock-entry-form-kicker">INVENTARIO · REPUESTOS</span><h2 id="stock-entry-title">Nueva compra de productos</h2><p>{documentoRecibidoId ? "Confirma las cantidades recibidas y registra el pago correspondiente." : "Registra el comprobante, el proveedor y los productos recibidos."}</p></div>
+          <button className="catalog-modal-close" type="button" aria-label="Cerrar compra" onClick={cerrarModal}>×</button>
+        </header>
         <div className="stock-entry-form-scroll">
-        <div className="catalog-form-title"><span aria-hidden="true">↓</span><div><h2 id="stock-entry-title">Nueva compra de productos</h2><p>{documentoRecibidoId ? "Verifica el comprobante y registra solo las cantidades recibidas físicamente; el pago se registra aparte." : "Registra el comprobante del proveedor y agrega los productos que recibiste para actualizar existencias."}</p></div></div>
         {error && <div className="catalog-alert" role="alert">{error}</div>}
         <fieldset className="stock-entry-section"><legend>Documento y proveedor</legend>
           <SelectorComprobanteProveedor destino="REPUESTOS" bloqueado={guardando} alSeleccionar={seleccionarComprobante} />

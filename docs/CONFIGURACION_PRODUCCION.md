@@ -30,7 +30,6 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 
 `VITE_API_URL` se lee **al compilar el frontend**, no al arrancar el API. Déjala vacía para servir API y web bajo el mismo origen/reverse proxy, o configura la URL HTTPS del API si va en otro origen. `VITE_` significa que el valor queda público en el bundle: nunca pongas allí contraseñas, tokens o URLs que incorporen credenciales.
 
-`REDIS_URL` está en la configuración de desarrollo/README, pero la aplicación actual no ejecuta trabajos con Redis. No lo consideres una dependencia productiva hasta implementar y desplegar la cola correspondiente.
 
 ## Orden de puesta en marcha
 
@@ -55,7 +54,7 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 
 ## Limitaciones pendientes antes de abrir al público
 
-- Este checkout no tiene Git metadata ni CI verificable. Los comandos de `lint` siguen siendo marcadores y no hay suite automatizada de integración/E2E.
+- Este checkout no tiene Git metadata ni CI verificable. No hay comandos de `lint` configurados ni suite automatizada de integración/E2E.
 - No se ha probado NubeFact productivo ni un CPE de este negocio. La primera emisión real debe ser un piloto autorizado y revisado.
 - Si se pierde una respuesta de NubeFact, la app bloquea la repetición con la misma clave y exige conciliación manual; todavía no consulta/reintenta automáticamente el estado remoto.
 - No se ha implementado límite distribuido de intentos de inicio de sesión; configura protección/rate limit en el proxy hasta contar con un mecanismo compartido.

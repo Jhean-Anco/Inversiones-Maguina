@@ -1,7 +1,7 @@
 ﻿import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gt, gte, ilike, inArray, isNull, lte, not, or, sql } from "drizzle-orm";
-import { db, clientes, comprobantesRelacionados, comprobantesRelacionadosDetalle, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosMototaxis, movimientosMototaxisVentas, movimientosStock, nubefactCorrelativos, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, unidadesMedida, unidadesMototaxis, modelosMototaxis } from "@magina/database";
+import { db, clientes, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosMototaxis, movimientosMototaxisVentas, movimientosStock, nubefactCorrelativos, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, unidadesMedida, unidadesMototaxis, modelosMototaxis } from "@magina/database";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { consultarIdentidadPeru } from "../../utilidades/consulta-identidad-peru";
@@ -63,8 +63,165 @@ const validarFecha = (fecha: string, nombre: string) => {
     throw new BadRequestException(`${nombre} debe ser una fecha real y no futura.`);
   }
 };
+function validarDetallesGestion(valor: unknown, permitirVacio: boolean) {
+  if (!Array.isArray(valor) || (!permitirVacio && valor.length === 0) || valor.length > 100) throw new BadRequestException(permitirVacio ? "Los detalles deben ser una lista de hasta 100 líneas." : "Agrega entre 1 y 100 líneas.");
+  return valor.map((entrada, indice) => {
+    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`La línea ${indice + 1} no es válida.`);
+    const linea = entrada as Record<string, unknown>;
+    if (linea.tipo !== "PRODUCTO" && linea.tipo !== "SERVICIO") throw new BadRequestException(`La línea ${indice + 1} debe ser un repuesto o un trabajo.`);
+    if (linea.tipo === "PRODUCTO" && !uuidValido(linea.presentacionId)) throw new BadRequestException(`Selecciona la presentación del repuesto en la línea ${indice + 1}.`);
+    const descripcion = linea.tipo === "SERVICIO" ? texto(linea.descripcion, `La descripción de la línea ${indice + 1}`, 240, true)! : texto(linea.nombreVisible, `El nombre del repuesto en la línea ${indice + 1}`, 240) ?? "Repuesto";
+    const cantidad = numero(linea.cantidad, `La cantidad de la línea ${indice + 1}`, 3, 0.001);
+    const precioUnitario = numero(linea.precioUnitario, `El precio de la línea ${indice + 1}`, 4, 0);
+    const descuento = linea.descuento === undefined ? 0 : numero(linea.descuento, `El descuento de la línea ${indice + 1}`, 2, 0);
+    if (descuento > redondear(cantidad * precioUnitario)) throw new BadRequestException(`El descuento de la línea ${indice + 1} supera su importe.`);
+    const afectacionIgv = linea.afectacionIgv ?? "GRAVADO";
+    if (!( ["GRAVADO", "EXONERADO", "INAFECTO"] as unknown[]).includes(afectacionIgv)) throw new BadRequestException(`La afectación de IGV de la línea ${indice + 1} no es válida.`);
+    return linea.tipo === "PRODUCTO"
+      ? { tipo: linea.tipo, presentacionId: linea.presentacionId as string, cantidad: cantidad.toFixed(3), precioUnitario: precioUnitario.toFixed(4), descuento: descuento.toFixed(2), afectacionIgv, nombreVisible: descripcion }
+      : { tipo: linea.tipo, descripcion, cantidad: cantidad.toFixed(3), precioUnitario: precioUnitario.toFixed(4), descuento: descuento.toFixed(2), afectacionIgv, nombreVisible: descripcion };
+  });
+}
 @Injectable()
 export class ServicioIngresos {
+  async listarOrdenesServicio(busquedaEntrada?: string) {
+    const busqueda = busquedaEntrada?.trim();
+    const filas = await db.select({ orden: ordenesServicio, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno, razonSocial: personas.razonSocial })
+      .from(ordenesServicio).innerJoin(personas, eq(ordenesServicio.clienteId, personas.id))
+      .where(busqueda ? or(ilike(ordenesServicio.codigo, `%${busqueda}%`), ilike(ordenesServicio.vehiculoPlaca, `%${busqueda}%`), ilike(ordenesServicio.vehiculoVin, `%${busqueda}%`), ilike(personas.nombres, `%${busqueda}%`), ilike(personas.razonSocial, `%${busqueda}%`)) : undefined)
+      .orderBy(desc(ordenesServicio.actualizadoEn)).limit(200);
+    return filas.map(({ orden, ...cliente }) => ({ ...orden, clienteNombre: cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") }));
+  }
+
+  async crearOrdenServicio(valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Completa los datos de la orden de servicio.");
+    const datos = valor as Record<string, unknown>;
+    if (!uuidValido(datos.clienteId)) throw new BadRequestException("Selecciona un cliente para la orden.");
+    const [cliente] = await db.select({ id: clientes.personaId }).from(clientes).where(and(eq(clientes.personaId, datos.clienteId as string), eq(clientes.activo, true))).limit(1);
+    if (!cliente) throw new NotFoundException("El cliente no está activo.");
+    const placa = texto(datos.vehiculoPlaca, "La placa o identificador del vehículo", 20, true)!;
+    const detalles = validarDetallesGestion(datos.detalles, true);
+    const fechaRecepcion = texto(datos.fechaRecepcion, "La fecha de recepción", 10, true)!;
+    validarFecha(fechaRecepcion, "La fecha de recepción");
+    const id = randomUUID();
+    const [orden] = await db.insert(ordenesServicio).values({ id, codigo: `OS-${id.slice(0, 8).toUpperCase()}`, clienteId: cliente.id,
+      vehiculoPlaca: placa.toLocaleUpperCase("es-PE"), vehiculoVin: texto(datos.vehiculoVin, "El VIN", 40), vehiculoMarca: texto(datos.vehiculoMarca, "La marca", 100),
+      vehiculoModelo: texto(datos.vehiculoModelo, "El modelo", 100), motivo: texto(datos.motivo, "El motivo de ingreso", 2000, true)!, diagnostico: texto(datos.diagnostico, "El diagnóstico", 5000),
+      detalles, fechaRecepcion, claveEmision: randomUUID(), usuarioId }).returning();
+    return orden;
+  }
+
+  async actualizarOrdenServicio(id: string, valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos de actualización no son válidos.");
+    const [actual] = await db.select().from(ordenesServicio).where(eq(ordenesServicio.id, id)).limit(1);
+    if (!actual) throw new NotFoundException("No se encontró la orden de servicio.");
+    if (!["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"].includes(actual.estado)) throw new ConflictException("Esta orden ya no admite cambios.");
+    const datos = valor as Record<string, unknown>;
+    const estado = datos.estado === undefined ? actual.estado : datos.estado;
+    if (!(["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"] as unknown[]).includes(estado)) throw new BadRequestException("Selecciona un estado válido para la orden.");
+    const detalles = datos.detalles === undefined ? actual.detalles : validarDetallesGestion(datos.detalles, true);
+    const [orden] = await db.update(ordenesServicio).set({ estado: estado as string,
+      diagnostico: datos.diagnostico === undefined ? actual.diagnostico : texto(datos.diagnostico, "El diagnóstico", 5000),
+      motivo: datos.motivo === undefined ? actual.motivo : texto(datos.motivo, "El motivo de ingreso", 2000, true)!,
+      detalles, notasTrabajo: typeof datos.notaAvance === "string" && datos.notaAvance.trim() ? [...actual.notasTrabajo, { fecha: new Date().toISOString(), texto: texto(datos.notaAvance, "La nota de avance", 2000, true)!, usuarioId }] : actual.notasTrabajo, actualizadoEn: new Date() })
+      .where(and(eq(ordenesServicio.id, id), inArray(ordenesServicio.estado, ["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"]))).returning();
+    if (!orden) throw new ConflictException("La orden cambió mientras la actualizabas. Recarga e inténtalo otra vez.");
+    return orden;
+  }
+
+  async emitirOrdenServicio(id: string, valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Elige el comprobante para cerrar la orden.");
+    const datos = valor as Record<string, unknown>;
+    const tipoComprobante = datos.tipoComprobante === "FACTURA" ? "FACTURA" : datos.tipoComprobante === "NOTA_VENTA" ? "NOTA_VENTA" : "BOLETA";
+    const [orden] = await db.update(ordenesServicio).set({ estado: "EMITIENDO", actualizadoEn: new Date() })
+      .where(and(eq(ordenesServicio.id, id), inArray(ordenesServicio.estado, ["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"]))).returning();
+    if (!orden) throw new ConflictException("La orden ya fue cerrada, está en emisión o no existe.");
+    try {
+      await this.validarPreciosCotizados(orden.detalles);
+      const ingreso = await this.crear({ idempotencyKey: orden.claveEmision, fecha: fechaActualPeru(), tipoComprobante, clienteId: orden.clienteId,
+        medioPago: typeof datos.medioPago === "string" ? datos.medioPago : "EFECTIVO", condicionPago: "CONTADO",
+        observacion: `Orden de servicio ${orden.codigo} · Vehículo ${orden.vehiculoPlaca}. ${orden.motivo}`,
+        detalles: orden.detalles }, usuarioId);
+      await db.update(ordenesServicio).set({ estado: "FACTURADA", fechaCierre: fechaActualPeru(), ingresoId: ingreso.id, actualizadoEn: new Date() }).where(eq(ordenesServicio.id, orden.id));
+      return { ordenId: orden.id, ingreso };
+    } catch (error) {
+      await db.update(ordenesServicio).set({ estado: "COMPLETADA", actualizadoEn: new Date() }).where(and(eq(ordenesServicio.id, orden.id), eq(ordenesServicio.estado, "EMITIENDO")));
+      throw error;
+    }
+  }
+
+  async listarCotizaciones(busquedaEntrada?: string) {
+    const busqueda = busquedaEntrada?.trim();
+    const filas = await db.select({ cotizacion: cotizaciones, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno, razonSocial: personas.razonSocial })
+      .from(cotizaciones).innerJoin(personas, eq(cotizaciones.clienteId, personas.id))
+      .where(busqueda ? or(ilike(cotizaciones.codigo, `%${busqueda}%`), ilike(personas.nombres, `%${busqueda}%`), ilike(personas.razonSocial, `%${busqueda}%`)) : undefined)
+      .orderBy(desc(cotizaciones.creadoEn)).limit(200);
+    return filas.map(({ cotizacion, ...cliente }) => ({ ...cotizacion, clienteNombre: cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") }));
+  }
+
+  async crearCotizacion(valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Completa la cotización.");
+    const datos = valor as Record<string, unknown>;
+    if (!uuidValido(datos.clienteId)) throw new BadRequestException("Selecciona un cliente.");
+    const [cliente] = await db.select({ id: clientes.personaId }).from(clientes).where(and(eq(clientes.personaId, datos.clienteId as string), eq(clientes.activo, true))).limit(1);
+    if (!cliente) throw new NotFoundException("El cliente no está activo.");
+    const detalles = validarDetallesGestion(datos.detalles, false);
+    const fecha = fechaActualPeru();
+    const id = randomUUID();
+    const [cotizacion] = await db.insert(cotizaciones).values({ id, codigo: `COT-${id.slice(0, 8).toUpperCase()}`, clienteId: cliente.id,
+      detalles, observacion: texto(datos.observacion, "La observación", 2000), fecha,
+      vigenteHasta: texto(datos.vigenteHasta, "La vigencia", 10), claveEmision: randomUUID(), usuarioId }).returning();
+    return cotizacion;
+  }
+
+  async cambiarEstadoCotizacion(id: string, valor: unknown) {
+    const estado = valor && typeof valor === "object" && !Array.isArray(valor) ? (valor as Record<string, unknown>).estado : null;
+    if (!(["ENVIADA", "ACEPTADA", "RECHAZADA", "ANULADA"] as unknown[]).includes(estado)) throw new BadRequestException("Selecciona un estado válido para la cotización.");
+    const [cotizacion] = await db.update(cotizaciones).set({ estado: estado as string, actualizadoEn: new Date() })
+      .where(and(eq(cotizaciones.id, id), inArray(cotizaciones.estado, ["BORRADOR", "ENVIADA", "ACEPTADA"]))).returning();
+    if (!cotizacion) throw new NotFoundException("La cotización no existe o ya fue convertida.");
+    return cotizacion;
+  }
+
+  async convertirCotizacion(id: string, valor: unknown, usuarioId: string) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Elige el comprobante de la venta.");
+    const datos = valor as Record<string, unknown>;
+    const [existente] = await db.select().from(cotizaciones).where(eq(cotizaciones.id, id)).limit(1);
+    if (!existente) throw new NotFoundException("No se encontró la cotización.");
+    if (existente.vigenteHasta && existente.vigenteHasta < fechaActualPeru()) throw new ConflictException("La cotización venció. Actualiza sus precios y vigencia antes de convertirla.");
+    await this.validarPreciosCotizados(existente.detalles);
+    const [cotizacion] = await db.update(cotizaciones).set({ estado: "CONVERTIDA", actualizadoEn: new Date() })
+      .where(and(eq(cotizaciones.id, id), inArray(cotizaciones.estado, ["BORRADOR", "ENVIADA", "ACEPTADA"]))).returning();
+    if (!cotizacion) throw new ConflictException("La cotización ya no puede convertirse.");
+    try {
+      const ingreso = await this.crear({ idempotencyKey: cotizacion.claveEmision, fecha: fechaActualPeru(), tipoComprobante: datos.tipoComprobante ?? "BOLETA", clienteId: cotizacion.clienteId,
+        medioPago: typeof datos.medioPago === "string" ? datos.medioPago : "EFECTIVO", condicionPago: "CONTADO", observacion: `Cotización ${cotizacion.codigo}${cotizacion.observacion ? ` · ${cotizacion.observacion}` : ""}`,
+        detalles: cotizacion.detalles }, usuarioId);
+      await db.update(cotizaciones).set({ ingresoId: ingreso.id, estado: "CONVERTIDA", actualizadoEn: new Date() }).where(eq(cotizaciones.id, cotizacion.id));
+      return { cotizacionId: cotizacion.id, ingreso };
+    } catch (error) {
+      await db.update(cotizaciones).set({ estado: "ACEPTADA", actualizadoEn: new Date() }).where(and(eq(cotizaciones.id, cotizacion.id), eq(cotizaciones.estado, "CONVERTIDA")));
+      throw error;
+    }
+  }
+
+  private async validarPreciosCotizados(detalles: unknown) {
+    if (!Array.isArray(detalles)) throw new BadRequestException("No se encontraron líneas válidas para emitir.");
+    for (const item of detalles) {
+      if (!item || typeof item !== "object" || (item as Record<string, unknown>).tipo !== "PRODUCTO") continue;
+      const linea = item as Record<string, unknown>;
+      if (!uuidValido(linea.presentacionId)) throw new BadRequestException("Una línea de repuesto no tiene una presentación válida.");
+      const cantidad = numero(linea.cantidad, "La cantidad de repuesto", 3, 0.001);
+      const precioCotizado = numero(linea.precioUnitario, "El precio cotizado", 4, 0);
+      const [precio] = await db.select({ valor: preciosProductos.precio }).from(preciosProductos)
+        .innerJoin(tiposListasPrecio, and(eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id), eq(tiposListasPrecio.codigo, "GENERAL"), eq(tiposListasPrecio.activo, true)))
+        .where(and(eq(preciosProductos.presentacionId, linea.presentacionId as string), eq(preciosProductos.activo, true), lte(preciosProductos.cantidadMinima, String(cantidad)),
+          sql`(${preciosProductos.vigenteDesde} IS NULL OR ${preciosProductos.vigenteDesde} <= now())`, sql`(${preciosProductos.vigenteHasta} IS NULL OR ${preciosProductos.vigenteHasta} > now())`))
+        .orderBy(desc(preciosProductos.cantidadMinima)).limit(1);
+      if (!precio || Number(precio.valor) !== precioCotizado) throw new ConflictException("Cambió el precio de un repuesto desde que se registró. Revisa y actualiza la orden o cotización antes de emitir.");
+    }
+  }
+
   async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string) {
     const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
     const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
@@ -436,17 +593,6 @@ export class ServicioIngresos {
       NOTA_VENTA: { serie: "NV", numero: numeroNotaVenta, codigo: `NV-${String(numeroNotaVenta).padStart(6, "0")}` }, ambiente };
   }
 
-  async obtenerControlNrus(fechaEntrada?: string) {
-    const fecha = fechaEntrada?.trim() || fechaActualPeru();
-    const fechaParseada = new Date(`${fecha}T00:00:00.000Z`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(fechaParseada.getTime()) || fechaParseada.toISOString().slice(0, 10) !== fecha) throw new BadRequestException("La fecha del control mensual no es válida.");
-    const periodo = fecha.slice(0, 7);
-    const [inicioMes, finMes] = [`${periodo}-01`, new Date(Date.UTC(Number(periodo.slice(0, 4)), Number(periodo.slice(5, 7)), 0)).toISOString().slice(0, 10)];
-    const [acumulado] = await db.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(14,2)` })
-      .from(ingresos).where(and(gte(ingresos.fecha, inicioMes), lte(ingresos.fecha, finMes), eq(ingresos.tipoComprobante, "BOLETA")));
-    return { periodo, ingresoBruto: Number(acumulado?.total ?? 0), alertaCategoria1: 4500, limiteCategoria1: 5000, alertaLimiteMensual: 7500, limiteMensual: 8000 };
-  }
-
   private async recuperarPorIdempotencia(clave: string, huella: string): Promise<any | null> {
     const [venta] = await db.select().from(ingresos).where(eq(ingresos.claveIdempotencia, clave)).limit(1);
     if (!venta) return null;
@@ -509,7 +655,7 @@ export class ServicioIngresos {
       observaciones: venta.observacion ?? "", codigo_unico: venta.id.replaceAll("-", "").slice(0, 20),
       enviar_automaticamente_a_la_sunat: ambiente === "PRODUCCION", enviar_automaticamente_al_cliente: false,
       ...(esFactura && venta.clienteCorreo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venta.clienteCorreo) ? { cliente_email: venta.clienteCorreo } : {}),
-      condiciones_de_pago: venta.condicionPago === "CREDITO" ? `CRÉDITO CON VENCIMIENTO ${fechaVencimiento}` : "", medio_de_pago: venta.condicionPago === "CREDITO" ? "" : ({ EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia bancaria", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as Record<string, string>)[venta.medioPago] ?? venta.medioPago,
+      condiciones_de_pago: venta.condicionPago === "CREDITO" ? `CRÃ‰DITO CON VENCIMIENTO ${fechaVencimiento}` : "", medio_de_pago: venta.condicionPago === "CREDITO" ? "" : ({ EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia bancaria", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as Record<string, string>)[venta.medioPago] ?? venta.medioPago,
       cancelado: venta.condicionPago === "CONTADO", formato_de_pdf: esFactura ? "A4" : "", items, guias: [],
       venta_al_credito: venta.condicionPago === "CREDITO" ? venta.cuotasPago.map((cuota) => ({ cuota: cuota.cuota, fecha_de_pago: `${cuota.fechaDePago.slice(8, 10)}-${cuota.fechaDePago.slice(5, 7)}-${cuota.fechaDePago.slice(0, 4)}`, importe: Number(cuota.importe) })) : [],
     };
@@ -1062,14 +1208,6 @@ export class ServicioIngresos {
       }
 
       const saldoCreditoPendiente = redondear(totalHeader - importePagoInicial);
-      const periodoVenta = fecha.slice(0, 7);
-      const [inicioPeriodo, finPeriodo] = [`${periodoVenta}-01`, new Date(Date.UTC(Number(periodoVenta.slice(0, 4)), Number(periodoVenta.slice(5, 7)), 0)).toISOString().slice(0, 10)];
-       const [ingresosPeriodo] = await tx.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(14,2)` })
-         .from(ingresos).where(and(gte(ingresos.fecha, inicioPeriodo), lte(ingresos.fecha, finPeriodo), eq(ingresos.tipoComprobante, "BOLETA")));
-      const acumuladoMes = Number(ingresosPeriodo?.total ?? 0);
-      if (tipoComprobante === "BOLETA" && regimenTributario === "NRUS" && redondear(acumuladoMes + totalHeader) >= 8000) {
-        throw new BadRequestException(`No se puede emitir esta boleta: la venta llevaría los ingresos del mes a S/ ${redondear(acumuladoMes + totalHeader).toFixed(2)}. El límite mensual NRUS es menor a S/ 8,000.00.`);
-      }
       if (condicionPago === "CREDITO") {
         if (importePagoInicial >= totalHeader) throw new BadRequestException("El pago inicial debe ser menor que el total; registra la venta como pagada al contado.");
         if (redondear(cuotasPago.reduce((total, cuota) => total + Number(cuota.importe), 0)) !== saldoCreditoPendiente) throw new BadRequestException(`Las cuotas deben sumar el saldo pendiente de S/ ${saldoCreditoPendiente.toFixed(2)} después del pago inicial.`);

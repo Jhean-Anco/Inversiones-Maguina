@@ -1,0 +1,404 @@
+.gestion-ingresos-page.is-cotizaciones {
+  --cotizacion-ink: #173653;
+  --cotizacion-muted: #70839a;
+  --cotizacion-line: #e2eaf2;
+  --cotizacion-red: #d9273f;
+  gap: 18px;
+  padding: 22px clamp(14px, 2.2vw, 32px) 52px;
+  color: var(--cotizacion-ink);
+}
+
+.gestion-ingresos-page.is-cotizaciones > .listado-maestro {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  border: 1px solid var(--cotizacion-line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px #1736530b;
+}
+
+.gestion-ingresos-page.is-cotizaciones > .listado-maestro::before {
+  display: block;
+  padding: 15px 20px 0;
+  color: #8091a4;
+  content: "GESTIÓN COMERCIAL · PROPUESTAS Y SEGUIMIENTO";
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .13em;
+}
+
+.gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera {
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px 17px;
+  border-bottom: 1px solid var(--cotizacion-line);
+  background: #fff;
+}
+
+.gestion-ingresos-page.is-cotizaciones .listado-maestro-controles {
+  min-width: 0;
+  align-items: end;
+  gap: 12px;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading {
+  width: 100%;
+  align-items: end;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-comprobante {
+  width: min(230px, 28%);
+  flex: 0 0 190px;
+  gap: 5px;
+  color: #61778e;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-comprobante select,
+.gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d9e4ee;
+  border-radius: 9px;
+  background: #fff;
+  color: #244562;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input {
+  width: auto;
+  min-width: 190px;
+  flex: 1 1 320px;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-comprobante select:focus,
+.gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input:focus {
+  border-color: #8baecc;
+  outline: 0;
+  box-shadow: 0 0 0 3px #e8f0f8;
+}
+
+.gestion-ingresos-page.is-cotizaciones .listado-maestro-resumen {
+  color: #72859a;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla {
+  min-width: 1020px;
+  table-layout: fixed;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th {
+  padding: 11px 14px;
+  border-bottom: 1px solid #e4ebf2;
+  background: #f6f8fb;
+  color: #70839a;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(1) { width: 13%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(2) { width: 10%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(3) { width: 19%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(4) { width: 12%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(5) { width: 12%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(6) { width: 13%; }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th:nth-child(7) { width: 21%; }
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla td {
+  padding: 14px;
+  border-bottom: 1px solid #edf1f5;
+  color: #4b647c;
+  font-size: 11px;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla tbody tr {
+  transition: background-color .14s ease;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla tbody tr:hover {
+  background: #f9fbfd;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-code {
+  color: #1b4569;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-client {
+  color: #2f506e;
+  font-weight: 700;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-status {
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid #e8e1cd;
+  background: #fbf7ec;
+  color: #846d32;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-status.is-enviada {
+  border-color: #d6e4f1;
+  background: #eff6fc;
+  color: #416d91;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-status.is-aceptada {
+  border-color: #cee5d7;
+  background: #eff8f2;
+  color: #37734e;
+}
+
+.gestion-ingresos-page.is-cotizaciones .gestion-status.is-rechazada,
+.gestion-ingresos-page.is-cotizaciones .gestion-status.is-vencida {
+  border-color: #edd5d8;
+  background: #fbf0f1;
+  color: #9a4a53;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-total {
+  color: #173f61;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-total details {
+  margin-top: 6px;
+  color: #74879b;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: normal;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-total summary {
+  width: fit-content;
+  color: #446a8a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-total details > div {
+  padding: 5px 0 0;
+  color: #70839a;
+  font-weight: 500;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions button {
+  min-height: 30px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid #dbe5ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #496680;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions button:hover:not(:disabled) {
+  border-color: #aebfd0;
+  background: #f5f8fb;
+  color: #244e71;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions button.is-primary {
+  border-color: var(--cotizacion-red);
+  background: var(--cotizacion-red);
+  color: #fff;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions button.is-primary:hover:not(:disabled) {
+  border-color: #b91d33;
+  background: #b91d33;
+  color: #fff;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-empty {
+  display: grid;
+  min-height: 250px;
+  align-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 28px 18px;
+  text-align: center;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-empty > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #e0e8ef;
+  border-radius: 13px;
+  background: #f5f8fb;
+  color: #597a98;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-empty strong {
+  color: #294a68;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-empty p {
+  max-width: 420px;
+  margin: 0;
+  color: #7a8da1;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.gestion-ingresos-page.is-cotizaciones :is(button, input, select, textarea):focus-visible,
+.gestion-ingresos-page.is-cotizaciones .cotizacion-actions button:focus-visible {
+  outline: 3px solid #a7c6e3;
+  outline-offset: 2px;
+}
+
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones > .listado-maestro,
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones > .gestion-editor {
+  border-color: #30445a;
+  background: #172638;
+}
+
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones > .listado-maestro::before { color: #8fa6bc; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera { border-color: #30445a; background: #172638; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .gestion-comprobante { color: #a9bed2; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .gestion-comprobante select,
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input {
+  border-color: #354d65;
+  background: #132235;
+  color: #d6e4f2;
+}
+
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th { border-color: #30445a; background: #1b2d41; color: #9eb2c6; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla td { border-color: #2a4056; color: #b9cadd; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla tbody tr:hover { background: #1a2d42; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizacion-code,
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizacion-client,
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizacion-total { color: #d6e4f2; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizacion-actions button { border-color: #354d65; background: #1b3046; color: #c3d4e6; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizacion-actions button.is-primary { border-color: #c9273d; background: #c9273d; color: #fff; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-empty > span { border-color: #30445a; background: #1b2d41; color: #a9c0d7; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-empty strong { color: #d6e4f2; }
+html[data-theme="oscuro"] .gestion-ingresos-page.is-cotizaciones .cotizaciones-empty p { color: #9aafc4; }
+
+/* Cotización como documento operativo con catálogo lateral y total visible. */
+.gestion-ingresos-page.is-cotizaciones .gestion-editor {
+  grid-template-rows: minmax(0, 1fr) auto;
+  max-width: 1740px;
+  gap: 14px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.gestion-cotizacion-workspace { grid-template-columns: minmax(270px, .72fr) minmax(0, 1.28fr); }
+.gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: sticky; top: 12px; min-height: 520px; }
+.gestion-cotizacion-paper { min-height: 0; }
+.gestion-cotizacion-paper > .orden-document-header { background: linear-gradient(112deg, #0b5b50 0%, #0f705f 72%, #0a554b 100%); }
+.gestion-cotizacion-paper > .orden-document-header h2 { text-transform: uppercase; }
+.gestion-cotizacion-paper .orden-document-meta { min-width: 150px; min-height: 62px; padding: 10px 14px; align-content: center; border-radius: 11px; background: #fff7f7; color: #c91e35; }
+.gestion-cotizacion-paper .orden-document-meta strong { font-size: 13px; }
+.gestion-cotizacion-paper .orden-document-meta span { color: #98636a; font-size: 10px; }
+.gestion-cotizacion-fields { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(145px, .75fr) minmax(180px, 1fr); align-items: end; gap: 12px; }
+.gestion-cotizacion-fields > label, .gestion-cotizacion-fields .gestion-cotizacion-client { display: grid; min-width: 0; gap: 6px; color: #365b7c; font-size: 11px; font-weight: 750; }
+.gestion-cotizacion-fields .gestion-cotizacion-client { grid-column: 1 / -1; }
+.gestion-cotizacion-fields input, .gestion-cotizacion-fields select { box-sizing: border-box; width: 100%; min-height: 42px !important; padding: 9px 12px !important; border: 1px solid #d6e1eb; border-radius: 8px; background: #fff; color: #244562; font-size: 12px !important; }
+.gestion-cotizacion-lines-heading { display: flex; align-items: center; gap: 10px; padding: 12px 0; }
+.gestion-cotizacion-lines-heading h3 { flex: 1; margin: 0; color: #173f66; font-size: 14px; }
+.gestion-cotizacion-lines-heading > span { color: #71879b; font-size: 11px; white-space: nowrap; }
+.gestion-cotizacion-lines-heading > button { min-height: 36px; padding: 0 12px; border: 1px solid #d6e2ed; border-radius: 8px; background: #fff; color: #174b80; font: inherit; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.gestion-cotizacion-lines-heading > button:hover { background: #f3f8fc; }
+.gestion-cotizacion-service { padding-top: 12px; padding-bottom: 12px; }
+.gestion-cotizacion-service > .orden-labor-fields { grid-template-columns: minmax(0, 1fr) 190px auto; }
+.gestion-cotizacion-notes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(230px, .85fr); align-items: end; gap: 18px; padding: 14px 18px; border-top: 1px solid #e7edf3; }
+.gestion-cotizacion-notes > label { display: grid; gap: 6px; color: #365b7c; font-size: 11px; font-weight: 750; }
+.gestion-cotizacion-notes textarea { box-sizing: border-box; width: 100%; min-height: 58px; padding: 9px 11px; border: 1px solid #d6e1eb; border-radius: 8px; background: #fff; color: #244562; font: inherit; font-size: 12px; resize: vertical; }
+.gestion-cotizacion-notes .orden-document-total { justify-content: flex-end; border: 0; background: transparent; }
+.gestion-cotizacion-notes .orden-document-total > div { justify-items: end; }
+.gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { padding: 0 4px 2px; border: 0; }
+
+html[data-theme="oscuro"] .gestion-cotizacion-fields > label,
+html[data-theme="oscuro"] .gestion-cotizacion-fields .gestion-cotizacion-client,
+html[data-theme="oscuro"] .gestion-cotizacion-notes > label,
+html[data-theme="oscuro"] .gestion-cotizacion-lines-heading h3 { color: var(--tema-texto); }
+html[data-theme="oscuro"] .gestion-cotizacion-fields :is(input, select),
+html[data-theme="oscuro"] .gestion-cotizacion-notes textarea,
+html[data-theme="oscuro"] .gestion-cotizacion-lines-heading > button { border-color: var(--tema-borde); background: #132235; color: var(--tema-texto); }
+html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta { background: #2a2430; color: #ff8790; }
+html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta span { color: #d1a8ad; }
+
+@media (max-width: 900px) {
+  .gestion-cotizacion-workspace { grid-template-columns: minmax(0, 1fr); }
+  .gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: static; min-height: 0; }
+  .gestion-cotizacion-workspace .orden-catalog-results { max-height: 220px; }
+}
+
+@media (max-width: 600px) {
+  .gestion-ingresos-page.is-cotizaciones .gestion-editor { max-height: calc(100dvh - 122px); padding: 10px; }
+  .gestion-cotizacion-fields { grid-template-columns: minmax(0, 1fr); }
+  .gestion-cotizacion-fields .gestion-cotizacion-client { grid-column: auto; }
+  .gestion-cotizacion-lines-heading { flex-wrap: wrap; }
+  .gestion-cotizacion-lines-heading h3 { flex-basis: 100%; }
+  .gestion-cotizacion-service > .orden-labor-fields { grid-template-columns: minmax(0, 1fr) 160px; }
+  .gestion-cotizacion-service > .orden-labor-fields > button { grid-column: 1 / -1; }
+  .gestion-cotizacion-notes { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
+  .gestion-cotizacion-notes .orden-document-total { padding: 6px 0; }
+  .gestion-cotizacion-notes .orden-document-total > div { justify-items: start; }
+  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { padding: 0; }
+}
+
+@media (max-width: 390px) {
+  .gestion-cotizacion-service > .orden-labor-fields { grid-template-columns: minmax(0, 1fr); }
+  .gestion-cotizacion-service > .orden-labor-fields > button { grid-column: auto; }
+}
+
+@media (max-width: 760px) {
+  .gestion-ingresos-page.is-cotizaciones { padding: 15px 12px 42px; }
+  .gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera { align-items: stretch; flex-direction: column; gap: 9px; padding: 12px; }
+  .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading { align-items: stretch; flex-direction: column; }
+  .gestion-ingresos-page.is-cotizaciones .gestion-comprobante { width: 100%; flex: 1 1 auto; }
+  .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input { min-width: 0; flex-basis: auto; }
+  .gestion-ingresos-page.is-cotizaciones .listado-maestro-resumen { align-self: flex-end; }
+}
+
+@media (max-width: 480px) {
+  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { align-items: stretch; flex-direction: column-reverse; }
+  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer button { width: 100%; }
+}

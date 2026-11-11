@@ -165,6 +165,7 @@ html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .ca
   .catalog-manager-dialog-symbol { width: 35px; height: 35px; }
   .catalog-manager-form { gap: 14px; padding: 14px 13px; }
   .catalog-manager-dropzone { min-height: 84px; gap: 8px; padding: 8px; }
+
   .catalog-manager-preview { width: 58px; height: 56px; }
   .catalog-manager-upload-icon { width: 32px; height: 32px; }
 }
@@ -185,3 +186,52 @@ html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .ca
 @container (max-width: 1100px) { .catalog-manager-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }.catalog-manager-card { min-height: 104px; grid-template-columns: 50px minmax(0,1fr) auto; grid-template-rows: minmax(44px,auto) auto; gap: 4px 8px; padding: 8px 9px; }.catalog-manager-thumbnail { width: 48px; height: 48px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 29px; height: 29px; } }
 @container (max-width: 760px) { .catalog-manager-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 10px; }.catalog-manager-card { min-height: 108px; grid-template-columns: 52px minmax(0,1fr) auto; grid-template-rows: minmax(46px,auto) auto; gap: 5px 8px; padding: 9px; }.catalog-manager-thumbnail { width: 50px; height: 50px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 30px; height: 30px; } }
 @container (max-width: 480px) { .catalog-manager-grid { grid-template-columns: minmax(0,1fr); gap: 7px; padding: 8px; }.catalog-manager-card { min-height: 96px; grid-template-columns: 48px minmax(0,1fr) auto; grid-template-rows: minmax(42px,auto) auto; gap: 4px 8px; padding: 8px; }.catalog-manager-thumbnail { width: 46px; height: 46px; }.catalog-manager-name { font-size: 13px; }.catalog-manager-status { font-size: 10px; }.catalog-manager-row-actions button { width: 28px; height: 28px; } }
+
+/* Toolbar de filtros: una fila clara y alineada sobre el catálogo. */
+.catalog-manager .listado-maestro-cabecera {
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom-color: #e5edf5;
+  background: linear-gradient(115deg, #f8fafc 0%, #ffffff 58%, #f6f9fc 100%);
+}
+.catalog-manager .listado-maestro-controles {
+  display: grid;
+  width: min(100%, 860px);
+  max-width: 860px;
+  flex: 1 1 860px;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  align-items: end;
+  justify-content: start;
+  gap: 14px;
+}
+.catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 180px 180px; }
+.catalog-manager .catalog-manager-search { display: flex; width: 100%; min-width: 0; max-width: none; }
+.catalog-manager .catalog-manager-search input { height: 46px; padding: 0 12px 0 40px; border-radius: 10px; font-size: 14px; }
+.catalog-manager .catalog-manager-status-filter {
+  display: grid;
+  min-width: 0;
+  align-content: end;
+  gap: 6px;
+  color: #5e748b;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .035em;
+}
+.catalog-manager .catalog-manager-status-filter > span { line-height: 1.2; }
+.catalog-manager .catalog-manager-status-filter select { width: 100%; height: 46px; box-sizing: border-box; border-radius: 10px; font-weight: 650; }
+html[data-theme="oscuro"] .catalog-manager .listado-maestro-cabecera {
+  border-bottom-color: var(--tema-borde);
+  background: linear-gradient(115deg, #111d2c 0%, #151f2e 58%, #101a28 100%);
+}
+html[data-theme="oscuro"] .catalog-manager .catalog-manager-status-filter { color: var(--tema-texto-secundario); }
+@media (max-width: 760px) {
+  .catalog-manager .listado-maestro-cabecera { padding: 15px 16px; }
+  .catalog-manager .listado-maestro-controles { width: 100%; max-width: none; flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 170px; }
+  .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 150px 150px; }
+}
+@media (max-width: 560px) {
+  .catalog-manager .listado-maestro-controles,
+  .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr); gap: 10px; }
+  .catalog-manager .catalog-manager-search { grid-column: 1 / -1; }
+  .catalog-manager.is-category-manager .catalog-manager-status-filter { grid-column: 1 / -1; }
+}

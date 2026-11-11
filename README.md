@@ -10,7 +10,6 @@ apps/
   web/          React + Vite
 packages/
   database/     PostgreSQL + Drizzle ORM y migraciones
-  contracts/    paquete reservado para contratos compartidos
 ```
 
 ## Requisitos
@@ -19,7 +18,6 @@ packages/
 - Corepack y pnpm 10.
 - Docker Compose para PostgreSQL local.
 
-Redis está reservado para una futura cola de trabajos; la aplicación actual no lo utiliza para emitir comprobantes.
 
 ## Desarrollo local
 

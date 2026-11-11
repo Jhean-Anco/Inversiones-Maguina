@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { PaginationBasic } from "../the-pagination";
 import { tamanioListadoSegunPantalla } from "./paginacion-responsive";
 import "./listado-maestro.css";
@@ -11,7 +12,6 @@ type PaginacionRemota = {
 type Comun<T> = {
   titulo: string; descripcion?: string; registros: readonly T[]; cargando?: boolean; error?: ReactNode;
   vacio?: ReactNode; controlesCabecera?: ReactNode; paginacion: PaginacionLocal | PaginacionRemota;
-  etiquetaConteo?: string;
   etiqueta?: string; resetKey?: string | number;
 };
 type Tabla<T> = Comun<T> & {
@@ -54,6 +54,7 @@ export function ListadoMaestro<T>(props: Props<T>) {
   const desde = remoto?.desde ?? (props.registros.length ? (pagina - 1) * tamanio + 1 : 0);
   const hasta = remoto?.hasta ?? Math.min(pagina * tamanio, props.registros.length);
   const visibles = useMemo(() => remoto ? props.registros : props.registros.slice((pagina - 1) * tamanio, pagina * tamanio), [props.registros, pagina, remoto, tamanio]);
+  const contenedorFooter = typeof document === "undefined" ? null : document.querySelector(".erp-main");
 
   function cambiarPagina(nuevaPagina: number) {
     if (remoto) remoto.alCambiarPagina(nuevaPagina);
@@ -63,19 +64,19 @@ export function ListadoMaestro<T>(props: Props<T>) {
   return <section className={`listado-maestro is-${props.variante}`} aria-label={props.etiqueta ?? props.titulo} aria-description={props.descripcion}>
     {props.error && <div className="listado-maestro-error" role="alert">{props.error}</div>}
     <header className="listado-maestro-cabecera">
-      <div className="listado-maestro-titulo"><span>{total.toLocaleString("es-PE")} {props.etiquetaConteo ?? "REGISTROS"}</span><h2>{props.titulo}</h2>{props.descripcion && <p>{props.descripcion}</p>}</div>
-      <div className="listado-maestro-controles">{props.controlesCabecera}
-        <nav className="listado-maestro-paginacion" aria-label="Paginación del listado">
-          <span>Mostrando {desde.toLocaleString("es-PE")}–{hasta.toLocaleString("es-PE")} de {total.toLocaleString("es-PE")}</span>
-          <PaginationBasic page={pagina} totalPages={totalPaginas} onPageChange={cambiarPagina} ariaLabel="Paginación del listado" isDisabled={props.cargando} />
-        </nav>
-      </div>
+      <div className="listado-maestro-controles">{props.controlesCabecera}</div>
+      <span className="listado-maestro-resumen" aria-live="polite">Mostrando {desde.toLocaleString("es-PE")}–{hasta.toLocaleString("es-PE")} de {total.toLocaleString("es-PE")}</span>
     </header>
     <div className="listado-maestro-contenido" aria-live="polite">
       {props.cargando ? <div className="listado-maestro-estado" role="status">Cargando…</div> : total === 0 ? <div className="listado-maestro-vacio">{props.vacio}</div> : props.variante === "tabla" ? (
         <div className={`listado-maestro-tabla-scroll ${props.claseContenedor ?? ""}`}><table className={`listado-maestro-tabla ${props.claseTabla ?? ""}`}><thead>{props.encabezadoTabla}</thead><tbody>{visibles.map(props.renderizarFila)}</tbody></table></div>
       ) : <div className={`listado-maestro-tarjetas ${props.claseTarjeta ?? ""}`} style={{ "--listado-columnas": Math.max(1, props.columnas) } as React.CSSProperties}>{visibles.map(props.renderizarTarjeta)}</div>}
     </div>
+    {contenedorFooter && createPortal(<footer className="listado-maestro-footer">
+      <nav className="listado-maestro-paginacion" aria-label="Paginación del listado">
+        <PaginationBasic page={pagina} totalPages={totalPaginas} onPageChange={cambiarPagina} ariaLabel="Paginación del listado" isDisabled={props.cargando} />
+      </nav>
+    </footer>, contenedorFooter)}
   </section>;
 }
 

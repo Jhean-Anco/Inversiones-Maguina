@@ -7,7 +7,7 @@ type RangoFechas = { desde: string; hasta: string };
 const comprobantesVenta = eq(ingresos.tipoComprobante, "BOLETA");
 
 @Injectable()
-export class ServicioReportes {  async resumenGerencial() {
+export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     const hoy = fechaActualPeru();
     const desdeMes = hoy.slice(0, 8) + "01";
     const fechaDesdeGrafico = new Date(`${hoy}T00:00:00.000Z`);
@@ -35,18 +35,24 @@ export class ServicioReportes {  async resumenGerencial() {
       const fila = actividadDiaria.find((item) => item.fecha === iso);
       return { fecha: iso, operaciones: Number(fila?.operaciones ?? 0), total: fila?.total ?? "0.00" };
     });
+    const puedeLeerIngresos = permisos.includes("INGRESOS.LEER");
+    const puedeLeerPersonas = permisos.includes("PERSONAS.LEER");
+    const puedeLeerInventario = permisos.includes("INVENTARIO.LEER");
+    const puedeLeerMototaxis = permisos.includes("MOTOTAXIS.LEER");
     return {
       generadoPara: hoy,
-      ventasHoy: { operaciones: Number(ventasHoy[0]?.operaciones ?? 0), total: ventasHoy[0]?.total ?? "0.00" },
-      ventasMes: { operaciones: Number(ventasMes[0]?.operaciones ?? 0), total: ventasMes[0]?.total ?? "0.00" },
-      notasInternas: { hoy: { operaciones: Number(notasHoy[0]?.operaciones ?? 0), total: notasHoy[0]?.total ?? "0.00" }, mes: { operaciones: Number(notasMes[0]?.operaciones ?? 0), total: notasMes[0]?.total ?? "0.00" }, recientes: notasRecientes.map((nota) => ({ ...nota, cliente: nota.cliente || "Cliente varios" })) },
-      clientesActivos: Number(cartera[0]?.activos ?? 0),
-      inventario: { productosActivos: Number(existencias[0]?.productos ?? 0), productosSinStock: Number(existencias[0]?.sinStock ?? 0) },
-      inventarioMototaxis: { unidades: mototaxis.reduce((total, fila) => total + Number(fila.unidades), 0), porEstado: mototaxis, reclamosGarantia: { cantidad: Number(garantias[0]?.reclamos ?? 0), proveedor: garantias[0]?.proveedor ?? "0.00", empresa: garantias[0]?.empresa ?? "0.00" } },
-      ventasUltimosSieteDias: dias,
-      ventasPorMedioPago: ventasPorMedioPago.map((pago) => ({ ...pago, operaciones: Number(pago.operaciones) })),
-      ventasRecientes: recientes.map((venta) => ({ ...venta, cliente: venta.cliente || "Cliente varios" })),
-      principalesArticulos: principales,
+      ...(puedeLeerIngresos ? {
+        ventasHoy: { operaciones: Number(ventasHoy[0]?.operaciones ?? 0), total: ventasHoy[0]?.total ?? "0.00" },
+        ventasMes: { operaciones: Number(ventasMes[0]?.operaciones ?? 0), total: ventasMes[0]?.total ?? "0.00" },
+        notasInternas: { hoy: { operaciones: Number(notasHoy[0]?.operaciones ?? 0), total: notasHoy[0]?.total ?? "0.00" }, mes: { operaciones: Number(notasMes[0]?.operaciones ?? 0), total: notasMes[0]?.total ?? "0.00" }, recientes: notasRecientes.map((nota) => ({ ...nota, cliente: nota.cliente || "Cliente varios" })) },
+        ventasUltimosSieteDias: dias,
+        ventasPorMedioPago: ventasPorMedioPago.map((pago) => ({ ...pago, operaciones: Number(pago.operaciones) })),
+        ventasRecientes: recientes.map((venta) => ({ ...venta, cliente: venta.cliente || "Cliente varios" })),
+        principalesArticulos: principales,
+      } : {}),
+      ...(puedeLeerPersonas ? { clientesActivos: Number(cartera[0]?.activos ?? 0) } : {}),
+      ...(puedeLeerInventario ? { inventario: { productosActivos: Number(existencias[0]?.productos ?? 0), productosSinStock: Number(existencias[0]?.sinStock ?? 0) } } : {}),
+      ...(puedeLeerMototaxis ? { inventarioMototaxis: { unidades: mototaxis.reduce((total, fila) => total + Number(fila.unidades), 0), porEstado: mototaxis, reclamosGarantia: { cantidad: Number(garantias[0]?.reclamos ?? 0), proveedor: garantias[0]?.proveedor ?? "0.00", empresa: garantias[0]?.empresa ?? "0.00" } } } : {}),
     };
   }
 

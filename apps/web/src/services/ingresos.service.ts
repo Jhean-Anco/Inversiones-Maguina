@@ -33,8 +33,9 @@ export type IdentificadorCliente = { tipoDocumento: "01" | "04" | "06" | "07"; n
 export type ClienteRegistrado = { id: string; tipoPersona: "NATURAL" | "JURIDICA"; tipoDocumento: "01" | "04" | "06" | "07"; numeroDocumento: string; documentos?: IdentificadorCliente[]; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; fechaNacimiento: string | null; razonSocial: string | null; nombreComercial: string | null; contactoNombre: string | null; correo: string | null; telefono: string | null; direccion: string | null; direccionEntrega: string | null; observacion: string | null };
 export type PaginaClientes = { items: ClienteRegistrado[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
 export type DatosClienteNuevo = { tipoPersona?: "NATURAL" | "JURIDICA"; tipoDocumento: "DNI" | "RUC" | "CE" | "PASAPORTE"; numeroDocumento: string; nombres?: string; apellidoPaterno?: string; apellidoMaterno?: string; fechaNacimiento?: string; razonSocial?: string; nombreComercial?: string; contactoNombre?: string; correo?: string; telefono?: string; direccion?: string; direccionEntrega?: string; observacion?: string };
+export type OrdenServicio = { id: string; codigo: string; clienteId: string; clienteNombre: string; vehiculoPlaca: string; vehiculoVin: string | null; vehiculoMarca: string | null; vehiculoModelo: string | null; motivo: string; diagnostico: string | null; detalles: Record<string, unknown>[]; notasTrabajo: { fecha: string; texto: string; usuarioId: string }[]; estado: "ABIERTA" | "EN_PROCESO" | "ESPERANDO_REPUESTOS" | "COMPLETADA" | "EMITIENDO" | "FACTURADA" | "ANULADA"; fechaRecepcion: string; fechaCierre: string | null; ingresoId: string | null };
+export type Cotizacion = { id: string; codigo: string; clienteId: string; clienteNombre: string; detalles: Record<string, unknown>[]; observacion: string | null; estado: "BORRADOR" | "ENVIADA" | "ACEPTADA" | "RECHAZADA" | "VENCIDA" | "CONVERTIDA" | "ANULADA"; fecha: string; vigenteHasta: string | null; ingresoId: string | null };
 export type { IdentidadConsultada } from "./identidad.service";
-export type ControlNrus = { periodo: string; ingresoBruto: number; alertaCategoria1: number; limiteCategoria1: number; alertaLimiteMensual: number; limiteMensual: number };
 
 export const servicioIngresos = {
   listarGuias(pagina = 1, porPagina = 10) {
@@ -48,6 +49,14 @@ export const servicioIngresos = {
     return solicitarApi<GuiaRemision>(`/ingresos/guias/${encodeURIComponent(id)}/consultar`, { method: "POST" });
   },
   mediosPagoDisponibles: () => solicitarApi<MedioPagoDisponible[]>("/ingresos/medios-pago"),
+  listarOrdenesServicio(busqueda = "") { return solicitarApi<OrdenServicio[]>(`/ingresos/ordenes-servicio?busqueda=${encodeURIComponent(busqueda)}`); },
+  crearOrdenServicio(datos: Record<string, unknown>) { return solicitarApi<OrdenServicio>("/ingresos/ordenes-servicio", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
+  actualizarOrdenServicio(id: string, datos: Record<string, unknown>) { return solicitarApi<OrdenServicio>(`/ingresos/ordenes-servicio/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
+  emitirOrdenServicio(id: string, datos: { tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; medioPago: string }) { return solicitarApi<{ ordenId: string; ingreso: IngresoCreado }>(`/ingresos/ordenes-servicio/${encodeURIComponent(id)}/emitir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
+  listarCotizaciones(busqueda = "") { return solicitarApi<Cotizacion[]>(`/ingresos/cotizaciones?busqueda=${encodeURIComponent(busqueda)}`); },
+  crearCotizacion(datos: Record<string, unknown>) { return solicitarApi<Cotizacion>("/ingresos/cotizaciones", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
+  cambiarEstadoCotizacion(id: string, estado: string) { return solicitarApi<Cotizacion>(`/ingresos/cotizaciones/${encodeURIComponent(id)}/estado`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado }) }); },
+  convertirCotizacion(id: string, datos: { tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; medioPago: string }) { return solicitarApi<{ cotizacionId: string; ingreso: IngresoCreado }>(`/ingresos/cotizaciones/${encodeURIComponent(id)}/convertir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
   listarVentas(tipoVenta: "REPUESTOS" | "MOTOTAXIS", pagina = 1, porPagina = 10, busqueda = "") {
     const consulta = new URLSearchParams({ tipoVenta, pagina: String(pagina), porPagina: String(porPagina), busqueda });
     return solicitarApi<PaginaVentas>(`/ingresos?${consulta}`);
@@ -59,7 +68,6 @@ export const servicioIngresos = {
   },
   estadoNubefact() { return solicitarApi<EstadoNubefact>("/ingresos/nubefact/estado"); },
   numeraciones() { return solicitarApi<NumeracionesIngreso>("/ingresos/series"); },
-  controlNrus(fecha: string) { return solicitarApi<ControlNrus>(`/ingresos/control-nrus?fecha=${encodeURIComponent(fecha)}`); },
   buscarProductos(busqueda: string, catalogo = false, escaneo = false) {
     return solicitarApi<ProductoParaIngreso[]>(`/ingresos/productos?busqueda=${encodeURIComponent(busqueda)}&limite=8${catalogo ? "&catalogo=1" : ""}${escaneo ? "&escaneo=1" : ""}`);
   },

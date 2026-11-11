@@ -74,8 +74,11 @@
   box-shadow: 0 2px 7px #15344f14;
 }
 
-.the-pagination .pagination__link[data-active="true"]:hover {
-  background: #153f69;
+.the-pagination .pagination__link[data-active="true"]:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #123b62;
+  background: #123b62;
+  color: #fff;
+  box-shadow: 0 2px 7px #15344f24;
 }
 
 .the-pagination .pagination__link:focus-visible {

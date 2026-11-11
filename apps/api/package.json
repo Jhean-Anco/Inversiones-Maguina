@@ -5,13 +5,11 @@
     "dev": "corepack pnpm --filter @magina/database build && nest start --watch",
     "admin:crear": "corepack pnpm --filter @magina/database build && tsx src/comandos/crear-administrador.ts",
     "build": "nest build",
-    "typecheck": "tsc --noEmit",
-    "lint": "echo Configure ESLint"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",
     "@fastify/multipart": "^10.1.6",
-    "@magina/contracts": "workspace:*",
     "@magina/database": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",

@@ -895,6 +895,55 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
   check("ingresos_detalle_totales_no_negativos_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} >= 0`),
 ]);
 
+export const ordenesServicio = pgTable("ordenes_servicio", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  codigo: varchar("codigo", { length: 24 }).notNull().unique(),
+  clienteId: uuid("cliente_id").notNull().references(() => clientes.personaId, { onDelete: "restrict" }),
+  vehiculoPlaca: varchar("vehiculo_placa", { length: 20 }).notNull(),
+  vehiculoVin: varchar("vehiculo_vin", { length: 40 }),
+  vehiculoMarca: varchar("vehiculo_marca", { length: 100 }),
+  vehiculoModelo: varchar("vehiculo_modelo", { length: 100 }),
+  motivo: text("motivo").notNull(),
+  diagnostico: text("diagnostico"),
+  notasTrabajo: jsonb("notas_trabajo").$type<{ fecha: string; texto: string; usuarioId: string }[]>().notNull().default([]),
+  detalles: jsonb("detalles").$type<Record<string, unknown>[]>().notNull().default([]),
+  estado: varchar("estado", { length: 24 }).notNull().default("ABIERTA"),
+  fechaRecepcion: date("fecha_recepcion").notNull(),
+  fechaCierre: date("fecha_cierre"),
+  ingresoId: uuid("ingreso_id").references(() => ingresos.id, { onDelete: "restrict" }),
+  claveEmision: varchar("clave_emision", { length: 36 }).notNull().unique(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  index("ordenes_servicio_cliente_fecha_idx").on(tabla.clienteId, tabla.fechaRecepcion),
+  index("ordenes_servicio_vehiculo_idx").on(tabla.vehiculoPlaca, tabla.vehiculoVin),
+  index("ordenes_servicio_estado_idx").on(tabla.estado, tabla.actualizadoEn),
+  uniqueIndex("ordenes_servicio_ingreso_uq").on(tabla.ingresoId).where(sql`${tabla.ingresoId} IS NOT NULL`),
+  check("ordenes_servicio_estado_ck", sql`${tabla.estado} IN ('ABIERTA', 'EN_PROCESO', 'ESPERANDO_REPUESTOS', 'COMPLETADA', 'EMITIENDO', 'FACTURADA', 'ANULADA')`),
+]);
+
+export const cotizaciones = pgTable("cotizaciones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  codigo: varchar("codigo", { length: 24 }).notNull().unique(),
+  clienteId: uuid("cliente_id").notNull().references(() => clientes.personaId, { onDelete: "restrict" }),
+  detalles: jsonb("detalles").$type<Record<string, unknown>[]>().notNull().default([]),
+  observacion: text("observacion"),
+  estado: varchar("estado", { length: 20 }).notNull().default("BORRADOR"),
+  fecha: date("fecha").notNull(),
+  vigenteHasta: date("vigente_hasta"),
+  ingresoId: uuid("ingreso_id").references(() => ingresos.id, { onDelete: "restrict" }),
+  claveEmision: varchar("clave_emision", { length: 36 }).notNull().unique(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  index("cotizaciones_cliente_fecha_idx").on(tabla.clienteId, tabla.fecha),
+  index("cotizaciones_estado_fecha_idx").on(tabla.estado, tabla.fecha),
+  uniqueIndex("cotizaciones_ingreso_uq").on(tabla.ingresoId).where(sql`${tabla.ingresoId} IS NOT NULL`),
+  check("cotizaciones_estado_ck", sql`${tabla.estado} IN ('BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA', 'VENCIDA', 'CONVERTIDA', 'ANULADA')`),
+]);
+
 export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   id: uuid("id").defaultRandom().primaryKey(),
   ingresoOrigenId: uuid("ingreso_origen_id").notNull().references(() => ingresos.id, { onDelete: "restrict" }),
@@ -974,26 +1023,4 @@ export const nubefactCorrelativos = pgTable("nubefact_correlativos", {
   check("nubefact_correlativos_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
   check("nubefact_correlativos_tipo_ck", sql`${tabla.tipoComprobante} IN (1, 2, 3, 4, 5, 6)`),
   check("nubefact_correlativos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
-]);
-
-export const configuracionEmisorFacturacion = pgTable("configuracion_emisor_facturacion", {
-  codigo: varchar("codigo", { length: 20 }).primaryKey().default("PRINCIPAL"),
-  ruc: varchar("ruc", { length: 11 }).notNull(),
-  razonSocial: varchar("razon_social", { length: 180 }).notNull(),
-  nombreComercial: varchar("nombre_comercial", { length: 180 }),
-  domicilioFiscal: varchar("domicilio_fiscal", { length: 240 }).notNull(),
-  ubigeo: varchar("ubigeo", { length: 6 }),
-  urbanizacion: varchar("urbanizacion", { length: 100 }),
-  distrito: varchar("distrito", { length: 100 }),
-  provincia: varchar("provincia", { length: 100 }),
-  departamento: varchar("departamento", { length: 100 }),
-  correo: varchar("correo", { length: 254 }),
-  telefono: varchar("telefono", { length: 30 }),
-  logoUrl: text("logo_url"),
-  actualizadoPorUsuarioId: uuid("actualizado_por_usuario_id").references(() => usuarios.id, { onDelete: "set null" }),
-  creadoEn: fechaCreacion(),
-  actualizadoEn: fechaActualizacion(),
-}, (tabla) => [
-  check("configuracion_emisor_codigo_ck", sql`${tabla.codigo} = 'PRINCIPAL'`),
-  check("configuracion_emisor_ruc_ck", sql`${tabla.ruc} ~ '^[0-9]{11}$'`),
 ]);

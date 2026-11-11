@@ -1,3 +1,45 @@
+.erp-content:has(.listado-maestro) { padding-bottom: 54px; }
+.erp-content:has(.listado-maestro) {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+.erp-content:has(.listado-maestro) > .modulo-route-transition {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.erp-content:has(.listado-maestro) > .modulo-route-transition > :not(.finanzas-page):has(.listado-maestro) {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding-block-end: 12px;
+}
+.erp-content:has(.listado-maestro) .modulo-route-transition :not(.finanzas-page):has(> .listado-maestro) {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.erp-content:has(.listado-maestro) .listado-maestro {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.erp-content.is-catalog-view.is-catalog-admin-view:has(.listado-maestro) {
+  display: flex;
+  overflow: hidden;
+  padding-bottom: 54px;
+}
+.erp-content.is-catalog-view.is-catalog-admin-view:has(.listado-maestro) > .modulo-route-transition {
+  display: flex;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
 .listado-maestro {
   display: flex;
   width: 100%;
@@ -22,25 +64,39 @@
   border-bottom: 1px solid var(--border-color, #e7edf2);
   background: var(--surface-primary, #fff);
 }
-.listado-maestro-titulo { min-width: 150px; }
-.listado-maestro-titulo > span {
-  color: var(--text-secondary, #718797);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
+.listado-maestro-cabecera > .listado-maestro-controles {
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-start;
 }
-.listado-maestro-titulo h2 {
-  margin: 5px 0 0;
-  color: var(--text-primary, #173b5b);
-  font-size: 17px;
-  font-weight: 750;
-  letter-spacing: -.015em;
+.listado-maestro-controles > input[type="search"] {
+  box-sizing: border-box;
+  width: min(380px, 42vw);
+  max-width: 100%;
+  flex: 0 1 380px;
 }
-.listado-maestro-titulo p {
-  margin: 4px 0 0;
+.listado-maestro-resumen {
+  flex: 0 0 auto;
+  margin-left: auto;
   color: var(--text-secondary, #718797);
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.listado-maestro-footer {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: center;
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in srgb, var(--border-color, #dce5ed) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-primary, #fff) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 .listado-maestro-controles {
   display: flex;
@@ -85,7 +141,16 @@
   font-size: 12px;
   white-space: nowrap;
 }
-.listado-maestro-paginacion .the-pagination { margin-left: auto; }
+.listado-maestro-footer .listado-maestro-paginacion {
+  justify-content: center;
+  gap: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.listado-maestro-paginacion .the-pagination { margin-left: 0; }
 .listado-maestro-contenido {
   min-width: 0;
   min-height: 0;
@@ -145,34 +210,36 @@
 }
 html[data-theme="oscuro"] #root .listado-maestro { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
 html[data-theme="oscuro"] #root .listado-maestro-cabecera { border-color: var(--tema-borde); background: var(--tema-superficie); }
-html[data-theme="oscuro"] #root .listado-maestro-titulo h2,
+html[data-theme="oscuro"] #root .listado-maestro-footer { border-color: color-mix(in srgb, var(--tema-borde) 70%, transparent); background: color-mix(in srgb, var(--tema-superficie) 80%, transparent); }
 html[data-theme="oscuro"] #root .listado-maestro-controles,
 html[data-theme="oscuro"] #root .listado-maestro-paginacion,
 html[data-theme="oscuro"] #root .listado-maestro-tabla td,
 html[data-theme="oscuro"] #root .listado-maestro-estado,
 html[data-theme="oscuro"] #root .listado-maestro-vacio { color: var(--tema-texto); }
-html[data-theme="oscuro"] #root .listado-maestro-titulo > span,
 html[data-theme="oscuro"] #root .listado-maestro-paginacion,
-html[data-theme="oscuro"] #root .listado-maestro-titulo p { color: var(--tema-texto-secundario); }
 html[data-theme="oscuro"] #root .listado-maestro-tabla th { border-color: var(--tema-borde); background: #182639; color: var(--tema-texto-secundario); }
+html[data-theme="oscuro"] #root .listado-maestro-resumen { color: var(--tema-texto-secundario); }
 html[data-theme="oscuro"] #root .listado-maestro-tabla td { border-color: var(--tema-borde); }
 html[data-theme="oscuro"] #root .listado-maestro-tabla tbody tr:hover { background: #1a2d41; }
 html[data-theme="oscuro"] #root .listado-maestro-controles > label { color: var(--tema-texto-secundario); }
 html[data-theme="oscuro"] #root .listado-maestro-controles input,
 html[data-theme="oscuro"] #root .listado-maestro-controles select { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
 @media (max-width: 1000px) {
-  .listado-maestro-cabecera { align-items: flex-start; flex-direction: column; gap: 12px; }
-  .listado-maestro-controles { width: 100%; justify-content: flex-start; }
+  .listado-maestro-cabecera { align-items: center; flex-direction: row; gap: 10px; }
+  .listado-maestro-cabecera > .listado-maestro-controles { width: auto; flex: 1 1 auto; }
+  .listado-maestro-resumen { align-self: center; }
 }
 @media (max-width: 700px) {
-  .listado-maestro-controles { align-items: stretch; flex-direction: column; }
-  .listado-maestro-paginacion { width: 100%; justify-content: space-between; gap: 8px; font-size: 11px; }
-  .listado-maestro-paginacion .the-pagination { margin-left: auto; }
+  .listado-maestro-cabecera { flex-wrap: nowrap; gap: 8px; }
+  .listado-maestro-cabecera > .listado-maestro-controles { min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .listado-maestro-cabecera > .listado-maestro-controles::-webkit-scrollbar { display: none; }
+  .listado-maestro-resumen { font-size: 11px; }
+  .listado-maestro-paginacion { gap: 8px; font-size: 11px; }
   .listado-maestro-tarjetas { grid-template-columns: repeat(min(2, var(--listado-columnas, 2)), minmax(0, 1fr)); gap: 10px; padding: 12px; }
 }
 @media (max-width: 480px) {
   .listado-maestro-cabecera { padding: 13px; }
-  .listado-maestro-titulo h2 { font-size: 16px; }
-  .listado-maestro-paginacion { flex-wrap: wrap; }
+  .listado-maestro-footer { padding-right: 8px; padding-left: 8px; }
+  .listado-maestro-footer .listado-maestro-paginacion > span { display: none; }
   .listado-maestro-tarjetas { grid-template-columns: minmax(0, 1fr); }
 }

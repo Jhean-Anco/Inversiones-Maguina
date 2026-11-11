@@ -18,11 +18,11 @@ const MototaxisPage = lazy(() => import("../mototaxis-page/mototaxis-page").then
 const InventarioMototaxisPage = lazy(() => import("../inventario-mototaxis-page/inventario-mototaxis-page").then((modulo) => ({ default: modulo.InventarioMototaxisPage })));
 const VentasPage = lazy(() => import("../ventas-page/ventas-page").then((modulo) => ({ default: modulo.VentasPage })));
 const GuiasRemisionPage = lazy(() => import("../guias-remision-page/guias-remision-page").then((modulo) => ({ default: modulo.GuiasRemisionPage })));
+const OrdenesCotizacionesPage = lazy(() => import("../ordenes-cotizaciones-page/ordenes-cotizaciones-page").then((modulo) => ({ default: modulo.OrdenesCotizacionesPage })));
 const FinanzasPage = lazy(() => import("../finanzas-page/finanzas-page").then((modulo) => ({ default: modulo.FinanzasPage })));
 import { useSesion } from "../../hooks/use-sesion";
 import { useTema } from "../../components/tema-contexto/tema-contexto";
 import { servicioProductos, type AlertaStockBajo } from "../../services/inventario/productos.service";
-import { servicioReportes } from "../../services/reportes.service";
 import { useBorradoresDialogos } from "../../hooks/use-borradores-dialogos";
 import { AccionPrincipalProvider } from "../../components/ui/accion-principal/accion-principal";
 type PermisoNavegacion = "INGRESOS.CREAR" | "INGRESOS.LEER" | "EGRESOS.LEER" | "INVENTARIO.LEER" | "MOTOTAXIS.LEER" | "PERSONAS.LEER" | "FINANZAS.LEER";
@@ -31,6 +31,8 @@ type ModuloAside = { nombre: string; icono: string; ruta?: string; hijos: Submod
 const elementosAside: ModuloAside[] = [
   { nombre: "Resumen", icono: "inicio", ruta: "/inicio", hijos: [] },
   { nombre: "Ingresos", icono: "venta", hijos: [
+    { nombre: "Órdenes de servicio", ruta: "/ingresos/ordenes-servicio", permiso: "INGRESOS.LEER" },
+    { nombre: "Cotizaciones", ruta: "/ingresos/cotizaciones", permiso: "INGRESOS.LEER" },
     { nombre: "Venta de repuestos", ruta: "/ingresos/ventas/repuestos", rutasRelacionadas: ["/ingresos/nuevo/repuestos"], permiso: "INGRESOS.LEER" },
     { nombre: "Venta de mototaxis", ruta: "/ingresos/ventas/mototaxis", rutasRelacionadas: ["/ingresos/nuevo/mototaxis"], permiso: "INGRESOS.LEER" },
     { nombre: "Guías de remisión", ruta: "/ingresos/guias", permiso: "INGRESOS.LEER" },
@@ -65,7 +67,6 @@ const elementosAside: ModuloAside[] = [
   ] },
 ];
 const cantidadStock = (valor: string) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 3 }).format(Number(valor) || 0);
-const monedaPEN = (valor: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", maximumFractionDigits: 2 }).format(valor);
 
 function Icono({ nombre }: { nombre: string }) {
   const paths: Record<string, ReactNode> = {
@@ -107,8 +108,6 @@ export function InicioPage() {
   const [alertasStockBajo, setAlertasStockBajo] = useState<AlertaStockBajo[]>([]);
   const [cargandoAlertasStock, setCargandoAlertasStock] = useState(true);
   const [errorAlertasStock, setErrorAlertasStock] = useState("");
-  const [totalVentasMesNotificaciones, setTotalVentasMesNotificaciones] = useState<number | null>(null);
-  const [errorAlertasVentas, setErrorAlertasVentas] = useState("");
   const cabeceraRef = useRef<HTMLElement>(null);
   const asideRef = useRef<HTMLElement>(null);
   const contenidoRef = useRef<HTMLDivElement>(null);
@@ -149,9 +148,11 @@ export function InicioPage() {
   const vistaSubmoduloInventario = rutaActual === "/inventario/productos" || rutaActual === "/inventario/mototaxis" || rutaActual === "/inventario/mototaxis/unidades";
   const puedeNavegar = (permiso: PermisoNavegacion) => perfil?.permisos.includes(permiso) ?? false;
   const navegacionVisible = elementosAside.map((modulo) => ({ ...modulo, hijos: modulo.hijos.filter((hijo) => puedeNavegar(hijo.permiso)) })).filter((modulo) => modulo.ruta || modulo.hijos.length > 0);
+  useEffect(() => {
+    if (moduloActivo) setSeccionAbierta(moduloActivo.nombre);
+  }, [moduloActivo?.nombre]);
   const dashboardActivo = ubicacion.pathname === "/inicio" || ubicacion.pathname === "/";
   const puedeLeerInventario = perfil?.permisos.includes("INVENTARIO.LEER") ?? false;
-  const puedeLeerIngresos = perfil?.permisos.includes("INGRESOS.LEER") ?? false;
 
   const cargarAlertasStock = useCallback(async () => {
     if (!puedeLeerInventario) {
@@ -171,32 +172,16 @@ export function InicioPage() {
     }
   }, [puedeLeerInventario]);
 
-  const cargarAlertasVentas = useCallback(async () => {
-    if (!puedeLeerIngresos) {
-      setTotalVentasMesNotificaciones(null);
-      setErrorAlertasVentas("");
-      return;
-    }
-    try {
-      const resumen = await servicioReportes.resumenIngresosMes();
-      setTotalVentasMesNotificaciones(Number(resumen.total));
-      setErrorAlertasVentas("");
-    } catch {
-      setErrorAlertasVentas("No se pudo revisar el acumulado de ventas del mes.");
-    }
-  }, [puedeLeerIngresos]);
-
   useEffect(() => {
     void cargarAlertasStock();
-    void cargarAlertasVentas();
-    const intervalo = window.setInterval(() => { void cargarAlertasStock(); void cargarAlertasVentas(); }, 60_000);
-    const alVolver = () => { if (document.visibilityState === "visible") { void cargarAlertasStock(); void cargarAlertasVentas(); } };
+    const intervalo = window.setInterval(() => { void cargarAlertasStock(); }, 60_000);
+    const alVolver = () => { if (document.visibilityState === "visible") void cargarAlertasStock(); };
     document.addEventListener("visibilitychange", alVolver);
     return () => {
       window.clearInterval(intervalo);
       document.removeEventListener("visibilitychange", alVolver);
     };
-  }, [cargarAlertasStock, cargarAlertasVentas]);
+  }, [cargarAlertasStock]);
 
   useEffect(() => {
     const tieneDatosIniciales = Boolean((ubicacion.state as { datosInicio?: unknown } | null)?.datosInicio);
@@ -245,9 +230,7 @@ export function InicioPage() {
 
   const iniciales = perfil?.nombreCompleto.split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("") ?? "IM";
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
-  const alertasUmbralVentas = totalVentasMesNotificaciones === null ? [] : [5_000, 7_000].filter((umbral) => totalVentasMesNotificaciones >= umbral * 0.8).map((umbral) => ({ umbral, alcanzado: totalVentasMesNotificaciones >= umbral }));
-  const cantidadNotificaciones = alertasStockBajo.length + alertasUmbralVentas.length;
-  const puedeVerNotificaciones = puedeLeerInventario || puedeLeerIngresos;
+  const cantidadNotificaciones = alertasStockBajo.length;
 
   return (
     <main className={`erp-layout${asideContraido ? " is-collapsed" : ""}${dashboardActivo || colapsoDashboard ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
@@ -306,27 +289,23 @@ export function InicioPage() {
           </div>
           <div className="erp-topbar-actions">
             <div className="topbar-notification-wrap">
-              <button className="topbar-notification-button" type="button" aria-label={`Notificaciones${cantidadNotificaciones ? `, ${cantidadNotificaciones} activas` : ""}`} aria-expanded={menuCabecera === "notificaciones"} onClick={() => { setMenuCabecera((abierto) => abierto === "notificaciones" ? null : "notificaciones"); void cargarAlertasStock(); void cargarAlertasVentas(); }}>
+              <button className="topbar-notification-button" type="button" aria-label={`Notificaciones${cantidadNotificaciones ? `, ${cantidadNotificaciones} activas` : ""}`} aria-expanded={menuCabecera === "notificaciones"} onClick={() => { setMenuCabecera((abierto) => abierto === "notificaciones" ? null : "notificaciones"); void cargarAlertasStock(); }}>
                 <Icono nombre="notificaciones" />
                 <span className="topbar-notification-label">Notificaciones</span>
                 {cantidadNotificaciones > 0 && <span className="topbar-notification-badge" aria-label={`${cantidadNotificaciones} alertas activas`}>{cantidadNotificaciones > 99 ? "99+" : cantidadNotificaciones}</span>}
               </button>
               {menuCabecera === "notificaciones" && <section className="topbar-popover topbar-notification-panel" aria-label="Notificaciones">
-                <div className="topbar-notification-heading"><strong>Notificaciones</strong><span>{cargandoAlertasStock || (puedeLeerIngresos && totalVentasMesNotificaciones === null && !errorAlertasVentas) ? "Actualizando…" : `${cantidadNotificaciones} activas`}</span></div>
+                <div className="topbar-notification-heading"><strong>Notificaciones</strong><span>{cargandoAlertasStock ? "Actualizando…" : `${cantidadNotificaciones} activas`}</span></div>
                 {errorAlertasStock && <div className="topbar-notification-error" role="alert">{errorAlertasStock}<button type="button" onClick={() => void cargarAlertasStock()}>Reintentar</button></div>}
-                {errorAlertasVentas && <div className="topbar-notification-error" role="alert">{errorAlertasVentas}<button type="button" onClick={() => void cargarAlertasVentas()}>Reintentar</button></div>}
-                {(alertasStockBajo.length > 0 || alertasUmbralVentas.length > 0) && <div className="topbar-stock-alert-list">
+                {alertasStockBajo.length > 0 && <div className="topbar-stock-alert-list">
                   {alertasStockBajo.map((alerta) => {
                     const sinStock = Number(alerta.stockActual) <= 0;
                     return <button className="topbar-stock-alert" type="button" key={`stock-${alerta.id}`} onClick={() => { setMenuCabecera(null); navegar("/inventario/productos"); }}>
                       <span className="topbar-stock-alert-icon" aria-hidden="true">!</span><span className="topbar-stock-alert-copy"><strong>{sinStock ? "Sin stock: " : "Stock bajo: "}{alerta.nombre}</strong><small>{alerta.codigo} · {cantidadStock(alerta.stockActual)} de {cantidadStock(alerta.stockMinimo)} {alerta.unidad}</small></span><span className={`topbar-stock-alert-tag${sinStock ? " is-danger" : " is-warning"}`}>{sinStock ? "Agotado" : "Mínimo"}</span>
                     </button>;
                   })}
-                  {alertasUmbralVentas.map(({ umbral, alcanzado }) => <button className="topbar-stock-alert" type="button" key={`ventas-${umbral}`} onClick={() => { setMenuCabecera(null); navegar("/reportes/ingresos"); }}>
-                    <span className="topbar-stock-alert-icon is-sales" aria-hidden="true">S/</span><span className="topbar-stock-alert-copy"><strong>{alcanzado ? `Alcanzaste S/ ${cantidadStock(String(umbral))} en ventas este mes` : `Te acercas a S/ ${cantidadStock(String(umbral))} en ventas`}</strong><small>Acumulado del mes: {monedaPEN(totalVentasMesNotificaciones ?? 0)} en boletas, facturas y notas de venta{alcanzado ? "" : " · aviso preventivo desde el 80 %"}</small></span><span className={`topbar-stock-alert-tag${alcanzado ? " is-danger" : " is-warning"}`}>{alcanzado ? "Alcanzado" : "Cerca"}</span>
-                  </button>)}
                 </div>}
-                {cantidadNotificaciones === 0 && !cargandoAlertasStock && (!puedeLeerIngresos || totalVentasMesNotificaciones !== null || Boolean(errorAlertasVentas)) && !errorAlertasStock && !errorAlertasVentas && <div className="topbar-empty-notifications"><span aria-hidden="true"><Icono nombre="notificaciones" /></span><strong>{puedeVerNotificaciones ? "Sin alertas activas" : "No tienes notificaciones disponibles"}</strong><small>{puedeVerNotificaciones ? "Te avisaremos si un producto se agota, llega a su mínimo o las ventas del mes se acercan a S/ 5,000 y S/ 7,000." : "Solicita acceso a inventario o ventas para consultar alertas."}</small></div>}
+                {cantidadNotificaciones === 0 && !cargandoAlertasStock && !errorAlertasStock && <div className="topbar-empty-notifications"><span aria-hidden="true"><Icono nombre="notificaciones" /></span><strong>{puedeLeerInventario ? "Sin alertas activas" : "No tienes notificaciones disponibles"}</strong><small>{puedeLeerInventario ? "Te avisaremos si un producto se agota o llega a su nivel mínimo." : "Solicita acceso a inventario para consultar alertas."}</small></div>}
               </section>}
             </div>
             <button className="topbar-theme-button" type="button" onClick={alternarTema} aria-label={`Activar modo ${tema === "claro" ? "oscuro" : "claro"}`} title={`Modo ${tema === "claro" ? "oscuro" : "claro"}`}><Icono nombre={tema === "claro" ? "luna" : "sol"} /><span>{tema === "claro" ? "Modo oscuro" : "Modo claro"}</span></button>
@@ -353,7 +332,7 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} />}
+          {ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ordenes-servicio" ? <OrdenesCotizacionesPage modo="ORDENES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/cotizaciones" ? <OrdenesCotizacionesPage modo="COTIZACIONES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} permisos={perfil?.permisos ?? []} />}
           </Suspense>
 
           </div>
