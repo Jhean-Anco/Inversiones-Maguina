@@ -8,7 +8,7 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 
 | Variable | Producción | Propósito |
 |---|---|---|
-| `NODE_ENV` | `production` | Activa las validaciones de despliegue y cookies seguras. |
+| `NODE_ENV` | `production` | Identifica el entorno del servidor. En el entorno local usa `development`; esta variable no cambia las reglas de negocio ni la cuenta fiscal. |
 | `DATABASE_URL` | URL privada con TLS según proveedor | Conexión a PostgreSQL de producción. |
 | `PORT` | Puerto asignado por plataforma | Puerto de escucha del API. |
 | `FRONTEND_ORIGIN` | Uno o más orígenes HTTPS separados por coma | Lista CORS permitida; solo origen, sin rutas. |
@@ -45,7 +45,7 @@ storage/
   ventas/notas-venta/<ingreso-id>/
 ```
 
-PostgreSQL conserva la ruta relativa, el tipo MIME, el tamano y la huella SHA-256; el contenido permanece en el volumen del proyecto y se entrega mediante el endpoint autenticado `/archivos/:id/contenido`. Respalda y restaura el volumen junto con la base de datos.
+PostgreSQL conserva la ruta relativa, el tipo MIME, el tamaño y la huella SHA-256; el contenido permanece en el volumen del proyecto y se entrega mediante el punto de acceso autenticado `/archivos/:id/contenido`. Respalda y restaura el volumen junto con la base de datos.
 
 ## Orden de puesta en marcha
 
@@ -60,8 +60,8 @@ PostgreSQL conserva la ruta relativa, el tipo MIME, el tamano y la huella SHA-25
 
 ## Controles que aporta el código
 
-- Producción requiere JWT propio, PostgreSQL, CORS HTTPS, credenciales NubeFact y volumen de imágenes absoluto. La ruta y el token del entorno apuntan a la cuenta que procesará las emisiones.
-- Cookies de sesión `HttpOnly`, `SameSite=Lax` y `Secure` en `NODE_ENV=production`.
+- La aplicación siempre requiere JWT propio, PostgreSQL, orígenes CORS válidos y credenciales NubeFact. En cada despliegue, las variables deben apuntar a sus servicios y almacenamiento persistente; HTTPS se exige para todo host distinto de loopback local.
+- Cookies de sesión `HttpOnly`, `SameSite=Lax` y `Secure` en todos los entornos. Para trabajar localmente usa `localhost` y configura explícitamente `FRONTEND_ORIGIN` y `VITE_API_URL`.
 - CORS no usa comodín y acepta una lista explícita de orígenes.
 - Las rutas protegidas consultan permisos asignados al rol del usuario en la API.
 - Las ventas usan clave de idempotencia y huella de los datos; repetir una clave con un cuerpo distinto se rechaza.

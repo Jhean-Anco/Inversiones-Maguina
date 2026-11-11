@@ -13,7 +13,6 @@ import type { FastifyReply } from "fastify";
 import { ServicioAutenticacion } from "./autenticacion.service";
 import { GuardiaSesion } from "./guardia-sesion";
 import { UsuarioActual, type UsuarioAutenticado } from "./usuario-actual";
-import { esProduccion } from "../../configuracion-entorno";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 
 type DatosInicioSesion = {
@@ -24,7 +23,7 @@ type DatosInicioSesion = {
 
 const opcionesCookie = (recordar: boolean) => ({
   httpOnly: true,
-  secure: esProduccion(),
+  secure: true,
   sameSite: "lax" as const,
   path: "/",
   maxAge: recordar ? validarConfiguracionEntorno().segundosSesionRecordada : validarConfiguracionEntorno().segundosSesion,

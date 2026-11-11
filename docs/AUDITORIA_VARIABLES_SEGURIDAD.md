@@ -8,17 +8,17 @@
 - El `.env` real está cubierto por `.gitignore` con `.env` y `.env.*`; `.env.example` es la única excepción explícita.
 - No se detectaron asignaciones literales de tokens, JWT o contraseñas en los archivos fuente TypeScript/JavaScript/YAML revisados.
 - No se imprimieron ni copiaron los valores del `.env` a terminal, documentación o frontend.
-- `NODE_ENV=production` ahora rechaza configuración crítica incompleta y valores conocidos de desarrollo.
-- Este checkout no tiene metadatos Git; por eso no se pudo verificar si un `.env` fue incluido históricamente en commits o remotos.
+- La aplicación aplica las mismas validaciones y reglas en todos los entornos; `NODE_ENV` no selecciona comportamiento de negocio ni cuenta fiscal.
+- El `.env` local está ignorado y no indexado. La revisión del repositorio no encontró ese archivo en el historial inspeccionado.
 
 ## Variables protegidas del servidor
 
 | Variable | Uso | Regla |
 |---|---|---|
 | `DATABASE_URL` | Credenciales y conexión a PostgreSQL | Secreto del servidor; usar TLS/SSL que exija el proveedor. |
-| `AUTENTICACION_SECRETO` | Firma de sesiones JWT | Solo servidor, aleatorio y exclusivo por ambiente; producción exige 32+ caracteres y rechaza marcadores comunes de desarrollo. |
+| `AUTENTICACION_SECRETO` | Firma de sesiones JWT | Solo servidor; cada instalación debe tener un secreto aleatorio de al menos 32 caracteres y no usar marcadores de ejemplo. |
 | `NUBEFACT_TOKEN` | Autenticación de emisión | Solo servidor; corresponde a la cuenta NubeFact configurada en ese despliegue. |
-| `NUBEFACT_RUTA` | Endpoint de NubeFact | Solo servidor; la ruta configurada recibe las solicitudes de emisión. |
+| `NUBEFACT_RUTA` | Punto de acceso de NubeFact | Solo servidor; la ruta configurada recibe las solicitudes de emisión. |
 | `APIS_PERU_TOKEN` | Consulta de DNI/RUC mediante dniruc.apisperu.com | Solo servidor; nunca exponerlo en el frontend ni en respuestas HTTP. |
 | `POSTGRES_PASSWORD` | Contenedor PostgreSQL de desarrollo | Solo desarrollo local, ignorado por Git y nunca reutilizar en producción. |
 
@@ -27,18 +27,18 @@ Las respuestas de estado exponen el régimen tributario y booleanos de configura
 ## Variables operativas ahora configurables
 
 - Aplicación: `NODE_ENV`, `PORT`, `FRONTEND_ORIGIN`, `TRUST_PROXY`.
-- Navegador/build: `VITE_API_URL`; es público y queda compilado en el bundle. En producción admite HTTPS o cadena vacía para mismo origen; bloquea localhost y HTTP.
+- Navegador/build: `VITE_API_URL`; es público y queda compilado en el bundle. Admite HTTPS, cadena vacía para mismo origen o HTTP solo hacia loopback local, con la misma regla en todos los modos.
 - Sesión: `AUTENTICACION_DURACION_SEGUNDOS`, `AUTENTICACION_DURACION_RECORDAR_SEGUNDOS`.
 - PostgreSQL/contenedor local: `DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_SECONDS`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PORT`.
-- Archivos: `UPLOADS_DIR`, `IMAGEN_MAXIMO_BYTES`. Producción exige ruta absoluta para ubicar un volumen persistente.
-- Política comercial: `DESCUENTO_MAXIMO_PORCENTAJE`; producción lo limita por línea y, si no se define, queda en 0 %.
+- Archivos: `UPLOADS_DIR`, `IMAGEN_MAXIMO_BYTES`. En cada instalación, `UPLOADS_DIR` debe apuntar a almacenamiento persistente y respaldado.
+- Política comercial: `DESCUENTO_MAXIMO_PORCENTAJE`; el límite configurado por línea es igual en todos los entornos y, si no se define, queda en 0 %.
 
 
 ## Controles del código
 
-- [configuracion-entorno.ts](../apps/api/src/configuracion-entorno.ts) valida ambiente, puerto, CORS, JWT, NubeFact, series, tiempos, límite de imagen y volumen.
+- [configuracion-entorno.ts](../apps/api/src/configuracion-entorno.ts) valida puerto, CORS, PostgreSQL, JWT, NubeFact, series, tiempos y límite de imagen con las mismas reglas en todos los entornos.
 - [main.ts](../apps/api/src/main.ts) configura CORS por orígenes explícitos, confianza de proxy y límite multipart.
-- [autenticacion.controller.ts](../apps/api/src/modulos/autenticacion/autenticacion.controller.ts) emite cookies HttpOnly, SameSite Lax y Secure en producción.
+- [autenticacion.controller.ts](../apps/api/src/modulos/autenticacion/autenticacion.controller.ts) emite cookies HttpOnly, SameSite Lax y Secure en todos los entornos.
 - [guardia-permiso.ts](../apps/api/src/modulos/autenticacion/guardia-permiso.ts) valida permisos en la API según el rol persistido.
 - [docker-compose.yml](../docker-compose.yml) requiere `POSTGRES_PASSWORD` y publica los puertos de desarrollo en loopback.
 
@@ -53,4 +53,4 @@ Las respuestas de estado exponen el régimen tributario y booleanos de configura
 
 ## Regla para preparar producción
 
-Carga secretos mediante variables del servicio de despliegue/secret manager, nunca mediante el frontend ni el bundle estático. Configura `NODE_ENV=production`, las credenciales de la cuenta NubeFact que corresponda a ese despliegue, origen HTTPS, series autorizadas en la base de datos, conexión segura, volumen persistente y `VITE_API_URL` correcto al compilar el frontend. El código de emisión es el mismo en todos los despliegues; sigue [Configuración de producción](CONFIGURACION_PRODUCCION.md).
+Carga los secretos mediante las variables del servicio de despliegue o un gestor de secretos; nunca los incluyas en el frontend ni en el paquete compilado. Usa `NODE_ENV=development` en el entorno local y `NODE_ENV=production` en el servidor. Esta variable no cambia las reglas de negocio ni la cuenta fiscal: configura las variables de conexión, NubeFact, orígenes y almacenamiento para cada instalación. La cuenta fiscal se determina exclusivamente por `NUBEFACT_RUTA` y `NUBEFACT_TOKEN`; consulta [Configuración de producción](CONFIGURACION_PRODUCCION.md).

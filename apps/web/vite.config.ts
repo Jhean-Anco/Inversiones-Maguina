@@ -5,11 +5,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, "../../", "");
   const apiUrl = env.VITE_API_URL?.trim() ?? "";
-  if (mode === "production" && apiUrl) {
+  if (apiUrl) {
     let url: URL;
-    try { url = new URL(apiUrl); } catch { throw new Error("VITE_API_URL debe ser una URL HTTPS o quedar vacío si web y API comparten origen."); }
-    if (url.protocol !== "https:" || /localhost|127\.0\.0\.1/i.test(url.hostname)) {
-      throw new Error("La compilación de producción no puede apuntar a localhost ni usar HTTP en VITE_API_URL.");
+    try { url = new URL(apiUrl); } catch { throw new Error("VITE_API_URL debe ser una URL válida o quedar vacío si web y API comparten origen."); }
+    const localhostHttp = url.protocol === "http:" && /^(localhost|127(?:\.\d{1,3}){3}|\[::1\])$/i.test(url.hostname);
+    if (url.protocol !== "https:" && !localhostHttp) {
+      throw new Error("VITE_API_URL debe usar HTTPS; HTTP solo se permite en loopback local.");
     }
   }
   return {
