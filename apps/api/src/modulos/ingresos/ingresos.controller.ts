@@ -44,6 +44,10 @@ export class ControladorIngresos {
   @Get(":id/notas/fuente") @RequierePermiso("INGRESOS.LEER") obtenerFuenteNota(@Param("id") id: string) { return this.ingresos.obtenerFuenteNota(id); }
   @Get(":id/notas") @RequierePermiso("INGRESOS.LEER") listarNotas(@Param("id") id: string) { return this.ingresos.listarNotas(id); }
   @Post(":id/notas") @RequierePermiso("FACTURACION.NOTAS_EMITIR") emitirNota(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirNota(id, datos, solicitud.usuario.id); }
+  @Post(":id/anulacion") @RequierePermiso("FACTURACION.ANULAR") anularIngreso(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.anularIngreso(id, datos, solicitud.usuario.id); }
+  @Post(":id/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionIngreso(@Param("id") id: string) { return this.ingresos.consultarAnulacionIngreso(id); }
+  @Post(":id/notas/:idNota/anulacion") @RequierePermiso("FACTURACION.ANULAR") anularNota(@Param("id") id: string, @Param("idNota") idNota: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.anularNota(id, idNota, datos, solicitud.usuario.id); }
+  @Post(":id/notas/:idNota/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionNota(@Param("id") id: string, @Param("idNota") idNota: string) { return this.ingresos.consultarAnulacionNota(id, idNota); }
   @Get(":id/pagos") @RequierePermiso("INGRESOS.LEER") listarPagos(@Param("id") id: string) { return this.ingresos.listarPagos(id); }
   @Post(":id/pagos") @RequierePermiso("INGRESOS.CREAR") registrarPago(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.registrarPago(id, datos, solicitud.usuario.id); }
 }

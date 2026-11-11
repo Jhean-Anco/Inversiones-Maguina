@@ -22,12 +22,30 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 | `REGIMEN_TRIBUTARIO` | `NRUS`, `RER`, `RMT` o `GENERAL` | Define las reglas tributarias; NRUS no permite emitir facturas. |
 | `NUBEFACT_TIMEOUT_MS` | Milisegundos | Límite de espera a NubeFact. |
 | `APIS_PERU_TOKEN` | Token de dniruc.apisperu.com | Habilita las consultas de DNI/RUC desde el servidor; nunca se envía al navegador ni en registros de URL. |
-| `UPLOADS_DIR` | Ruta absoluta en volumen persistente | Imágenes del catálogo; un filesystem efímero no es suficiente. |
+| `UPLOADS_DIR` | Ruta absoluta en volumen persistente | Archivos adjuntos del sistema; un filesystem efimero no es suficiente. |
 | `IMAGEN_MAXIMO_BYTES` | Bytes | Límite de subida de imagen. |
 | `DESCUENTO_MAXIMO_PORCENTAJE` | 0–100, aprobado por el negocio | Tope de descuento por línea en la API. En producción no configurado equivale a 0 %. |
 
 `VITE_API_URL` se lee **al compilar el frontend**, no al arrancar el API. Déjala vacía para servir API y web bajo el mismo origen/reverse proxy, o configura la URL HTTPS del API si va en otro origen. `VITE_` significa que el valor queda público en el bundle: nunca pongas allí contraseñas, tokens o URLs que incorporen credenciales.
 
+
+## Almacenamiento de archivos
+
+Los archivos se guardan debajo de `UPLOADS_DIR` en carpetas por tipo y registro. Por ejemplo:
+
+```text
+storage/
+  imagenes/repuestos/<producto-id>/
+  imagenes/categorias/<categoria-id>/
+  imagenes/marcas/<marca-id>/
+  imagenes/mototaxis/<unidad-id>/
+  compras/evidencias/<entrada-id>/
+  ventas/facturas/<ingreso-id>/
+  ventas/boletas/<ingreso-id>/
+  ventas/notas-venta/<ingreso-id>/
+```
+
+PostgreSQL conserva la ruta relativa, el tipo MIME, el tamano y la huella SHA-256; el contenido permanece en el volumen del proyecto y se entrega mediante el endpoint autenticado `/archivos/:id/contenido`. Respalda y restaura el volumen junto con la base de datos.
 
 ## Orden de puesta en marcha
 

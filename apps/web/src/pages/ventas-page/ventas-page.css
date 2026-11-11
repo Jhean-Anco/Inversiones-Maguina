@@ -133,3 +133,20 @@ html[data-theme="oscuro"] #root .ventas-notes-origin{border-color:var(--tema-bor
 html[data-theme="oscuro"] #root .ventas-page .listado-maestro-controles>.ventas-search{background:var(--tema-superficie);box-shadow:none}
 @media(max-width:1000px){.ventas-page .listado-maestro-controles{width:100%;max-width:none;flex:1 1 auto;align-items:flex-start}.ventas-page .listado-maestro-controles>.ventas-search{max-width:none}.ventas-page .listado-maestro-paginacion{justify-content:flex-start}}
 @media(max-width:700px){.ventas-page .listado-maestro-cabecera{gap:14px;padding:15px}.ventas-page .listado-maestro-controles>.ventas-search{width:100%}.ventas-page .listado-maestro-paginacion{justify-content:space-between}}
+
+.ventas-message.is-success{background:#edf8f1;color:#216b42}
+.ventas-cancel-warning{padding:11px 12px;border:1px solid #f0d6ad;border-radius:9px;background:#fff8eb;color:#80551b;font-size:12px;line-height:1.5}
+.ventas-cancel-reason{display:grid;gap:6px;color:#35516e;font-size:12px;font-weight:700}
+.ventas-cancel-reason input{height:40px;padding:0 10px;border:1px solid #d8e3ed;border-radius:8px;background:#fff;color:#173554;font:inherit;font-size:13px}
+.ventas-notes-modal form .ventas-new-button.is-cancel{background:#a83232;border-color:#a83232;color:#fff}
+.ventas-notes-modal form .ventas-new-button.is-cancel:hover:not(:disabled){background:#872929;border-color:#872929}
+.ventas-cancel-action{border-color:#efd0ce!important;background:#fff7f6!important;color:#a33e3a!important}
+.ventas-cancel-action:hover{border-color:#dca9a6!important;background:#ffefed!important}
+html[data-theme="oscuro"] #root .ventas-message.is-success{background:#193628;color:#a4e1ba}
+html[data-theme="oscuro"] #root .ventas-cancel-warning{border-color:#59472c;background:#30291e;color:#f0cc8c}
+html[data-theme="oscuro"] #root .ventas-cancel-reason input{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .ventas-cancel-action{border-color:#694347!important;background:#34252a!important;color:#f2aaa7!important}
+
+.ventas-cancel-confirm{display:flex;align-items:flex-start;gap:9px;color:#6c5432;font-size:12px;line-height:1.5}
+.ventas-cancel-confirm input{width:17px;height:17px;flex:none;margin:1px 0 0;accent-color:#a83232}
+html[data-theme="oscuro"] #root .ventas-cancel-confirm{color:#e4c995}

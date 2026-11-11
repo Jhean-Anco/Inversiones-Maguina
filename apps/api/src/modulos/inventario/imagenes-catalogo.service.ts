@@ -5,7 +5,7 @@ import { readFile, unlink } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { and, asc, eq } from "drizzle-orm";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
-import { ServicioGoogleDrive } from "../google-drive/google-drive.service";
+import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type TipoImagen = "categorias" | "marcas" | "productos";
 const formatos = {
@@ -16,7 +16,7 @@ const formatos = {
 
 @Injectable()
 export class ServicioImagenesCatalogo {
-  constructor(private readonly drive: ServicioGoogleDrive) {}
+  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
 
   private validarTipo(tipo: string): TipoImagen {
     if (tipo !== "categorias" && tipo !== "marcas" && tipo !== "productos") throw new NotFoundException("No se encontró la imagen.");
@@ -38,13 +38,13 @@ export class ServicioImagenesCatalogo {
     const [registro] = await db.select({ id: tabla.id, rutaImagen: tabla.rutaImagen }).from(tabla).where(eq(tabla.id, id)).limit(1);
     if (!registro) throw new NotFoundException(tipo === "categorias" ? "No se encontró la categoría." : tipo === "marcas" ? "No se encontró la marca." : "No se encontró el producto.");
 
-    const subida = await this.drive.subirImagenCatalogo(tipo, id, archivo.filename, archivo.mimetype, contenido);
+    const subida = await this.almacenamiento.subirImagenCatalogo(tipo, id, archivo.filename, archivo.mimetype, contenido);
     const rutaImagen = subida.rutaImagen;
 
     try {
       await db.update(tabla).set({ rutaImagen }).where(eq(tabla.id, id));
     } catch (error) {
-      await this.drive.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
+      await this.almacenamiento.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
       throw error;
     }
 
@@ -67,7 +67,7 @@ export class ServicioImagenesCatalogo {
     const orden = [1, 2, 3, 4, 5].find((numero) => !imagenes.some((imagen) => imagen.orden === numero));
     if (!orden) throw new BadRequestException("Cada producto admite como máximo cinco imágenes. Quita una antes de agregar otra.");
 
-    const subida = await this.drive.subirImagenCatalogo("productos", id, archivo.filename, archivo.mimetype, contenido);
+    const subida = await this.almacenamiento.subirImagenCatalogo("productos", id, archivo.filename, archivo.mimetype, contenido);
     const rutaImagen = subida.rutaImagen;
     try {
       const [imagen] = await db.transaction(async (tx) => {
@@ -77,7 +77,7 @@ export class ServicioImagenesCatalogo {
       });
       return imagen;
     } catch (error) {
-      await this.drive.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
+      await this.almacenamiento.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
       throw error;
     }
   }
@@ -102,51 +102,12 @@ export class ServicioImagenesCatalogo {
 
   private async eliminarArchivoAnterior(ruta: string | null) {
     if (!ruta) return;
-    const idRegistroDrive = ruta.match(/^\/integraciones\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
-    if (idRegistroDrive) { await this.drive.eliminarArchivoRegistrado(idRegistroDrive).catch(() => undefined); return; }
-    const idDrive = ruta.match(/^\/integraciones\/google-drive\/imagenes\/([A-Za-z0-9_-]+)$/)?.[1];
-    if (idDrive) { await this.drive.enviarAPapelera(idDrive).catch(() => undefined); return; }
+    const idArchivo = ruta.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
+    if (idArchivo) { await this.almacenamiento.eliminarArchivoRegistrado(idArchivo).catch(() => undefined); return; }
     const coincidencia = ruta.match(/^\/inventario\/imagenes\/(categorias|marcas|productos)\/([0-9a-f-]{36}\.(?:jpg|png|webp))$/);
     if (coincidencia) await unlink(resolve(validarConfiguracionEntorno().carpetaSubidas, "catalog-images", coincidencia[1], coincidencia[2])).catch(() => undefined);
   }
 
-  async migrarImagenesLocales() {
-    const rutasMigradas = new Map<string, string>();
-    const errores: { tipo: string; registroId: string; mensaje: string }[] = [];
-    let migradas = 0;
-    const migrar = async (tipo: TipoImagen, registroId: string, ruta: string | null, guardarRuta: (nueva: string) => Promise<void>) => {
-      if (!ruta || ruta.startsWith("/integraciones/google-drive/imagenes/") || ruta.startsWith("/integraciones/archivos/")) return;
-      if (!ruta.startsWith(`/inventario/imagenes/${tipo}/`)) return;
-      const nombre = ruta.split("/").at(-1) ?? "";
-      if (!/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(nombre)) { errores.push({ tipo, registroId, mensaje: "La ruta local no tiene un nombre de imagen válido." }); return; }
-      const rutaExistente = rutasMigradas.get(ruta);
-      if (rutaExistente) { await guardarRuta(rutaExistente); return; }
-      const mime = nombre.endsWith(".jpg") ? "image/jpeg" : nombre.endsWith(".png") ? "image/png" : "image/webp";
-      try {
-        const contenido = await readFile(resolve(validarConfiguracionEntorno().carpetaSubidas, "catalog-images", tipo, nombre));
-        const archivo = await this.drive.subirImagenCatalogo(tipo, registroId, nombre, mime, contenido);
-        await guardarRuta(archivo.rutaImagen);
-        rutasMigradas.set(ruta, archivo.rutaImagen);
-        migradas += 1;
-      } catch (causa) {
-        errores.push({ tipo, registroId, mensaje: causa instanceof Error ? causa.message : "No se pudo migrar la imagen." });
-      }
-    };
-
-    for (const registro of await db.select({ id: categoriasProductos.id, rutaImagen: categoriasProductos.rutaImagen }).from(categoriasProductos)) {
-      await migrar("categorias", registro.id, registro.rutaImagen, async (rutaImagen) => { await db.update(categoriasProductos).set({ rutaImagen }).where(eq(categoriasProductos.id, registro.id)); });
-    }
-    for (const registro of await db.select({ id: marcasProductos.id, rutaImagen: marcasProductos.rutaImagen }).from(marcasProductos)) {
-      await migrar("marcas", registro.id, registro.rutaImagen, async (rutaImagen) => { await db.update(marcasProductos).set({ rutaImagen }).where(eq(marcasProductos.id, registro.id)); });
-    }
-    for (const registro of await db.select({ id: productosImagenes.id, productoId: productosImagenes.productoId, rutaImagen: productosImagenes.rutaImagen }).from(productosImagenes)) {
-      await migrar("productos", registro.productoId, registro.rutaImagen, async (rutaImagen) => { await db.update(productosImagenes).set({ rutaImagen }).where(eq(productosImagenes.id, registro.id)); });
-    }
-    for (const registro of await db.select({ id: productos.id, rutaImagen: productos.rutaImagen }).from(productos)) {
-      await migrar("productos", registro.id, registro.rutaImagen, async (rutaImagen) => { await db.update(productos).set({ rutaImagen }).where(eq(productos.id, registro.id)); });
-    }
-    return { migradas, errores };
-  }
 
   async leer(tipoEntrada: string, nombreArchivo: string) {
     const tipo = this.validarTipo(tipoEntrada);

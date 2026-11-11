@@ -18,8 +18,6 @@ function App() {
           <Route path="/mi-perfil" element={<InicioPage />} />
           <Route path="/configuracion/series" element={<InicioPage />} />
           <Route path="/finanzas/cuentas" element={<InicioPage />} />
-          <Route path="/drive" element={<Navigate to="/inicio" replace />} />
-          <Route path="/boveda" element={<Navigate to="/inicio" replace />} />
           <Route path="/ingresos/nuevo" element={<Navigate to="/ingresos/nuevo/repuestos" replace />} />
           <Route path="/ingresos/nuevo/repuestos" element={<InicioPage />} />
           <Route path="/ingresos/nuevo/mototaxis" element={<InicioPage />} />

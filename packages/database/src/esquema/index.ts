@@ -486,24 +486,12 @@ export const productosImagenes = pgTable("productos_imagenes", {
   check("productos_imagenes_orden_ck", sql`${tabla.orden} BETWEEN 1 AND 5`),
 ]);
 
-export const carpetasDrive = pgTable("carpetas_drive", {
-  clave: varchar("clave", { length: 80 }).primaryKey(),
-  nombre: varchar("nombre", { length: 180 }).notNull(),
-  rutaLogica: text("ruta_logica").notNull(),
-  driveFolderId: varchar("drive_folder_id", { length: 255 }).notNull().unique(),
-  driveFolderUrl: text("drive_folder_url").notNull(),
-  creadoEn: fechaCreacion(),
-  actualizadoEn: fechaActualizacion(),
-});
-
-export const archivosDrive = pgTable("archivos_drive", {
+export const archivosLocales = pgTable("archivos_locales", {
   id: uuid("id").defaultRandom().primaryKey(),
   tipoArchivo: varchar("tipo_archivo", { length: 50 }).notNull(),
   entidadTipo: varchar("entidad_tipo", { length: 40 }).notNull(),
   entidadId: uuid("entidad_id").notNull(),
-  carpetaClave: varchar("carpeta_clave", { length: 80 }).notNull().references(() => carpetasDrive.clave, { onDelete: "restrict" }),
-  driveFolderId: varchar("drive_folder_id", { length: 255 }).notNull(),
-  driveFileId: varchar("drive_file_id", { length: 255 }).notNull().unique(),
+  rutaRelativa: text("ruta_relativa").notNull().unique(),
   nombre: varchar("nombre", { length: 240 }).notNull(),
   mimeType: varchar("mime_type", { length: 150 }).notNull(),
   tamanoBytes: integer("tamano_bytes").notNull(),
@@ -511,14 +499,13 @@ export const archivosDrive = pgTable("archivos_drive", {
   urlFuente: text("url_fuente"),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
-  index("archivos_drive_entidad_idx").on(tabla.entidadTipo, tabla.entidadId, tabla.tipoArchivo),
-  index("archivos_drive_carpeta_idx").on(tabla.driveFolderId, tabla.creadoEn),
+  index("archivos_locales_entidad_idx").on(tabla.entidadTipo, tabla.entidadId, tabla.tipoArchivo),
 ]);
 
 export const imagenesMototaxis = pgTable("imagenes_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
   unidadId: uuid("unidad_id").notNull().references(() => unidadesMototaxis.id, { onDelete: "cascade" }),
-  archivoId: uuid("archivo_id").notNull().unique().references(() => archivosDrive.id, { onDelete: "restrict" }),
+  archivoId: uuid("archivo_id").notNull().unique().references(() => archivosLocales.id, { onDelete: "restrict" }),
   orden: integer("orden").notNull(),
   creadoEn: fechaCreacion(),
 }, (tabla) => [

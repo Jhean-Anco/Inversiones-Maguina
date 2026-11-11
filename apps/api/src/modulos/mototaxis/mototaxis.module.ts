@@ -4,7 +4,7 @@ import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { ControladorMototaxis } from "./mototaxis.controller";
 import { ControladorDirectorioProveedores } from "./proveedores.controller";
 import { ServicioMototaxis } from "./mototaxis.service";
-import { ModuloGoogleDrive } from "../google-drive/google-drive.module";
+import { ModuloAlmacenamiento } from "../almacenamiento/almacenamiento.module";
 
-@Module({ imports: [ModuloAutenticacion, ModuloGoogleDrive], controllers: [ControladorMototaxis, ControladorDirectorioProveedores], providers: [ServicioMototaxis, GuardiaSesion] })
+@Module({ imports: [ModuloAutenticacion, ModuloAlmacenamiento], controllers: [ControladorMototaxis, ControladorDirectorioProveedores], providers: [ServicioMototaxis, GuardiaSesion] })
 export class ModuloMototaxis {}

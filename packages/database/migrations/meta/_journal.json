@@ -1177,6 +1177,20 @@
       "when": 1794421122501,
       "tag": "0167_unificar_nubefact_entornos",
       "breakpoints": true
+    },
+    {
+      "idx": 168,
+      "version": "7",
+      "when": 1794424149253,
+      "tag": "0168_almacenamiento_local",
+      "breakpoints": true
+    },
+    {
+      "idx": 169,
+      "version": "7",
+      "when": 1794425017186,
+      "tag": "0169_facturacion_anular_documentos",
+      "breakpoints": true
     }
   ]
 }

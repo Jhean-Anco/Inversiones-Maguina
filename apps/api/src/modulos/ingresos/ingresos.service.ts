@@ -8,7 +8,7 @@ import { consultarIdentidadPeru } from "../../utilidades/consulta-identidad-peru
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { contieneSinTildes, normalizarTextoBusqueda } from "../../utilidades/busqueda-texto";
-import { ServicioGoogleDrive } from "../google-drive/google-drive.service";
+import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
 type Linea = { tipo?: unknown; presentacionId?: unknown; mototaxiUnidadId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
@@ -37,9 +37,9 @@ function analizarEstadoComprobante(estado: string, datos: Record<string, unknown
   return { estadoProveedor: "EMITIDO", detalleProveedor: descripcionSunat || null };
 }
 
-function enlaceArchivoDrive(datos: Record<string, unknown>, tipo: string) {
-  const archivosDrive = datos.archivosDrive && typeof datos.archivosDrive === "object" ? datos.archivosDrive as Record<string, unknown> : {};
-  const guardados = Array.isArray(archivosDrive.guardados) ? archivosDrive.guardados as Record<string, unknown>[] : [];
+function enlaceArchivoLocal(datos: Record<string, unknown>, tipo: string) {
+  const archivos = datos.archivos && typeof datos.archivos === "object" ? datos.archivos as Record<string, unknown> : {};
+  const guardados = Array.isArray(archivos.guardados) ? archivos.guardados as Record<string, unknown>[] : [];
   const archivo = guardados.find((item) => item.tipo === tipo && typeof item.ruta === "string");
   return typeof archivo?.ruta === "string" ? archivo.ruta : null;
 }
@@ -363,10 +363,136 @@ export class ServicioIngresos {
       .map((codigo) => ({ codigo, nombre: nombreMedioPago[codigo] }));
   }
 
-  constructor(private readonly drive: ServicioGoogleDrive) {}
+  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
+
+  private async actualizarAnulacionIngreso(id: string, datos: Record<string, unknown>, anulacion: Record<string, unknown>, estado: string) {
+    await db.update(ingresos).set({ estado: estado === "ANULACION_PENDIENTE" ? "EMITIDO" : estado, datosNubefact: { ...datos, anulacion } }).where(eq(ingresos.id, id));
+  }
+
+  private async actualizarAnulacionNota(id: string, datos: Record<string, unknown>, anulacion: Record<string, unknown>, estado: string) {
+    await db.update(comprobantesRelacionados).set({ estado: estado === "ANULACION_PENDIENTE" ? "EMITIDO" : estado, datosNubefact: { ...datos, anulacion } }).where(eq(comprobantesRelacionados.id, id));
+  }
+
+  private async enviarAnulacion(tipo: "BOLETA" | "FACTURA" | "NOTA_CREDITO" | "NOTA_DEBITO", serie: string, numero: number, fecha: string, entidadTipo: "INGRESO" | "COMPROBANTE_RELACIONADO", id: string, datos: Record<string, unknown>, motivoEntrada: unknown, usuarioId: string, persistir: (anulacion: Record<string, unknown>, estado: string) => Promise<void>) {
+    const motivo = typeof motivoEntrada === "string" ? motivoEntrada.trim() : "";
+    if (!motivo || motivo.length > 100) throw new BadRequestException("El motivo de anulación es obligatorio y admite hasta 100 caracteres.");
+    if (diasEntreFechas(fecha, fechaActualPeru()) > 7) throw new BadRequestException("Venció el plazo de 7 días calendario para comunicar la baja del documento a SUNAT.");
+    const respuestaAnterior = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+    if (respuestaAnterior.aceptada_por_sunat !== true) throw new BadRequestException("Solo se puede comunicar la baja de un documento aceptado por SUNAT.");
+    const anterior = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
+    if (anterior?.estado === "ANULADO") throw new BadRequestException("El documento ya figura anulado.");
+    if (anterior?.estado === "PENDIENTE") throw new BadRequestException("La anulación está pendiente. Consulta su resultado antes de volver a intentarlo.");
+    const emisor = await this.estadoNubefact();
+    if (!emisor.credencialesConfiguradas) throw new BadRequestException("Configura la conexión de NubeFact antes de comunicar la baja.");
+    const tipoNumero = ({ FACTURA: 1, BOLETA: 2, NOTA_CREDITO: 3, NOTA_DEBITO: 4 } as const)[tipo];
+    const solicitud = { operacion: "generar_anulacion", tipo_de_comprobante: tipoNumero, serie, numero,
+      fecha: `${fecha.slice(8, 10)}-${fecha.slice(5, 7)}-${fecha.slice(0, 4)}`, motivo, codigo_unico: `${tipo}-${serie}-${numero}-${id}` };
+    const solicitadoEn = new Date().toISOString();
+    let anulacion: Record<string, unknown> = { estado: "PENDIENTE", motivo, solicitud, respuesta: null, solicitadoEn, consultadoEn: null, usuarioId };
+    await persistir(anulacion, "ANULACION_PENDIENTE");
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(process.env.NUBEFACT_RUTA!.trim(), { method: "POST", headers: { Authorization: process.env.NUBEFACT_TOKEN!.trim(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(solicitud), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) });
+    } catch {
+      return { estado: "ANULACION_PENDIENTE", mensaje: "NubeFact no confirmó la respuesta. Consulta el estado de la anulación antes de volver a intentarlo." };
+    }
+    let cuerpo: Record<string, unknown>;
+    try { const json: unknown = await respuesta.json(); cuerpo = json && typeof json === "object" && !Array.isArray(json) ? json as Record<string, unknown> : { respuesta: json }; }
+    catch { cuerpo = { error: "NubeFact no devolvió una respuesta JSON válida." }; }
+    const errores = cuerpo.errors ?? cuerpo.error ?? cuerpo.mensaje;
+    const codigoRespuesta = cuerpo.sunat_responsecode;
+    const codigoConError = codigoRespuesta !== null && codigoRespuesta !== undefined && String(codigoRespuesta) !== "0";
+    const rechazado = !respuesta.ok || codigoConError || (typeof errores === "string" ? Boolean(errores.trim()) : Array.isArray(errores) ? errores.length > 0 : Boolean(errores));
+    const aceptado = cuerpo.aceptada_por_sunat === true || cuerpo.anulado === true;
+    anulacion = { ...anulacion, estado: aceptado ? "ANULADO" : rechazado ? "RECHAZADO" : "PENDIENTE", respuesta: cuerpo, consultadoEn: new Date().toISOString(), detalle: typeof cuerpo.sunat_description === "string" ? cuerpo.sunat_description : typeof errores === "string" ? errores : null };
+    await persistir(anulacion, aceptado ? "ANULADO" : rechazado ? "EMITIDO" : "ANULACION_PENDIENTE");
+    const archivos = await this.archivarNubeFact(entidadTipo, id, `${tipo}_ANULACION`, `${serie}-${String(numero).padStart(6, "0")}-ANULACION`, cuerpo);
+    if (archivos.guardados.length) {
+      anulacion = { ...anulacion, archivos };
+      await persistir(anulacion, aceptado ? "ANULADO" : rechazado ? "EMITIDO" : "ANULACION_PENDIENTE");
+    }
+    return { estado: anulacion.estado === "PENDIENTE" ? "ANULACION_PENDIENTE" : anulacion.estado, motivo, detalle: anulacion.detalle ?? null, ticket: cuerpo.sunat_ticket_numero ?? null, archivos };
+  }
+
+  private async consultarAnulacion(tipo: "BOLETA" | "FACTURA" | "NOTA_CREDITO" | "NOTA_DEBITO", serie: string, numero: number, entidadId: string, datos: Record<string, unknown>, persistir: (anulacion: Record<string, unknown>, estado: string) => Promise<void>) {
+    const anulacionAnterior = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
+    if (!anulacionAnterior || anulacionAnterior.estado !== "PENDIENTE") throw new BadRequestException("No hay una comunicación de baja pendiente para consultar.");
+    const tipoNumero = ({ FACTURA: 1, BOLETA: 2, NOTA_CREDITO: 3, NOTA_DEBITO: 4 } as const)[tipo];
+    const consulta = { operacion: "consultar_anulacion", tipo_de_comprobante: tipoNumero, serie, numero };
+    let respuesta: Response;
+    try { respuesta = await fetch(process.env.NUBEFACT_RUTA!.trim(), { method: "POST", headers: { Authorization: process.env.NUBEFACT_TOKEN!.trim(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(consulta), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) }); }
+    catch { return { estado: "ANULACION_PENDIENTE", mensaje: "No hubo respuesta al consultar la comunicación. Intenta consultar nuevamente." }; }
+    let cuerpo: Record<string, unknown>;
+    try { const json: unknown = await respuesta.json(); cuerpo = json && typeof json === "object" && !Array.isArray(json) ? json as Record<string, unknown> : { respuesta: json }; }
+    catch { cuerpo = { error: "NubeFact no devolvió una respuesta JSON válida." }; }
+    const error = cuerpo.errors ?? cuerpo.error ?? cuerpo.sunat_soap_error;
+    const aceptado = cuerpo.aceptada_por_sunat === true || cuerpo.anulado === true;
+    const rechazado = !respuesta.ok || Boolean(typeof error === "string" && error.trim()) || (cuerpo.sunat_responsecode !== null && cuerpo.sunat_responsecode !== undefined && cuerpo.sunat_responsecode !== "0" && !aceptado);
+    const nuevoEstado = aceptado ? "ANULADO" : rechazado ? "RECHAZADO" : "PENDIENTE";
+    const anulacion = { ...anulacionAnterior, estado: nuevoEstado, consulta, respuesta: cuerpo, consultadoEn: new Date().toISOString(), detalle: typeof cuerpo.sunat_description === "string" ? cuerpo.sunat_description : typeof error === "string" ? error : null };
+    await persistir(anulacion, aceptado ? "ANULADO" : rechazado ? "EMITIDO" : "ANULACION_PENDIENTE");
+    if (aceptado) {
+      const tipoOriginal = (anulacionAnterior.solicitud as Record<string, unknown> | undefined)?.tipo_de_comprobante;
+      const nombreTipo = tipoOriginal === 1 ? "FACTURA" : tipoOriginal === 2 ? "BOLETA" : tipoOriginal === 3 ? "NOTA_CREDITO" : "NOTA_DEBITO";
+      const archivos = await this.archivarNubeFact("INGRESO", entidadId, `${nombreTipo}_ANULACION`, `${serie}-${String(numero).padStart(6, "0")}-ANULACION`, cuerpo);
+      if (archivos.guardados.length) await persistir({ ...anulacion, archivos }, "ANULADO");
+    }
+    return { estado: nuevoEstado, detalle: anulacion.detalle ?? null, ticket: cuerpo.sunat_ticket_numero ?? anulacionAnterior.ticket ?? null };
+  }
+
+  async anularIngreso(idEntrada: string, entrada: unknown, usuarioId: string) {
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El comprobante no es válido.");
+    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException("Ingresa el motivo de la anulación.");
+    const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, idEntrada)).limit(1);
+    if (!venta) throw new NotFoundException("No se encontró la venta.");
+    if (!["BOLETA", "FACTURA"].includes(venta.tipoComprobante) || venta.estado !== "EMITIDO") throw new BadRequestException("Solo se puede anular una boleta o factura emitida y aún no anulada.");
+    if ((entrada as Record<string, unknown>).confirmoNoEntregado !== true) throw new BadRequestException("Confirma que el comprobante no fue entregado al cliente antes de comunicar su baja.");
+    const [notaVigente] = await db.select({ id: comprobantesRelacionados.id }).from(comprobantesRelacionados)
+      .where(and(eq(comprobantesRelacionados.ingresoOrigenId, venta.id), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]))).limit(1);
+    if (notaVigente) throw new BadRequestException("Primero resuelve la baja de las notas electr?nicas vinculadas antes de anular el comprobante original.");
+    const datos = venta.datosNubefact && typeof venta.datosNubefact === "object" ? venta.datosNubefact as Record<string, unknown> : {};
+    const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
+    if (typeof solicitud.serie !== "string" || !Number.isInteger(Number(solicitud.numero))) throw new BadRequestException("La venta no conserva una serie y número NubeFact válidos.");
+    return this.enviarAnulacion(venta.tipoComprobante as "BOLETA" | "FACTURA", solicitud.serie, Number(solicitud.numero), venta.fecha, "INGRESO", venta.id, datos, (entrada as Record<string, unknown>).motivo, usuarioId,
+      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado));
+  }
+
+  async consultarAnulacionIngreso(idEntrada: string) {
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El comprobante no es válido.");
+    const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, idEntrada)).limit(1);
+    if (!venta) throw new NotFoundException("No se encontró la venta.");
+    const datos = venta.datosNubefact && typeof venta.datosNubefact === "object" ? venta.datosNubefact as Record<string, unknown> : {};
+    const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
+    if (typeof solicitud.serie !== "string" || !Number.isInteger(Number(solicitud.numero))) throw new BadRequestException("El comprobante no conserva una numeración válida.");
+    return this.consultarAnulacion(venta.tipoComprobante as "BOLETA" | "FACTURA", solicitud.serie, Number(solicitud.numero), venta.id, datos,
+      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado));
+  }
+
+  async anularNota(ingresoId: string, notaId: string, entrada: unknown, usuarioId: string) {
+    if (![ingresoId, notaId].every(uuidValido)) throw new BadRequestException("Los identificadores del comprobante no son válidos.");
+    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException("Ingresa el motivo de la anulación.");
+    const [nota] = await db.select().from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.id, notaId), eq(comprobantesRelacionados.ingresoOrigenId, ingresoId))).limit(1);
+    if (!nota) throw new NotFoundException("No se encontró la nota electrónica.");
+    if (nota.estado !== "EMITIDO") throw new BadRequestException("Solo se puede anular una nota electrónica emitida y aún no anulada.");
+    if ((entrada as Record<string, unknown>).confirmoNoEntregado !== true) throw new BadRequestException("Confirma que la nota no fue entregada al cliente antes de comunicar su baja.");
+    const [venta] = await db.select({ estado: ingresos.estado }).from(ingresos).where(eq(ingresos.id, ingresoId)).limit(1);
+    if (!venta || !["EMITIDO", "ANULACION_PENDIENTE"].includes(venta.estado)) throw new BadRequestException("No se puede anular la nota porque su comprobante original no esta vigente.");
+    const datos = nota.datosNubefact && typeof nota.datosNubefact === "object" ? nota.datosNubefact as Record<string, unknown> : {};
+    return this.enviarAnulacion(nota.tipoComprobante as "NOTA_CREDITO" | "NOTA_DEBITO", nota.serie, nota.numero, nota.fecha, "COMPROBANTE_RELACIONADO", nota.id, datos, (entrada as Record<string, unknown>).motivo, usuarioId,
+      (anulacion, estado) => this.actualizarAnulacionNota(nota.id, datos, anulacion, estado));
+  }
+
+  async consultarAnulacionNota(ingresoId: string, notaId: string) {
+    if (![ingresoId, notaId].every(uuidValido)) throw new BadRequestException("Los identificadores del comprobante no son válidos.");
+    const [nota] = await db.select().from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.id, notaId), eq(comprobantesRelacionados.ingresoOrigenId, ingresoId))).limit(1);
+    if (!nota) throw new NotFoundException("No se encontró la nota electrónica.");
+    const datos = nota.datosNubefact && typeof nota.datosNubefact === "object" ? nota.datosNubefact as Record<string, unknown> : {};
+    return this.consultarAnulacion(nota.tipoComprobante as "NOTA_CREDITO" | "NOTA_DEBITO", nota.serie, nota.numero, nota.id, datos,
+      (anulacion, estado) => this.actualizarAnulacionNota(nota.id, datos, anulacion, estado));
+  }
 
   private async archivarNubeFact(entidadTipo: string, entidadId: string, tipoComprobante: string, codigo: string, respuesta: Record<string, unknown>) {
-    try { return await this.drive.archivarDocumentosNubeFact(entidadTipo, entidadId, tipoComprobante, codigo, respuesta); }
+    try { return await this.almacenamiento.archivarDocumentosNubeFact(entidadTipo, entidadId, tipoComprobante, codigo, respuesta); }
     catch (causa) { return { guardados: [], errores: [{ tipo: "GENERAL", mensaje: causa instanceof Error ? causa.message : "No se pudieron archivar los documentos de NubeFact." }] }; }
   }
 
@@ -400,14 +526,17 @@ export class ServicioIngresos {
       const numero = Number(solicitud.numero ?? 0);
       const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
       const estadoDocumento = analizarEstadoComprobante(fila.estado, datos, respuesta);
+      const anulacion = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
+      const estadoAnulacion = typeof anulacion?.estado === "string" ? anulacion.estado : null;
       return { id: fila.id, codigoVenta: fila.codigo, codigoComprobante: serie && numero ? `${serie}-${String(numero).padStart(6, "0")}` : fila.codigo,
         fecha: fila.fecha, tipoComprobante: fila.tipoComprobante, clienteNombre: fila.clienteNombre,
         clienteNumeroDocumento: fila.clienteNumeroDocumento, medioPago: fila.medioPago, condicionPago: fila.condicionPago,
-        total: fila.total, estado: fila.estado,
-        estadoProveedor: estadoDocumento.estadoProveedor, detalleProveedor: estadoDocumento.detalleProveedor,
-        enlacePdf: enlaceArchivoDrive(datos, "PDF") ?? enlaceArchivoDrive(datos, "HTML") ?? (typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null),
-        enlaceXml: enlaceArchivoDrive(datos, "XML") ?? (typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null),
-        enlaceCdr: enlaceArchivoDrive(datos, "CDR") ?? (typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null),
+        total: fila.total, estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
+        estadoProveedor: estadoAnulacion === "ANULADO" ? "ANULADO" : estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "RECHAZADO" ? "BAJA_RECHAZADA" : estadoDocumento.estadoProveedor,
+        detalleProveedor: estadoAnulacion ? (typeof anulacion?.detalle === "string" ? anulacion.detalle : estadoAnulacion === "PENDIENTE" ? "La comunicacion fue enviada y SUNAT aun no confirma el resultado." : null) : estadoDocumento.detalleProveedor,
+        enlacePdf: enlaceArchivoLocal(datos, "PDF") ?? enlaceArchivoLocal(datos, "HTML") ?? (typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null),
+        enlaceXml: enlaceArchivoLocal(datos, "XML") ?? (typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null),
+        enlaceCdr: enlaceArchivoLocal(datos, "CDR") ?? (typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null),
       };
     });
     const total = conteo?.total ?? 0;
@@ -420,7 +549,7 @@ export class ServicioIngresos {
     if (!venta || !["BOLETA", "FACTURA"].includes(venta.tipoComprobante) || venta.estado !== "EMITIDO") throw new BadRequestException("Solo puedes consultar el detalle de boletas o facturas emitidas correctamente.");
     const originales = await db.select().from(ingresosDetalle).where(eq(ingresosDetalle.ingresoId, venta.id)).orderBy(asc(ingresosDetalle.creadoEn));
     const notasEmitidas = await db.select({ datosNubefact: comprobantesRelacionados.datosNubefact, tipo: comprobantesRelacionados.tipoComprobante })
-      .from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.ingresoOrigenId, venta.id), eq(comprobantesRelacionados.estado, "EMITIDO")));
+      .from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.ingresoOrigenId, venta.id), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"])));
     const descuentosPorDetalle = new Map<string, number>();
     for (const nota of notasEmitidas) {
       if (nota.tipo !== "NOTA_CREDITO") continue;
@@ -443,11 +572,15 @@ export class ServicioIngresos {
     return filas.map((fila) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
       const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+      const anulacion = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
       return { id: fila.id, tipoComprobante: fila.tipoComprobante, codigoComprobante: `${fila.serie}-${String(fila.numero).padStart(6, "0")}`,
-        codigoMotivo: fila.codigoMotivo, motivo: fila.motivo, fecha: fila.fecha, total: fila.total, estado: fila.estado,
-        enlacePdf: enlaceArchivoDrive(datos, "PDF") ?? (typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null),
-        enlaceXml: enlaceArchivoDrive(datos, "XML") ?? (typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null),
-        enlaceCdr: enlaceArchivoDrive(datos, "CDR") ?? (typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null) };
+        codigoMotivo: fila.codigoMotivo, motivo: fila.motivo, fecha: fila.fecha, total: fila.total,
+        estado: anulacion?.estado === "PENDIENTE" ? "ANULACION_PENDIENTE" : anulacion?.estado === "ANULADO" ? "ANULADO" : fila.estado,
+        estadoAnulacion: typeof anulacion?.estado === "string" ? anulacion.estado : null,
+        motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
+        enlacePdf: enlaceArchivoLocal(datos, "PDF") ?? (typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null),
+        enlaceXml: enlaceArchivoLocal(datos, "XML") ?? (typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null),
+        enlaceCdr: enlaceArchivoLocal(datos, "CDR") ?? (typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null) };
     });
   }
 
@@ -477,7 +610,7 @@ export class ServicioIngresos {
     const originales = await db.select().from(ingresosDetalle).where(eq(ingresosDetalle.ingresoId, venta.id)).orderBy(asc(ingresosDetalle.creadoEn));
     const porId = new Map(originales.map((linea) => [linea.id, linea]));
     const notasEmitidas = tipo === "NOTA_CREDITO" ? await db.select({ datosNubefact: comprobantesRelacionados.datosNubefact, total: comprobantesRelacionados.total })
-      .from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.ingresoOrigenId, venta.id), eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"), eq(comprobantesRelacionados.estado, "EMITIDO"))) : [];
+      .from(comprobantesRelacionados).where(and(eq(comprobantesRelacionados.ingresoOrigenId, venta.id), eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]))) : [];
     let creditoAcumulado = 0;
     const creditosPorLinea = new Map<string, number>();
     for (const nota of notasEmitidas) {
@@ -550,9 +683,9 @@ export class ServicioIngresos {
       datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen } }).where(eq(comprobantesRelacionados.id, id));
     if (!aceptada) throw new BadRequestException(typeof errores === "string" ? errores : "NubeFact no confirmó la emisión de la nota.");
     const codigoComprobante = `${serieNota}-${String(correlativo.numero).padStart(6, "0")}`;
-    const archivosDrive = await this.archivarNubeFact("COMPROBANTE_RELACIONADO", id, tipo, codigoComprobante, cuerpo);
-    await db.update(comprobantesRelacionados).set({ datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen, archivosDrive } }).where(eq(comprobantesRelacionados.id, id));
-    return { id, tipoComprobante: tipo, codigoComprobante, estado: "EMITIDO", archivosDrive };
+    const archivos = await this.archivarNubeFact("COMPROBANTE_RELACIONADO", id, tipo, codigoComprobante, cuerpo);
+    await db.update(comprobantesRelacionados).set({ datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen, archivos } }).where(eq(comprobantesRelacionados.id, id));
+    return { id, tipoComprobante: tipo, codigoComprobante, estado: "EMITIDO", archivos };
   }
 
   async estadoNubefact() {
@@ -731,13 +864,13 @@ export class ServicioIngresos {
     const rechazado = !respuesta.ok || hayErrores || (cuerpo.aceptada_por_sunat !== true && !tienePdf);
     const datosNubefact = { solicitud, respuesta: cuerpo };
     await db.update(ingresos).set({ estado: rechazado ? "ERROR_NUBEFACT" : "EMITIDO", datosNubefact }).where(eq(ingresos.id, venta.id));
-    const archivosDrive = rechazado ? null : await this.archivarNubeFact("INGRESO", venta.id, venta.tipoComprobante, `${serie}-${String(correlativo.numero).padStart(6, "0")}`, cuerpo);
-    if (archivosDrive) await db.update(ingresos).set({ datosNubefact: { ...datosNubefact, archivosDrive } }).where(eq(ingresos.id, venta.id));
+    const archivos = rechazado ? null : await this.archivarNubeFact("INGRESO", venta.id, venta.tipoComprobante, `${serie}-${String(correlativo.numero).padStart(6, "0")}`, cuerpo);
+    if (archivos) await db.update(ingresos).set({ datosNubefact: { ...datosNubefact, archivos } }).where(eq(ingresos.id, venta.id));
     const mensajeProveedor = [cuerpo.errors, cuerpo.error, cuerpo.mensaje, cuerpo.message]
       .flatMap((valor) => typeof valor === "string" ? [valor.trim()] : Array.isArray(valor) ? valor.filter((item): item is string => typeof item === "string") : [])
       .filter(Boolean).join(" ");
-    const enlacePdf = archivosDrive?.guardados.find((archivo) => archivo.tipo === "PDF")?.ruta ?? cuerpo.enlace_del_pdf;
-    return { estado: rechazado ? "ERROR" : "EMITIDO", serie, numero: correlativo.numero, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, ...(rechazado ? { mensaje: mensajeProveedor || (!respuesta.ok ? `NubeFact respondió con estado HTTP ${respuesta.status}.` : "NubeFact no confirmó la emisión del comprobante.") } : { enlace: cuerpo.enlace, enlacePdf, archivosDrive }) };
+    const enlacePdf = archivos?.guardados.find((archivo) => archivo.tipo === "PDF")?.ruta ?? cuerpo.enlace_del_pdf;
+    return { estado: rechazado ? "ERROR" : "EMITIDO", serie, numero: correlativo.numero, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, ...(rechazado ? { mensaje: mensajeProveedor || (!respuesta.ok ? `NubeFact respondió con estado HTTP ${respuesta.status}.` : "NubeFact no confirmó la emisión del comprobante.") } : { enlace: cuerpo.enlace, enlacePdf, archivos }) };
   }
 
   async listarPagos(ingresoIdEntrada: string) {
@@ -1286,15 +1419,15 @@ export class ServicioIngresos {
       throw error;
     }
     if (ventaRegistrada.tipoComprobante === "NOTA_VENTA") {
-      let archivosDrive: { guardados: { id: string; tipo: string; nombre: string; ruta: string }[]; errores: { tipo: string; mensaje: string }[] };
+      let archivos: { guardados: { id: string; tipo: string; nombre: string; ruta: string }[]; errores: { tipo: string; mensaje: string }[] };
       try {
-        const archivo = await this.drive.archivarDocumentoNotaVenta({ ...ventaRegistrada, detalles: ventaRegistrada.detalles.map((detalle) => ({ ...detalle, unidadMedidaCodigo: detalle.unidadMedidaCodigo ?? null })) });
-        archivosDrive = { guardados: [{ id: archivo.id, tipo: "HTML", nombre: archivo.nombre, ruta: archivo.ruta }], errores: [] };
+        const archivo = await this.almacenamiento.archivarDocumentoNotaVenta({ ...ventaRegistrada, detalles: ventaRegistrada.detalles.map((detalle) => ({ ...detalle, unidadMedidaCodigo: detalle.unidadMedidaCodigo ?? null })) });
+        archivos = { guardados: [{ id: archivo.id, tipo: "HTML", nombre: archivo.nombre, ruta: archivo.ruta }], errores: [] };
       } catch (causa) {
-        archivosDrive = { guardados: [], errores: [{ tipo: "HTML", mensaje: causa instanceof Error ? causa.message : "No se pudo archivar la nota de venta." }] };
+        archivos = { guardados: [], errores: [{ tipo: "HTML", mensaje: causa instanceof Error ? causa.message : "No se pudo archivar la nota de venta." }] };
       }
-      await db.update(ingresos).set({ datosNubefact: { archivosDrive } }).where(eq(ingresos.id, ventaRegistrada.id));
-      return { ...ventaRegistrada, nubefact: null, archivosDrive };
+      await db.update(ingresos).set({ datosNubefact: { archivos } }).where(eq(ingresos.id, ventaRegistrada.id));
+      return { ...ventaRegistrada, nubefact: null, archivos };
     }
     const detallesEmitidos = await db.select().from(ingresosDetalle).where(eq(ingresosDetalle.ingresoId, ventaRegistrada.id));
     const comprobanteRegistrado = { ...ventaRegistrada, tipoComprobante: ventaRegistrada.tipoComprobante as "BOLETA" | "FACTURA" };

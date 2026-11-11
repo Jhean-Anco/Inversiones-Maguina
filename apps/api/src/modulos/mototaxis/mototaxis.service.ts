@@ -1,11 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, archivosDrive, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, documentosRecibidos, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import { db, archivosLocales, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, documentosRecibidos, garantiasMototaxis, imagenesMototaxis, marcasProductos, modelosMototaxis, movimientosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
 import type { FastifyRequest } from "fastify";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
-import { ServicioGoogleDrive } from "../google-drive/google-drive.service";
+import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
@@ -58,7 +58,7 @@ function validarModelo(valor: unknown) {
 
 @Injectable()
 export class ServicioMototaxis {
-  constructor(private readonly drive: ServicioGoogleDrive) {}
+  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
   listarMarcas() { return db.select().from(marcasProductos).where(or(eq(marcasProductos.uso, "MOTOTAXIS"), eq(marcasProductos.uso, "AMBOS"))).orderBy(asc(marcasProductos.nombre)); }
 
   async crearMarca(valor: unknown) {
@@ -196,8 +196,8 @@ export class ServicioMototaxis {
     ]);
     const n = Number(total?.total ?? 0);
     const ids = items.map((item) => item.id);
-    const imagenes = ids.length ? await db.select({ unidadId: imagenesMototaxis.unidadId, id: imagenesMototaxis.id, archivoId: archivosDrive.id, ruta: sql<string>`'/integraciones/archivos/' || ${archivosDrive.id} || '/contenido'`, orden: imagenesMototaxis.orden })
-      .from(imagenesMototaxis).innerJoin(archivosDrive, eq(imagenesMototaxis.archivoId, archivosDrive.id)).where(inArray(imagenesMototaxis.unidadId, ids)).orderBy(asc(imagenesMototaxis.orden)) : [];
+    const imagenes = ids.length ? await db.select({ unidadId: imagenesMototaxis.unidadId, id: imagenesMototaxis.id, archivoId: archivosLocales.id, ruta: sql<string>`'/archivos/' || ${archivosLocales.id} || '/contenido'`, orden: imagenesMototaxis.orden })
+      .from(imagenesMototaxis).innerJoin(archivosLocales, eq(imagenesMototaxis.archivoId, archivosLocales.id)).where(inArray(imagenesMototaxis.unidadId, ids)).orderBy(asc(imagenesMototaxis.orden)) : [];
     const imagenesPorUnidad = new Map<string, typeof imagenes>();
     for (const imagen of imagenes) imagenesPorUnidad.set(imagen.unidadId, [...(imagenesPorUnidad.get(imagen.unidadId) ?? []), imagen]);
     return { items: items.map((item) => ({ ...item, imagenes: (imagenesPorUnidad.get(item.id) ?? []).map(({ id, archivoId, ruta, orden }) => ({ id, archivoId, ruta, orden })) })), total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)) };
@@ -207,8 +207,8 @@ export class ServicioMototaxis {
     if (!uuidValido(idEntrada)) throw new BadRequestException("El identificador de la unidad no es válido.");
     const [unidad] = await db.select({ id: unidadesMototaxis.id }).from(unidadesMototaxis).where(eq(unidadesMototaxis.id, idEntrada)).limit(1);
     if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
-    return db.select({ id: imagenesMototaxis.id, archivoId: archivosDrive.id, ruta: sql<string>`'/integraciones/archivos/' || ${archivosDrive.id} || '/contenido'`, orden: imagenesMototaxis.orden })
-      .from(imagenesMototaxis).innerJoin(archivosDrive, eq(imagenesMototaxis.archivoId, archivosDrive.id)).where(eq(imagenesMototaxis.unidadId, idEntrada)).orderBy(asc(imagenesMototaxis.orden));
+    return db.select({ id: imagenesMototaxis.id, archivoId: archivosLocales.id, ruta: sql<string>`'/archivos/' || ${archivosLocales.id} || '/contenido'`, orden: imagenesMototaxis.orden })
+      .from(imagenesMototaxis).innerJoin(archivosLocales, eq(imagenesMototaxis.archivoId, archivosLocales.id)).where(eq(imagenesMototaxis.unidadId, idEntrada)).orderBy(asc(imagenesMototaxis.orden));
   }
 
   async guardarImagenUnidad(idEntrada: string, solicitud: FastifyRequest) {
@@ -230,26 +230,25 @@ export class ServicioMototaxis {
     const contenido = await archivo.toBuffer();
     if (contenido.length > 10 * 1024 * 1024) throw new BadRequestException("La fotografía supera el máximo de 10 MB.");
     if (!formato.valido(contenido)) throw new BadRequestException("El contenido no coincide con el formato de imagen seleccionado.");
-    const guardado = await this.drive.guardarArchivo("FOTO_MOTOTAXI", "FOTO_MOTOTAXI", "MOTOTAXI", idEntrada, `${unidad.codigo}-${randomUUID()}${formato.extension}`, archivo.mimetype, contenido);
+    const guardado = await this.almacenamiento.guardarArchivo("FOTO_MOTOTAXI", "FOTO_MOTOTAXI", "MOTOTAXI", idEntrada, `${unidad.codigo}-${randomUUID()}${formato.extension}`, archivo.mimetype, contenido);
     try {
       const [imagen] = await db.insert(imagenesMototaxis).values({ unidadId: idEntrada, archivoId: guardado.id, orden }).returning({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId, orden: imagenesMototaxis.orden });
       return { ...imagen, ruta: guardado.ruta };
     } catch (error) {
-      await this.drive.eliminarArchivoRegistrado(guardado.id).catch(() => undefined);
+      await this.almacenamiento.eliminarArchivoRegistrado(guardado.id).catch(() => undefined);
       throw error;
     }
   }
 
   async eliminarImagenUnidad(idEntrada: string, idImagenEntrada: string) {
     if (![idEntrada, idImagenEntrada].every(uuidValido)) throw new BadRequestException("Los identificadores de la fotografía no son válidos.");
-    const [imagen] = await db.select({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId, driveFileId: archivosDrive.driveFileId }).from(imagenesMototaxis)
+    const [imagen] = await db.select({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId,  }).from(imagenesMototaxis)
       .where(and(eq(imagenesMototaxis.id, idImagenEntrada), eq(imagenesMototaxis.unidadId, idEntrada))).limit(1);
     if (!imagen) throw new NotFoundException("No se encontró la fotografía de la mototaxi.");
-    await this.drive.enviarAPapelera(imagen.driveFileId);
     await db.transaction(async (tx) => {
       await tx.delete(imagenesMototaxis).where(eq(imagenesMototaxis.id, idImagenEntrada));
-      await tx.delete(archivosDrive).where(eq(archivosDrive.id, imagen.archivoId));
     });
+    await this.almacenamiento.eliminarArchivoRegistrado(imagen.archivoId);
     return { eliminado: true };
   }
 

@@ -9,7 +9,7 @@ import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
-import { ServicioGoogleDrive } from "../google-drive/google-drive.service";
+import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
@@ -39,7 +39,7 @@ function fechaValida(valor: unknown) {
 }
 @Injectable()
 export class ServicioEntradasStock {
-  constructor(private readonly drive: ServicioGoogleDrive) {}
+  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
   async buscarProductos(busquedaEntrada?: string) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
     if (busqueda.length < 3) return [];
@@ -133,15 +133,15 @@ export class ServicioEntradasStock {
     if (contenido.length > 15 * 1024 * 1024 || !formato.firma(contenido)) throw new BadRequestException("El archivo supera 15 MB o su contenido no coincide con el formato.");
     const nombreArchivo = `${randomUUID()}${formato.ext}`;
     const nombreOriginal = archivo.filename.slice(0, 255);
-    const subida = await this.drive.guardarArchivo("EVIDENCIA_COMPRA", "EVIDENCIA_COMPRA", "ENTRADA_STOCK", id, nombreArchivo, archivo.mimetype, contenido);
+    const subida = await this.almacenamiento.guardarArchivo("EVIDENCIA_COMPRA", "EVIDENCIA_COMPRA", "ENTRADA_STOCK", id, nombreArchivo, archivo.mimetype, contenido);
     try {
       await db.update(entradasStock).set({ evidenciaRuta: subida.ruta, evidenciaNombre: nombreOriginal, evidenciaMime: archivo.mimetype }).where(eq(entradasStock.id, id));
     } catch (error) {
-      await this.drive.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
+      await this.almacenamiento.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
       throw error;
     }
-    const anteriorId = entrada.evidenciaRuta?.match(/^\/integraciones\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
-    if (anteriorId) await this.drive.eliminarArchivoRegistrado(anteriorId).catch(() => undefined);
+    const anteriorId = entrada.evidenciaRuta?.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
+    if (anteriorId) await this.almacenamiento.eliminarArchivoRegistrado(anteriorId).catch(() => undefined);
     return { evidenciaNombre: nombreOriginal, ruta: subida.ruta };
   }
 
@@ -149,9 +149,9 @@ export class ServicioEntradasStock {
     const id = uuid(idEntrada, "La entrada");
     const [entrada] = await db.select({ ruta: entradasStock.evidenciaRuta, mime: entradasStock.evidenciaMime, nombre: entradasStock.evidenciaNombre }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
     if (!entrada?.ruta || !entrada.mime) throw new NotFoundException("La compra no tiene evidencia adjunta.");
-    const idDrive = entrada.ruta.match(/^\/integraciones\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
-    if (idDrive) {
-      const archivo = await this.drive.descargarArchivoRegistrado(idDrive);
+    const idArchivo = entrada.ruta.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
+    if (idArchivo) {
+      const archivo = await this.almacenamiento.descargarArchivoRegistrado(idArchivo);
       return { ...archivo, nombre: entrada.nombre ?? archivo.nombre };
     }
     const nombre = entrada.ruta.split("/").at(-1)!;
@@ -160,34 +160,6 @@ export class ServicioEntradasStock {
     catch { throw new NotFoundException("No se encontró la evidencia."); }
   }
 
-  async migrarEvidenciasLocales() {
-    const candidatas = await db.select({ id: entradasStock.id, codigo: entradasStock.codigo, ruta: entradasStock.evidenciaRuta, nombre: entradasStock.evidenciaNombre, mime: entradasStock.evidenciaMime })
-      .from(entradasStock).where(sql`${entradasStock.evidenciaRuta} IS NOT NULL`);
-    let migradas = 0;
-    const errores: { entrada: string; mensaje: string }[] = [];
-    for (const entrada of candidatas) {
-      if (!entrada.ruta || entrada.ruta.startsWith("/integraciones/archivos/")) continue;
-      const nombreLocal = entrada.ruta.split("/").at(-1) ?? "";
-      if (!/^[0-9a-f-]{36}\.(pdf|jpg|png|webp)$/i.test(nombreLocal) || !entrada.mime) {
-        errores.push({ entrada: entrada.codigo, mensaje: "La referencia local no corresponde a una evidencia reconocida." });
-        continue;
-      }
-      try {
-        const contenido = await readFile(resolve(validarConfiguracionEntorno().carpetaSubidas, "evidencias-compras", nombreLocal));
-        const subida = await this.drive.guardarArchivo("EVIDENCIA_COMPRA", "EVIDENCIA_COMPRA", "ENTRADA_STOCK", entrada.id, `${entrada.codigo}-${randomUUID()}${nombreLocal.slice(nombreLocal.lastIndexOf("."))}`, entrada.mime, contenido);
-        try {
-          await db.update(entradasStock).set({ evidenciaRuta: subida.ruta }).where(eq(entradasStock.id, entrada.id));
-          migradas += 1;
-        } catch (error) {
-          await this.drive.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
-          throw error;
-        }
-      } catch (causa) {
-        errores.push({ entrada: entrada.codigo, mensaje: causa instanceof Error ? causa.message : "No se pudo migrar la evidencia." });
-      }
-    }
-    return { migradas, errores };
-  }
 
   async crear(entrada: unknown, usuarioIdEntrada: string) {
     const usuarioId = uuid(usuarioIdEntrada, "El usuario");

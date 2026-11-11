@@ -23,11 +23,6 @@ export class ControladorImagenesCatalogo {
     return this.imagenes.eliminarImagenProducto(id, idImagen);
   }
 
-  @Post("migrar-a-drive")
-  @UseGuards(GuardiaSesion, GuardiaPermiso)
-  @RequierePermiso("INVENTARIO.EDITAR")
-  migrarADrive() { return this.imagenes.migrarImagenesLocales(); }
-
   @Get(":tipo/:archivo")
   async consultar(@Param("tipo") tipo: string, @Param("archivo") archivo: string, @Res() respuesta: FastifyReply) {
     const imagen = await this.imagenes.leer(tipo, archivo);
