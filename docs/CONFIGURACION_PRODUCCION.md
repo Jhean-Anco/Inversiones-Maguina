@@ -8,7 +8,7 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 
 | Variable | Producción | Propósito |
 |---|---|---|
-| `NODE_ENV` | `production` | Activa las validaciones, cookies seguras y emisión de producción. |
+| `NODE_ENV` | `production` | Activa las validaciones de despliegue y cookies seguras. |
 | `DATABASE_URL` | URL privada con TLS según proveedor | Conexión a PostgreSQL de producción. |
 | `PORT` | Puerto asignado por plataforma | Puerto de escucha del API. |
 | `FRONTEND_ORIGIN` | Uno o más orígenes HTTPS separados por coma | Lista CORS permitida; solo origen, sin rutas. |
@@ -16,12 +16,10 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 | `AUTENTICACION_DURACION_SEGUNDOS` | Segundos | Duración normal de sesión/JWT. |
 | `AUTENTICACION_DURACION_RECORDAR_SEGUNDOS` | Segundos | Duración cuando se marca “recordar”. |
 | `TRUST_PROXY` | `true` si hay proxy TLS confiable | Permite que Fastify procese correctamente cabeceras del proxy. |
-| `NUBEFACT_AMBIENTE` | `PRODUCCION` | Selecciona el ambiente fiscal; las credenciales DEMO no sirven aquí. |
-| `NUBEFACT_RUTA` | URL HTTPS de la cuenta productiva | Endpoint asignado por NubeFact. |
+| `NUBEFACT_RUTA` | URL HTTPS de la cuenta asignada | Endpoint que recibe las solicitudes de emisión. |
 | `NUBEFACT_TOKEN` | Secreto del proveedor | Autenticación API solo servidor. |
-| `NUBEFACT_SERIE_BOLETA` | Serie productiva autorizada para boletas | El código asigna el correlativo por ambiente y serie. |
-| `NUBEFACT_SERIE_FACTURA` | Serie de factura asignada en NubeFact, con prefijo `F` | Opcional mientras el régimen sea NRUS; requerida para habilitar facturas en producción después del cambio de régimen. En DEMO permite probar el flujo con la serie DEMO de la cuenta. |
-| `REGIMEN_TRIBUTARIO` | `NRUS`, `RER`, `RMT` o `GENERAL` | Por defecto `NRUS`. En DEMO pueden probarse facturas; en PRODUCCIÓN solo se habilitan cuando se configura un régimen que permite facturarlas. |
+| Series fiscales | Una serie activa por tipo de documento en **Configuración > Series** | Registra el último correlativo de la cuenta NubeFact configurada. |
+| `REGIMEN_TRIBUTARIO` | `NRUS`, `RER`, `RMT` o `GENERAL` | Define las reglas tributarias; NRUS no permite emitir facturas. |
 | `NUBEFACT_TIMEOUT_MS` | Milisegundos | Límite de espera a NubeFact. |
 | `APIS_PERU_TOKEN` | Token de dniruc.apisperu.com | Habilita las consultas de DNI/RUC desde el servidor; nunca se envía al navegador ni en registros de URL. |
 | `UPLOADS_DIR` | Ruta absoluta en volumen persistente | Imágenes del catálogo; un filesystem efímero no es suficiente. |
@@ -44,7 +42,7 @@ Define estas variables en el gestor de secretos/plataforma donde corre el API. N
 
 ## Controles que aporta el código
 
-- Producción requiere JWT propio, PostgreSQL, CORS HTTPS, NubeFact en `PRODUCCION`, credenciales/series y volumen de imágenes absoluto.
+- Producción requiere JWT propio, PostgreSQL, CORS HTTPS, credenciales NubeFact y volumen de imágenes absoluto. La ruta y el token del entorno apuntan a la cuenta que procesará las emisiones.
 - Cookies de sesión `HttpOnly`, `SameSite=Lax` y `Secure` en `NODE_ENV=production`.
 - CORS no usa comodín y acepta una lista explícita de orígenes.
 - Las rutas protegidas consultan permisos asignados al rol del usuario en la API.

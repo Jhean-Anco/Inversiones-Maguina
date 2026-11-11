@@ -55,33 +55,19 @@ export function validarConfiguracionEntorno() {
     if (secreto.length < 32 || /generar-un-secreto|cambiar|changeme|development|postgres/i.test(secreto)) {
       throw new Error("AUTENTICACION_SECRETO debe ser propio, aleatorio y tener al menos 32 caracteres en producción.");
     }
-    if (texto("NUBEFACT_AMBIENTE") !== "PRODUCCION") throw new Error("NUBEFACT_AMBIENTE debe ser PRODUCCION cuando NODE_ENV=production.");
     const ruta = requerido("NUBEFACT_RUTA");
     try {
       const url = new URL(ruta);
       if (url.protocol !== "https:" || url.username || url.password) throw new Error();
     } catch { throw new Error("NUBEFACT_RUTA debe ser una URL HTTPS válida en producción."); }
     requerido("NUBEFACT_TOKEN");
-    requerido("NUBEFACT_SERIE_BOLETA");
     if (!texto("UPLOADS_DIR") || !/^[A-Za-z]:[\\/]|^\//.test(texto("UPLOADS_DIR"))) {
       throw new Error("UPLOADS_DIR debe apuntar a un volumen persistente con ruta absoluta en producción.");
     }
   }
 
 
-  const ambienteNubefact = texto("NUBEFACT_AMBIENTE") || "DEMO";
-  if (ambienteNubefact !== "DEMO" && ambienteNubefact !== "PRODUCCION") throw new Error("NUBEFACT_AMBIENTE solo puede ser DEMO o PRODUCCION.");
   const regimenTributario = texto("REGIMEN_TRIBUTARIO") || "NRUS";
   if (!["NRUS", "RER", "RMT", "GENERAL"].includes(regimenTributario)) throw new Error("REGIMEN_TRIBUTARIO debe ser NRUS, RER, RMT o GENERAL.");
-  const serieBoleta = texto("NUBEFACT_SERIE_BOLETA");
-  if (serieBoleta && !/^[A-Z0-9]{1,4}$/.test(serieBoleta)) throw new Error("NUBEFACT_SERIE_BOLETA debe tener entre 1 y 4 letras o números en mayúscula.");
-  const serieFactura = texto("NUBEFACT_SERIE_FACTURA");
-  if (serieFactura && !/^F[A-Z0-9]{0,3}$/.test(serieFactura)) throw new Error("NUBEFACT_SERIE_FACTURA debe comenzar con F y tener hasta 4 letras o números en mayúscula.");
-  const serieGuiaRemitente = texto("NUBEFACT_SERIE_GUIA_REMITENTE");
-  if (serieGuiaRemitente && !/^T[A-Z0-9]{3}$/.test(serieGuiaRemitente)) throw new Error("NUBEFACT_SERIE_GUIA_REMITENTE debe comenzar con T y tener 4 caracteres.");
-  const serieGuiaTransportista = texto("NUBEFACT_SERIE_GUIA_TRANSPORTISTA");
-  if (serieGuiaTransportista && !/^V[A-Z0-9]{3}$/.test(serieGuiaTransportista)) throw new Error("NUBEFACT_SERIE_GUIA_TRANSPORTISTA debe comenzar con V y tener 4 caracteres.");
-  if (ambiente === "production" && ambienteNubefact === "PRODUCCION" && regimenTributario !== "NRUS") requerido("NUBEFACT_SERIE_FACTURA");
-
   return { ambiente, puerto, origenes, segundosSesion, segundosSesionRecordada, timeoutNubefactMs, maximoImagenBytes, carpetaSubidas, descuentoMaximoPorcentaje };
 }

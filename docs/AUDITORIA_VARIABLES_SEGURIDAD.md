@@ -17,12 +17,12 @@
 |---|---|---|
 | `DATABASE_URL` | Credenciales y conexión a PostgreSQL | Secreto del servidor; usar TLS/SSL que exija el proveedor. |
 | `AUTENTICACION_SECRETO` | Firma de sesiones JWT | Solo servidor, aleatorio y exclusivo por ambiente; producción exige 32+ caracteres y rechaza marcadores comunes de desarrollo. |
-| `NUBEFACT_TOKEN` | Autenticación de emisión | Solo servidor; separado para DEMO y PRODUCCIÓN. |
-| `NUBEFACT_RUTA` | Endpoint asignado por NubeFact | Solo servidor; producción exige HTTPS. |
+| `NUBEFACT_TOKEN` | Autenticación de emisión | Solo servidor; corresponde a la cuenta NubeFact configurada en ese despliegue. |
+| `NUBEFACT_RUTA` | Endpoint de NubeFact | Solo servidor; la ruta configurada recibe las solicitudes de emisión. |
 | `APIS_PERU_TOKEN` | Consulta de DNI/RUC mediante dniruc.apisperu.com | Solo servidor; nunca exponerlo en el frontend ni en respuestas HTTP. |
 | `POSTGRES_PASSWORD` | Contenedor PostgreSQL de desarrollo | Solo desarrollo local, ignorado por Git y nunca reutilizar en producción. |
 
-Las respuestas de estado exponen solamente el ambiente y booleanos (`credencialesConfiguradas`, `seriesConfiguradas`, etc.). El token y la ruta no se envían a React.
+Las respuestas de estado exponen el régimen tributario y booleanos de configuración (`credencialesConfiguradas`, `seriesConfiguradas`, etc.). No envían el token ni la ruta, y no distinguen cuentas DEMO y PRODUCCIÓN.
 
 ## Variables operativas ahora configurables
 
@@ -53,4 +53,4 @@ Las respuestas de estado exponen solamente el ambiente y booleanos (`credenciale
 
 ## Regla para preparar producción
 
-Carga secretos mediante variables del servicio de despliegue/secret manager, nunca mediante el frontend ni el bundle estático. Define `NODE_ENV=production`, credenciales reales separadas, origen HTTPS, series autorizadas, conexión segura, volumen persistente y `VITE_API_URL` correcto al compilar el frontend. Sigue además [Configuración de producción](CONFIGURACION_PRODUCCION.md).
+Carga secretos mediante variables del servicio de despliegue/secret manager, nunca mediante el frontend ni el bundle estático. Configura `NODE_ENV=production`, las credenciales de la cuenta NubeFact que corresponda a ese despliegue, origen HTTPS, series autorizadas en la base de datos, conexión segura, volumen persistente y `VITE_API_URL` correcto al compilar el frontend. El código de emisión es el mismo en todos los despliegues; sigue [Configuración de producción](CONFIGURACION_PRODUCCION.md).

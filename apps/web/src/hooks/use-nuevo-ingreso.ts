@@ -179,7 +179,7 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
   function quitarLinea(clave: string) { setLineas((actuales) => actuales.filter((linea) => linea.clave !== clave)); }
   async function guardar(evento: FormEvent<HTMLFormElement>, saldoCreditoEsperado = totales.total) {
     evento.preventDefault(); setError(""); setExito(null);
-    if (tipoComprobante === "FACTURA" && !estadoNubefact?.emisionFacturaHabilitada) { setError("Completa las credenciales y la serie de factura de NubeFact para el ambiente seleccionado."); return; }
+    if (tipoComprobante === "FACTURA" && !estadoNubefact?.emisionFacturaHabilitada) { setError("Completa las credenciales y la serie de factura de NubeFact."); return; }
     const diasAntiguedadComprobante = Math.floor((Date.parse(`${fechaHoy()}T00:00:00.000Z`) - Date.parse(`${fecha}T00:00:00.000Z`)) / 86_400_000);
     const limiteDiasRetroactivo = tipoComprobante === "FACTURA" ? 3 : 5;
     if (tipoComprobante !== "NOTA_VENTA" && diasAntiguedadComprobante > limiteDiasRetroactivo) { setError(`La fecha supera el plazo de envío de ${tipoComprobante === "FACTURA" ? "3 días para facturas" : "5 días para boletas enviadas individualmente por OSE"}.`); return; }

@@ -1163,6 +1163,20 @@
       "when": 1794294837110,
       "tag": "0165_remove_non_invoice_tax_residue",
       "breakpoints": true
+    },
+    {
+      "idx": 166,
+      "version": "7",
+      "when": 1794418480329,
+      "tag": "0166_series_comprobantes",
+      "breakpoints": true
+    },
+    {
+      "idx": 167,
+      "version": "7",
+      "when": 1794421122501,
+      "tag": "0167_unificar_nubefact_entornos",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,8 @@ export class ControladorIngresos {
   @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string, @Query("escaneo") escaneo?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite, escaneo === "1"); }
   @Get("mototaxis") @RequierePermiso("INGRESOS.CREAR") buscarMototaxisVenta(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarMototaxisVenta(busqueda); }
   @Get("series") @RequierePermiso("INGRESOS.CREAR") obtenerNumeraciones() { return this.ingresos.obtenerNumeraciones(); }
+  @Get("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") listarSeriesConfiguradas() { return this.ingresos.listarSeriesConfiguradas(); }
+  @Post("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarSerieConfigurada(@Body() datos: unknown) { return this.ingresos.guardarSerieConfigurada(datos); }
   @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }
   @Post("guias") @RequierePermiso("INGRESOS.CREAR") emitirGuia(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirGuia(datos, solicitud.usuario.id); }
   @Post("guias/:id/consultar") @RequierePermiso("INGRESOS.LEER") consultarGuia(@Param("id") id: string) { return this.ingresos.consultarGuia(id); }

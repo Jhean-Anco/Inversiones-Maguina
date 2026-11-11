@@ -845,7 +845,6 @@ export const guiasRemision = pgTable("guias_remision", {
   id: uuid("id").defaultRandom().primaryKey(),
   tipo: varchar("tipo", { length: 20 }).notNull(),
   fecha: date("fecha").notNull(),
-  ambiente: varchar("ambiente", { length: 20 }).notNull(),
   serie: varchar("serie", { length: 4 }).notNull(),
   numero: integer("numero").notNull(),
   estado: varchar("estado", { length: 30 }).notNull().default("NUBEFACT_PENDIENTE"),
@@ -855,9 +854,8 @@ export const guiasRemision = pgTable("guias_remision", {
 }, (tabla) => [
   index("guias_remision_fecha_idx").on(tabla.fecha),
   index("guias_remision_tipo_estado_idx").on(tabla.tipo, tabla.estado),
-  uniqueIndex("guias_remision_correlativo_unico").on(tabla.ambiente, tabla.tipo, tabla.serie, tabla.numero),
+  uniqueIndex("guias_remision_correlativo_unico").on(tabla.tipo, tabla.serie, tabla.numero),
   check("guias_remision_tipo_ck", sql`${tabla.tipo} IN ('REMITENTE', 'TRANSPORTISTA')`),
-  check("guias_remision_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
   check("guias_remision_numero_ck", sql`${tabla.numero} > 0`),
 ]);
 
@@ -951,7 +949,6 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   codigoMotivo: integer("codigo_motivo").notNull(),
   motivo: varchar("motivo", { length: 240 }).notNull(),
   fecha: date("fecha").notNull(),
-  ambiente: varchar("ambiente", { length: 12 }).notNull(),
   serie: varchar("serie", { length: 4 }).notNull(),
   numero: integer("numero").notNull(),
   subtotal: numeric("subtotal", { precision: 14, scale: 2 }).notNull(),
@@ -965,10 +962,9 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("comprobantes_relacionados_origen_idx").on(tabla.ingresoOrigenId, tabla.creadoEn),
-  uniqueIndex("comprobantes_relacionados_serie_numero_unico").on(tabla.ambiente, tabla.tipoComprobante, tabla.serie, tabla.numero),
+  uniqueIndex("comprobantes_relacionados_serie_numero_unico").on(tabla.tipoComprobante, tabla.serie, tabla.numero),
   uniqueIndex("comprobantes_relacionados_huella_uq").on(tabla.ingresoOrigenId, tabla.huellaSolicitud).where(sql`${tabla.huellaSolicitud} IS NOT NULL`),
   check("comprobantes_relacionados_tipo_ck", sql`${tabla.tipoComprobante} IN ('NOTA_CREDITO', 'NOTA_DEBITO')`),
-  check("comprobantes_relacionados_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
   check("comprobantes_relacionados_motivo_ck", sql`${tabla.codigoMotivo} > 0`),
   check("comprobantes_relacionados_importes_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} > 0`),
 ]);
@@ -1013,14 +1009,25 @@ export const ingresosPagos = pgTable("ingresos_pagos", {
 ]);
 
 export const nubefactCorrelativos = pgTable("nubefact_correlativos", {
-  ambiente: varchar("ambiente", { length: 12 }).notNull().default("DEMO"),
   serie: varchar("serie", { length: 4 }).notNull(),
   tipoComprobante: integer("tipo_comprobante").notNull().default(1),
   ultimoNumero: integer("ultimo_numero").notNull().default(0),
   actualizadoEn: fechaActualizacion(),
 }, (tabla) => [
-  primaryKey({ columns: [tabla.ambiente, tabla.serie, tabla.tipoComprobante] }),
-  check("nubefact_correlativos_ambiente_ck", sql`${tabla.ambiente} IN ('DEMO', 'PRODUCCION')`),
+  primaryKey({ columns: [tabla.serie, tabla.tipoComprobante] }),
   check("nubefact_correlativos_tipo_ck", sql`${tabla.tipoComprobante} IN (1, 2, 3, 4, 5, 6)`),
   check("nubefact_correlativos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
+]);
+
+export const seriesComprobantes = pgTable("series_comprobantes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tipoComprobante: varchar("tipo_comprobante", { length: 24 }).notNull(),
+  serie: varchar("serie", { length: 4 }).notNull(),
+  activa: boolean("activa").notNull().default(true),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  uniqueIndex("series_comprobantes_tipo_serie_uq").on(tabla.tipoComprobante, tabla.serie),
+  uniqueIndex("series_comprobantes_activa_tipo_uq").on(tabla.tipoComprobante).where(sql`${tabla.activa}`),
+  check("series_comprobantes_tipo_ck", sql`${tabla.tipoComprobante} IN ('BOLETA', 'FACTURA', 'NOTA_CREDITO_FACTURA', 'NOTA_DEBITO_FACTURA', 'NOTA_CREDITO_BOLETA', 'NOTA_DEBITO_BOLETA', 'GUIA_REMITENTE', 'GUIA_TRANSPORTISTA', 'NOTA_VENTA', 'ORDEN_SERVICIO')`),
 ]);
