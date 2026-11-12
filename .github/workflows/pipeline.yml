@@ -118,6 +118,11 @@ jobs:
           docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api -t magina-api:${SHA_TAG} -t magina-api:${TEST_TAG} .
           docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops -t magina-ops:${SHA_TAG} -t magina-ops:${TEST_TAG} .
           docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} -t magina-web:${SHA_TAG} -t magina-web:${TEST_TAG} .
+      - name: Liberar caché temporal del builder
+        run: |
+          docker system df
+          docker buildx prune --all --force
+          df -h / /tmp
       - name: Escanear vulnerabilidades de las imágenes
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
