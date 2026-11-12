@@ -18,7 +18,8 @@
     "test:all:api": "turbo run test:all --filter=@magina/api",
     "test:all": "pnpm test:all:api && pnpm test:e2e",
     "test:coverage": "turbo run test:coverage --filter=@magina/api",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
