@@ -70,7 +70,8 @@ PostgreSQL conserva la ruta relativa, el tipo MIME, el tamaño y la huella SHA-2
 
 ## Limitaciones pendientes antes de abrir al público
 
-- Este checkout no tiene Git metadata ni CI verificable. No hay comandos de `lint` configurados ni suite automatizada de integración/E2E.
+- GitHub Actions verifica typecheck, build, migraciones, pruebas unitarias, integración, HTTP, seguridad, cuatro escenarios Playwright y builds/escaneos/humo de Docker en ambientes desechables. El run [43234258502](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43234258502) aprobó el commit `2b6157e49951aa8d83a9851a3d3e57f43de05af8`. La verificación E2E comercial y de accesibilidad con axe, pruebas de carga, restauración aislada y pruebas negativas de los gates siguen pendientes; la cobertura aún está debajo de la meta final.
+- No hay un comando general de lint para el código de toda la aplicación; `format:check` valida configuración de workspace y despliegue, mientras el typecheck cubre los paquetes y archivos E2E.
 - No se ha probado NubeFact productivo ni un CPE de este negocio. La primera emisión real debe ser un piloto autorizado y revisado.
 - Si se pierde una respuesta de NubeFact, la app bloquea la repetición con la misma clave y exige conciliación manual; todavía no consulta/reintenta automáticamente el estado remoto.
 - No se ha implementado límite distribuido de intentos de inicio de sesión; configura protección/rate limit en el proxy hasta contar con un mecanismo compartido.

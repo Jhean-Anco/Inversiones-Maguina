@@ -65,14 +65,14 @@ corepack pnpm test:all
 corepack pnpm test:coverage
 ```
 
-`test:e2e` requiere `DATABASE_URL`, `NODE_ENV=test`, una API real en `localhost:3000` y Chromium instalado con `corepack pnpm exec playwright install chromium`. Inicia el frontend Vite en `localhost:4173`, crea un usuario sintético sin permisos en `magina_test` y valida login incorrecto/correcto, permisos visibles, cierre de sesión y redirección de una ruta protegida. Solo elimina las filas creadas por la prueba.
+`test:e2e` requiere `DATABASE_URL`, `NODE_ENV=test`, una API real en `localhost:3000` y Chromium instalado con `corepack pnpm exec playwright install chromium`. Inicia el frontend Vite en `localhost:4173`, crea un usuario sintético en `magina_test` y valida login incorrecto/correcto, permisos visibles, cierre de sesión, redirección de una ruta protegida, teclado/ancho móvil, revocación de sesión y alta/edición de categoría con imagen usando temporalmente el rol `ALMACENERO`. La prueba de catálogo borra la categoría, su archivo y la asignación del rol.
 
-`test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API y el flujo E2E de acceso. `test:coverage` ejecuta las cuatro categorías de API y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. La cobertura no incluye el frontend ni tiene aún umbrales mínimos.
+`test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API y los escenarios E2E de acceso y catálogo. `test:coverage` ejecuta las cuatro categorías de API y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. La cobertura no incluye el frontend.
 
 ## E2E de navegador
 
-La suite Playwright verifica el acceso contra frontend Vite, API NestJS/Fastify y PostgreSQL reales, controles básicos de accesibilidad del login (etiquetas, teclado y ancho móvil) y la revocación de una sesión cuando la cuenta se desactiva. Las pruebas E2E de catálogo, compras, ventas, crédito, facturación, SIRE, mototaxis, reportes y recuperación siguen pendientes.
+La suite Playwright verifica el acceso contra frontend Vite, API NestJS/Fastify y PostgreSQL reales, controles básicos de accesibilidad del login (etiquetas, teclado y ancho móvil), la revocación de una sesión cuando la cuenta se desactiva y la creación/edición de categorías con imagen usando `ALMACENERO`. Las pruebas E2E de compras, ventas, crédito, facturación, SIRE, mototaxis, reportes y recuperación siguen pendientes.
 
 ## Ejecución completa
 
-GitHub Actions ejecuta formato de configuración, typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, una prueba E2E de acceso, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes, smoke tests y persistencia de PostgreSQL/archivos tras reiniciar contenedores. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.
+GitHub Actions ejecuta formato de configuración, typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, pruebas E2E de acceso y catálogo, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes, smoke tests y persistencia de PostgreSQL/archivos tras reiniciar contenedores. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.
