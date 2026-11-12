@@ -15,6 +15,7 @@ ENV VITE_API_URL=${VITE_API_URL}
 RUN pnpm --filter @magina/web build
 
 FROM nginx:1.30.6-alpine3.24 AS web
+RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
 ARG VITE_API_URL
 COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
 RUN test -n "$VITE_API_URL" && sed -i "s|__API_ORIGIN__|$VITE_API_URL|g" /etc/nginx/snippets/security-headers.conf
