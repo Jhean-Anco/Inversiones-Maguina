@@ -241,16 +241,16 @@ jobs:
             psql -U ci -d magina_test -v ON_ERROR_STOP=1 \
             -c 'CREATE TABLE IF NOT EXISTS ci_persistence_probe (id text PRIMARY KEY);' \
             -c "INSERT INTO ci_persistence_probe (id) VALUES ('${GITHUB_SHA}') ON CONFLICT DO NOTHING;"
-          docker compose --env-file .env -f compose.test.yaml exec -T api \
-            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" \
+          docker compose --env-file .env -f compose.test.yaml exec -T \
+            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" api \
             node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("/data/uploads/ci-persistence-probe.txt", process.env.CI_PERSISTENCE_MARKER);'
           docker compose --env-file .env -f compose.test.yaml restart db api
           docker compose --env-file .env -f compose.test.yaml up -d --wait --wait-timeout 120 db api
           docker compose --env-file .env -f compose.test.yaml exec -T db \
             psql -U ci -d magina_test -v ON_ERROR_STOP=1 \
             -c "SELECT 1 FROM ci_persistence_probe WHERE id = '${GITHUB_SHA}';"
-          docker compose --env-file .env -f compose.test.yaml exec -T api \
-            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" \
+          docker compose --env-file .env -f compose.test.yaml exec -T \
+            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" api \
             node --input-type=module -e 'import { readFileSync } from "node:fs"; if (readFileSync("/data/uploads/ci-persistence-probe.txt", "utf8") !== process.env.CI_PERSISTENCE_MARKER) process.exit(1);'
       - name: Detener contenedores de CI
         if: always() && steps.testenv.outcome == 'success'
