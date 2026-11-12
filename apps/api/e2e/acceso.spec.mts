@@ -115,3 +115,39 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
   await page.goto("/inicio");
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test("el formulario de acceso expone controles utilizables con teclado y viewport móvil", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/login");
+
+  const principal = page.getByRole("main");
+  await expect(principal.getByRole("heading", { name: "Bienvenido", level: 1 })).toBeVisible();
+
+  const usuario = page.getByRole("textbox", { name: "Usuario o correo electrónico" });
+  const contrasena = page.getByLabel("Contraseña", { exact: true });
+  await expect(usuario).toBeVisible();
+  await expect(contrasena).toHaveAttribute("autocomplete", "current-password");
+  await expect(page.getByRole("checkbox", { name: "Recordar mi usuario" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Iniciar sesión" })).toBeVisible();
+
+  await usuario.focus();
+  await page.keyboard.press("Tab");
+  await expect(contrasena).toBeFocused();
+  await expect(page.getByRole("button", { name: "Mostrar contraseña" })).toBeVisible();
+  await page.getByRole("button", { name: "Mostrar contraseña" }).click();
+  await expect(contrasena).toHaveAttribute("type", "text");
+  await expect(page.getByRole("button", { name: "Ocultar contraseña" })).toBeVisible();
+
+  const controlesSinNombre = await principal.locator("button, input").evaluateAll((elementos) =>
+    elementos
+      .filter((elemento) => {
+        const control = elemento as HTMLInputElement | HTMLButtonElement;
+        return !control.labels?.length && !control.getAttribute("aria-label") && !control.textContent?.trim();
+      })
+      .map((elemento) => elemento.outerHTML),
+  );
+  assert.deepEqual(controlesSinNombre, [], "Todos los botones e inputs deben tener nombre accesible.");
+
+  const anchoDocumento = await page.evaluate(() => document.documentElement.scrollWidth);
+  assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
+});
