@@ -175,7 +175,7 @@ export class ServicioEntradasStock {
     const proveedorTipoPersona = texto(datos.proveedorTipoPersona, "El tipo de persona proveedora", 20, true);
     const proveedorTipoDocumento = texto(datos.proveedorTipoDocumento, "El tipo de documento del proveedor", 10, true);
     const proveedorNumeroDocumento = texto(datos.proveedorNumeroDocumento, "El número de documento del proveedor", 100, true);
-    const proveedorDireccion = texto(datos.proveedorDireccion, "La direccion del proveedor", 250);
+    const proveedorDireccion = texto(datos.proveedorDireccion, "La direccion del proveedor", 250, true);
         const totalDocumento = datos.totalDocumento === undefined || datos.totalDocumento === null || datos.totalDocumento === "" ? null : decimal(datos.totalDocumento, "El total del documento", 2, 0);
     if (datos.detallesDocumento !== undefined && !Array.isArray(datos.detallesDocumento)) throw new BadRequestException("Las lineas del documento no son validas.");
     const detallesDocumento = (Array.isArray(datos.detallesDocumento) ? datos.detallesDocumento : []).map((valor, indice) => {

@@ -393,8 +393,9 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     );
     await dialogo.getByRole("button", { name: "Registrar compra" }).click();
     const respuesta = await respuestaCompra;
-    expect(respuesta.status()).toBe(201);
-    const compra = await respuesta.json() as { id: string; codigo: string; total: string };
+    const cuerpoRespuesta = await respuesta.text();
+    expect(respuesta.status(), `Respuesta de la API: ${cuerpoRespuesta}`).toBe(201);
+    const compra = JSON.parse(cuerpoRespuesta) as { id: string; codigo: string; total: string };
     assert.ok(compra.id && compra.codigo, "La API debe devolver la compra registrada.");
     expect(Number(compra.total)).toBe(13);
 
