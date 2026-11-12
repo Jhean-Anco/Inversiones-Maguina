@@ -45,9 +45,9 @@ La API valida credenciales NubeFact durante el arranque. No usar la cuenta produ
 
 ## Migraciones y administrador inicial
 
-En cada cambio de `DEPLOY_SHA`, Compose inicia `migrate` después de `pg_isready`. API espera que el contenedor de migraciones termine correctamente; un fallo impide que API arranque. `migrate` usa la imagen `ops` del mismo SHA y el comando `corepack pnpm --filter @magina/database db:migrate`. No ejecutar `drizzle push`, no inicializar la base automáticamente y no borrar volúmenes.
+En cada cambio de `DEPLOY_SHA`, Compose inicia `migrate` después de `pg_isready`. API espera que el contenedor de migraciones termine correctamente; un fallo impide que API arranque. `migrate` usa la imagen `ops` del mismo SHA y ejecuta Drizzle Kit directamente. No ejecutar `drizzle push`, no inicializar la base automáticamente y no borrar volúmenes.
 
-La imagen de operaciones también contiene el comando interactivo inicial. Ejecutarlo una sola vez, solo con autorización y respaldos verificados: desde Dokploy, crear un contenedor one-off con la imagen `inversiones-maguina-ops:sha-<SHA aprobado>`, entorno productivo y comando `corepack pnpm --filter @magina/api admin:crear`. El proceso pregunta los datos en la terminal; no pegarlos en logs o CI. El comando rechaza crear otra cuenta si ya existe un administrador.
+La imagen de operaciones también contiene el comando interactivo inicial. Ejecutarlo una sola vez, solo con autorización y respaldos verificados: desde Dokploy, crear un contenedor one-off con la imagen `inversiones-maguina-ops:sha-<SHA aprobado>`, entorno productivo y comando `node apps/api/dist/comandos/crear-administrador.js`. El proceso pregunta los datos en la terminal; no pegarlos en logs o CI. El comando rechaza crear otra cuenta si ya existe un administrador.
 
 ## Cambios de esquema
 

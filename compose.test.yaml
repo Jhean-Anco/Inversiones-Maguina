@@ -29,7 +29,12 @@
     depends_on:
       db:
         condition: service_healthy
-    command: ["pnpm", "--filter", "@magina/database", "db:migrate"]
+    command:
+      [
+        "sh",
+        "-c",
+        "cd packages/database && node node_modules/drizzle-kit/bin.cjs migrate",
+      ]
     networks:
       - test-private
 

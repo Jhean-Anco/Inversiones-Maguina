@@ -38,7 +38,12 @@
         condition: service_healthy
     networks:
       - private
-    command: ["pnpm", "--filter", "@magina/database", "db:migrate"]
+    command:
+      [
+        "sh",
+        "-c",
+        "cd packages/database && node node_modules/drizzle-kit/bin.cjs migrate",
+      ]
     mem_limit: 1g
     cpus: 1
     pids_limit: 128
