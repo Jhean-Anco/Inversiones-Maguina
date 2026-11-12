@@ -15,7 +15,43 @@
     },
     "test": {
       "dependsOn": ["^build"],
+      "cache": false,
       "outputs": []
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL"],
+      "cache": false,
+      "outputs": []
+    },
+    "test:api": {
+      "dependsOn": ["^build"],
+      "env": ["API_BASE_URL"],
+      "cache": false,
+      "outputs": []
+    },
+    "test:security": {
+      "dependsOn": ["^build"],
+      "env": ["API_BASE_URL"],
+      "cache": false,
+      "outputs": []
+    },
+    "test:all": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "API_BASE_URL"],
+      "cache": false,
+      "outputs": []
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "API_BASE_URL"],
+      "cache": false,
+      "outputs": ["coverage/**"]
     }
   }
 }

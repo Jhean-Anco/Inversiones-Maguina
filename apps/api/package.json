@@ -5,8 +5,14 @@
     "dev": "corepack pnpm --filter @magina/database build && nest start --watch",
     "admin:crear": "corepack pnpm --filter @magina/database build && tsx src/comandos/crear-administrador.ts",
     "build": "nest build",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/*.spec.ts"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.e2e.json",
+    "test": "node scripts/run-tests.mjs unit",
+    "test:unit": "node scripts/run-tests.mjs unit",
+    "test:integration": "node scripts/run-tests.mjs integration",
+    "test:api": "node scripts/run-tests.mjs api",
+    "test:security": "node scripts/run-tests.mjs security",
+    "test:all": "node scripts/run-tests.mjs all",
+    "test:coverage": "node scripts/run-tests.mjs all --coverage"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

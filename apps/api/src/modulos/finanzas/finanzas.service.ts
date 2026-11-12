@@ -16,7 +16,7 @@ function cadena(datos: Record<string, unknown>, campo: string, etiqueta: string,
   return valor.trim() || null;
 }
 
-function validar(datosEntrada: unknown): DatosCuenta {
+export function validarDatosCuentaFinanciera(datosEntrada: unknown): DatosCuenta {
   if (typeof datosEntrada !== "object" || datosEntrada === null || Array.isArray(datosEntrada)) throw new BadRequestException("Los datos de la cuenta no son válidos.");
   const datos = datosEntrada as Record<string, unknown>;
   if (typeof datos.tipo !== "string" || !(tiposCuenta as readonly string[]).includes(datos.tipo)) throw new BadRequestException("Selecciona un tipo de cuenta válido.");
@@ -131,14 +131,14 @@ export class ServicioFinanzas {
   }
 
   async crear(entrada: unknown, usuarioId: string) {
-    const datos = validar(entrada);
+    const datos = validarDatosCuentaFinanciera(entrada);
     const [cuenta] = await db.insert(cuentasFinancieras).values({ ...datos, usuarioId }).returning();
     return cuenta;
   }
 
   async actualizar(id: string, entrada: unknown) {
     this.validarId(id);
-    const datos = validar(entrada);
+    const datos = validarDatosCuentaFinanciera(entrada);
     const [cuenta] = await db.update(cuentasFinancieras).set(datos).where(eq(cuentasFinancieras.id, id)).returning();
     if (!cuenta) throw new NotFoundException("No se encontró la cuenta financiera.");
     return cuenta;

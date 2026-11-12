@@ -1411,7 +1411,16 @@ export class ServicioIngresos {
       }
       return { id, codigo, fecha, tipoComprobante: tipoComprobante as "BOLETA" | "FACTURA" | "NOTA_VENTA", clienteTipoDocumento, clienteNumeroDocumento, clienteNombre, clienteDireccion, clienteCorreo, medioPago, condicionPago: condicionPago as "CONTADO" | "CREDITO", importePagoInicial: importePagoInicial.toFixed(2), fechaVencimientoPago, cuotasPago, observacion, subtotal: subtotalHeader.toFixed(2), tasaIgv: tasaIgv.toFixed(2), igv: igvHeader.toFixed(2), total: totalHeader.toFixed(2), estado: "REGISTRADO", detalles: detallesGuardados };
     }); } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      let causa: unknown = error;
+      let esDuplicado = false;
+      while (typeof causa === "object" && causa !== null) {
+        if ("code" in causa && causa.code === "23505") {
+          esDuplicado = true;
+          break;
+        }
+        causa = "cause" in causa ? causa.cause : undefined;
+      }
+      if (esDuplicado) {
         const repetida = await this.recuperarPorIdempotencia(claveIdempotencia, huellaSolicitud);
         if (repetida) return repetida;
         throw new ConflictException("La venta ya fue registrada por otra solicitud.");

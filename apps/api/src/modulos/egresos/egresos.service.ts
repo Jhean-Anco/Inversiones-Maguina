@@ -99,7 +99,7 @@ export class ServicioEgresos {
     const codigo = `EGR-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
     const documentoRecibidoId = datos.documentoRecibidoId === undefined || datos.documentoRecibidoId === null || datos.documentoRecibidoId === "" ? null : texto(datos.documentoRecibidoId, "el documento recibido", 36, true);
     if (documentoRecibidoId && !/^[0-9a-f-]{36}$/i.test(documentoRecibidoId)) throw new BadRequestException("El identificador del documento recibido no es válido.");
-    return db.transaction(async (tx) => {
+    const registroId = await db.transaction(async (tx) => {
       if (documentoRecibidoId) {
         const [documento] = await tx.select({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, destino: documentosRecibidos.destino, estado: documentosRecibidos.estado })
           .from(documentosRecibidos).where(eq(documentosRecibidos.id, documentoRecibidoId)).for("update").limit(1);
@@ -136,8 +136,9 @@ export class ServicioEgresos {
           .returning({ id: documentosRecibidos.id });
         if (!enlace) throw new ConflictException("El comprobante fue procesado en otra operación; el egreso no se registró.");
       }
-      return this.obtenerRegistro(registro.id);
+      return registro.id;
     });
+    return this.obtenerRegistro(registroId);
   }
 
   async registrarPago(idEntrada: string, entrada: unknown, usuarioId: string) {
