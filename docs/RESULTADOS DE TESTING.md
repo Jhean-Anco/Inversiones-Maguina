@@ -2,7 +2,7 @@
 
 ## Ejecución actual
 
-**Estado: PARCIAL; CI verificado.** El 12 de noviembre de 2026, GitHub Actions ejecutó el commit `398a841e4f8389eb527e4cdfb1047258efd2a286` y completó correctamente el workflow [43177029211](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43177029211). El código del proyecto se ejecutó en runners de GitHub y contenedores efímeros con valores ficticios. No se ejecutó en el equipo local: la revisión local de seguridad requiere un sandbox de sistema operativo con red bloqueada, entorno reducido, filesystem aislado, límites de recursos y promoción segura de resultados; el entorno actual no lo ofrece. El Docker Engine local tampoco está disponible.
+**Estado: PARCIAL; CI verificado.** El 12 de noviembre de 2026, GitHub Actions ejecutó el commit `5d5105e81e37a3af553f579bdcb89dd328663285` y completó correctamente el workflow del PR [43181532403](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43181532403). El código del proyecto se ejecutó en runners de GitHub y contenedores efímeros con valores ficticios. No se ejecutó en el equipo local: la revisión local de seguridad requiere un sandbox de sistema operativo con red bloqueada, entorno reducido, filesystem aislado, límites de recursos y promoción segura de resultados; el entorno actual no lo ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
@@ -20,8 +20,9 @@ El conteo de unitarias incluye dos casos preexistentes de configuración y seis 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions: typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias y 3/3 integraciones aprobadas; `pnpm audit --prod --audit-level high`; escaneo Trivy de secretos y de imágenes; validación Compose; arranque de contenedores y humo de API, CORS y frontend aprobados.
-- `git diff --check` aprobó antes del commit. El CI informado corresponde al commit `398a841e4f8389eb527e4cdfb1047258efd2a286`.
+- GitHub Actions: typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias y 3/3 integraciones aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- Una ejecución de push falló por falta de espacio temporal al analizar la imagen administrativa; al limpiar caché de Buildx antes de Trivy, la ejecución del PR aprobó todos los jobs.
+- `git diff --check` aprobó antes del commit. El CI informado corresponde al commit `5d5105e81e37a3af553f579bdcb89dd328663285`.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
 - No se midió cobertura. Los umbrales 80 % general, 90 % de ramas críticas y 100 % P0 no están satisfechos ni demostrados.
