@@ -2,7 +2,7 @@
 
 ## Fuente de inventario
 
-Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. En el commit `0d9d034e4b4fb69ef05dfdb6b4fa5e1ee9e60bb1`, CI aprobó 35 pruebas unitarias, 12 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas HTTP de seguridad y 5 escenarios Playwright.
+Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. En el commit `8cfdf7b797756ea68b78c21bd421fb402007d06d`, CI aprobó 35 pruebas unitarias, 12 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas HTTP de seguridad y 5 escenarios Playwright.
 
 Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay prueba automatizada suficiente; **Pendiente de validación externa** = requiere sandbox/proveedor/operación real autorizada. “Implementado” describe código funcional solo cuando la fuente lo demuestra; no equivale a validación de extremo a extremo.
 
@@ -39,4 +39,4 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | `apps/api/src/utilidades/consulta-identidad-peru.spec.ts` | 14 | Simulación API Perú: DNI/RUC, respuestas HTTP, token, desconexión y payloads inválidos |
 | `apps/api/e2e/acceso.spec.mts` | 5 | Navegador real con frontend, API y PostgreSQL: login/permisos/logout, teclado y axe-core en login móvil, revocación de sesión, categoría con imagen y compra `SIN_DOCUMENTO` con saldo/movimiento persistidos |
 
-La línea “casos” cuenta declaraciones `node:test`; las 59 pruebas y 5 escenarios Playwright pasaron en CI [43277590102](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43277590102). La cobertura V8/LCOV es 66.87 % líneas, 68.44 % ramas y 67.42 % funciones. El gate inicial exige 65 % líneas, 68 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras documentales y rutas de negocio.
+La línea “casos” cuenta declaraciones `node:test`; las 59 pruebas y 5 escenarios Playwright pasaron en CI [43290367502](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43290367502). La cobertura V8/LCOV es 66.84 % líneas, 68.44 % ramas y 67.42 % funciones. El gate inicial exige 65 % líneas, 68 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras documentales y rutas de negocio.
