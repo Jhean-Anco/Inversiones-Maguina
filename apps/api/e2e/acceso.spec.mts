@@ -11,11 +11,19 @@ import {
   cerrarBaseDatos,
   categoriasProductos,
   db,
+  entradasStock,
+  entradasStockDetalle,
+  marcasProductos,
+  movimientosStock,
   personas,
+  productos,
+  productosPresentaciones,
   roles,
+  saldosStock,
   tiposDocumento,
   tiposPersona,
   trabajadores,
+  unidadesMedida,
   usuarios,
   usuariosRoles,
 } from "@magina/database";
@@ -298,6 +306,143 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     try {
       if (categoriaPruebaId) await limpiarCategoriaTemporal(categoriaPruebaId);
     } finally {
+      await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAlmacenero.id)));
+    }
+  }
+});
+
+test("el rol de almacén registra una compra y persiste el saldo y movimiento de inventario", async ({ page }) => {
+  assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar compras.");
+  const [rolAlmacenero] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.codigo, "ALMACENERO"))
+    .limit(1);
+  const [unidad] = await db
+    .select({ codigo: unidadesMedida.codigo })
+    .from(unidadesMedida)
+    .where(eq(unidadesMedida.activo, true))
+    .limit(1);
+  assert.ok(rolAlmacenero && unidad, "Las migraciones deben crear ALMACENERO y unidades de medida activas.");
+
+  let categoriaId: string | undefined;
+  let marcaId: string | undefined;
+  let productoId: string | undefined;
+  let rolAsignado = false;
+
+  try {
+    const [categoria] = await db
+      .insert(categoriasProductos)
+      .values({ nombre: `Categoría compra E2E ${sufijo}` })
+      .returning({ id: categoriasProductos.id });
+    categoriaId = categoria.id;
+
+    const [marca] = await db
+      .insert(marcasProductos)
+      .values({ nombre: `Marca compra E2E ${sufijo}`, uso: "REPUESTOS" })
+      .returning({ id: marcasProductos.id });
+    marcaId = marca.id;
+
+    const nombreProducto = `Repuesto compra E2E ${sufijo}`;
+    const [producto] = await db
+      .insert(productos)
+      .values({
+        codigoInterno: `E2E-${sufijo.toUpperCase()}`,
+        nombre: nombreProducto,
+        categoriaId,
+        marcaId,
+        unidadBaseCodigo: unidad.codigo,
+      })
+      .returning({ id: productos.id });
+    productoId = producto.id;
+
+    await db.insert(productosPresentaciones).values({
+      productoId,
+      unidadMedidaCodigo: unidad.codigo,
+      nombre: "Unidad",
+      factorAUnidadBase: "1",
+      seCompra: true,
+      seVende: true,
+      esBase: true,
+    });
+    await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
+    rolAsignado = true;
+
+    await page.goto("/login");
+    await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+    await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/inicio$/);
+    await page.goto("/egresos/compras");
+    await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
+    const dialogo = page.getByRole("dialog", { name: "Nueva compra de productos" });
+    await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
+    await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
+    const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });
+    await expect(resultadoProducto).toBeVisible();
+    await resultadoProducto.click();
+    await dialogo.getByLabel("Cantidad recibida").fill("4");
+    await dialogo.getByLabel("Costo por presentación (S/)").fill("3.25");
+    await dialogo.getByRole("button", { name: /Agregar a la compra/ }).click();
+    await expect(dialogo.locator(".stock-entry-total")).toContainText("S/ 13.00");
+
+    const respuestaCompra = page.waitForResponse((respuesta) =>
+      respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname === "/inventario/entradas-stock",
+    );
+    await dialogo.getByRole("button", { name: "Registrar compra" }).click();
+    const respuesta = await respuestaCompra;
+    expect(respuesta.status()).toBe(201);
+    const compra = await respuesta.json() as { id: string; codigo: string; total: string };
+    assert.ok(compra.id && compra.codigo, "La API debe devolver la compra registrada.");
+    expect(Number(compra.total)).toBe(13);
+
+    const filaCompra = page.getByRole("row").filter({ hasText: compra.codigo });
+    await expect(filaCompra).toBeVisible();
+    await expect(filaCompra).toContainText("Sin documento");
+    await expect(filaCompra).toContainText("S/ 13.00");
+
+    const [compraPersistida] = await db
+      .select({ total: entradasStock.total, totalDocumento: entradasStock.totalDocumento })
+      .from(entradasStock)
+      .where(eq(entradasStock.id, compra.id))
+      .limit(1);
+    const detallesPersistidos = await db
+      .select({ cantidad: entradasStockDetalle.cantidad, cantidadBase: entradasStockDetalle.cantidadBase, costoUnitario: entradasStockDetalle.costoUnitario, subtotal: entradasStockDetalle.subtotal })
+      .from(entradasStockDetalle)
+      .where(and(eq(entradasStockDetalle.entradaId, compra.id), eq(entradasStockDetalle.productoId, productoId)));
+    const [saldoPersistido] = await db
+      .select({ cantidad: saldosStock.cantidad })
+      .from(saldosStock)
+      .where(eq(saldosStock.productoId, productoId))
+      .limit(1);
+    const movimientosPersistidos = await db
+      .select({ tipo: movimientosStock.tipo, origenTipo: movimientosStock.origenTipo, cantidadBase: movimientosStock.cantidadBase })
+      .from(movimientosStock)
+      .where(and(eq(movimientosStock.productoId, productoId), eq(movimientosStock.origenId, compra.id)));
+
+    expect(compraPersistida?.total).toBe("13.00");
+    expect(compraPersistida?.totalDocumento).toBeNull();
+    expect(detallesPersistidos).toHaveLength(1);
+    expect(detallesPersistidos[0]).toMatchObject({ cantidad: "4.000", cantidadBase: "4.000000", costoUnitario: "3.2500", subtotal: "13.00" });
+    expect(saldoPersistido?.cantidad).toBe("4.000000");
+    expect(movimientosPersistidos).toHaveLength(1);
+    expect(movimientosPersistidos[0]).toMatchObject({ tipo: "ENTRADA", origenTipo: "ENTRADA_STOCK", cantidadBase: "4.000000" });
+  } finally {
+    if (productoId) {
+      const entradas = await db
+        .select({ id: entradasStockDetalle.entradaId })
+        .from(entradasStockDetalle)
+        .where(eq(entradasStockDetalle.productoId, productoId));
+      await db.delete(movimientosStock).where(eq(movimientosStock.productoId, productoId));
+      await db.delete(saldosStock).where(eq(saldosStock.productoId, productoId));
+      for (const entrada of entradas) await db.delete(entradasStock).where(eq(entradasStock.id, entrada.id));
+      await db.delete(productos).where(eq(productos.id, productoId));
+    }
+    if (categoriaId) await db.delete(categoriasProductos).where(eq(categoriasProductos.id, categoriaId));
+    if (marcaId) await db.delete(marcasProductos).where(eq(marcasProductos.id, marcaId));
+    if (rolAsignado && usuarioId) {
       await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAlmacenero.id)));
     }
   }
