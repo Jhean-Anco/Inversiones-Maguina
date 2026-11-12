@@ -155,6 +155,8 @@ jobs:
         run: docker compose --env-file .env -f compose.test.yaml up -d --no-build
       - name: Pruebas de humo aisladas
         run: |
+          docker compose --env-file .env -f compose.test.yaml ps -a
+          docker compose --env-file .env -f compose.test.yaml logs --no-color web
           curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://localhost:8080/health
           curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://localhost:3000/health
           api_headers="$(curl --fail --silent --show-error -D - -o /dev/null -H 'Origin: http://localhost:8080' http://localhost:3000/health)"
