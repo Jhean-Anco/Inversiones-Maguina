@@ -11,7 +11,7 @@ test("un identificador manipulado no omite el control de sesión", async () => {
 
 test("una cookie de sesión manipulada no obtiene acceso ni crea una sesión nueva", async () => {
   const respuesta = await fetch(new URL("/finanzas/cuentas", base), {
-    headers: { cookie: "magina_sesion=eyJhbGciOiJub25lIn0.eyJzdWIiOiJhZG1pbiJ9." },
+    headers: { cookie: "magina_sesion=forged-session-cookie" },
   });
   assert.equal(respuesta.status, 401);
   assert.equal(respuesta.headers.has("set-cookie"), false);
