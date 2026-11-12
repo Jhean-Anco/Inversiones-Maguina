@@ -2,13 +2,13 @@
 
 ## Ejecución actual
 
-**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43204351485](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43204351485) para el commit `2c8fc9f2415dd0ca4226e2e84edcd35b59838d29` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43206561315](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43206561315) para el commit `283efdd90c05fd7f5b9bd7d20708bde0c89b13ab` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
 | Suite | Casos escritos | Aprobados | Fallidos | Cobertura |
 |---|---:|---:|---:|---|
-| Unitarias (configuración + finanzas) | 8 | 8 (GitHub Actions) | 0 | Incluidas en el reporte agregado |
+| Unitarias (configuración, finanzas y simulador SIRE) | 21 | 21 (GitHub Actions) | 0 | Incluidas en el reporte agregado |
 | Integración PostgreSQL | 8 | 8 (PostgreSQL 16 efímero en GitHub Actions) | 0 | Incluidas en el reporte agregado |
 | API HTTP | 8 | 8 (NestJS/Fastify + PostgreSQL real de CI) | 0 | Incluidas en el reporte agregado |
 | Seguridad HTTP | 4 | 4 (API real de CI) | 0 | Incluidas en el reporte agregado |
@@ -16,19 +16,19 @@ La rama actual contiene los siguientes casos y resultados; las suites vacías se
 | Seguridad automatizada del código | Escáneres activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
 | Concurrencia de operaciones comerciales | 2 escenarios | 2 aprobados: última unidad e idempotencia duplicada | 0 | No medida |
 
-El conteo total es 29: 28 declaraciones `node:test` (8 unitarias, 8 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Faltan más casos de compras y todo el catálogo de permisos.
+El conteo total es 42: 41 declaraciones `node:test` (21 unitarias, 8 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Las pruebas unitarias incluyen 13 escenarios simulados de SIRE. Faltan más casos de compras, NubeFact, API Perú y todo el catálogo de permisos.
 
-La cobertura V8 agregada de las suites API fue 61.50 % de líneas, 72.29 % de ramas y 61.81 % de funciones. El workflow la publica como LCOV, pero no aplica los umbrales de 80 % general, 90 % para ramas críticas ni 100 % para casos P0; esos objetivos siguen pendientes.
+La cobertura V8 agregada de las suites API fue 61.61 % de líneas, 72.31 % de ramas y 63.84 % de funciones. El workflow la publica como LCOV, pero no aplica los umbrales de 80 % general, 90 % para ramas críticas ni 100 % para casos P0; esos objetivos siguen pendientes.
 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions run [43204351485](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43204351485): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias, 8/8 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- GitHub Actions run [43206561315](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43206561315): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 21/21 unitarias, 8/8 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
 - Un push previo falló por espacio temporal de Buildx al analizar la imagen de operaciones; el workflow ahora limpia la caché antes de los escaneos, y el run `43199814736` completó todos sus jobs de calidad e imágenes.
-- `git diff --check` aprobó antes de los commits. El CI informado corresponde al commit `2c8fc9f2415dd0ca4226e2e84edcd35b59838d29`. El artefacto LCOV es `cobertura-api-c5f334edc4229d4cb9380282044fb40a354494f2`, con vencimiento el 26 de noviembre de 2026.
+- `git diff --check` aprobó antes de los commits. El CI informado corresponde al commit `283efdd90c05fd7f5b9bd7d20708bde0c89b13ab`. El artefacto LCOV es `cobertura-api-67562e0badfc923da01be29e87008ba9bb02955d`, con vencimiento el 26 de noviembre de 2026.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
-- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 61.50 % de líneas, 72.29 % de ramas y 61.81 % de funciones.
+- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 61.61 % de líneas, 72.31 % de ramas y 63.84 % de funciones.
 
 ## Defectos encontrados y correcciones
 
@@ -37,6 +37,7 @@ La cobertura V8 agregada de las suites API fue 61.50 % de líneas, 72.29 % de ra
 - **Idempotencia concurrente:** la prueba real encontró que Drizzle envolvía el error PostgreSQL `23505`; el servicio solo revisaba el código del error exterior y no recuperaba la venta ya registrada. Se amplió el reconocimiento por la cadena `cause`, y las tres pruebas comerciales pasaron en la siguiente ejecución.
 - **CORS hostil:** se ajustó la aserción para verificar que un origen no autorizado nunca se refleje ni reciba `*`; la suite de seguridad pasó en CI.
 - **Lectura del egreso antes del commit:** las pruebas de pagos fallaron porque `ServicioEgresos.crear` consultaba el registro mediante otra conexión mientras la transacción aún no había confirmado el INSERT. El servicio ahora obtiene el ID dentro de la transacción y recupera el egreso después de que esta termina; los dos casos de pagos concurrentes y el run completo pasaron.
+- **JSON SIRE inválido con HTTP 200:** el servicio convertía el error de parseo en un objeto vacío, que podía parecer una respuesta válida. Ahora devuelve un error de gateway y el simulador verifica el comportamiento; también pasan los casos de credenciales, HTTP 400–503 y desconexión.
 
 ## Pendientes antes de considerar apto para producción
 
@@ -48,4 +49,4 @@ La cobertura V8 agregada de las suites API fue 61.50 % de líneas, 72.29 % de ra
 - Verificar migraciones/reinicio/persistencia y fallos del pipeline con jobs de CI controlados.
 - Realizar aceptación fiscal únicamente en sandbox oficial con autorización; no se ejecutó ni se recomienda una emisión real.
 
-**Recomendación:** no dar por concluida la misión de calidad ni aprobar todos los flujos para producción todavía. La CI aprobada cubre ventas/stock, autenticación HTTP básica, migraciones e imágenes, pero no mide cobertura global, no valida E2E web, accesibilidad, carga, todos los permisos, pagos/compras ni restauración de respaldos.
+**Recomendación:** no dar por concluida la misión de calidad ni aprobar todos los flujos para producción todavía. La CI aprobada cubre ventas/stock, pagos concurrentes, autenticación HTTP básica, un E2E de acceso, simulación parcial de SIRE, migraciones e imágenes. No valida aún los flujos comerciales E2E, la accesibilidad, la carga, todos los permisos, compras completas ni la restauración de respaldos; la cobertura medida aún está bajo los objetivos.
