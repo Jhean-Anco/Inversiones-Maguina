@@ -39,6 +39,7 @@ const egresoIds: string[] = [];
 const cuentaFinancieraIds: string[] = [];
 const presentacionPorProducto = new Map<string, string>();
 const clavesVenta: string[] = [];
+const seriesFiscalesPrueba: string[] = [];
 
 function fechaHoyPeru() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
@@ -50,6 +51,9 @@ before(async () => {
   ({ db, clientePostgres, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
+  const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
+  seriesFiscalesPrueba.push(serieBoleta);
+  await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });
 
   const [tipoNatural] = await db.select({ id: esquema.tiposPersona.id }).from(esquema.tiposPersona)
     .where(eq(esquema.tiposPersona.codigo, "NATURAL")).limit(1);
@@ -146,6 +150,11 @@ function datosVenta(presentacionId: string, cantidad: number, clave = randomUUID
     condicionPago: "CONTADO",
     detalles: [{ tipo: "PRODUCTO", presentacionId, cantidad, afectacionIgv: "GRAVADO" }],
   };
+}
+
+function datosBoleta(presentacionId: string, clave = randomUUID()) {
+  const venta = datosVenta(presentacionId, 1, clave);
+  return { ...venta, tipoComprobante: "BOLETA" };
 }
 
 async function crearCuentaEfectivo() {
@@ -249,6 +258,56 @@ test("dos solicitudes concurrentes con la misma clave de idempotencia solo descu
   assert.equal(movimientos.length, 1);
 });
 
+test("emisión de boleta usa el NubeFact simulado y persiste el rechazo junto con la solicitud", async () => {
+  const originalFetch = globalThis.fetch;
+  let solicitudCapturada: Record<string, unknown> | undefined;
+  let autorizacionCapturada = "";
+  globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+    solicitudCapturada = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    autorizacionCapturada = new Headers(init?.headers).get("Authorization") ?? "";
+    return new Response(JSON.stringify({ errors: "Rechazo sintético del proveedor" }), {
+      status: 422,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  try {
+    const producto = await crearProductoConStock(2);
+    const datos = datosBoleta(producto.presentacionId);
+    const resultado = await servicio.crear(datos, usuarioId);
+    const [venta] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, resultado.id));
+
+    assert.equal(resultado.estado, "ERROR");
+    assert.equal(venta.estado, "ERROR_NUBEFACT");
+    assert.deepEqual((venta.datosNubefact as { respuesta: unknown }).respuesta, { errors: "Rechazo sintético del proveedor" });
+    assert.equal(solicitudCapturada?.operacion, "generar_comprobante");
+    assert.equal(solicitudCapturada?.tipo_de_comprobante, 2);
+    assert.equal(autorizacionCapturada, "ci-only-fake-token");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("respuesta aceptada del NubeFact simulado marca la boleta como emitida", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ aceptada_por_sunat: true, mensaje: "Aceptación sintética" }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  })) as typeof fetch;
+
+  try {
+    const producto = await crearProductoConStock(2);
+    const resultado = await servicio.crear(datosBoleta(producto.presentacionId), usuarioId);
+    const [venta] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, resultado.id));
+
+    assert.equal(resultado.estado, "EMITIDO");
+    assert.equal(venta.estado, "EMITIDO");
+    assert.deepEqual((venta.datosNubefact as { respuesta: unknown }).respuesta, { aceptada_por_sunat: true, mensaje: "Aceptación sintética" });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("dos pagos concurrentes no exceden el saldo del egreso en PostgreSQL", async () => {
   const egresoId = await crearEgresoParaPago(100);
   const cuentaId = await crearCuentaEfectivo();
@@ -288,6 +347,10 @@ test("dos pagos concurrentes con la misma clave idempotente crean un solo abono"
 
 after(async () => {
   if (db && esquema) {
+    if (seriesFiscalesPrueba.length) {
+      await db.delete(esquema.nubefactCorrelativos).where(inArray(esquema.nubefactCorrelativos.serie, seriesFiscalesPrueba));
+      await db.delete(esquema.seriesComprobantes).where(inArray(esquema.seriesComprobantes.serie, seriesFiscalesPrueba));
+    }
     if (egresoIds.length) {
       await db.delete(esquema.egresosPagos).where(inArray(esquema.egresosPagos.egresoId, egresoIds));
       await db.delete(esquema.egresosRegistros).where(inArray(esquema.egresosRegistros.id, egresoIds));
