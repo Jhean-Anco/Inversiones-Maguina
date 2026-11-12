@@ -2,11 +2,14 @@
   "name": "inversiones-magina",
   "private": true,
   "packageManager": "pnpm@10.20.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
+    "test": "turbo run test --filter=@magina/api",
     "format": "prettier --write ."
   },
   "devDependencies": {
@@ -15,6 +18,9 @@
     "typescript": "^5.9.3"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "argon2"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "argon2"
+    ]
   }
 }
