@@ -19,7 +19,7 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 1. **Unitarias:** `node:test` con `tsx`; reglas puras y validaciones reales del servicio. Sin llamadas a proveedores ni PostgreSQL.
 2. **Integración PostgreSQL:** PostgreSQL 16 desechable; migraciones Drizzle desde cero, metadatos del esquema, relaciones y precisión `numeric`. Las pruebas deben rechazar hosts remotos y nombres de base que no terminen en `_test`.
 3. **API:** NestJS/Fastify y PostgreSQL con datos ficticios. Hay 8 pruebas HTTP de autenticación, rutas protegidas, validación, cookie y CORS; la matriz amplia de permisos por rol sigue pendiente.
-4. **E2E web:** frontend y backend reales con PostgreSQL desechable. Simuladores solo para NubeFact, SUNAT SIRE y API Perú. Aún no implementado.
+4. **E2E web:** Playwright abre el frontend Vite real y usa NestJS/Fastify y PostgreSQL desechable. Se agregó un primer flujo de acceso y permisos de navegación; los escenarios comerciales y simuladores de proveedores siguen pendientes.
 5. **Seguridad y supply chain:** Gitleaks, Trivy de secretos e imágenes, auditoría de dependencias y 4 pruebas HTTP de controles básicos corren en CI. Faltan pruebas amplias de permisos y límites por módulo.
 6. **Docker/CI:** Compose de testing separado, base interna y datos ficticios. Publicación condicionada a los gates; despliegue automático permanece deshabilitado sin autorización explícita.
 
@@ -33,9 +33,9 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 ## Próximos bloques
 
-1. Medir cobertura real y publicar informes/artifactos por suite.
-2. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
-3. Completar la matriz API de permisos por rol y errores de contrato.
-4. Añadir Playwright con flujos P0 y servicios externos simulados.
-5. Añadir accesibilidad automatizada y carga k6 en entorno aislado.
-6. Probar persistencia tras reinicio y fallos controlados de los gates de CI.
+1. Ejecutar por primera vez el E2E de autenticación en CI y corregir problemas observados.
+2. Medir la cobertura LCOV publicada y establecer umbrales progresivos sin excluir módulos críticos.
+3. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
+4. Completar los flujos Playwright P0 y añadir simuladores externos.
+5. Completar la matriz API de permisos por rol y errores de contrato.
+6. Añadir accesibilidad automatizada, carga k6, persistencia tras reinicio y fallos controlados de gates CI.

@@ -46,7 +46,7 @@ Los comandos requieren la misma PostgreSQL desechable migrada y una API local in
 ```powershell
 $env:NODE_ENV = 'test'
 $env:DATABASE_URL = 'postgres://ci:ci-only-password@127.0.0.1:55432/magina_test'
-$env:FRONTEND_ORIGIN = 'http://localhost:5173'
+$env:FRONTEND_ORIGIN = 'http://localhost:5173,http://localhost:4173'
 $env:AUTENTICACION_SECRETO = 'x' * 40
 $env:NUBEFACT_RUTA = 'https://example.invalid/api'
 $env:NUBEFACT_TOKEN = 'ci-only-fake-token'
@@ -60,16 +60,19 @@ En una tercera terminal:
 $env:API_BASE_URL = 'http://127.0.0.1:3000'
 corepack pnpm test:api
 corepack pnpm test:security
+corepack pnpm test:e2e
 corepack pnpm test:all
 corepack pnpm test:coverage
 ```
 
-`test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API disponibles. `test:coverage` repite esas suites y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. El comando de cobertura puede tardar más porque ejecuta todas las categorías.
+`test:e2e` requiere `DATABASE_URL`, `NODE_ENV=test`, una API real en `localhost:3000` y Chromium instalado con `corepack pnpm exec playwright install chromium`. Inicia el frontend Vite en `localhost:4173`, crea un usuario sintético sin permisos en `magina_test` y valida login incorrecto/correcto, permisos visibles, cierre de sesión y redirección de una ruta protegida. Solo elimina las filas creadas por la prueba.
+
+`test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API y el flujo E2E de acceso. `test:coverage` ejecuta las cuatro categorías de API y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. La cobertura no incluye el frontend ni tiene aún umbrales mínimos.
 
 ## E2E de navegador
 
-Playwright todavía no está incorporado al lockfile ni hay un comando `test:e2e`; no existe evidencia de pruebas E2E aprobadas. El frontend/backend completo con flujos autenticados y PostgreSQL sigue pendiente.
+La suite Playwright inicial verifica el flujo de acceso contra frontend Vite, API NestJS/Fastify y PostgreSQL reales. Las pruebas E2E de catálogo, compras, ventas, crédito, facturación, SIRE, mototaxis, reportes y recuperación siguen pendientes.
 
 ## Ejecución completa
 
-GitHub Actions ejecuta typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes y smoke tests. El pipeline no implementa todavía pruebas E2E con Playwright. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.
+GitHub Actions ejecuta typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, una prueba E2E de acceso, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes y smoke tests. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.

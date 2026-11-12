@@ -14,11 +14,14 @@
     "test:integration": "turbo run test:integration --filter=@magina/api",
     "test:api": "turbo run test:api --filter=@magina/api",
     "test:security": "turbo run test:security --filter=@magina/api",
-    "test:all": "turbo run test:all --filter=@magina/api",
+    "test:e2e": "playwright test --config apps/api/playwright.config.ts --project=chromium",
+    "test:all:api": "turbo run test:all --filter=@magina/api",
+    "test:all": "pnpm test:all:api && pnpm test:e2e",
     "test:coverage": "turbo run test:coverage --filter=@magina/api",
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "@playwright/test": "1.65.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3"

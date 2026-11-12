@@ -37,7 +37,7 @@ jobs:
     env:
       DATABASE_URL: postgres://ci:ci-only-password@127.0.0.1:5432/magina_test
       NODE_ENV: test
-      FRONTEND_ORIGIN: http://localhost:5173
+      FRONTEND_ORIGIN: http://localhost:5173,http://localhost:4173
       AUTENTICACION_SECRETO: ci-only-random-secret-value-with-more-than-32-chars
       NUBEFACT_RUTA: https://example.invalid/api
       NUBEFACT_TOKEN: ci-only-fake-token
@@ -92,6 +92,21 @@ jobs:
         env:
           API_BASE_URL: http://127.0.0.1:3000
         run: pnpm test:security
+      - name: Instalar Chromium para pruebas E2E
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Prueba E2E de autenticación contra frontend, API y PostgreSQL reales
+        env:
+          E2E_BASE_URL: http://localhost:4173
+          VITE_API_URL: http://localhost:3000
+        run: pnpm test:e2e
+      - name: Guardar trazas E2E si fallan
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-traces-${{ github.sha }}
+          path: apps/api/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Medir cobertura V8 de todas las suites API
         env:
           API_BASE_URL: http://127.0.0.1:3000

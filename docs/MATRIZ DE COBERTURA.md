@@ -2,13 +2,13 @@
 
 ## Fuente de inventario
 
-Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. La rama contiene 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API y 4 pruebas HTTP de seguridad. Todas pasaron en GitHub Actions para el commit `12224fcdc092ceeac7cae5b6ba326e3fe045729b`.
+Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. La rama contiene 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API y 4 pruebas HTTP de seguridad. Una prueba Playwright de acceso se agregó pero está pendiente de ejecución en CI.
 
 Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay prueba automatizada suficiente; **Pendiente de validación externa** = requiere sandbox/proveedor/operación real autorizada. “Implementado” describe código funcional solo cuando la fuente lo demuestra; no equivale a validación de extremo a extremo.
 
 | Módulo | Requisito reflejado en código | Superficie de entrada | Regla/caso trazado | Prioridad | Estado de prueba |
 |---|---|---|---|---|---|
-| Autenticación | Inicio/cierre de sesión, cookie, perfil y permisos por rol | `autenticacion.controller.ts`, `guardia-sesion.ts`, `guardia-permiso.ts` | Sesión ausente/manipulada, login fallido, cookie y CORS | P0 | Parcial: 8 pruebas HTTP API y 4 de seguridad; permisos por rol incompletos |
+| Autenticación | Inicio/cierre de sesión, cookie, perfil y permisos por rol | `autenticacion.controller.ts`, `guardia-sesion.ts`, `guardia-permiso.ts`, `apps/api/e2e/acceso.spec.ts` | Sesión ausente/manipulada, login fallido/válido, menú sin permisos, cierre y ruta protegida | P0 | Parcial: 8 pruebas HTTP API, 4 de seguridad y 1 E2E escrita; E2E aún sin ejecución CI |
 | Ingresos / ventas | Ventas, pagos, clientes, notas, anulaciones, cotizaciones y órdenes de servicio | `ingresos.controller.ts`, `ingresos.service.ts` | Rollback por stock, concurrencia por última unidad, idempotencia de clave duplicada | P0 | Parcial: 3 integraciones reales PostgreSQL de transacción/stock |
 | Inventario | Productos, precios, marcas, categorías, entradas y ajustes | controladores de `modulos/inventario` | Cantidades, stock mínimo, duplicados, conversiones y transacciones | P0 | Pendiente |
 | Finanzas | Cuentas, resumen y movimientos por periodo | `finanzas.controller.ts`, `finanzas.service.ts` | Tipos de cuenta, moneda, campos bancarios/tarjeta, fechas y sumas | P0 | Parcial: 6 casos de validación aprobados; endpoints todavía sin cobertura funcional |
@@ -21,9 +21,9 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | Facturación NubeFact | Emisión, estado, documentos, notas y bajas | `ingresos.service.ts`, `almacenamiento.service.ts` | Rechazo, timeout, estado incierto e idempotencia | P0 | Pendiente; sin proveedor real |
 | Reportes | Resumen, ingresos e inventario | `reportes.controller.ts`, `reportes.service.ts` | Permisos y conciliación con movimientos operativos | P1 | Pendiente |
 | PostgreSQL / migraciones | Esquema Drizzle y migraciones SQL | `packages/database`, `migrations/` | Versión 16, tablas, FK, precisión `numeric`, idempotencia de migración y ventas concurrentes | P0 | Parcial: 6 pruebas aprobadas; migraciones aplicadas dos veces |
-| Frontend | Rutas y formularios operativos | `apps/web/src/main/main.tsx`, páginas y servicios | Validación, navegación, errores, responsive, teclado y accesibilidad | P0/P1 | Pendiente; no se encontró suite de navegador |
+| Frontend | Login, navegación protegida y rutas/formularios operativos | `apps/web/src/main/main.tsx`, login y `apps/api/e2e/acceso.spec.ts` | Login real, menú según permisos, logout y redirect; responsive/accesibilidad | P0/P1 | Parcial: 1 E2E escrita pendiente de CI; módulos y accesibilidad pendientes |
 | Servicios externos | NubeFact, SUNAT SIRE, API Perú | servicios de ingresos, SIRE y consulta de identidad | HTTP 200/errores, timeout, payload inválido y respuesta repetida | P0/P1 | Pendiente; no usar credenciales reales |
-| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, smoke, scans y gates | P0 | Parcial: build, escaneos y humo aprobados en CI; faltan gates de cobertura/E2E |
+| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, humo, scans, E2E y gates | P0 | Parcial: build, escaneos y humo aprobados; el nuevo gate E2E espera ejecución |
 
 ## Casos actualmente escritos
 
@@ -36,4 +36,4 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | `apps/api/src/seguridad.api.spec.ts` | 8 | HTTP real: health, autenticación, validación, cookie y CORS |
 | `apps/api/src/controles-seguridad.security.spec.ts` | 4 | HTTP real: sesión manipulada, cookie falsa, CORS hostil y filtración de secretos |
 
-La línea “casos” cuenta declaraciones `node:test`; las 26 declaraciones actuales pasaron en el commit indicado. No hay cobertura medida, informe Playwright ni pruebas de transacciones de pagos/compras.
+La línea “casos” cuenta declaraciones `node:test`; las 26 declaraciones pasaron en el último CI verde anterior a Playwright. La suite Playwright contiene 1 flujo y requiere su primer resultado CI. La cobertura LCOV está automatizada en CI, pero todavía no define umbrales. Persisten brechas en pagos/compras, proveedores externos y rutas de negocio.
