@@ -84,7 +84,14 @@ export class ServicioSunatSire {
     const tipo = respuesta.headers.get("content-type") ?? "";
     // SUNAT documenta application/json también en respuestas de descarga. Leer
     // el clone evita consumir el ZIP antes de que el importador obtenga sus bytes.
-    const datos = (tipo.includes("json") ? await respuesta.clone().json().catch(() => ({})) : {}) as T;
+    let datos = {} as T;
+    if (tipo.includes("json")) {
+      try {
+        datos = await respuesta.clone().json() as T;
+      } catch {
+        throw new BadGatewayException("SUNAT devolvió una respuesta JSON no válida.");
+      }
+    }
     if (!respuesta.ok) throw new BadGatewayException(mensajeProveedor(datos));
     return { respuesta, datos };
   }
