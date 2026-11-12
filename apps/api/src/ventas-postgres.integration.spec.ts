@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioIngresos } from "./modulos/ingresos/ingresos.service";
+import { ServicioEntradasStock } from "./modulos/inventario/entradas-stock.service";
 
 function validarBaseDePruebas() {
   assert.equal(process.env.NODE_ENV, "test", "La integración exige NODE_ENV=test.");
@@ -27,6 +28,7 @@ let cerrarBaseDatos: PaqueteBaseDatos["cerrarBaseDatos"];
 let esquema: PaqueteBaseDatos;
 let servicio: ServicioIngresos;
 let servicioEgresos: ServicioEgresos;
+let servicioEntradasStock: ServicioEntradasStock;
 let usuarioId: string;
 let clienteId: string;
 let clienteDni: string;
@@ -36,6 +38,7 @@ let unidadCodigo: string;
 let listaPrecioId: string;
 const productoIds: string[] = [];
 const egresoIds: string[] = [];
+const entradaStockIds: string[] = [];
 const cuentaFinancieraIds: string[] = [];
 const presentacionPorProducto = new Map<string, string>();
 const clavesVenta: string[] = [];
@@ -51,6 +54,7 @@ before(async () => {
   ({ db, clientePostgres, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
+  servicioEntradasStock = new ServicioEntradasStock(new ServicioAlmacenamiento());
   const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
   seriesFiscalesPrueba.push(serieBoleta);
   await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });
@@ -155,6 +159,15 @@ function datosVenta(presentacionId: string, cantidad: number, clave = randomUUID
 function datosBoleta(presentacionId: string, clave = randomUUID()) {
   const venta = datosVenta(presentacionId, 1, clave);
   return { ...venta, tipoComprobante: "BOLETA" };
+}
+
+function datosEntradaStock(productoId: string, presentacionId: string, cantidad: number, costoUnitario: number) {
+  return {
+    fecha: fechaHoyPeru(),
+    tipoDocumento: "SIN_DOCUMENTO",
+    observacion: "Recepción de prueba automatizada",
+    detalles: [{ productoId, presentacionId, cantidad, costoUnitario }],
+  };
 }
 
 async function crearCuentaEfectivo() {
@@ -308,6 +321,43 @@ test("respuesta aceptada del NubeFact simulado marca la boleta como emitida", as
   }
 });
 
+test("compra de repuestos registra el documento, actualiza saldo y genera movimiento en PostgreSQL", async () => {
+  const producto = await crearProductoConStock(0);
+  const entrada = await servicioEntradasStock.crear(datosEntradaStock(producto.productoId, producto.presentacionId, 3, 4.25), usuarioId);
+  entradaStockIds.push(entrada.id);
+
+  const [saldo] = await db.select({ cantidad: esquema.saldosStock.cantidad }).from(esquema.saldosStock)
+    .where(eq(esquema.saldosStock.productoId, producto.productoId));
+  const movimientos = await db.select({ cantidadBase: esquema.movimientosStock.cantidadBase, origenId: esquema.movimientosStock.origenId })
+    .from(esquema.movimientosStock).where(and(eq(esquema.movimientosStock.productoId, producto.productoId), eq(esquema.movimientosStock.origenTipo, "ENTRADA_STOCK")));
+
+  assert.equal(entrada.detalles.length, 1);
+  assert.equal(entrada.total, "12.75");
+  assert.equal(entrada.detalles[0].subtotal, "12.75");
+  assert.equal(Number(saldo.cantidad), 3);
+  assert.equal(movimientos.length, 1);
+  assert.equal(movimientos[0].origenId, entrada.id);
+  assert.equal(Number(movimientos[0].cantidadBase), 3);
+});
+
+test("compra de repuestos inválida revierte cabecera y conserva el saldo de PostgreSQL", async () => {
+  const producto = await crearProductoConStock(2);
+  const antes = await db.select({ id: esquema.entradasStock.id }).from(esquema.entradasStock);
+
+  await assert.rejects(
+    () => servicioEntradasStock.crear(datosEntradaStock(producto.productoId, randomUUID(), 1, 5), usuarioId),
+    (error) => error instanceof BadRequestException && /no está disponible para compra/.test(error.message),
+  );
+
+  const despues = await db.select({ id: esquema.entradasStock.id }).from(esquema.entradasStock);
+  const [saldo] = await db.select({ cantidad: esquema.saldosStock.cantidad }).from(esquema.saldosStock)
+    .where(eq(esquema.saldosStock.productoId, producto.productoId));
+  assert.equal(despues.length, antes.length);
+  assert.equal(Number(saldo.cantidad), 2);
+  assert.deepEqual(await db.select({ id: esquema.movimientosStock.id }).from(esquema.movimientosStock)
+    .where(and(eq(esquema.movimientosStock.productoId, producto.productoId), eq(esquema.movimientosStock.origenTipo, "ENTRADA_STOCK"))), []);
+});
+
 test("dos pagos concurrentes no exceden el saldo del egreso en PostgreSQL", async () => {
   const egresoId = await crearEgresoParaPago(100);
   const cuentaId = await crearCuentaEfectivo();
@@ -347,6 +397,10 @@ test("dos pagos concurrentes con la misma clave idempotente crean un solo abono"
 
 after(async () => {
   if (db && esquema) {
+    if (entradaStockIds.length) {
+      await db.delete(esquema.movimientosStock).where(inArray(esquema.movimientosStock.origenId, entradaStockIds));
+      await db.delete(esquema.entradasStock).where(inArray(esquema.entradasStock.id, entradaStockIds));
+    }
     if (seriesFiscalesPrueba.length) {
       await db.delete(esquema.nubefactCorrelativos).where(inArray(esquema.nubefactCorrelativos.serie, seriesFiscalesPrueba));
       await db.delete(esquema.seriesComprobantes).where(inArray(esquema.seriesComprobantes.serie, seriesFiscalesPrueba));
