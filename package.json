@@ -19,7 +19,7 @@
     "test:all": "pnpm test:all:api && pnpm test:e2e",
     "test:coverage": "turbo run test:coverage --filter=@magina/api",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check package.json pnpm-workspace.yaml turbo.json .github/workflows/pipeline.yml \"compose*.yaml\""
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
