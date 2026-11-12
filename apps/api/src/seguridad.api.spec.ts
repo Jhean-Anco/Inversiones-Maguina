@@ -15,6 +15,7 @@ test("health confirma que la API real puede consultar PostgreSQL", async () => {
     estado: "ok",
     servicio: "api",
     baseDatos: "ok",
+    buildSha: process.env.MAGINA_BUILD_SHA || "local",
   });
 });
 

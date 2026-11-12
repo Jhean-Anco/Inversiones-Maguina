@@ -22,6 +22,8 @@
       context: .
       dockerfile: docker/api.Dockerfile
       target: ops
+      args:
+        BUILD_SHA: ${DEPLOY_SHA:-local}
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
     depends_on:
@@ -42,6 +44,8 @@
       context: .
       dockerfile: docker/api.Dockerfile
       target: api
+      args:
+        BUILD_SHA: ${DEPLOY_SHA:-local}
     env_file:
       - .env
     environment:
@@ -50,6 +54,7 @@
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
       FRONTEND_ORIGIN: http://localhost:8080
       UPLOADS_DIR: /data/uploads
+      DEPLOY_SHA: ${DEPLOY_SHA:-local}
     volumes:
       - test-uploads:/data/uploads
     depends_on:
@@ -66,6 +71,7 @@
       target: web
       args:
         VITE_API_URL: http://localhost:3000
+        BUILD_SHA: ${DEPLOY_SHA:-local}
     networks:
       - test-private
 

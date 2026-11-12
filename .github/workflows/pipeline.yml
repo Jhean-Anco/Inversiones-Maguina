@@ -161,10 +161,11 @@ jobs:
           SHA_TAG: sha-${{ github.sha }}
           TEST_TAG: test-${{ github.sha }}
           VITE_API_URL: https://api.inversionesmaguina.network
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
-          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api -t magina-api:${SHA_TAG} -t magina-api:${TEST_TAG} .
-          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops -t magina-ops:${SHA_TAG} -t magina-ops:${TEST_TAG} .
-          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} -t magina-web:${SHA_TAG} -t magina-web:${TEST_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-api:${SHA_TAG} -t magina-api:${TEST_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-ops:${SHA_TAG} -t magina-ops:${TEST_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-web:${SHA_TAG} -t magina-web:${TEST_TAG} .
       - name: Liberar caché temporal del builder
         run: |
           docker system df
@@ -229,11 +230,14 @@ jobs:
           set -euxo pipefail
           docker compose --env-file .env -f compose.test.yaml ps -a
           docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate
-          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); console.log("API smoke:", response.status, Object.fromEntries(response.headers)); if (!response.ok) throw new Error(`API health HTTP ${response.status}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
+          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); const health = await response.json(); console.log("API smoke:", response.status, health, Object.fromEntries(response.headers)); if (!response.ok || health.estado !== "ok" || health.baseDatos !== "ok") throw new Error(`API health failed: ${response.status}`); if (health.buildSha !== process.env.DEPLOY_SHA) throw new Error(`API image SHA mismatch: ${health.buildSha}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
           web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
           printf '%s\n' "$web_headers"
           grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
           grep -iq 'connect-src.*https://api.inversionesmaguina.network' <<< "$web_headers"
+          web_build_info="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -qO- http://127.0.0.1/build-info.json)"
+          printf 'Frontend build info: %s\n' "$web_build_info"
+          grep -Fq "{\"sha\":\"${GITHUB_SHA}\"}" <<< "$web_build_info"
       - name: Verificar persistencia de PostgreSQL y archivos tras reiniciar contenedores
         run: |
           set -euxo pipefail
@@ -278,10 +282,11 @@ jobs:
         env:
           SHA_TAG: sha-${{ github.sha }}
           VITE_API_URL: https://api.inversionesmaguina.network
+          DEPLOY_SHA: ${{ github.sha }}
         run: |
-          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api -t magina-api:${SHA_TAG} .
-          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops -t magina-ops:${SHA_TAG} .
-          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} -t magina-web:${SHA_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-api:${SHA_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-ops:${SHA_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-web:${SHA_TAG} .
       - name: Escanear antes de publicar
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:
@@ -356,9 +361,14 @@ jobs:
       - name: Comprobar HTTPS de frontend y API
         id: smoke
         run: |
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/health
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health
-          echo "Smoke HTTPS aprobado para ${GITHUB_SHA}. Verificar el SHA de los servicios en Dokploy." >> "$GITHUB_STEP_SUMMARY"
+          api_health="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health)"
+          printf 'API health: %s\n' "$api_health"
+          jq -e --arg sha "$GITHUB_SHA" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health"
+          web_build_info="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/build-info.json)"
+          printf 'Frontend build info: %s\n' "$web_build_info"
+          jq -e --arg sha "$GITHUB_SHA" '.sha == $sha' <<< "$web_build_info"
+          deployment_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Despliegue verificado en ${deployment_time}: API, PostgreSQL y frontend sirven el commit ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
       - name: Restaurar aplicación anterior si falla el humo
         id: rollback
         if: failure() && steps.deploy.outputs.previous_sha != ''
@@ -372,5 +382,11 @@ jobs:
       - name: Comprobar salud tras restaurar aplicación anterior
         if: always() && steps.rollback.outcome == 'success'
         run: |
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/health
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health
+          api_health="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health)"
+          printf 'API health tras rollback: %s\n' "$api_health"
+          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health"
+          web_build_info="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/build-info.json)"
+          printf 'Frontend build info tras rollback: %s\n' "$web_build_info"
+          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.sha == $sha' <<< "$web_build_info"
+          rollback_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Rollback verificado en ${rollback_time}: API y frontend sirven el commit ${{ steps.deploy.outputs.previous_sha }}." >> "$GITHUB_STEP_SUMMARY"

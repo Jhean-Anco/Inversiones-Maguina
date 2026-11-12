@@ -60,12 +60,13 @@ Una vez activada y aprobada la integración, los merges de `main` pasan por CI, 
 Después de un despliegue autorizado comprobar:
 
 - `https://inversionesmaguina.network/health` responde `200`.
-- `https://api.inversionesmaguina.network/health` responde con API y PostgreSQL saludables.
-- Las imágenes que corren corresponden al SHA aprobado y a los digests anotados en Actions.
+- `https://api.inversionesmaguina.network/health` responde con API y PostgreSQL saludables y su `buildSha` coincide con el SHA aprobado.
+- `https://inversionesmaguina.network/build-info.json` publica el SHA incorporado en la imagen web. El job CD compara ambos SHA y detiene la promoción si no coinciden; al completar, registra la versión, hora UTC y resultado en el resumen de Actions.
+- Conserva los digests publicados en Actions y, durante la primera verificación, coteja el digest de cada imagen que Dokploy ejecuta con el digest publicado.
 - Un usuario de prueba inicia sesión; la navegación API funciona y se guardan/leen adjuntos de prueba.
 - Se han restaurado y cotejado los respaldos de PostgreSQL y archivos en un ambiente separado.
 
-Si falla el despliegue de Dokploy o el humo HTTPS y ya existe un SHA anterior, el workflow intenta volver a desplegar ese SHA y vuelve a comprobar salud. Esto solo recupera la aplicacion; no revierte ni restaura datos. Si es la primera version o el rollback no pasa salud, se requiere intervencion manual. Para volver a la versión anterior de aplicación, cambiar `DEPLOY_SHA` a su SHA aprobado y volver a desplegar en Dokploy después de verificar la compatibilidad del esquema. No restaurar la base automáticamente ni ejecutar migraciones inversas destructivas.
+Si falla el despliegue de Dokploy o el humo HTTPS y ya existe un SHA anterior, el workflow intenta volver a desplegar ese SHA y verifica que API y frontend vuelvan a servirlo. Esto solo recupera la aplicacion; no revierte ni restaura datos. Si es la primera version o el rollback no pasa salud, se requiere intervencion manual. Para volver a la versión anterior de aplicación, cambiar `DEPLOY_SHA` a su SHA aprobado y volver a desplegar en Dokploy después de verificar la compatibilidad del esquema. No restaurar la base automáticamente ni ejecutar migraciones inversas destructivas.
 
 ## Pendientes externos antes de producción
 

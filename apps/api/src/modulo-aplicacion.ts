@@ -18,9 +18,19 @@ class ControladorSalud {
   async consultar() {
     try {
       await db.execute(sql`select 1`);
-      return { estado: "ok", servicio: "api", baseDatos: "ok" };
+      return {
+        estado: "ok",
+        servicio: "api",
+        baseDatos: "ok",
+        buildSha: process.env.MAGINA_BUILD_SHA || "local",
+      };
     } catch {
-      throw new ServiceUnavailableException({ estado: "no_disponible", servicio: "api", baseDatos: "no_disponible" });
+      throw new ServiceUnavailableException({
+        estado: "no_disponible",
+        servicio: "api",
+        baseDatos: "no_disponible",
+        buildSha: process.env.MAGINA_BUILD_SHA || "local",
+      });
     }
   }
 }
