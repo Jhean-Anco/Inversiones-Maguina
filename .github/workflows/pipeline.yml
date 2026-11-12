@@ -170,7 +170,7 @@ jobs:
           web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
           printf '%s\n' "$web_headers"
           grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
-          grep -iq 'connect-src.*http://localhost:3000' <<< "$web_headers"
+          grep -iq 'connect-src.*https://api.inversionesmaguina.network' <<< "$web_headers"
       - name: Detener contenedores de CI
         if: always() && steps.testenv.outcome == 'success'
         run: docker compose --env-file .env -f compose.test.yaml down
