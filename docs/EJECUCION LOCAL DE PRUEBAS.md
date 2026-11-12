@@ -71,7 +71,7 @@ corepack pnpm test:coverage
 
 ## E2E de navegador
 
-La suite Playwright verifica el acceso contra frontend Vite, API NestJS/Fastify y PostgreSQL reales, y controles básicos de accesibilidad del login: etiquetas accesibles, teclado y ancho móvil. Las pruebas E2E de catálogo, compras, ventas, crédito, facturación, SIRE, mototaxis, reportes y recuperación siguen pendientes.
+La suite Playwright verifica el acceso contra frontend Vite, API NestJS/Fastify y PostgreSQL reales, controles básicos de accesibilidad del login (etiquetas, teclado y ancho móvil) y la revocación de una sesión cuando la cuenta se desactiva. Las pruebas E2E de catálogo, compras, ventas, crédito, facturación, SIRE, mototaxis, reportes y recuperación siguen pendientes.
 
 ## Ejecución completa
 
