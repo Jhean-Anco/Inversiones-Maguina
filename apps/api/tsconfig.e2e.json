@@ -5,6 +5,6 @@
     "incremental": false,
     "declaration": false
   },
-  "include": ["playwright.config.ts", "e2e/**/*.ts"],
+  "include": ["playwright.config.ts", "e2e/**/*.mts"],
   "exclude": ["node_modules", "dist", "test-results"]
 }
