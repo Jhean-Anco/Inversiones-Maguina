@@ -2,17 +2,17 @@
 
 ## Ejecución actual
 
-**Estado: INCOMPLETO.** En esta sesión no se ejecutó código del proyecto. La revisión de seguridad requiere un sandbox de sistema operativo con red bloqueada, entorno reducido, filesystem aislado, límites de recursos y promoción segura de resultados; el entorno actual no lo ofrece. El Docker Engine local tampoco está disponible.
+**Estado: PARCIAL; CI verificado.** El 12 de noviembre de 2026, GitHub Actions ejecutó el commit `398a841e4f8389eb527e4cdfb1047258efd2a286` y completó correctamente el workflow [43177029211](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43177029211). El código del proyecto se ejecutó en runners de GitHub y contenedores efímeros con valores ficticios. No se ejecutó en el equipo local: la revisión local de seguridad requiere un sandbox de sistema operativo con red bloqueada, entorno reducido, filesystem aislado, límites de recursos y promoción segura de resultados; el entorno actual no lo ofrece. El Docker Engine local tampoco está disponible.
 
-La rama actual contiene los siguientes casos escritos, todavía sin resultado de ejecución:
+La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
 | Suite | Casos escritos | Aprobados | Fallidos | Cobertura |
 |---|---:|---:|---:|---|
-| Unitarias (configuración + finanzas) | 8 | No ejecutado | No ejecutado | No medida |
-| Integración PostgreSQL | 3 | No ejecutado | No ejecutado | No medida |
+| Unitarias (configuración + finanzas) | 8 | 8 (GitHub Actions) | 0 | No medida |
+| Integración PostgreSQL | 3 | 3 (PostgreSQL 16 efímero en GitHub Actions) | 0 | No medida |
 | API | 0 | No ejecutado | No ejecutado | No medida |
 | E2E / navegador | 0 | No ejecutado | No ejecutado | No medida |
-| Seguridad automatizada del código | 0 casos dedicados | No ejecutado | No ejecutado | No medida |
+| Seguridad automatizada del código | 0 casos dedicados; escáneres CI activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
 | Concurrencia de operaciones comerciales | 0 | No ejecutado | No ejecutado | No medida |
 
 El conteo de unitarias incluye dos casos preexistentes de configuración y seis casos nuevos de validación financiera. Las tres pruebas PostgreSQL inspeccionan una base migrada y desechable; aún no prueban carreras reales de ventas/pagos ni reversión de transacciones de negocio.
@@ -20,25 +20,26 @@ El conteo de unitarias incluye dos casos preexistentes de configuración y seis 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- `git diff --check` y revisión de estado Git se usarán antes de publicar la rama; aún falta la revisión final de este cambio.
+- GitHub Actions: typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias y 3/3 integraciones aprobadas; `pnpm audit --prod --audit-level high`; escaneo Trivy de secretos y de imágenes; validación Compose; arranque de contenedores y humo de API, CORS y frontend aprobados.
+- `git diff --check` aprobó antes del commit. El CI informado corresponde al commit `398a841e4f8389eb527e4cdfb1047258efd2a286`.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
-- Existe un workflow de Docker/CI en la rama anterior `feature/docker-cicd-production`, pero esta rama de pruebas aún no tiene ejecución CI registrada. Un resultado de otra rama o commit no valida estos casos nuevos.
+- El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
 - No se midió cobertura. Los umbrales 80 % general, 90 % de ramas críticas y 100 % P0 no están satisfechos ni demostrados.
 
 ## Defectos encontrados y correcciones
 
 - **Déficit de cobertura:** solo existía una prueba de configuración de entorno. Se añadieron pruebas unitarias de validaciones financieras y de fecha, un ejecutor que separa suites, comandos raíz y verificaciones iniciales de PostgreSQL.
-- **Riesgo de base equivocada en testing:** se creó una base de integración con nombre `_test` y un control que rechaza hosts no locales o nombres que no terminan en `_test`. No se verificó todavía en ejecución.
-- No se reportan defectos del negocio como corregidos por el momento; la evidencia de pruebas aún no se ejecuta.
+- **Riesgo de base equivocada en testing:** se creó una base de integración con nombre `magina_test` y controles para rechazar hosts o credenciales distintas de las ficticias permitidas. Las pruebas y migraciones pasaron en PostgreSQL efímero de CI.
+- No se reportan defectos comerciales corregidos por estas pruebas.
 
 ## Pendientes antes de considerar apto para producción
 
-- Ejecutar las pruebas escritas dentro de un sandbox permitido y publicar resultados reales.
+- Repetir validación local dentro de un sandbox permitido; la ejecución aprobada disponible es en CI de GitHub.
 - Añadir pruebas API y E2E de flujos P0 con PostgreSQL real, fixtures y proveedores simulados.
 - Cubrir concurrencia e idempotencia leyendo el estado final de las tablas.
-- Añadir Playwright, accesibilidad, Gitleaks y carga con umbrales explícitos.
+- Añadir Playwright, accesibilidad y carga con umbrales explícitos; los escaneos Gitleaks, Trivy y `pnpm audit` ya corren en CI.
 - Medir y publicar cobertura real sin excluir módulos importantes.
 - Verificar migraciones/reinicio/persistencia y fallos del pipeline con jobs de CI controlados.
 - Realizar aceptación fiscal únicamente en sandbox oficial con autorización; no se ejecutó ni se recomienda una emisión real.
 
-**Recomendación:** no apto para aprobación de producción desde esta evidencia. El código de testing aún no fue ejecutado y los caminos P0 no están cubiertos.
+**Recomendación:** no apto para aprobación de producción desde esta evidencia. La ejecución CI aprobada cubre suites básicas, migraciones e imágenes; no demuestra los flujos comerciales P0, cobertura global, accesibilidad, concurrencia ni restauración de respaldos.
