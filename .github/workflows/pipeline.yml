@@ -50,6 +50,58 @@ jobs:
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version: 22.x
+﻿name: Pipeline de producción
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inversiones-maguina-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Typecheck, build, tests y migraciones limpias
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16.15-alpine3.24
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: magina
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d magina"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://ci:ci-only-password@127.0.0.1:5432/magina
+      NODE_ENV: test
+      FRONTEND_ORIGIN: http://localhost:5173
+      AUTENTICACION_SECRETO: ci-only-random-secret-value-with-more-than-32-chars
+      NUBEFACT_RUTA: https://example.invalid/api
+      NUBEFACT_TOKEN: ci-only-fake-token
+    steps:
+      - name: Checkout del commit exacto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 22.x
           cache: pnpm
       - name: Activar pnpm 10.20.0
         run: corepack enable && corepack prepare pnpm@10.20.0 --activate
