@@ -1,6 +1,7 @@
-import { readdir } from "node:fs/promises";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -43,6 +44,7 @@ if (!archivos.length) {
   process.exit(2);
 }
 
+let carpetaTemporalIntegracion;
 const entorno = {
   NODE_ENV: "test",
   FRONTEND_ORIGIN: "http://localhost:5173",
@@ -74,11 +76,13 @@ if (category === "integration") {
     process.exit(2);
   }
   entorno.DATABASE_URL = valor;
+  carpetaTemporalIntegracion = await mkdtemp(join(tmpdir(), "magina-integration-"));
+  entorno.UPLOADS_DIR = join(carpetaTemporalIntegracion, "uploads");
 } else {
   entorno.DATABASE_URL = "postgres://ci:ci-only@127.0.0.1:5432/magina_test";
 }
 
-if (category === "api") {
+if (category === "api" || category === "security") {
   const valor = process.env.API_BASE_URL;
   if (!valor) {
     console.error("Define API_BASE_URL con la instancia local de API iniciada para pruebas.");
@@ -127,5 +131,14 @@ ejecucion.once("error", (error) => {
 });
 ejecucion.once("exit", (codigo, senal) => {
   if (senal) console.error(`El ejecutor de pruebas terminó por la señal ${senal}.`);
-  process.exitCode = codigo ?? 1;
+  const limpiar = async () => {
+    if (carpetaTemporalIntegracion) {
+      await rm(carpetaTemporalIntegracion, { recursive: true, force: true });
+    }
+    process.exitCode = codigo ?? 1;
+  };
+  void limpiar().catch((error) => {
+    console.error(`No se pudo limpiar el directorio temporal de integración: ${error.message}`);
+    process.exitCode = 1;
+  });
 });

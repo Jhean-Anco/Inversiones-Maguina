@@ -88,6 +88,10 @@ jobs:
         env:
           API_BASE_URL: http://127.0.0.1:3000
         run: pnpm test:api
+      - name: Pruebas de seguridad HTTP contra la API real
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:security
       - name: Auditar dependencias de producción
         run: pnpm audit --prod --audit-level high
 

@@ -33,6 +33,7 @@
     },
     "test:security": {
       "dependsOn": ["^build"],
+      "env": ["API_BASE_URL"],
       "outputs": []
     },
     "test:coverage": {
