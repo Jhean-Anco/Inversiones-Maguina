@@ -165,6 +165,7 @@ function datosEntradaStock(productoId: string, presentacionId: string, cantidad:
   return {
     fecha: fechaHoyPeru(),
     tipoDocumento: "SIN_DOCUMENTO",
+    proveedorDireccion: "Dirección sintética de prueba",
     observacion: "Recepción de prueba automatizada",
     detalles: [{ productoId, presentacionId, cantidad, costoUnitario }],
   };
