@@ -4,6 +4,7 @@ import { after, before, test } from "node:test";
 import { BadRequestException } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
+import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioIngresos } from "./modulos/ingresos/ingresos.service";
 
 function validarBaseDePruebas() {
@@ -25,6 +26,7 @@ let clientePostgres: PaqueteBaseDatos["clientePostgres"];
 let cerrarBaseDatos: PaqueteBaseDatos["cerrarBaseDatos"];
 let esquema: PaqueteBaseDatos;
 let servicio: ServicioIngresos;
+let servicioEgresos: ServicioEgresos;
 let usuarioId: string;
 let clienteId: string;
 let clienteDni: string;
@@ -33,6 +35,8 @@ let marcaId: string;
 let unidadCodigo: string;
 let listaPrecioId: string;
 const productoIds: string[] = [];
+const egresoIds: string[] = [];
+const cuentaFinancieraIds: string[] = [];
 const presentacionPorProducto = new Map<string, string>();
 const clavesVenta: string[] = [];
 
@@ -45,6 +49,7 @@ before(async () => {
   esquema = modulo;
   ({ db, clientePostgres, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
+  servicioEgresos = new ServicioEgresos();
 
   const [tipoNatural] = await db.select({ id: esquema.tiposPersona.id }).from(esquema.tiposPersona)
     .where(eq(esquema.tiposPersona.codigo, "NATURAL")).limit(1);
@@ -143,6 +148,41 @@ function datosVenta(presentacionId: string, cantidad: number, clave = randomUUID
   };
 }
 
+async function crearCuentaEfectivo() {
+  const [cuenta] = await db.insert(esquema.cuentasFinancieras).values({
+    tipo: "EFECTIVO",
+    nombre: `QA caja ${randomUUID().slice(0, 8)}`,
+    moneda: "PEN",
+    usuarioId,
+  }).returning({ id: esquema.cuentasFinancieras.id });
+  cuentaFinancieraIds.push(cuenta.id);
+  return cuenta.id;
+}
+
+async function crearEgresoParaPago(monto: number) {
+  const registro = await servicioEgresos.crear({
+    tipo: "GASTO_OPERATIVO",
+    fecha: fechaHoyPeru(),
+    categoria: "Prueba automatizada",
+    concepto: `Egreso sintético ${randomUUID().slice(0, 8)}`,
+    beneficiario: "Proveedor de prueba",
+    moneda: "PEN",
+    monto,
+  }, usuarioId);
+  egresoIds.push(registro.id);
+  return registro.id;
+}
+
+function datosPagoEgreso(importePagado: number, cuentaFinancieraId: string, claveIdempotencia = randomUUID()) {
+  return {
+    fechaPago: fechaHoyPeru(),
+    importePagado,
+    medioPago: "EFECTIVO",
+    cuentaFinancieraId,
+    claveIdempotencia,
+  };
+}
+
 async function ventasPorClaves(claves: string[]) {
   return db.select({ id: esquema.ingresos.id, clave: esquema.ingresos.claveIdempotencia })
     .from(esquema.ingresos).where(inArray(esquema.ingresos.claveIdempotencia, claves));
@@ -209,8 +249,52 @@ test("dos solicitudes concurrentes con la misma clave de idempotencia solo descu
   assert.equal(movimientos.length, 1);
 });
 
+test("dos pagos concurrentes no exceden el saldo del egreso en PostgreSQL", async () => {
+  const egresoId = await crearEgresoParaPago(100);
+  const cuentaId = await crearCuentaEfectivo();
+  const resultados = await Promise.allSettled([
+    servicioEgresos.registrarPago(egresoId, datosPagoEgreso(60, cuentaId), usuarioId),
+    servicioEgresos.registrarPago(egresoId, datosPagoEgreso(60, cuentaId), usuarioId),
+  ]);
+
+  assert.equal(resultados.filter((resultado) => resultado.status === "fulfilled").length, 1);
+  const rechazado = resultados.find((resultado) => resultado.status === "rejected");
+  assert.ok(rechazado && rechazado.status === "rejected");
+  assert.ok(rechazado.reason instanceof BadRequestException);
+  assert.match(rechazado.reason.message, /supera el saldo pendiente/);
+
+  const pagos = await db.select({ importePagado: esquema.egresosPagos.importePagado })
+    .from(esquema.egresosPagos).where(eq(esquema.egresosPagos.egresoId, egresoId));
+  assert.equal(pagos.length, 1);
+  assert.equal(Number(pagos[0].importePagado), 60);
+  assert.equal(100 - pagos.reduce((total, pago) => total + Number(pago.importePagado), 0), 40);
+});
+
+test("dos pagos concurrentes con la misma clave idempotente crean un solo abono", async () => {
+  const egresoId = await crearEgresoParaPago(100);
+  const cuentaId = await crearCuentaEfectivo();
+  const datos = datosPagoEgreso(60, cuentaId);
+  const [primero, segundo] = await Promise.all([
+    servicioEgresos.registrarPago(egresoId, datos, usuarioId),
+    servicioEgresos.registrarPago(egresoId, datos, usuarioId),
+  ]);
+
+  assert.equal(primero.id, segundo.id);
+  const pagos = await db.select({ importePagado: esquema.egresosPagos.importePagado })
+    .from(esquema.egresosPagos).where(eq(esquema.egresosPagos.egresoId, egresoId));
+  assert.equal(pagos.length, 1);
+  assert.equal(Number(pagos[0].importePagado), 60);
+});
+
 after(async () => {
   if (db && esquema) {
+    if (egresoIds.length) {
+      await db.delete(esquema.egresosPagos).where(inArray(esquema.egresosPagos.egresoId, egresoIds));
+      await db.delete(esquema.egresosRegistros).where(inArray(esquema.egresosRegistros.id, egresoIds));
+    }
+    if (cuentaFinancieraIds.length) {
+      await db.delete(esquema.cuentasFinancieras).where(inArray(esquema.cuentasFinancieras.id, cuentaFinancieraIds));
+    }
     const ventas = await ventasPorClaves(clavesVenta);
     const idsIngreso = ventas.map((venta) => venta.id);
     if (idsIngreso.length) {
