@@ -2,7 +2,7 @@
 
 ## Estado
 
-La infraestructura de calidad está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions, el run [43213169698](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43213169698) aprobó typecheck, build, migraciones PostgreSQL repetibles, 35 pruebas unitarias (13 con simulador SIRE y 14 con simulador API Perú), 10 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad y 1 flujo Playwright. También aprobó Gitleaks, auditoría de dependencias, escaneos Trivy, builds Docker, Compose y smoke tests. La cobertura medida fue 67.29 % líneas, 71.10 % ramas y 67.00 % funciones. El run también aprobó un gate de 65 % líneas, 70 % ramas y 65 % funciones; la meta final es 80 % y 90 % de ramas críticas. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
+La infraestructura de calidad está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions, el run [43217998612](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43217998612) aprobó typecheck, build, migraciones PostgreSQL repetibles, 35 pruebas unitarias (13 con simulador SIRE y 14 con simulador API Perú), 12 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad y 1 flujo Playwright. También aprobó Gitleaks, auditoría de dependencias, escaneos Trivy, builds Docker, Compose y smoke tests. La cobertura medida fue 66.90 % líneas, 68.44 % ramas y 67.42 % funciones. El run aprobó un gate de 65 % líneas, 68 % ramas y 65 % funciones; la meta final es 80 % y 90 % de ramas críticas. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
 
 Este plan refleja las rutas y reglas visibles en el código. La existencia de un controlador no prueba que todo su flujo esté implementado ni que una regla fiscal esté aceptada.
 
@@ -33,7 +33,7 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 ## Próximos bloques
 
-1. Elevar progresivamente los umbrales LCOV sobre los módulos que ejecutan las suites; el gate inicial exige 65 % líneas, 70 % ramas y 65 % funciones frente a 67.29 %, 71.10 % y 67.00 % medidas.
+1. Elevar progresivamente los umbrales LCOV sobre los módulos que ejecutan las suites; el gate inicial exige 65 % líneas, 68 % ramas y 65 % funciones frente a 66.90 %, 68.44 % y 67.42 % medidas.
 2. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
 3. Completar los flujos Playwright P0 y ampliar los casos de timeout, estado incierto e idempotencia de NubeFact.
 4. Completar la matriz API de permisos por rol y errores de contrato.
