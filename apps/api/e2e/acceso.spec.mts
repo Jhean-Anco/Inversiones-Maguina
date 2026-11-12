@@ -1,16 +1,23 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
+import { unlink } from "node:fs/promises";
+import { resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { hash } from "argon2";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
+  archivosLocales,
   cerrarBaseDatos,
+  categoriasProductos,
   db,
   personas,
+  roles,
   tiposDocumento,
   tiposPersona,
   trabajadores,
   usuarios,
+  usuariosRoles,
 } from "@magina/database";
 
 const valorPrueba = process.env.DATABASE_URL;
@@ -28,9 +35,32 @@ const sufijo = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
 const nombreUsuario = `qa-e2e-${sufijo}`;
 const correo = `qa-e2e-${sufijo}@example.invalid`;
 const contrasena = randomBytes(24).toString("base64url");
+const imagenCategoria = fileURLToPath(new URL("../../../apps/web/src/pages/login-page/logo-transparente.png", import.meta.url));
 let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
+let categoriaPruebaId: string | undefined;
+
+async function limpiarCategoriaTemporal(id: string) {
+  const archivos = await db
+    .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa })
+    .from(archivosLocales)
+    .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, id)));
+  const raizSubidas = resolve(process.cwd(), process.env.UPLOADS_DIR?.trim() || "storage");
+
+  for (const archivo of archivos) {
+    const rutaAbsoluta = resolve(raizSubidas, archivo.rutaRelativa);
+    assert.ok(rutaAbsoluta.startsWith(`${raizSubidas}${sep}`), "La limpieza E2E solo puede borrar archivos dentro de UPLOADS_DIR.");
+    try {
+      await unlink(rutaAbsoluta);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    await db.delete(archivosLocales).where(eq(archivosLocales.id, archivo.id));
+  }
+
+  await db.delete(categoriasProductos).where(eq(categoriasProductos.id, id));
+}
 
 test.beforeAll(async () => {
   assert.equal(process.env.NODE_ENV, "test", "E2E exige NODE_ENV=test.");
@@ -174,5 +204,83 @@ test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async (
     expect(perfilDesactivado.status()).toBe(401);
   } finally {
     await db.update(usuarios).set({ activo: true }).where(eq(usuarios.id, usuarioId));
+  }
+});
+
+test("el rol de almacén crea y edita una categoría con imagen persistida", async ({ page }) => {
+  assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar el catálogo.");
+  const [rolAlmacenero] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.codigo, "ALMACENERO"))
+    .limit(1);
+  assert.ok(rolAlmacenero, "Las migraciones deben crear el rol ALMACENERO.");
+  await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
+
+  try {
+    await page.goto("/login");
+    await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+    await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/inicio$/);
+
+    await page.goto("/inventario/categorias");
+    await expect(page.locator(".catalog-manager.is-category-manager")).toBeVisible();
+    const nombreCategoria = `Categoría E2E ${sufijo}`;
+    const nombreEditado = `${nombreCategoria} editada`;
+
+    await page.getByRole("button", { name: "Crear categoría" }).click();
+    const dialogo = page.getByRole("dialog");
+    await dialogo.getByRole("textbox", { name: /Nombre/ }).fill(nombreCategoria);
+    await dialogo.locator('input[type="file"]').setInputFiles(imagenCategoria);
+
+    const respuestaCrear = page.waitForResponse((respuesta) =>
+      respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname.endsWith("/inventario/categorias"),
+    );
+    await dialogo.getByRole("button", { name: "Crear categoría" }).click();
+    const creada = await respuestaCrear;
+    const cuerpoCreacion = await creada.json().catch(() => undefined) as { id?: string } | undefined;
+    categoriaPruebaId = cuerpoCreacion?.id;
+    expect(creada.ok()).toBeTruthy();
+    assert.ok(categoriaPruebaId, "La API debe devolver el identificador de la categoría creada.");
+
+    const tarjeta = page.locator(".catalog-manager-card").filter({ hasText: nombreCategoria });
+    await expect(tarjeta).toBeVisible();
+    await expect.poll(() => tarjeta.locator("img").evaluate((imagen) => (imagen as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+
+    const archivosCategoria = await db
+      .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa, mimeType: archivosLocales.mimeType })
+      .from(archivosLocales)
+      .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, categoriaPruebaId)));
+    expect(archivosCategoria).toHaveLength(1);
+    expect(archivosCategoria[0]?.mimeType).toBe("image/png");
+    const [categoriaGuardada] = await db
+      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .from(categoriasProductos)
+      .where(eq(categoriasProductos.id, categoriaPruebaId))
+      .limit(1);
+    expect(categoriaGuardada?.nombre).toBe(nombreCategoria);
+    expect(categoriaGuardada?.rutaImagen).toContain(archivosCategoria[0]?.id);
+
+    await tarjeta.getByRole("button", { name: `Editar categoría ${nombreCategoria}` }).click();
+    const dialogoEdicion = page.getByRole("dialog");
+    await dialogoEdicion.getByRole("textbox", { name: /Nombre/ }).fill(nombreEditado);
+    await dialogoEdicion.getByRole("button", { name: "Guardar cambios" }).click();
+    const tarjetaEditada = page.locator(".catalog-manager-card").filter({ hasText: nombreEditado });
+    await expect(tarjetaEditada).toBeVisible();
+
+    const [categoriaEditada] = await db
+      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .from(categoriasProductos)
+      .where(eq(categoriasProductos.id, categoriaPruebaId))
+      .limit(1);
+    expect(categoriaEditada?.nombre).toBe(nombreEditado);
+    expect(categoriaEditada?.rutaImagen).toBe(categoriaGuardada?.rutaImagen);
+  } finally {
+    try {
+      if (categoriaPruebaId) await limpiarCategoriaTemporal(categoriaPruebaId);
+    } finally {
+      await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAlmacenero.id)));
+    }
   }
 });
