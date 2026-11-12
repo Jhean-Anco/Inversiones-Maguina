@@ -2,7 +2,7 @@
 
 ## Estado
 
-La infraestructura está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions se verificaron satisfactoriamente typecheck, build, migraciones PostgreSQL repetibles, 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad, auditoría de dependencias, escaneo de secretos, construcción y escaneo de imágenes, Compose y smoke tests. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
+La infraestructura de calidad está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions, el run [43199814736](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43199814736) aprobó typecheck, build, migraciones PostgreSQL repetibles, 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad y 1 flujo Playwright. También aprobó Gitleaks, auditoría de dependencias, escaneos Trivy, builds Docker, Compose y smoke tests. La cobertura medida fue 60.75 % líneas, 76.98 % ramas y 60.09 % funciones, sin umbrales bloqueantes. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
 
 Este plan refleja las rutas y reglas visibles en el código. La existencia de un controlador no prueba que todo su flujo esté implementado ni que una regla fiscal esté aceptada.
 
@@ -33,9 +33,8 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 ## Próximos bloques
 
-1. Ejecutar por primera vez el E2E de autenticación en CI y corregir problemas observados.
-2. Medir la cobertura LCOV publicada y establecer umbrales progresivos sin excluir módulos críticos.
-3. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
-4. Completar los flujos Playwright P0 y añadir simuladores externos.
-5. Completar la matriz API de permisos por rol y errores de contrato.
-6. Añadir accesibilidad automatizada, carga k6, persistencia tras reinicio y fallos controlados de gates CI.
+1. Establecer umbrales progresivos de cobertura LCOV sin excluir módulos críticos; la línea actual es 60.75 %, ramas 76.98 % y funciones 60.09 %.
+2. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
+3. Completar los flujos Playwright P0 y añadir simuladores externos.
+4. Completar la matriz API de permisos por rol y errores de contrato.
+5. Añadir accesibilidad automatizada, carga k6, persistencia tras reinicio y fallos controlados de gates CI.
