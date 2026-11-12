@@ -2,16 +2,16 @@
 
 ## Fuente de inventario
 
-Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API, 314 archivos de migración bajo `packages/database/migrations` y una prueba anterior de configuración (`apps/api/src/configuracion-entorno.spec.ts`). La rama añade seis casos de unidad para finanzas y tres comprobaciones de integración PostgreSQL. Ningún caso añadido se ha ejecutado todavía.
+Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. La rama contiene 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API y 4 pruebas HTTP de seguridad. Todas pasaron en GitHub Actions para el commit `12224fcdc092ceeac7cae5b6ba326e3fe045729b`.
 
 Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay prueba automatizada suficiente; **Pendiente de validación externa** = requiere sandbox/proveedor/operación real autorizada. “Implementado” describe código funcional solo cuando la fuente lo demuestra; no equivale a validación de extremo a extremo.
 
 | Módulo | Requisito reflejado en código | Superficie de entrada | Regla/caso trazado | Prioridad | Estado de prueba |
 |---|---|---|---|---|---|
-| Autenticación | Inicio/cierre de sesión, cookie, perfil y permisos por rol | `autenticacion.controller.ts`, `guardia-sesion.ts`, `guardia-permiso.ts` | Usuario activo, JWT/cookie, sesión, permisos y rutas protegidas | P0 | Pendiente |
-| Ingresos / ventas | Ventas, pagos, clientes, notas, anulaciones, cotizaciones y órdenes de servicio | `ingresos.controller.ts`, `ingresos.service.ts` | Totales, stock, pagos parciales, idempotencia, fallos y transiciones fiscales | P0 | Pendiente |
+| Autenticación | Inicio/cierre de sesión, cookie, perfil y permisos por rol | `autenticacion.controller.ts`, `guardia-sesion.ts`, `guardia-permiso.ts` | Sesión ausente/manipulada, login fallido, cookie y CORS | P0 | Parcial: 8 pruebas HTTP API y 4 de seguridad; permisos por rol incompletos |
+| Ingresos / ventas | Ventas, pagos, clientes, notas, anulaciones, cotizaciones y órdenes de servicio | `ingresos.controller.ts`, `ingresos.service.ts` | Rollback por stock, concurrencia por última unidad, idempotencia de clave duplicada | P0 | Parcial: 3 integraciones reales PostgreSQL de transacción/stock |
 | Inventario | Productos, precios, marcas, categorías, entradas y ajustes | controladores de `modulos/inventario` | Cantidades, stock mínimo, duplicados, conversiones y transacciones | P0 | Pendiente |
-| Finanzas | Cuentas, resumen y movimientos por periodo | `finanzas.controller.ts`, `finanzas.service.ts` | Tipos de cuenta, moneda, campos bancarios/tarjeta, fechas y sumas | P0 | Parcial: 6 casos de validación escritos; sin ejecución |
+| Finanzas | Cuentas, resumen y movimientos por periodo | `finanzas.controller.ts`, `finanzas.service.ts` | Tipos de cuenta, moneda, campos bancarios/tarjeta, fechas y sumas | P0 | Parcial: 6 casos de validación aprobados; endpoints todavía sin cobertura funcional |
 | Egresos / compras | Egresos, pagos y comprobantes recibidos | `egresos.controller.ts`, `egresos.service.ts` | Importes, pagos iniciales/parciales, duplicados, saldo e inventario | P0 | Pendiente |
 | Mototaxis | Compras, unidades, estados, reclamos, garantías e imágenes | `mototaxis.controller.ts`, `mototaxis.service.ts` | Identificación, stock por unidad, pagos, archivos y concurrencia | P0/P1 | Pendiente |
 | Personas / conductores | DNI/CE/pasaporte, licencia y consulta de identidad | controladores de `modulos/personas` | Formato, duplicados, estados y fallos de API Perú | P1 | Pendiente |
@@ -20,10 +20,10 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | SUNAT SIRE | Periodos, tickets, ZIP/CSV, clasificación e importación | `sunat-sire.controller.ts`, `sunat-sire.service.ts` | Límites de bytes/filas, deduplicación y estados de recepción | P0/P1 | Pendiente; solo debe probarse con simulador |
 | Facturación NubeFact | Emisión, estado, documentos, notas y bajas | `ingresos.service.ts`, `almacenamiento.service.ts` | Rechazo, timeout, estado incierto e idempotencia | P0 | Pendiente; sin proveedor real |
 | Reportes | Resumen, ingresos e inventario | `reportes.controller.ts`, `reportes.service.ts` | Permisos y conciliación con movimientos operativos | P1 | Pendiente |
-| PostgreSQL / migraciones | Esquema Drizzle y migraciones SQL | `packages/database`, `migrations/` | Versión 16, tablas, FK, precisión `numeric` y repetición de migración | P0 | Parcial: 3 casos escritos; CI configurado; sin ejecución de esta rama |
+| PostgreSQL / migraciones | Esquema Drizzle y migraciones SQL | `packages/database`, `migrations/` | Versión 16, tablas, FK, precisión `numeric`, idempotencia de migración y ventas concurrentes | P0 | Parcial: 6 pruebas aprobadas; migraciones aplicadas dos veces |
 | Frontend | Rutas y formularios operativos | `apps/web/src/main/main.tsx`, páginas y servicios | Validación, navegación, errores, responsive, teclado y accesibilidad | P0/P1 | Pendiente; no se encontró suite de navegador |
 | Servicios externos | NubeFact, SUNAT SIRE, API Perú | servicios de ingresos, SIRE y consulta de identidad | HTTP 200/errores, timeout, payload inválido y respuesta repetida | P0/P1 | Pendiente; no usar credenciales reales |
-| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, smoke, scans y gates | P0 | Parcial: pipeline existente; cambios de testing no verificados |
+| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, smoke, scans y gates | P0 | Parcial: build, escaneos y humo aprobados en CI; faltan gates de cobertura/E2E |
 
 ## Casos actualmente escritos
 
@@ -32,5 +32,8 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | `apps/api/src/configuracion-entorno.spec.ts` | 2 | Configuración de desarrollo y rechazo de origen HTTP externo |
 | `apps/api/src/modulos/finanzas/finanzas.service.spec.ts` | 6 | Normalización y validaciones de cuentas; fecha calendario inválida antes de consultar BD |
 | `apps/api/src/integracion-postgres.integration.spec.ts` | 3 | PostgreSQL 16/base `_test`, tablas y FK, precisión monetaria/cantidad |
+| `apps/api/src/ventas-postgres.integration.spec.ts` | 3 | Rollback por stock, concurrencia de ventas e idempotencia con datos reales efímeros |
+| `apps/api/src/seguridad.api.spec.ts` | 8 | HTTP real: health, autenticación, validación, cookie y CORS |
+| `apps/api/src/controles-seguridad.security.spec.ts` | 4 | HTTP real: sesión manipulada, cookie falsa, CORS hostil y filtración de secretos |
 
-La línea “casos” cuenta declaraciones `node:test`, no aprobaciones. No hay cobertura medida, informe Playwright ni evidencia de transacciones de negocio probadas en PostgreSQL.
+La línea “casos” cuenta declaraciones `node:test`; las 26 declaraciones actuales pasaron en el commit indicado. No hay cobertura medida, informe Playwright ni pruebas de transacciones de pagos/compras.

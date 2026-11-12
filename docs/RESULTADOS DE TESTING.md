@@ -2,27 +2,28 @@
 
 ## Ejecución actual
 
-**Estado: PARCIAL; CI verificado.** El 12 de noviembre de 2026, GitHub Actions ejecutó el commit `5d5105e81e37a3af553f579bdcb89dd328663285` y completó correctamente el workflow del PR [43181532403](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43181532403). El código del proyecto se ejecutó en runners de GitHub y contenedores efímeros con valores ficticios. No se ejecutó en el equipo local: la revisión local de seguridad requiere un sandbox de sistema operativo con red bloqueada, entorno reducido, filesystem aislado, límites de recursos y promoción segura de resultados; el entorno actual no lo ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el workflow del PR [43187787134](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43187787134) para el commit `12224fcdc092ceeac7cae5b6ba326e3fe045729b`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
 | Suite | Casos escritos | Aprobados | Fallidos | Cobertura |
 |---|---:|---:|---:|---|
 | Unitarias (configuración + finanzas) | 8 | 8 (GitHub Actions) | 0 | No medida |
-| Integración PostgreSQL | 3 | 3 (PostgreSQL 16 efímero en GitHub Actions) | 0 | No medida |
-| API | 0 | No ejecutado | No ejecutado | No medida |
+| Integración PostgreSQL | 6 | 6 (PostgreSQL 16 efímero en GitHub Actions) | 0 | No medida |
+| API HTTP | 8 | 8 (NestJS/Fastify + PostgreSQL real de CI) | 0 | No medida |
+| Seguridad HTTP | 4 | 4 (API real de CI) | 0 | No medida |
 | E2E / navegador | 0 | No ejecutado | No ejecutado | No medida |
-| Seguridad automatizada del código | 0 casos dedicados; escáneres CI activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
-| Concurrencia de operaciones comerciales | 0 | No ejecutado | No ejecutado | No medida |
+| Seguridad automatizada del código | Escáneres activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
+| Concurrencia de operaciones comerciales | 2 escenarios | 2 aprobados: última unidad e idempotencia duplicada | 0 | No medida |
 
-El conteo de unitarias incluye dos casos preexistentes de configuración y seis casos nuevos de validación financiera. Las tres pruebas PostgreSQL inspeccionan una base migrada y desechable; aún no prueban carreras reales de ventas/pagos ni reversión de transacciones de negocio.
+El conteo total es 26 casos: 8 unitarios, 6 de integración, 8 API y 4 de seguridad. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad e idempotencia bajo solicitudes simultáneas. No cubren aún pagos, compras ni todo el catálogo de permisos.
 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions: typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias y 3/3 integraciones aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- GitHub Actions: typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 8/8 unitarias, 6/6 integraciones, 8/8 API y 4/4 seguridad aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
 - Una ejecución de push falló por falta de espacio temporal al analizar la imagen administrativa; al limpiar caché de Buildx antes de Trivy, la ejecución del PR aprobó todos los jobs.
-- `git diff --check` aprobó antes del commit. El CI informado corresponde al commit `5d5105e81e37a3af553f579bdcb89dd328663285`.
+- `git diff --check` aprobó antes de los commits. El CI informado corresponde al commit `12224fcdc092ceeac7cae5b6ba326e3fe045729b`.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
 - No se midió cobertura. Los umbrales 80 % general, 90 % de ramas críticas y 100 % P0 no están satisfechos ni demostrados.
@@ -31,16 +32,17 @@ El conteo de unitarias incluye dos casos preexistentes de configuración y seis 
 
 - **Déficit de cobertura:** solo existía una prueba de configuración de entorno. Se añadieron pruebas unitarias de validaciones financieras y de fecha, un ejecutor que separa suites, comandos raíz y verificaciones iniciales de PostgreSQL.
 - **Riesgo de base equivocada en testing:** se creó una base de integración con nombre `magina_test` y controles para rechazar hosts o credenciales distintas de las ficticias permitidas. Las pruebas y migraciones pasaron en PostgreSQL efímero de CI.
-- No se reportan defectos comerciales corregidos por estas pruebas.
+- **Idempotencia concurrente:** la prueba real encontró que Drizzle envolvía el error PostgreSQL `23505`; el servicio solo revisaba el código del error exterior y no recuperaba la venta ya registrada. Se amplió el reconocimiento por la cadena `cause`, y las tres pruebas comerciales pasaron en la siguiente ejecución.
+- **CORS hostil:** se ajustó la aserción para verificar que un origen no autorizado nunca se refleje ni reciba `*`; la suite de seguridad pasó en CI.
 
 ## Pendientes antes de considerar apto para producción
 
 - Repetir validación local dentro de un sandbox permitido; la ejecución aprobada disponible es en CI de GitHub.
-- Añadir pruebas API y E2E de flujos P0 con PostgreSQL real, fixtures y proveedores simulados.
-- Cubrir concurrencia e idempotencia leyendo el estado final de las tablas.
-- Añadir Playwright, accesibilidad y carga con umbrales explícitos; los escaneos Gitleaks, Trivy y `pnpm audit` ya corren en CI.
+- Añadir E2E de navegador para flujos P0 con PostgreSQL real, fixtures y proveedores simulados.
+- Ampliar concurrencia/rollback a pagos, compras y correlativos, verificando el estado final de las tablas.
+- Añadir Playwright, accesibilidad y carga k6 con umbrales explícitos; Gitleaks, Trivy y `pnpm audit` ya corren en CI.
 - Medir y publicar cobertura real sin excluir módulos importantes.
 - Verificar migraciones/reinicio/persistencia y fallos del pipeline con jobs de CI controlados.
 - Realizar aceptación fiscal únicamente en sandbox oficial con autorización; no se ejecutó ni se recomienda una emisión real.
 
-**Recomendación:** no apto para aprobación de producción desde esta evidencia. La ejecución CI aprobada cubre suites básicas, migraciones e imágenes; no demuestra los flujos comerciales P0, cobertura global, accesibilidad, concurrencia ni restauración de respaldos.
+**Recomendación:** no dar por concluida la misión de calidad ni aprobar todos los flujos para producción todavía. La CI aprobada cubre ventas/stock, autenticación HTTP básica, migraciones e imágenes, pero no mide cobertura global, no valida E2E web, accesibilidad, carga, todos los permisos, pagos/compras ni restauración de respaldos.

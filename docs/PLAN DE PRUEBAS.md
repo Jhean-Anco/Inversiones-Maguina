@@ -2,7 +2,7 @@
 
 ## Estado
 
-La infraestructura está en construcción en la rama `test/quality-gates-e2e`. El árbol actual incluye pruebas unitarias de configuración y validación de cuentas financieras, una suite inicial de inspección de PostgreSQL real y comandos de CI para ambos grupos. **No se ejecutaron en esta sesión**: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
+La infraestructura está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions se verificaron satisfactoriamente typecheck, build, migraciones PostgreSQL repetibles, 8 pruebas unitarias, 6 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad, auditoría de dependencias, escaneo de secretos, construcción y escaneo de imágenes, Compose y smoke tests. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
 
 Este plan refleja las rutas y reglas visibles en el código. La existencia de un controlador no prueba que todo su flujo esté implementado ni que una regla fiscal esté aceptada.
 
@@ -18,9 +18,9 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 1. **Unitarias:** `node:test` con `tsx`; reglas puras y validaciones reales del servicio. Sin llamadas a proveedores ni PostgreSQL.
 2. **Integración PostgreSQL:** PostgreSQL 16 desechable; migraciones Drizzle desde cero, metadatos del esquema, relaciones y precisión `numeric`. Las pruebas deben rechazar hosts remotos y nombres de base que no terminen en `_test`.
-3. **API:** NestJS/Fastify y permisos reales con datos ficticios en PostgreSQL. Este nivel aún no está implementado.
+3. **API:** NestJS/Fastify y PostgreSQL con datos ficticios. Hay 8 pruebas HTTP de autenticación, rutas protegidas, validación, cookie y CORS; la matriz amplia de permisos por rol sigue pendiente.
 4. **E2E web:** frontend y backend reales con PostgreSQL desechable. Simuladores solo para NubeFact, SUNAT SIRE y API Perú. Aún no implementado.
-5. **Seguridad y supply chain:** auditoría de dependencias y escaneo Trivy ya aparecen en el pipeline existente; Gitleaks y pruebas de límites/autoridad están pendientes.
+5. **Seguridad y supply chain:** Gitleaks, Trivy de secretos e imágenes, auditoría de dependencias y 4 pruebas HTTP de controles básicos corren en CI. Faltan pruebas amplias de permisos y límites por módulo.
 6. **Docker/CI:** Compose de testing separado, base interna y datos ficticios. Publicación condicionada a los gates; despliegue automático permanece deshabilitado sin autorización explícita.
 
 ## Reglas de ejecución
@@ -33,9 +33,9 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 ## Próximos bloques
 
-1. Verificar la suite actual bajo un sandbox permitido y medir cobertura real.
-2. Añadir restricciones/rollback y concurrencia para ventas, pagos, compras y correlativos, validando estado final de PostgreSQL.
-3. Añadir suites API para auth, permisos, CORS, errores y contratos.
+1. Medir cobertura real y publicar informes/artifactos por suite.
+2. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
+3. Completar la matriz API de permisos por rol y errores de contrato.
 4. Añadir Playwright con flujos P0 y servicios externos simulados.
-5. Completar Gitleaks, accesibilidad y carga con ejecuciones aisladas.
-6. Publicar artefactos de cobertura y reportes reproducibles en Actions.
+5. Añadir accesibilidad automatizada y carga k6 en entorno aislado.
+6. Probar persistencia tras reinicio y fallos controlados de los gates de CI.
