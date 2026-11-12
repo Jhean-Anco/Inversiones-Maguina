@@ -152,17 +152,14 @@ jobs:
           NODE_ENV=test
           EOF
       - name: Arrancar imágenes ya escaneadas y migrar una PostgreSQL limpia
-        run: docker compose --env-file .env -f compose.test.yaml up -d --no-build
+        run: docker compose --env-file .env -f compose.test.yaml up -d --no-build --wait --wait-timeout 120
       - name: Pruebas de humo aisladas
         run: |
           docker compose --env-file .env -f compose.test.yaml ps -a
-          docker compose --env-file .env -f compose.test.yaml logs --no-color web
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://localhost:8080/health
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://localhost:3000/health
-          api_headers="$(curl --fail --silent --show-error -D - -o /dev/null -H 'Origin: http://localhost:8080' http://localhost:3000/health)"
-          grep -iq '^access-control-allow-origin: http://localhost:8080' <<< "$api_headers"
-          grep -iq '^access-control-allow-credentials: true' <<< "$api_headers"
-          web_headers="$(curl --fail --silent --show-error -D - -o /dev/null http://localhost:8080/)"
+          docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate
+          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); if (!response.ok) throw new Error(`API health HTTP ${response.status}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
+          web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
+          grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
           grep -iq 'connect-src.*http://localhost:3000' <<< "$web_headers"
       - name: Detener contenedores de CI
         if: always() && steps.testenv.outcome == 'success'
