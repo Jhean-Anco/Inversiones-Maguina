@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { unlink } from "node:fs/promises";
 import { resolve, sep } from "node:path";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { hash } from "argon2";
 import { and, eq } from "drizzle-orm";
@@ -156,6 +157,16 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
 test("el formulario de acceso expone controles utilizables con teclado y viewport móvil", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
+
+  const auditoriaAxe = await new AxeBuilder({ page }).analyze();
+  const violacionesAxe = auditoriaAxe.violations.map(({ id, impact, description, help, helpUrl }) => ({
+    id,
+    impact,
+    description,
+    help,
+    helpUrl,
+  }));
+  expect(violacionesAxe, "axe-core encontró violaciones de accesibilidad en el login móvil.").toEqual([]);
 
   const principal = page.getByRole("main");
   await expect(principal.getByRole("heading", { name: "Bienvenido", level: 1 })).toBeVisible();
