@@ -10,6 +10,11 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo run test --filter=@magina/api",
+    "test:unit": "turbo run test:unit --filter=@magina/api",
+    "test:integration": "turbo run test:integration --filter=@magina/api",
+    "test:api": "turbo run test:api --filter=@magina/api",
+    "test:security": "turbo run test:security --filter=@magina/api",
+    "test:coverage": "turbo run test:coverage --filter=@magina/api",
     "format": "prettier --write ."
   },
   "devDependencies": {

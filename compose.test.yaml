@@ -2,7 +2,7 @@
   db:
     image: postgres:16.15-alpine3.24
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-magina}
+      POSTGRES_DB: ${POSTGRES_DB:-magina_test}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Use a disposable local password}
     volumes:
@@ -23,7 +23,7 @@
       dockerfile: docker/api.Dockerfile
       target: ops
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
     depends_on:
       db:
         condition: service_healthy
@@ -47,7 +47,7 @@
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
       FRONTEND_ORIGIN: http://localhost:8080
       UPLOADS_DIR: /data/uploads
     volumes:

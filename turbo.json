@@ -16,6 +16,26 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:api": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:security": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   }
 }
