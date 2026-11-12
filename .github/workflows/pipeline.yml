@@ -163,10 +163,12 @@ jobs:
           }
       - name: Pruebas de humo aisladas
         run: |
+          set -euxo pipefail
           docker compose --env-file .env -f compose.test.yaml ps -a
           docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate
-          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); if (!response.ok) throw new Error(`API health HTTP ${response.status}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
+          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); console.log("API smoke:", response.status, Object.fromEntries(response.headers)); if (!response.ok) throw new Error(`API health HTTP ${response.status}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
           web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
+          printf '%s\n' "$web_headers"
           grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
           grep -iq 'connect-src.*http://localhost:3000' <<< "$web_headers"
       - name: Detener contenedores de CI
