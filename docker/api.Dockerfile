@@ -27,6 +27,8 @@ ENV NODE_ENV=production
 WORKDIR /workspace
 RUN mkdir -p /data/uploads && chown -R node:node /data
 COPY --from=production-dependencies --chown=node:node /workspace/node_modules ./node_modules
+COPY --from=production-dependencies --chown=node:node /workspace/apps/api/node_modules ./apps/api/node_modules
+COPY --from=production-dependencies --chown=node:node /workspace/packages/database/node_modules ./packages/database/node_modules
 COPY --from=production-dependencies --chown=node:node /workspace/package.json ./package.json
 COPY --from=production-dependencies --chown=node:node /workspace/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=production-dependencies --chown=node:node /workspace/apps/api/package.json ./apps/api/package.json
