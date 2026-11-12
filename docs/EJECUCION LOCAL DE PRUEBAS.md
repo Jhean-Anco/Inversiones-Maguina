@@ -75,4 +75,4 @@ La suite Playwright inicial verifica el flujo de acceso contra frontend Vite, AP
 
 ## Ejecución completa
 
-GitHub Actions ejecuta typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, una prueba E2E de acceso, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes y smoke tests. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.
+GitHub Actions ejecuta formato de configuración, typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, una prueba E2E de acceso, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes, smoke tests y persistencia de PostgreSQL/archivos tras reiniciar contenedores. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.

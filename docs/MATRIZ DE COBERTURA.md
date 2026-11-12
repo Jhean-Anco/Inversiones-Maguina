@@ -23,7 +23,7 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | PostgreSQL / migraciones | Esquema Drizzle y migraciones SQL | `packages/database`, `migrations/` | Versión 16, tablas, FK, precisión `numeric`, idempotencia de migración, ventas, compras, pagos y estados NubeFact | P0 | Parcial: 12 pruebas aprobadas; migraciones aplicadas dos veces |
 | Frontend | Login, navegación protegida y rutas/formularios operativos | `apps/web/src/main/main.tsx`, login y `apps/api/e2e/acceso.spec.mts` | Login real, menú según permisos, logout y redirect; responsive/accesibilidad | P0/P1 | Parcial: 1 E2E aprobada en CI; módulos y accesibilidad pendientes |
 | Servicios externos | NubeFact, SUNAT SIRE, API Perú | servicios de ingresos, SIRE y consulta de identidad | SIRE/API Perú: token, HTTP, desconexión y payload inválido simulados; NubeFact: aceptación/rechazo simulados | P0/P1 | Parcial; solo simuladores, sin credenciales reales |
-| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, humo, scans, E2E y gates | P0 | Parcial: build, escaneos, humo, E2E y gate LCOV inicial de 65/68/65 aprobados; faltan pruebas negativas de gates, publicación GHCR y despliegue autorizado |
+| Docker / CI | Compose y GitHub Actions | `compose.*.yaml`, `.github/workflows/pipeline.yml` | Base aislada, healthcheck, migración, humo, persistencia tras reinicio, scans, E2E y gates | P0 | Parcial: build, escaneos, humo, persistencia PostgreSQL/archivos tras reinicio, E2E y gate LCOV inicial de 65/68/65 aprobados; faltan pruebas negativas de gates, publicación GHCR y despliegue autorizado |
 
 ## Casos actualmente escritos
 
@@ -39,4 +39,4 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | `apps/api/src/utilidades/consulta-identidad-peru.spec.ts` | 14 | Simulación API Perú: DNI/RUC, respuestas HTTP, token, desconexión y payloads inválidos |
 | `apps/api/e2e/acceso.spec.mts` | 1 | Navegador real con frontend, API y PostgreSQL: login fallido/válido, permisos de navegación, logout y ruta protegida |
 
-La línea “casos” cuenta declaraciones `node:test`; los 59 casos y el flujo Playwright pasaron en CI `43217998612`. La cobertura V8/LCOV es 66.90 % líneas, 68.44 % ramas y 67.42 % funciones. El gate inicial exige 65 % líneas, 68 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras documentales y rutas de negocio.
+La línea “casos” cuenta declaraciones `node:test`; los 59 casos y el flujo Playwright pasaron en CI `43225113789`. La cobertura V8/LCOV es 66.90 % líneas, 68.44 % ramas y 67.42 % funciones. El gate inicial exige 65 % líneas, 68 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras documentales y rutas de negocio.

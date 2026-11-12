@@ -2,7 +2,7 @@
 
 ## Ejecución actual
 
-**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43217998612](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43217998612) para el commit `15bbe32763c37c66686c4e20feee610ac5e3eafd` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43225113789](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43225113789) para el commit `4888e889b236ef10cbb390d64e704bfce6bbefec` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. Pasaron formato de configuración, typecheck, build, migraciones, suites, cobertura, escaneos, imágenes Docker, humo y prueba de persistencia de PostgreSQL y archivos tras reiniciar los contenedores. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
@@ -23,7 +23,7 @@ La cobertura V8 agregada de las suites API fue 66.90 % de líneas, 68.44 % de ra
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions run [43217998612](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43217998612): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 12/12 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; gate LCOV 65/68/65 aprobado; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- GitHub Actions run [43225113789](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43225113789): formato de configuración, typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 12/12 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; gate LCOV 65/68/65 aprobado; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores, humo de API/CORS/frontend y persistencia tras reiniciar PostgreSQL y API aprobados.
 - Un push previo falló por espacio temporal de Buildx al analizar la imagen de operaciones; el workflow ahora limpia la caché antes de los escaneos, y el run `43199814736` completó todos sus jobs de calidad e imágenes.
 - `git diff --check` aprobó antes de los commits de documentación. El CI informado corresponde al commit `15bbe32763c37c66686c4e20feee610ac5e3eafd`. El artefacto LCOV es `cobertura-api-9f6d40ad7a3fa7c3f91c4e896c767b5cb28eb9e5`, con vencimiento el 26 de noviembre de 2026.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
@@ -46,7 +46,7 @@ La cobertura V8 agregada de las suites API fue 66.90 % de líneas, 68.44 % de ra
 - Ampliar concurrencia/rollback a compras con factura duplicada y correlativos, verificando el estado final de las tablas.
 - Ampliar Playwright a flujos de negocio P0; añadir accesibilidad y carga k6 con umbrales explícitos. Gitleaks, Trivy y `pnpm audit` ya corren en CI.
 - Aumentar cobertura de los módulos P0/P1 y elevar los gates iniciales de 65/68/65 hacia 80 % general y 90 % en ramas críticas.
-- Verificar migraciones/reinicio/persistencia y fallos del pipeline con jobs de CI controlados.
+- Añadir jobs controlados que demuestren que fallos de pruebas, migraciones, E2E y escaneos bloquean la publicación.
 - Ampliar NubeFact simulado a timeout, respuesta inválida, estado incierto e idempotencia; realizar aceptación fiscal únicamente en sandbox oficial con autorización. No se ejecutó ni se recomienda una emisión real.
 
 **Recomendación:** no dar por concluida la misión de calidad ni aprobar todos los flujos para producción todavía. La CI aprobada cubre ventas/stock, recepción básica de compras, pagos concurrentes, aceptación/rechazo NubeFact simulados, autenticación HTTP básica, un E2E de acceso, simuladores parciales de SIRE/API Perú, migraciones e imágenes. No valida aún los flujos comerciales E2E, la accesibilidad, la carga, todos los permisos, compras documentales completas ni la restauración de respaldos; la cobertura medida aún está bajo los objetivos.
