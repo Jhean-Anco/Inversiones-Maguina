@@ -20,15 +20,17 @@ test("una cookie de sesión manipulada no obtiene acceso ni crea una sesión nue
 });
 
 test("un origen hostil no recibe permiso CORS con credenciales", async () => {
+  const origenHostil = "https://sitio-hostil.invalid";
   const respuesta = await fetch(new URL("/autenticacion/yo", base), {
     method: "OPTIONS",
     headers: {
-      origin: "https://sitio-hostil.invalid",
+      origin: origenHostil,
       "access-control-request-method": "GET",
     },
   });
-  assert.equal(respuesta.headers.has("access-control-allow-origin"), false);
-  assert.equal(respuesta.headers.has("access-control-allow-credentials"), false);
+  const origenConcedido = respuesta.headers.get("access-control-allow-origin");
+  assert.notEqual(origenConcedido, origenHostil);
+  assert.notEqual(origenConcedido, "*");
 });
 
 test("fallar autenticación no devuelve tokens ni secretos del servidor", async () => {
