@@ -23,6 +23,7 @@
     },
     "test:integration": {
       "dependsOn": ["^build"],
+      "env": ["DATABASE_URL"],
       "outputs": []
     },
     "test:api": {
