@@ -47,7 +47,7 @@ Los comandos requieren la misma PostgreSQL desechable migrada y una API local in
 $env:NODE_ENV = 'test'
 $env:DATABASE_URL = 'postgres://ci:ci-only-password@127.0.0.1:55432/magina_test'
 $env:FRONTEND_ORIGIN = 'http://localhost:5173'
-$env:AUTENTICACION_SECRETO = 'solo-pruebas-aleatorio-ficticio-de-mas-de-32-caracteres'
+$env:AUTENTICACION_SECRETO = 'x' * 40
 $env:NUBEFACT_RUTA = 'https://example.invalid/api'
 $env:NUBEFACT_TOKEN = 'ci-only-fake-token'
 $env:PORT = '3000'
