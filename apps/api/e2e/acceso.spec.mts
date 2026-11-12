@@ -95,11 +95,11 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
   await expect(page.getByRole("heading", { name: "Bienvenido" })).toBeVisible();
 
   await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
-  await page.getByLabel("Contraseña").fill("clave-incorrecta-sintetica");
+  await page.getByLabel("Contraseña", { exact: true }).fill("clave-incorrecta-sintetica");
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page.getByText("Usuario o contraseña incorrectos.")).toBeVisible();
 
-  await page.getByLabel("Contraseña").fill(contrasena);
+  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/inicio$/);
   await expect(page.locator(".topbar-logout-button")).toBeVisible();
