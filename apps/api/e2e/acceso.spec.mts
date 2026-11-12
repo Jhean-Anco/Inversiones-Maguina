@@ -119,7 +119,7 @@ test.afterAll(async () => {
   }
 });
 
-test("login, permisos visibles y cierre de sesión funcionan con la API y PostgreSQL reales", async ({ page }) => {
+test("login, permisos visibles y cierre de sesión funcionan con la API y PostgreSQL reales", async ({ page, request }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Bienvenido" })).toBeVisible();
 
@@ -136,6 +136,14 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
   const navegacion = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(navegacion.getByRole("link", { name: "Resumen" })).toBeVisible();
   await expect(navegacion.getByRole("button", { name: "Inventario" })).toHaveCount(0);
+  const api = process.env.VITE_API_URL;
+  assert.ok(api, "La prueba de permisos requiere la URL de API configurada para el frontend.");
+  const cookieSesion = (await page.context().cookies()).find((cookie) => cookie.name === "magina_sesion");
+  assert.ok(cookieSesion?.value, "El login válido debe guardar la cookie HttpOnly de sesión en el navegador.");
+  const inventarioSinPermiso = await request.get(new URL("/inventario/categorias", api).toString(), {
+    headers: { cookie: `magina_sesion=${cookieSesion.value}` },
+  });
+  expect(inventarioSinPermiso.status()).toBe(403);
 
   await page.getByRole("button", { name: "Cerrar sesión" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Cerrar sesión" }).click();
