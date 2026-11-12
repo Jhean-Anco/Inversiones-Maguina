@@ -151,3 +151,28 @@ test("el formulario de acceso expone controles utilizables con teclado y viewpor
   const anchoDocumento = await page.evaluate(() => document.documentElement.scrollWidth);
   assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
 });
+
+test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async ({ request }) => {
+  assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de validar su sesión.");
+  const api = process.env.VITE_API_URL;
+  assert.ok(api, "La prueba de revocación necesita la URL de API configurada para el frontend.");
+
+  const inicio = await request.post(new URL("/autenticacion/iniciar-sesion", api).toString(), {
+    data: { usuario: nombreUsuario, contrasena },
+  });
+  expect(inicio.status()).toBe(200);
+  const cookieSesion = inicio.headers()["set-cookie"]?.split(";")[0];
+  assert.ok(cookieSesion?.startsWith("magina_sesion="), "El inicio válido debe emitir la cookie de sesión.");
+
+  const opciones = { headers: { cookie: cookieSesion } };
+  const perfilActivo = await request.get(new URL("/autenticacion/yo", api).toString(), opciones);
+  expect(perfilActivo.status()).toBe(200);
+
+  try {
+    await db.update(usuarios).set({ activo: false }).where(eq(usuarios.id, usuarioId));
+    const perfilDesactivado = await request.get(new URL("/autenticacion/yo", api).toString(), opciones);
+    expect(perfilDesactivado.status()).toBe(401);
+  } finally {
+    await db.update(usuarios).set({ activo: true }).where(eq(usuarios.id, usuarioId));
+  }
+});
