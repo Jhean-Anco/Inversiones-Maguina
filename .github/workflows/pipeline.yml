@@ -152,7 +152,15 @@ jobs:
           NODE_ENV=test
           EOF
       - name: Arrancar imágenes ya escaneadas y migrar una PostgreSQL limpia
-        run: docker compose --env-file .env -f compose.test.yaml up -d --no-build --wait --wait-timeout 120
+        run: docker compose --env-file .env -f compose.test.yaml up -d --no-build
+      - name: Esperar servicios y capturar diagnósticos
+        id: testservices
+        run: |
+          docker compose --env-file .env -f compose.test.yaml up -d --no-build --wait --wait-timeout 120 || {
+            docker compose --env-file .env -f compose.test.yaml ps -a
+            docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate db
+            exit 1
+          }
       - name: Pruebas de humo aisladas
         run: |
           docker compose --env-file .env -f compose.test.yaml ps -a
