@@ -1,3 +1,16 @@
+/* Conserva un encabezado de página para lectores de pantalla sin alterar el diseño actual. */
+.catalog-page-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (max-width: 700px) {
 }
 @media (max-width: 700px) {

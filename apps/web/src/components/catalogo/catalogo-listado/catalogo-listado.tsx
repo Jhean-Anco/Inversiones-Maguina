@@ -17,6 +17,7 @@ type PropiedadesCatalogoListado<T> = Base<T> & (
 );
 export function CatalogoListado<T>(props: PropiedadesCatalogoListado<T>) {
   return <section className="catalog-content" aria-label={props.titulo} aria-description={props.descripcion}>
+    <h1 className="catalog-page-heading">{props.titulo}</h1>
     <RegistrarAccionPrincipal etiqueta={props.etiquetaCrear} onClick={props.alCrear} />
     <ListadoMaestro
       titulo={props.tituloListado}
