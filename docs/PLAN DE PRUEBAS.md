@@ -2,7 +2,7 @@
 
 ## Estado
 
-La infraestructura de calidad está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions, el run [43206561315](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43206561315) aprobó typecheck, build, migraciones PostgreSQL repetibles, 21 pruebas unitarias (13 con simulador SIRE), 8 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad y 1 flujo Playwright. También aprobó Gitleaks, auditoría de dependencias, escaneos Trivy, builds Docker, Compose y smoke tests. La cobertura medida fue 61.61 % líneas, 72.31 % ramas y 63.84 % funciones, sin umbrales bloqueantes. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
+La infraestructura de calidad está en construcción en la rama `test/quality-gates-e2e`. En GitHub Actions, el run [43208917086](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43208917086) aprobó typecheck, build, migraciones PostgreSQL repetibles, 35 pruebas unitarias (13 con simulador SIRE y 14 con simulador API Perú), 8 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas de seguridad y 1 flujo Playwright. También aprobó Gitleaks, auditoría de dependencias, escaneos Trivy, builds Docker, Compose y smoke tests. La cobertura medida fue 63.82 % líneas, 73.99 % ramas y 65.86 % funciones, sin umbrales bloqueantes. No se ejecutaron pruebas localmente: la skill de seguridad exige aislamiento de sistema operativo que este entorno no ofrece; Docker Engine local tampoco está disponible.
 
 Este plan refleja las rutas y reglas visibles en el código. La existencia de un controlador no prueba que todo su flujo esté implementado ni que una regla fiscal esté aceptada.
 
@@ -33,7 +33,7 @@ Este plan refleja las rutas y reglas visibles en el código. La existencia de un
 
 ## Próximos bloques
 
-1. Establecer umbrales progresivos de cobertura LCOV sin excluir módulos críticos; la línea actual es 61.61 %, ramas 72.31 % y funciones 63.84 %.
+1. Establecer umbrales progresivos de cobertura LCOV sin excluir módulos críticos; la línea actual es 63.82 %, ramas 73.99 % y funciones 65.86 %.
 2. Ampliar integraciones a pagos, compras, correlativos y otras transiciones comerciales P0.
 3. Completar los flujos Playwright P0 y añadir simuladores externos.
 4. Completar la matriz API de permisos por rol y errores de contrato.

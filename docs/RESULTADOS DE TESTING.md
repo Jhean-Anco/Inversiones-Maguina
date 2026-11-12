@@ -2,13 +2,13 @@
 
 ## Ejecución actual
 
-**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43206561315](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43206561315) para el commit `283efdd90c05fd7f5b9bd7d20708bde0c89b13ab` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43208917086](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43208917086) para el commit `c4926574f0bedea93bb54187fcb0bfcd92d7332c` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
 | Suite | Casos escritos | Aprobados | Fallidos | Cobertura |
 |---|---:|---:|---:|---|
-| Unitarias (configuración, finanzas y simulador SIRE) | 21 | 21 (GitHub Actions) | 0 | Incluidas en el reporte agregado |
+| Unitarias (configuración, finanzas, SIRE y API Perú simulados) | 35 | 35 (GitHub Actions) | 0 | Incluidas en el reporte agregado |
 | Integración PostgreSQL | 8 | 8 (PostgreSQL 16 efímero en GitHub Actions) | 0 | Incluidas en el reporte agregado |
 | API HTTP | 8 | 8 (NestJS/Fastify + PostgreSQL real de CI) | 0 | Incluidas en el reporte agregado |
 | Seguridad HTTP | 4 | 4 (API real de CI) | 0 | Incluidas en el reporte agregado |
@@ -16,19 +16,19 @@ La rama actual contiene los siguientes casos y resultados; las suites vacías se
 | Seguridad automatizada del código | Escáneres activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
 | Concurrencia de operaciones comerciales | 2 escenarios | 2 aprobados: última unidad e idempotencia duplicada | 0 | No medida |
 
-El conteo total es 42: 41 declaraciones `node:test` (21 unitarias, 8 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Las pruebas unitarias incluyen 13 escenarios simulados de SIRE. Faltan más casos de compras, NubeFact, API Perú y todo el catálogo de permisos.
+El conteo total es 56: 55 declaraciones `node:test` (35 unitarias, 8 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Las pruebas unitarias incluyen 13 escenarios simulados de SIRE y 14 de API Perú. Faltan más casos de compras, NubeFact y todo el catálogo de permisos.
 
-La cobertura V8 agregada de las suites API fue 61.61 % de líneas, 72.31 % de ramas y 63.84 % de funciones. El workflow la publica como LCOV, pero no aplica los umbrales de 80 % general, 90 % para ramas críticas ni 100 % para casos P0; esos objetivos siguen pendientes.
+La cobertura V8 agregada de las suites API fue 63.82 % de líneas, 73.99 % de ramas y 65.86 % de funciones. El workflow la publica como LCOV, pero no aplica los umbrales de 80 % general, 90 % para ramas críticas ni 100 % para casos P0; esos objetivos siguen pendientes.
 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions run [43206561315](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43206561315): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 21/21 unitarias, 8/8 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- GitHub Actions run [43208917086](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43208917086): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 8/8 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
 - Un push previo falló por espacio temporal de Buildx al analizar la imagen de operaciones; el workflow ahora limpia la caché antes de los escaneos, y el run `43199814736` completó todos sus jobs de calidad e imágenes.
-- `git diff --check` aprobó antes de los commits. El CI informado corresponde al commit `283efdd90c05fd7f5b9bd7d20708bde0c89b13ab`. El artefacto LCOV es `cobertura-api-67562e0badfc923da01be29e87008ba9bb02955d`, con vencimiento el 26 de noviembre de 2026.
+- `git diff --check` aprobó antes de los commits. El CI informado corresponde al commit `c4926574f0bedea93bb54187fcb0bfcd92d7332c`. El artefacto LCOV es `cobertura-api-bf6cd4401ae1b1c1ae20a61e173e0a65a3ef008c`, con vencimiento el 26 de noviembre de 2026.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
-- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 61.61 % de líneas, 72.31 % de ramas y 63.84 % de funciones.
+- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 63.82 % de líneas, 73.99 % de ramas y 65.86 % de funciones.
 
 ## Defectos encontrados y correcciones
 
