@@ -2,7 +2,7 @@
 
 ## Fuente de inventario
 
-Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. En el commit `e675011bb6245533f16ad19fc8a1f3706be29b67`, CI aprobó 35 pruebas unitarias, 10 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas HTTP de seguridad y 1 flujo Playwright de acceso.
+Inventario estático del checkout `test/quality-gates-e2e`: 17 controladores API, 15 servicios API y 314 archivos de migración bajo `packages/database/migrations`. En el commit `d12a666c861c67bc86708baff6185ab5e7583002`, CI aprobó 35 pruebas unitarias, 10 integraciones PostgreSQL, 8 pruebas HTTP de API, 4 pruebas HTTP de seguridad y 1 flujo Playwright de acceso.
 
 Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay prueba automatizada suficiente; **Pendiente de validación externa** = requiere sandbox/proveedor/operación real autorizada. “Implementado” describe código funcional solo cuando la fuente lo demuestra; no equivale a validación de extremo a extremo.
 
@@ -39,4 +39,4 @@ Estados: **Parcial** = hay pruebas que cubren una parte; **Pendiente** = no hay 
 | `apps/api/src/utilidades/consulta-identidad-peru.spec.ts` | 14 | Simulación API Perú: DNI/RUC, respuestas HTTP, token, desconexión y payloads inválidos |
 | `apps/api/e2e/acceso.spec.mts` | 1 | Navegador real con frontend, API y PostgreSQL: login fallido/válido, permisos de navegación, logout y ruta protegida |
 
-La línea “casos” cuenta declaraciones `node:test`; los 57 casos y el flujo Playwright pasaron en CI `43211295734`. La cobertura V8/LCOV es 67.27 % líneas, 71.10 % ramas y 67.00 % funciones. El gate inicial exige 65 % líneas, 70 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras y rutas de negocio.
+La línea “casos” cuenta declaraciones `node:test`; los 57 casos y el flujo Playwright pasaron en CI `43213169698`. La cobertura V8/LCOV es 67.29 % líneas, 71.10 % ramas y 67.00 % funciones. El gate inicial exige 65 % líneas, 70 % ramas y 65 % funciones; faltan umbrales específicos por módulo y P0. Persisten brechas en compras y rutas de negocio.

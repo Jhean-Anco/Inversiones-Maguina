@@ -2,7 +2,7 @@
 
 ## Ejecución actual
 
-**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43211295734](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43211295734) para el commit `e675011bb6245533f16ad19fc8a1f3706be29b67` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43213169698](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43213169698) para el commit `d12a666c861c67bc86708baff6185ab5e7583002` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
@@ -18,17 +18,17 @@ La rama actual contiene los siguientes casos y resultados; las suites vacías se
 
 El conteo total es 58: 57 declaraciones `node:test` (35 unitarias, 10 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, aceptación/rechazo NubeFact simulados persistidos en PostgreSQL, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Las pruebas unitarias incluyen 13 escenarios simulados de SIRE y 14 de API Perú. Faltan más casos de compras, timeout/estado incierto de NubeFact y todo el catálogo de permisos.
 
-La cobertura V8 agregada de las suites API fue 67.27 % de líneas, 71.10 % de ramas y 67.00 % de funciones. Se incorporó al ejecutor de pruebas un gate inicial de 65 % líneas, 70 % ramas y 65 % funciones. Los objetivos de 80 % general, 90 % para ramas críticas y 100 % para casos P0 siguen pendientes.
+La cobertura V8 agregada de las suites API fue 67.29 % de líneas, 71.10 % de ramas y 67.00 % de funciones. El gate inicial de 65 % líneas, 70 % ramas y 65 % funciones pasó en el run verificado. Los objetivos de 80 % general, 90 % para ramas críticas y 100 % para casos P0 siguen pendientes.
 
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios, 314 archivos de migración y una prueba preexistente.
-- GitHub Actions run [43211295734](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43211295734): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 10/10 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
+- GitHub Actions run [43213169698](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43213169698): typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 10/10 integraciones, 8/8 API, 4/4 seguridad y 1/1 E2E aprobadas; gate LCOV 65/70/65 aprobado; `pnpm audit --prod --audit-level high`; escaneo Gitleaks y Trivy de secretos e imágenes; validación Compose; construcción de imágenes, arranque de contenedores y humo de API, CORS y frontend aprobados.
 - Un push previo falló por espacio temporal de Buildx al analizar la imagen de operaciones; el workflow ahora limpia la caché antes de los escaneos, y el run `43199814736` completó todos sus jobs de calidad e imágenes.
-- `git diff --check` aprobó antes del commit de pruebas. El CI informado corresponde al commit `e675011bb6245533f16ad19fc8a1f3706be29b67`. El artefacto LCOV es `cobertura-api-803d1f89f583b5be0b5eb48d443408f114650f45`, con vencimiento el 26 de noviembre de 2026.
+- `git diff --check` aprobó antes de los commits de documentación. El CI informado corresponde al commit `d12a666c861c67bc86708baff6185ab5e7583002`. El artefacto LCOV es `cobertura-api-f7f5d06c80d6f973806c605fa1b3dc5fd98f2e30`, con vencimiento el 26 de noviembre de 2026.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
-- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 67.27 % de líneas, 71.10 % de ramas y 67.00 % de funciones.
+- La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 67.29 % de líneas, 71.10 % de ramas y 67.00 % de funciones.
 
 ## Defectos encontrados y correcciones
 
