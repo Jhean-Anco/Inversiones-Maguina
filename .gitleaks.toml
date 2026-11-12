@@ -1,0 +1,11 @@
+title = "Inversiones Maguina secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic JWT fixture from an earlier security-test commit"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^eyJhbGciOiJub25lIn0\.eyJzdWIiOiJhZG1pbiJ9\.$''']
+paths = ['''^apps/api/src/controles-seguridad\.security\.spec\.ts$''']
