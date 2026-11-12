@@ -63,6 +63,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Verificar formato del repositorio
         run: pnpm format:check
+      - name: Regenerar catálogo y validar documentación técnica
+        run: pnpm docs:check
       - name: Typecheck de workspaces
         run: pnpm typecheck
       - name: Build real
