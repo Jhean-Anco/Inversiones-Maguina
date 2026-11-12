@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { after, before, test } from "node:test";
 
 function urlDePruebas(): URL {
   assert.equal(process.env.NODE_ENV, "test", "La integración exige NODE_ENV=test.");
@@ -22,10 +22,16 @@ function urlDePruebas(): URL {
 }
 
 const url = urlDePruebas();
-const { clientePostgres, cerrarBaseDatos } = await import("@magina/database");
+type BaseDeDatos = typeof import("@magina/database");
+let clientePostgres: BaseDeDatos["clientePostgres"];
+let cerrarBaseDatos: BaseDeDatos["cerrarBaseDatos"];
+
+before(async () => {
+  ({ clientePostgres, cerrarBaseDatos } = await import("@magina/database"));
+});
 
 after(async () => {
-  await cerrarBaseDatos();
+  if (cerrarBaseDatos) await cerrarBaseDatos();
 });
 
 test("la conexión apunta a PostgreSQL 16 y a la base desechable autorizada", async () => {
