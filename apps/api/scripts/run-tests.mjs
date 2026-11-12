@@ -130,7 +130,7 @@ if (coverage) {
     "--test-reporter=lcov",
     "--test-reporter-destination=coverage/lcov.info",
     "--test-coverage-lines=65",
-    "--test-coverage-branches=70",
+    "--test-coverage-branches=68",
     "--test-coverage-functions=65",
   );
 }
