@@ -2,7 +2,7 @@
 
 ## Ejecución actual
 
-**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43234258502](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43234258502) para el commit `2b6157e49951aa8d83a9851a3d3e57f43de05af8` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. Pasaron formato de configuración, typecheck, build, migraciones, suites, cobertura, escaneos, imágenes Docker, humo y persistencia de PostgreSQL y archivos tras reiniciar los contenedores. Los cuatro escenarios E2E aprobaron: acceso, teclado/nombres accesibles/ancho móvil de 390 px, revocación de sesión al desactivar un usuario y creación/edición de categoría con carga y lectura de imagen. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
+**Estado: suite base ampliada verificada; misión de calidad completa aún pendiente.** El 12 de noviembre de 2026, GitHub Actions completó correctamente el run [43239613050](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43239613050) para el commit `b84dbc24ab75b0c82bea4850761151f42288029a` en `test/quality-gates-e2e`. El código se ejecutó en runners de GitHub con PostgreSQL y contenedores efímeros y credenciales ficticias. Pasaron formato de configuración, typecheck, build, migraciones, suites, cobertura, escaneos, imágenes Docker, humo y persistencia de PostgreSQL y archivos tras reiniciar los contenedores. Los cuatro escenarios E2E aprobaron: acceso, rechazo HTTP 403 al consultar categorías sin rol, teclado/nombres accesibles/ancho móvil de 390 px, revocación de sesión al desactivar un usuario y creación/edición de categoría con carga y lectura de imagen. No se ejecutaron pruebas localmente: la revisión local de seguridad requiere un sandbox de sistema operativo que este entorno no ofrece. El Docker Engine local tampoco está disponible.
 
 La rama actual contiene los siguientes casos y resultados; las suites vacías se indican explícitamente:
 
@@ -12,7 +12,7 @@ La rama actual contiene los siguientes casos y resultados; las suites vacías se
 | Integración PostgreSQL | 12 | 12 (PostgreSQL 16 efímero en GitHub Actions) | 0 | Incluidas en el reporte agregado |
 | API HTTP | 8 | 8 (NestJS/Fastify + PostgreSQL real de CI) | 0 | Incluidas en el reporte agregado |
 | Seguridad HTTP | 4 | 4 (API real de CI) | 0 | Incluidas en el reporte agregado |
-| E2E / navegador | 4 | 4 (frontend, API y PostgreSQL reales en CI) | 0 | Acceso, controles básicos del login, revocación de sesión y creación/edición de categoría con imagen; cobertura V8 de suites API no incluye el código frontend E2E |
+| E2E / navegador | 4 | 4 (frontend, API y PostgreSQL reales en CI) | 0 | Acceso y rechazo 403 sin rol, controles básicos del login, revocación de sesión y creación/edición de categoría con imagen; cobertura V8 de suites API no incluye el código frontend E2E |
 | Seguridad automatizada del código | Escáneres activos | Gitleaks, Trivy y `pnpm audit` aprobados | 0 alertas bloqueantes en el workflow | No aplica |
 | Concurrencia de operaciones comerciales | 2 escenarios | 2 aprobados: última unidad e idempotencia duplicada | 0 | No medida |
 
@@ -23,9 +23,9 @@ La cobertura V8 agregada de las suites API fue 66.90 % de líneas, 68.44 % de ra
 ## Evidencia disponible
 
 - Inspección estática del checkout: 17 controladores, 15 servicios y 314 archivos de migración; la suite actual suma 59 pruebas `node:test` y 4 escenarios Playwright.
-- GitHub Actions run [43234258502](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43234258502), commit `2b6157e`: formato de configuración, typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 12/12 integraciones, 8/8 API, 4/4 seguridad y 4/4 E2E aprobadas; gate LCOV 65/68/65 aprobado; `pnpm audit --prod --audit-level high`; Gitleaks, Trivy, validación Compose, construcción de imágenes, humo y persistencia tras reiniciar PostgreSQL y API aprobados. Los jobs de publicación y despliegue se omitieron en la rama de prueba.
+- GitHub Actions run [43239613050](https://github.com/Jhean-Anco/Inversiones-Maguina/actions/runs/43239613050), commit `b84dbc2`: formato de configuración, typecheck y build aprobados; todas las migraciones aplicadas dos veces a PostgreSQL vacío; 35/35 unitarias, 12/12 integraciones, 8/8 API, 4/4 seguridad y 4/4 E2E aprobadas; gate LCOV 65/68/65 aprobado; `pnpm audit --prod --audit-level high`; Gitleaks, Trivy, validación Compose, construcción de imágenes, humo y persistencia tras reiniciar PostgreSQL y API aprobados. Los jobs de publicación y despliegue se omitieron en la rama de prueba.
 - Un push previo falló por espacio temporal de Buildx al analizar la imagen de operaciones; el workflow ahora limpia la caché antes de los escaneos, y el run `43199814736` completó todos sus jobs de calidad e imágenes.
-- El artefacto LCOV del run actual es `cobertura-api-f8ae6829cc15b4e1645ddfd0cd83c95a44192f3f`, con vencimiento el 26 de noviembre de 2026.
+- El artefacto LCOV del run actual es `cobertura-api-eb21f6986707eb159a0ee24df0669aeba7772d65`, con vencimiento el 26 de noviembre de 2026.
 - El Docker Engine local respondió que no encuentra su endpoint de servicio. No se pudo levantar PostgreSQL en el equipo.
 - El workflow validado se ejecutó en `test/quality-gates-e2e`; publicación y despliegue se omitieron por estar limitados a `main`.
 - La cobertura no alcanza aún los objetivos propuestos: 80 % general, 90 % de ramas críticas y 100 % P0. El CI reportó 66.90 % de líneas, 68.44 % de ramas y 67.42 % de funciones.

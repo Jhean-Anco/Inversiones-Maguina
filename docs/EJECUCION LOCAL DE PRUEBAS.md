@@ -65,7 +65,7 @@ corepack pnpm test:all
 corepack pnpm test:coverage
 ```
 
-`test:e2e` requiere `DATABASE_URL`, `NODE_ENV=test`, una API real en `localhost:3000` y Chromium instalado con `corepack pnpm exec playwright install chromium`. Inicia el frontend Vite en `localhost:4173`, crea un usuario sintético en `magina_test` y valida login incorrecto/correcto, permisos visibles, cierre de sesión, redirección de una ruta protegida, teclado/ancho móvil, revocación de sesión y alta/edición de categoría con imagen usando temporalmente el rol `ALMACENERO`. La prueba de catálogo borra la categoría, su archivo y la asignación del rol.
+`test:e2e` requiere `DATABASE_URL`, `NODE_ENV=test`, una API real en `localhost:3000` y Chromium instalado con `corepack pnpm exec playwright install chromium`. Inicia el frontend Vite en `localhost:4173`, crea un usuario sintético en `magina_test` y valida login incorrecto/correcto, rechazo 403 de categorías sin permisos, permisos visibles, cierre de sesión, redirección de una ruta protegida, teclado/ancho móvil, revocación de sesión y alta/edición de categoría con imagen usando temporalmente el rol `ALMACENERO`. La prueba de catálogo borra la categoría, su archivo y la asignación del rol.
 
 `test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API y los escenarios E2E de acceso y catálogo. `test:coverage` ejecuta las cuatro categorías de API y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. La cobertura no incluye el frontend.
 
