@@ -44,5 +44,3 @@ ENV UPLOADS_DIR=/data/uploads
 RUN mkdir -p /data/uploads && chown -R node:node /data
 USER node
 CMD ["pnpm", "--filter", "@magina/database", "db:migrate"]
-
-\n

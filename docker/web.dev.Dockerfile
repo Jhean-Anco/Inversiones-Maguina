@@ -11,5 +11,3 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 EXPOSE 5173
 CMD ["pnpm", "--filter", "@magina/web", "dev", "--", "--host", "0.0.0.0"]
-
-\n
