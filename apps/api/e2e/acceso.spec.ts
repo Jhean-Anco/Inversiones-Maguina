@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { afterAll, beforeAll, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { hash } from "argon2";
 import { eq } from "drizzle-orm";
 import {
@@ -32,7 +32,7 @@ let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
 
-beforeAll(async () => {
+test.beforeAll(async () => {
   assert.equal(process.env.NODE_ENV, "test", "E2E exige NODE_ENV=test.");
   const [tipoNatural] = await db
     .select({ id: tiposPersona.id })
@@ -78,7 +78,7 @@ beforeAll(async () => {
   usuarioId = usuario.id;
 });
 
-afterAll(async () => {
+test.afterAll(async () => {
   try {
     if (usuarioId) await db.delete(usuarios).where(eq(usuarios.id, usuarioId));
     if (personaId && trabajadorCreado) {
