@@ -11,7 +11,8 @@
     "test:integration": "node scripts/run-tests.mjs integration",
     "test:api": "node scripts/run-tests.mjs api",
     "test:security": "node scripts/run-tests.mjs security",
-    "test:coverage": "node scripts/run-tests.mjs unit --coverage"
+    "test:all": "node scripts/run-tests.mjs all",
+    "test:coverage": "node scripts/run-tests.mjs all --coverage"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

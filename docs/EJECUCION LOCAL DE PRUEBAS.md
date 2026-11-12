@@ -29,7 +29,7 @@ corepack pnpm --filter @magina/database db:migrate
 corepack pnpm test:integration
 ```
 
-La suite verifica el nombre y versión de la base, tablas/relaciones clave y escalas `numeric`. La prueba rechaza hosts remotos y bases que no terminen en `_test`. No inserta ni borra datos de negocio.
+La suite verifica el nombre y versión de la base, tablas/relaciones clave, precisión `numeric`, rollback de ventas, concurrencia e idempotencia. Las pruebas comerciales insertan únicamente fixtures sintéticos con claves aleatorias y limpian exclusivamente los registros que crearon. El ejecutor rechaza hosts remotos y bases que no sean `magina_test` con credenciales ficticias.
 
 Para parar únicamente este proyecto Compose:
 
@@ -39,10 +39,37 @@ docker compose --project-name magina-integration-test --env-file config/pruebas-
 
 El volumen de pruebas se conserva por defecto. Para eliminarlo, primero verifica que el nombre del proyecto sea exactamente `magina-integration-test`; luego usa `down --volumes` solo para ese proyecto y únicamente cuando quieras recrear la base desechable desde cero.
 
-## Suites aún no disponibles
+## API y seguridad HTTP
 
-`test:api`, `test:e2e`, `test:security`, `test:coverage` y `test:all` serán comandos de salida cuando sus respectivas suites estén implementadas. La cobertura medida y los reportes de Playwright tampoco están disponibles todavía. No reportes esas suites como aprobadas.
+Los comandos requieren la misma PostgreSQL desechable migrada y una API local iniciada con valores ficticios. En una segunda terminal PowerShell, desde la raíz:
+
+```powershell
+$env:NODE_ENV = 'test'
+$env:DATABASE_URL = 'postgres://ci:ci-only-password@127.0.0.1:55432/magina_test'
+$env:FRONTEND_ORIGIN = 'http://localhost:5173'
+$env:AUTENTICACION_SECRETO = 'solo-pruebas-aleatorio-ficticio-de-mas-de-32-caracteres'
+$env:NUBEFACT_RUTA = 'https://example.invalid/api'
+$env:NUBEFACT_TOKEN = 'ci-only-fake-token'
+$env:PORT = '3000'
+node apps/api/dist/main.js
+```
+
+En una tercera terminal:
+
+```powershell
+$env:API_BASE_URL = 'http://127.0.0.1:3000'
+corepack pnpm test:api
+corepack pnpm test:security
+corepack pnpm test:all
+corepack pnpm test:coverage
+```
+
+`test:all` requiere `DATABASE_URL` y `API_BASE_URL`; ejecuta las cuatro categorías de API disponibles. `test:coverage` repite esas suites y genera `apps/api/coverage/lcov.info`. No uses credenciales reales. El comando de cobertura puede tardar más porque ejecuta todas las categorías.
+
+## E2E de navegador
+
+Playwright todavía no está incorporado al lockfile ni hay un comando `test:e2e`; no existe evidencia de pruebas E2E aprobadas. El frontend/backend completo con flujos autenticados y PostgreSQL sigue pendiente.
 
 ## Ejecución completa
 
-El pipeline GitHub ejecuta typecheck, build, migraciones sobre PostgreSQL vacío, repetición de migraciones, pruebas unitarias, integración y escaneo de imágenes. El workflow debe ampliarse cuando se agreguen las suites API/E2E y el escaneo de secretos Gitleaks. No actives el job de despliegue productivo para validar pruebas.
+GitHub Actions ejecuta typecheck, build, migraciones repetidas, pruebas unitarias, integración, API, seguridad, cobertura LCOV, auditoría de dependencias, Gitleaks, Trivy, construcción/escaneo de imágenes y smoke tests. El pipeline no implementa todavía pruebas E2E con Playwright. Publicación y despliegue productivo permanecen condicionados a `main`; no actives el despliegue para validar pruebas.

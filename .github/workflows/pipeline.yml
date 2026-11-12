@@ -92,6 +92,17 @@ jobs:
         env:
           API_BASE_URL: http://127.0.0.1:3000
         run: pnpm test:security
+      - name: Medir cobertura V8 de todas las suites API
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:coverage
+      - name: Publicar reporte LCOV de cobertura
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cobertura-api-${{ github.sha }}
+          path: apps/api/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14
       - name: Auditar dependencias de producción
         run: pnpm audit --prod --audit-level high
 

@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -12,6 +12,7 @@ const suffixes = {
   integration: [".integration.spec.ts"],
   api: [".api.spec.ts"],
   security: [".security.spec.ts"],
+  all: [".spec.ts"],
 };
 
 if (!Object.hasOwn(suffixes, category)) {
@@ -36,7 +37,12 @@ async function archivosRecursivos(directorio) {
 
 const archivos = (await archivosRecursivos(join(packageRoot, "src")))
   .filter((ruta) => suffixes[category].some((sufijo) => ruta.endsWith(sufijo)))
-  .filter((ruta) => category !== "unit" || !/\.(?:integration|api|security)\.spec\.ts$/.test(ruta))
+  .filter(
+    (ruta) =>
+      category === "all" ||
+      category !== "unit" ||
+      !/\.(?:integration|api|security)\.spec\.ts$/.test(ruta),
+  )
   .sort((a, b) => a.localeCompare(b));
 
 if (!archivos.length) {
@@ -57,7 +63,7 @@ for (const nombre of ["SystemRoot", "WINDIR", "TEMP", "TMP", "PATHEXT", "ComSpec
   if (process.env[nombre]) entorno[nombre] = process.env[nombre];
 }
 
-if (category === "integration") {
+if (category === "integration" || category === "all") {
   const valor = process.env.DATABASE_URL;
   if (!valor) {
     console.error("Define DATABASE_URL con una instancia PostgreSQL local desechable *_test.");
@@ -82,7 +88,7 @@ if (category === "integration") {
   entorno.DATABASE_URL = "postgres://ci:ci-only@127.0.0.1:5432/magina_test";
 }
 
-if (category === "api" || category === "security") {
+if (category === "api" || category === "security" || category === "all") {
   const valor = process.env.API_BASE_URL;
   if (!valor) {
     console.error("Define API_BASE_URL con la instancia local de API iniciada para pruebas.");
@@ -115,7 +121,16 @@ console.log(
 );
 
 const argumentos = ["--import", "tsx"];
-if (coverage) argumentos.push("--experimental-test-coverage");
+if (coverage) {
+  await mkdir(join(packageRoot, "coverage"), { recursive: true });
+  argumentos.push(
+    "--experimental-test-coverage",
+    "--test-reporter=spec",
+    "--test-reporter-destination=stdout",
+    "--test-reporter=lcov",
+    "--test-reporter-destination=coverage/lcov.info",
+  );
+}
 argumentos.push("--test");
 argumentos.push(...archivos);
 
