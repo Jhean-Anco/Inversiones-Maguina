@@ -78,6 +78,34 @@ if (category === "integration") {
   entorno.DATABASE_URL = "postgres://ci:ci-only@127.0.0.1:5432/magina_test";
 }
 
+if (category === "api") {
+  const valor = process.env.API_BASE_URL;
+  if (!valor) {
+    console.error("Define API_BASE_URL con la instancia local de API iniciada para pruebas.");
+    process.exit(2);
+  }
+  let url;
+  try {
+    url = new URL(valor);
+  } catch {
+    console.error("Se rechazó API_BASE_URL: debe ser una URL HTTP local.");
+    process.exit(2);
+  }
+  if (
+    url.protocol !== "http:" ||
+    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
+    console.error("Se rechazó API_BASE_URL: se permite únicamente un origen HTTP local sin ruta ni credenciales.");
+    process.exit(2);
+  }
+  entorno.API_BASE_URL = url.origin;
+}
+
 console.log(
   `${category}: ${archivos.map((archivo) => relative(packageRoot, archivo)).join(", ")}`,
 );

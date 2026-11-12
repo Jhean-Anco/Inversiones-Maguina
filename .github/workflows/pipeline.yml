@@ -73,6 +73,21 @@ jobs:
         run: pnpm test:unit
       - name: Pruebas de integración con PostgreSQL real
         run: pnpm test:integration
+      - name: Iniciar la API real para pruebas HTTP
+        run: |
+          node apps/api/dist/main.js > /tmp/inversiones-magina-api.log 2>&1 &
+          for intento in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:3000/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/inversiones-magina-api.log
+          exit 1
+      - name: Pruebas API con NestJS, Fastify y PostgreSQL reales
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:api
       - name: Auditar dependencias de producción
         run: pnpm audit --prod --audit-level high
 

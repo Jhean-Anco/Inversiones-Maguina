@@ -28,6 +28,7 @@
     },
     "test:api": {
       "dependsOn": ["^build"],
+      "env": ["API_BASE_URL"],
       "outputs": []
     },
     "test:security": {
