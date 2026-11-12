@@ -21,6 +21,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "argon2"
-    ]
+    ],
+    "overrides": {
+      "fastify": "5.12.8"
+    }
   }
 }
