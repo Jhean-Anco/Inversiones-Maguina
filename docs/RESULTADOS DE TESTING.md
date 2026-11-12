@@ -18,7 +18,7 @@ La rama actual contiene los siguientes casos y resultados; las suites vacías se
 
 El conteo total es 58: 57 declaraciones `node:test` (35 unitarias, 10 de integración, 8 API y 4 de seguridad) más 1 flujo Playwright. Las integraciones incluyen rollback de venta por stock insuficiente, dos ventas concurrentes por la última unidad, idempotencia de ventas, aceptación/rechazo NubeFact simulados persistidos en PostgreSQL, dos pagos concurrentes contra el saldo de un egreso y abonos concurrentes idempotentes. Las pruebas unitarias incluyen 13 escenarios simulados de SIRE y 14 de API Perú. Faltan más casos de compras, timeout/estado incierto de NubeFact y todo el catálogo de permisos.
 
-La cobertura V8 agregada de las suites API fue 67.27 % de líneas, 71.10 % de ramas y 67.00 % de funciones. El workflow la publica como LCOV, pero no aplica los umbrales de 80 % general, 90 % para ramas críticas ni 100 % para casos P0; esos objetivos siguen pendientes.
+La cobertura V8 agregada de las suites API fue 67.27 % de líneas, 71.10 % de ramas y 67.00 % de funciones. Se incorporó al ejecutor de pruebas un gate inicial de 65 % líneas, 70 % ramas y 65 % funciones. Los objetivos de 80 % general, 90 % para ramas críticas y 100 % para casos P0 siguen pendientes.
 
 ## Evidencia disponible
 
@@ -45,7 +45,7 @@ La cobertura V8 agregada de las suites API fue 67.27 % de líneas, 71.10 % de ra
 - Ampliar las pruebas E2E de navegador a flujos P0 con PostgreSQL real, fixtures y proveedores simulados.
 - Ampliar concurrencia/rollback a pagos, compras y correlativos, verificando el estado final de las tablas.
 - Ampliar Playwright a flujos de negocio P0; añadir accesibilidad y carga k6 con umbrales explícitos. Gitleaks, Trivy y `pnpm audit` ya corren en CI.
-- Aumentar cobertura sin excluir módulos importantes y convertir los objetivos acordados en gates medibles.
+- Aumentar cobertura de los módulos P0/P1 y elevar los gates iniciales de 65/70/65 hacia 80 % general y 90 % en ramas críticas.
 - Verificar migraciones/reinicio/persistencia y fallos del pipeline con jobs de CI controlados.
 - Ampliar NubeFact simulado a timeout, respuesta inválida, estado incierto e idempotencia; realizar aceptación fiscal únicamente en sandbox oficial con autorización. No se ejecutó ni se recomienda una emisión real.
 

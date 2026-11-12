@@ -129,6 +129,9 @@ if (coverage) {
     "--test-reporter-destination=stdout",
     "--test-reporter=lcov",
     "--test-reporter-destination=coverage/lcov.info",
+    "--test-coverage-lines=65",
+    "--test-coverage-branches=70",
+    "--test-coverage-functions=65",
   );
 }
 argumentos.push("--test");
