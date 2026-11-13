@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, feature/docker-cicd-production]
   push:
-    branches: [main, test/quality-gates-e2e]
+    branches: ['**']
 
 permissions:
   contents: read
