@@ -343,7 +343,7 @@ jobs:
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     environment: production
     permissions:
-      contents: read
+      contents: write
       packages: write
     concurrency:
       group: inversiones-maguina-production
@@ -380,6 +380,24 @@ jobs:
             docker buildx imagetools inspect "ghcr.io/$owner/inversiones-maguina-$image:sha-$GITHUB_SHA" > /dev/null
           done
           echo "previous_sha=$previous" >> "$GITHUB_OUTPUT"
+      - name: Fijar referencias verificadas para Dokploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIOUS_SHA: ${{ steps.revision.outputs.previous_sha }}
+        run: |
+          set -euo pipefail
+          for sha in "$PREVIOUS_SHA" "$GITHUB_SHA"; do
+            tag="ci-deploy-$sha"
+            target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null || true)"
+            if [ -z "$target" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha" > /dev/null
+              target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+            fi
+            if [ "$target" != "$sha" ]; then
+              echo "La referencia de despliegue no coincide con el commit aprobado."
+              exit 1
+            fi
+          done
       - name: Promover imágenes validadas
         id: promote
         run: |
@@ -394,6 +412,7 @@ jobs:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          DEPLOY_SHA: ${{ github.sha }}
         run: node .github/scripts/deploy-dokploy.mjs
       - name: Comprobar frontend y API
         run: |
@@ -419,6 +438,7 @@ jobs:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          DEPLOY_SHA: ${{ steps.revision.outputs.previous_sha }}
         run: |
           set -euo pipefail
           [[ "$PREVIOUS_SHA" =~ ^[a-f0-9]{40}$ ]]
