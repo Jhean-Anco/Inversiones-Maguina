@@ -4,6 +4,7 @@ import { unzipSync } from "fflate";
 import { db, documentosRecibidos } from "@magina/database";
 import { and, count, desc, ilike, or, eq } from "drizzle-orm";
 import type { UsuarioAutenticado } from "../autenticacion/usuario-actual";
+import { mismoCorrelativoPropuesta, obtenerCampoPropuesta } from "./sire-propuesta.util";
 
 const URL_TOKEN_BASE = "https://api-seguridad.sunat.gob.pe/v1/clientessol";
 const URL_SIRE = "https://api-sire.sunat.gob.pe/v1/contribuyente/migeigv/libros";
@@ -200,35 +201,40 @@ export class ServicioSunatSire {
       return parse(contenido, { bom: true, columns: true, delimiter: delimitador, skip_empty_lines: true, relax_quotes: false, max_record_size: 100_000 }) as Json[];
     });
     if (filas.length > 100_000) throw new BadRequestException("La propuesta supera el límite de 100,000 documentos por importación.");
-    const normalizar = (valor: unknown) => String(valor ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const elegir = (fila: Json, aliases: string[]) => {
-      const objetivo = new Set(aliases.map(normalizar));
-      const clave = Object.keys(fila).find((item) => objetivo.has(normalizar(item)));
-      return clave ? String(fila[clave] ?? "").trim() : "";
-    };
+    const elegir = obtenerCampoPropuesta;
     let importados = 0;
     let omitidos = 0;
     let documentoConsultado: { id: string; emisorRuc: string; emisorNombre: string | null; tipoDocumento: string; serie: string; correlativo: string; fechaEmision: string | null; moneda: string | null; total: string | null; estado: string; periodoSire: string | null; destino: string | null } | null = null;
+    const coincidencias: Json[] = [];
     for (const fila of filas) {
-      const ruc = elegir(fila, ["numDocIdentidadProveedor", "numRucProveedor", "numRuc", "rucEmisor", "rucProveedor", "numeroRucProveedor", "RUC del proveedor"]);
-      const tipoDocumento = elegir(fila, ["codTipoCDP", "tipoDocumento", "codTipoComprobante"]);
-      const serie = elegir(fila, ["numSerieCDP", "serie", "numeroSerie"]);
-      const correlativo = elegir(fila, ["numCDP", "correlativo", "numeroDocumento"]);
+      const ruc = elegir(fila, ["numDocIdentidadProveedor", "numRucProveedor", "numRuc", "rucEmisor", "rucProveedor", "numeroRucProveedor", "RUC del proveedor", "Nro Doc Identidad"]);
+      const tipoDocumento = elegir(fila, ["codTipoCDP", "tipoDocumento", "codTipoComprobante", "Tipo CP/Doc."]);
+      const serie = elegir(fila, ["numSerieCDP", "serie", "numeroSerie", "Serie del CDP"]);
+      const correlativo = elegir(fila, ["numCDP", "correlativo", "numeroDocumento", "Nro CP o Doc. Nro Inicial (Rango)"]);
       if (!/^\d{11}$/.test(ruc) || !tipoDocumento || !serie || !correlativo) { omitidos++; continue; }
       const codigoTipo = /^\d{1,2}$/.test(tipoDocumento) ? tipoDocumento.padStart(2, "0") : tipoDocumento;
-      if (ruc !== consulta.rucProveedor || codigoTipo !== consulta.tipoDocumento || serie.trim().toUpperCase() !== consulta.serie || correlativo.trim().toUpperCase() !== consulta.correlativo) { omitidos++; continue; }
-      const fechaRaw = elegir(fila, ["fecEmision", "fechaEmision", "fechaEmisionComprobante"]);
+      if (ruc !== consulta.rucProveedor || codigoTipo !== consulta.tipoDocumento || serie.trim().toUpperCase() !== consulta.serie || !mismoCorrelativoPropuesta(correlativo, consulta.correlativo)) { omitidos++; continue; }
+      coincidencias.push(fila);
+    }
+    if (coincidencias.length > 1) throw new ConflictException("SUNAT devolvió varias filas que coinciden con el RUC, tipo, serie y número. No se asociará un resultado ambiguo.");
+    for (const fila of coincidencias) {
+      const ruc = elegir(fila, ["numDocIdentidadProveedor", "numRucProveedor", "numRuc", "rucEmisor", "rucProveedor", "numeroRucProveedor", "RUC del proveedor", "Nro Doc Identidad"]);
+      const tipoDocumento = elegir(fila, ["codTipoCDP", "tipoDocumento", "codTipoComprobante", "Tipo CP/Doc."]);
+      const serie = elegir(fila, ["numSerieCDP", "serie", "numeroSerie", "Serie del CDP"]);
+      const correlativo = elegir(fila, ["numCDP", "correlativo", "numeroDocumento", "Nro CP o Doc. Nro Inicial (Rango)"]);
+      const codigoTipo = /^\d{1,2}$/.test(tipoDocumento) ? tipoDocumento.padStart(2, "0") : tipoDocumento;
+      const fechaRaw = elegir(fila, ["fecEmision", "fechaEmision", "fechaEmisionComprobante", "Fecha de emisión", "Fecha de Emisión"]);
       const fechaEmision = /^\d{2}[/-]\d{2}[/-]\d{4}$/.test(fechaRaw) ? `${fechaRaw.slice(6)}-${fechaRaw.slice(3, 5)}-${fechaRaw.slice(0, 2)}` : /^\d{4}-\d{2}-\d{2}$/.test(fechaRaw) ? fechaRaw : null;
-      const totalRaw = elegir(fila, ["mtoTotalCP", "mtoTotal", "importeTotal", "totalComprobante", "montoTotal"]);
+      const totalRaw = elegir(fila, ["mtoTotalCP", "mtoTotal", "importeTotal", "totalComprobante", "montoTotal", "Total CP"]);
       const total = /^-?\d+(?:[.,]\d{1,2})?$/.test(totalRaw) ? totalRaw.replace(",", ".") : null;
-      const emisor = elegir(fila, ["nomRazonSocialProveedor", "nomRazonSocial", "razonSocial", "nomEmisor", "nombreProveedor"]);
-      const moneda = elegir(fila, ["codMoneda", "moneda"]).toUpperCase().slice(0, 3) || null;
+      const emisor = elegir(fila, ["nomRazonSocialProveedor", "nomRazonSocial", "razonSocial", "nomEmisor", "nombreProveedor", "Apellidos Nombres/ Razón Social"]);
+      const moneda = elegir(fila, ["codMoneda", "moneda", "Moneda"]).toUpperCase().slice(0, 3) || null;
       const resultado = await db.insert(documentosRecibidos).values({ periodoSire: periodo, ticketSire: ticket, emisorRuc: ruc, emisorNombre: emisor || null, tipoDocumento: codigoTipo, serie: serie.trim().toUpperCase(), correlativo: correlativo.trim(), fechaEmision, moneda, total, datosOrigen: fila, usuarioId: usuario.id })
         .onConflictDoUpdate({ target: [documentosRecibidos.emisorRuc, documentosRecibidos.tipoDocumento, documentosRecibidos.serie, documentosRecibidos.correlativo], set: { periodoSire: periodo, ticketSire: ticket, emisorNombre: emisor || null, fechaEmision, moneda, total, datosOrigen: fila } })
         .returning({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, emisorNombre: documentosRecibidos.emisorNombre, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, fechaEmision: documentosRecibidos.fechaEmision, moneda: documentosRecibidos.moneda, total: documentosRecibidos.total, estado: documentosRecibidos.estado, periodoSire: documentosRecibidos.periodoSire, destino: documentosRecibidos.destino });
       if (resultado[0]) { importados++; documentoConsultado = resultado[0]; }
     }
-    if (!documentoConsultado) throw new NotFoundException("SUNAT no devolvió un comprobante que coincida exactamente con el RUC, tipo, serie y número consultados.");
+    if (!documentoConsultado) throw new NotFoundException("SUNAT no devolvió un comprobante que coincida exactamente con el RUC, tipo, serie y número consultados. Verifica el archivo o intenta nuevamente más tarde.");
     return { periodo, ticket, documentoConsultado, documentosGuardados: importados, documentosOmitidos: omitidos };
   }
 
