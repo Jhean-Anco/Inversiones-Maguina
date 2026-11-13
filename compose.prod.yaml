@@ -25,7 +25,8 @@
       - no-new-privileges:true
 
   migrate:
-    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_OPS_IMAGE:-inversiones-maguina-ops}:sha-${DEPLOY_SHA:?Set DEPLOY_SHA to the approved full commit SHA}
+    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_OPS_IMAGE:-inversiones-maguina-ops}:production
+    pull_policy: always
     restart: "no"
     environment:
       NODE_ENV: production
@@ -51,7 +52,8 @@
       - no-new-privileges:true
 
   api:
-    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_API_IMAGE:-inversiones-maguina-api}:sha-${DEPLOY_SHA:?Set DEPLOY_SHA to the approved full commit SHA}
+    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_API_IMAGE:-inversiones-maguina-api}:production
+    pull_policy: always
     restart: unless-stopped
     init: true
     read_only: true
@@ -112,7 +114,8 @@
       - no-new-privileges:true
 
   web:
-    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_WEB_IMAGE:-inversiones-maguina-web}:sha-${DEPLOY_SHA:?Set DEPLOY_SHA to the approved full commit SHA}
+    image: ghcr.io/${GHCR_OWNER:?Define GHCR_OWNER}/${GHCR_WEB_IMAGE:-inversiones-maguina-web}:production
+    pull_policy: always
     restart: unless-stopped
     read_only: true
     tmpfs:

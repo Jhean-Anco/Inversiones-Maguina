@@ -65,6 +65,8 @@ jobs:
         run: pnpm format:check
       - name: Regenerar catálogo y validar documentación técnica
         run: pnpm docs:check
+      - name: Probar integración de despliegue
+        run: node --test .github/scripts/deploy-dokploy.test.mjs
       - name: Typecheck de workspaces
         run: pnpm typecheck
       - name: Build real
@@ -333,16 +335,16 @@ jobs:
           done
 
   deploy:
-    name: Desplegar con Dokploy después de CI y escaneo
+    name: Desplegar imágenes aprobadas con Dokploy
     runs-on: ubuntu-latest
     needs: publish
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      vars.PRODUCTION_DEPLOY_ENABLED == 'true' &&
-      vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED == 'true'
+      vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     environment: production
     permissions:
-      contents: read
+      contents: write
+      packages: write
     concurrency:
       group: inversiones-maguina-production
       cancel-in-progress: false
@@ -351,64 +353,116 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Actualizar despliegue preservando el entorno Dokploy
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Iniciar sesión en GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Verificar revisión y preparar recuperación
+        id: revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          current="$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/main" | jq -r .sha)"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "main cambió; se cancela el despliegue de esta revisión."
+            exit 1
+          fi
+          api="$(curl -fsS --max-time 15 https://api.inversionesmaguina.network/health)"
+          web="$(curl -fsS --max-time 15 https://inversionesmaguina.network/build-info.json)"
+          previous="$(jq -er 'select(.estado == "ok" and .baseDatos == "ok") | .buildSha | select(test("^[a-f0-9]{40}$"))' <<< "$api")"
+          jq -e --arg sha "$previous" '.sha == $sha' <<< "$web" > /dev/null
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          for image in api ops web; do
+            docker buildx imagetools inspect "ghcr.io/$owner/inversiones-maguina-$image:sha-$previous" > /dev/null
+            docker buildx imagetools inspect "ghcr.io/$owner/inversiones-maguina-$image:sha-$GITHUB_SHA" > /dev/null
+          done
+          echo "previous_sha=$previous" >> "$GITHUB_OUTPUT"
+      - name: Fijar referencias verificadas para Dokploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIOUS_SHA: ${{ steps.revision.outputs.previous_sha }}
+        run: |
+          set -euo pipefail
+          for sha in "$PREVIOUS_SHA" "$GITHUB_SHA"; do
+            tag="ci-deploy-$sha"
+            target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null || true)"
+            if [ -z "$target" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha" > /dev/null
+              target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+            fi
+            if [ "$target" != "$sha" ]; then
+              echo "La referencia de despliegue no coincide con el commit aprobado."
+              exit 1
+            fi
+          done
+      - name: Promover imágenes validadas
+        id: promote
+        run: |
+          set -euo pipefail
+          echo "started=true" >> "$GITHUB_OUTPUT"
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          for image in api ops web; do
+            docker buildx imagetools create --tag "ghcr.io/$owner/inversiones-maguina-$image:production" "ghcr.io/$owner/inversiones-maguina-$image:sha-$GITHUB_SHA"
+          done
+      - name: Solicitar despliegue sin cambiar variables
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
           DEPLOY_SHA: ${{ github.sha }}
-          DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED: ${{ vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED }}
-        id: deploy
         run: node .github/scripts/deploy-dokploy.mjs
-      - name: Comprobar HTTPS de frontend y API
-        id: smoke
+      - name: Comprobar frontend y API
         run: |
           verified=false
           for attempt in $(seq 1 30); do
-            api_health="$(curl --fail --silent --show-error --max-time 10 https://api.inversionesmaguina.network/health || true)"
-            web_build_info="$(curl --fail --silent --show-error --max-time 10 https://inversionesmaguina.network/build-info.json || true)"
-            if jq -e --arg sha "$GITHUB_SHA" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health" > /dev/null 2>&1 &&
-              jq -e --arg sha "$GITHUB_SHA" '.sha == $sha' <<< "$web_build_info" > /dev/null 2>&1; then
+            api="$(curl -fsS --max-time 10 https://api.inversionesmaguina.network/health || true)"
+            web="$(curl -fsS --max-time 10 https://inversionesmaguina.network/build-info.json || true)"
+            if jq -e --arg sha "$GITHUB_SHA" '.estado == "ok" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api" > /dev/null 2>&1 &&
+              jq -e --arg sha "$GITHUB_SHA" '.sha == $sha' <<< "$web" > /dev/null 2>&1; then
               verified=true
               break
             fi
-            echo "Esperando la versión aprobada en API y frontend (intento $attempt/30)."
+            echo "Esperando la versión aprobada ($attempt/30)."
             sleep 10
           done
-          if [ "$verified" != true ]; then
-            echo "La versión esperada no estuvo disponible dentro del plazo."
-            exit 1
-          fi
-          deployment_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "Despliegue verificado en ${deployment_time}: API, PostgreSQL y frontend sirven el commit ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
-      - name: Restaurar aplicación anterior si falla el humo
+          [ "$verified" = true ] || exit 1
+          echo "API y frontend verificados: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Restaurar imágenes anteriores
         id: rollback
-        if: failure() && steps.deploy.outputs.previous_sha != ''
+        if: failure() && steps.promote.outputs.started == 'true'
         env:
+          PREVIOUS_SHA: ${{ steps.revision.outputs.previous_sha }}
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
           DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
-          DEPLOY_SHA: ${{ steps.deploy.outputs.previous_sha }}
-          DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED: ${{ vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED }}
-        run: node .github/scripts/deploy-dokploy.mjs
-      - name: Comprobar salud tras restaurar aplicación anterior
+          DEPLOY_SHA: ${{ steps.revision.outputs.previous_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$PREVIOUS_SHA" =~ ^[a-f0-9]{40}$ ]]
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          for image in api ops web; do
+            docker buildx imagetools create --tag "ghcr.io/$owner/inversiones-maguina-$image:production" "ghcr.io/$owner/inversiones-maguina-$image:sha-$PREVIOUS_SHA"
+          done
+          node .github/scripts/deploy-dokploy.mjs
+      - name: Comprobar recuperación
         if: always() && steps.rollback.outcome == 'success'
+        env:
+          PREVIOUS_SHA: ${{ steps.revision.outputs.previous_sha }}
         run: |
           verified=false
           for attempt in $(seq 1 30); do
-            api_health="$(curl --fail --silent --show-error --max-time 10 https://api.inversionesmaguina.network/health || true)"
-            web_build_info="$(curl --fail --silent --show-error --max-time 10 https://inversionesmaguina.network/build-info.json || true)"
-            if jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health" > /dev/null 2>&1 &&
-              jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.sha == $sha' <<< "$web_build_info" > /dev/null 2>&1; then
+            api="$(curl -fsS --max-time 10 https://api.inversionesmaguina.network/health || true)"
+            web="$(curl -fsS --max-time 10 https://inversionesmaguina.network/build-info.json || true)"
+            if jq -e --arg sha "$PREVIOUS_SHA" '.estado == "ok" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api" > /dev/null 2>&1 &&
+              jq -e --arg sha "$PREVIOUS_SHA" '.sha == $sha' <<< "$web" > /dev/null 2>&1; then
               verified=true
               break
             fi
-            echo "Esperando la versión anterior en API y frontend (intento $attempt/30)."
+            echo "Esperando la versión anterior ($attempt/30)."
             sleep 10
           done
-          if [ "$verified" != true ]; then
-            echo "No se pudo verificar la versión anterior dentro del plazo."
-            exit 1
-          fi
-          rollback_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "Rollback verificado en ${rollback_time}: API y frontend sirven el commit ${{ steps.deploy.outputs.previous_sha }}." >> "$GITHUB_STEP_SUMMARY"
+          [ "$verified" = true ] || exit 1
+          echo "Recuperación verificada: $PREVIOUS_SHA" >> "$GITHUB_STEP_SUMMARY"
