@@ -388,8 +388,9 @@ jobs:
           set -euo pipefail
           for sha in "$PREVIOUS_SHA" "$GITHUB_SHA"; do
             tag="ci-deploy-$sha"
-            target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null || true)"
-            if [ -z "$target" ]; then
+            if target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null)" && [ "$target" != null ] && [ -n "$target" ]; then
+              :
+            else
               gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha" > /dev/null
               target="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
             fi
