@@ -38,7 +38,7 @@ export function LoginPage() {
         <img className="login-mobile-logo" src={logoTransparente} alt="Logo de Inversiones Maguiña" />
         <div className="login-content">
           <h1 id="login-title">Bienvenido</h1>
-          <p className="login-intro">Ingresa a tu cuenta para continuar.</p>
+          <p className="login-intro">Ingresa con tu usuario o correo electrónico.</p>
 
           <form className="login-form" onSubmit={iniciarSesion}>
             <label htmlFor="usuario">Usuario o correo electrónico</label>
