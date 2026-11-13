@@ -1,0 +1,33 @@
+name: Verificar conexión a Dokploy
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  conexion:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/cicd-flujo-completo'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar acceso de lectura al servicio
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+        run: |
+          node <<'NODE'
+          const { DOKPLOY_URL, DOKPLOY_API_KEY, DOKPLOY_COMPOSE_ID } = process.env;
+          if (!DOKPLOY_URL || !DOKPLOY_API_KEY || !DOKPLOY_COMPOSE_ID) throw Error('Falta configuración de Dokploy');
+          (async () => {
+            const response = await fetch(DOKPLOY_URL + '/api/compose.one?composeId=' + encodeURIComponent(DOKPLOY_COMPOSE_ID), {
+              headers: { 'x-api-key': DOKPLOY_API_KEY }, signal: AbortSignal.timeout(20000)
+            });
+            if (!response.ok) throw Error('Dokploy respondió HTTP ' + response.status);
+            const data = await response.json();
+            const compose = data?.compose ?? data?.data?.compose ?? data?.data ?? data;
+            if (typeof compose?.env !== 'string') throw Error('La API no expuso el entorno como texto');
+            const matches = compose.env.split(/\r?\n/).filter(line => /^\s*DEPLOY_SHA\s*=/.test(line));
+            if (matches.length !== 1 || !/^\s*DEPLOY_SHA\s*=[a-f0-9]{40}\s*$/.test(matches[0])) throw Error('DEPLOY_SHA ausente o inválido');
+            console.log('Conexión y formato de DEPLOY_SHA verificados. No se modificó Dokploy.');
+          })().catch(e => { console.error(e.message); process.exit(1); });
+          NODE
