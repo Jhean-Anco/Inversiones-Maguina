@@ -65,7 +65,7 @@ export function SelectorComprobanteProveedor({ destino, bloqueado, alSeleccionar
       {abierto ? "Cerrar consulta" : "Consultar un comprobante en SIRE"}
     </button>
     {abierto && <div className="selector-comprobante-panel">
-      <div className="selector-comprobante-heading"><div><span>CONSULTA INDIVIDUAL</span><strong>Busca un comprobante específico</strong><small>SIRE buscará por periodo, tipo, serie y número; verificaremos el RUC antes de asociarlo.</small></div><span className={`selector-comprobante-estado${configurado === true ? " is-ready" : configurado === false ? " is-missing" : ""}`} role="status">{configurado === true ? "SIRE conectado" : configurado === false ? "SIRE sin credenciales" : "Verificando conexión…"}</span></div>
+      <div className="selector-comprobante-heading"><div><span>CONSULTA INDIVIDUAL</span><strong>Busca un comprobante específico</strong><small>SIRE buscará por periodo, tipo, serie y número; verificaremos el RUC antes de asociarlo.</small></div><span className={`selector-comprobante-estado${configurado === true ? " is-ready" : configurado === false ? " is-missing" : ""}`} role="status">{configurado === true ? "Credenciales configuradas; conexión sin verificar" : configurado === false ? "SIRE sin credenciales" : "Comprobando configuración…"}</span></div>
       <div className="selector-comprobante-campos">
         <label>Periodo de emisión<input type="month" value={periodo} disabled={cargando} onChange={(evento) => setPeriodo(evento.target.value)} /></label>
         <label>RUC del proveedor<input inputMode="numeric" value={documento.rucProveedor} maxLength={11} disabled={cargando} onChange={(evento) => cambiarDocumento("rucProveedor", evento.target.value)} placeholder="11 dígitos" /></label>
