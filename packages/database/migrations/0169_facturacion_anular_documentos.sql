@@ -4,5 +4,5 @@ ON CONFLICT ("codigo") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "roles_permisos" ("rol_id", "permiso_id")
 SELECT rol."id", permiso."id" FROM "roles" rol CROSS JOIN "permisos" permiso
-  ('FACTURACION.ANULAR', 'FACTURACION', 'ANULAR', 'Comunicar la baja y consultar el resultado de comprobantes electronicos emitidos.')
+WHERE rol."codigo" IN ('ADMINISTRADOR', 'GERENTE') AND permiso."codigo" = 'FACTURACION.ANULAR'
 ON CONFLICT ("rol_id", "permiso_id") DO NOTHING;

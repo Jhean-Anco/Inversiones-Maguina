@@ -1,0 +1,394 @@
+﻿name: Pipeline de producción
+
+on:
+  pull_request:
+    branches: [main, feature/docker-cicd-production]
+  push:
+    branches: [main, test/quality-gates-e2e]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inversiones-maguina-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Typecheck, build, tests y migraciones limpias
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    services:
+      postgres:
+        image: postgres:16.15-alpine3.24
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: magina_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d magina_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://ci:ci-only-password@127.0.0.1:5432/magina_test
+      NODE_ENV: test
+      FRONTEND_ORIGIN: http://localhost:5173,http://localhost:4173
+      AUTENTICACION_SECRETO: ci-only-random-secret-value-with-more-than-32-chars
+      NUBEFACT_RUTA: https://example.invalid/api
+      NUBEFACT_TOKEN: ci-only-fake-token
+    steps:
+      - name: Checkout del commit exacto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Detectar secretos versionados con Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 22.x
+      - name: Activar pnpm 10.20.0
+        run: corepack enable && corepack prepare pnpm@10.20.0 --activate
+      - name: Instalar dependencias bloqueadas
+        run: pnpm install --frozen-lockfile
+      - name: Verificar formato del repositorio
+        run: pnpm format:check
+      - name: Regenerar catálogo y validar documentación técnica
+        run: pnpm docs:check
+      - name: Typecheck de workspaces
+        run: pnpm typecheck
+      - name: Build real
+        run: pnpm build
+      - name: Aplicar todas las migraciones sobre PostgreSQL vacío
+        run: pnpm --filter @magina/database db:migrate
+      - name: Comprobar que repetir migraciones conserva el estado
+        run: pnpm --filter @magina/database db:migrate
+      - name: Pruebas unitarias
+        run: pnpm test:unit
+      - name: Pruebas de integración con PostgreSQL real
+        run: pnpm test:integration
+      - name: Iniciar la API real para pruebas HTTP
+        run: |
+          node apps/api/dist/main.js > /tmp/inversiones-magina-api.log 2>&1 &
+          for intento in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:3000/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/inversiones-magina-api.log
+          exit 1
+      - name: Pruebas API con NestJS, Fastify y PostgreSQL reales
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:api
+      - name: Pruebas de seguridad HTTP contra la API real
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:security
+      - name: Instalar Chromium para pruebas E2E
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Prueba E2E de autenticación contra frontend, API y PostgreSQL reales
+        env:
+          E2E_BASE_URL: http://localhost:4173
+          VITE_API_URL: http://localhost:3000
+        run: pnpm test:e2e
+      - name: Guardar trazas E2E si fallan
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-traces-${{ github.sha }}
+          path: apps/api/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Medir cobertura V8 de todas las suites API
+        env:
+          API_BASE_URL: http://127.0.0.1:3000
+        run: pnpm test:coverage
+      - name: Publicar reporte LCOV de cobertura
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cobertura-api-${{ github.sha }}
+          path: apps/api/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14
+      - name: Auditar dependencias de producción
+        run: pnpm audit --prod --audit-level high
+
+  images:
+    name: Construir, escanear y probar imágenes
+    runs-on: ubuntu-latest
+    needs: quality
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout del mismo commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Escanear secretos del repositorio
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret
+          format: table
+          exit-code: "1"
+      - name: Validar compose de producción
+        env:
+          GHCR_OWNER: jhean-anco
+          DEPLOY_SHA: ${{ github.sha }}
+          DATABASE_URL: postgres://ci:ci-only-password@db:5432/magina_test
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only-password
+          FRONTEND_ORIGIN: https://inversionesmaguina.network
+          AUTENTICACION_SECRETO: ci-only-random-secret-value-with-more-than-32-chars
+          NUBEFACT_RUTA: https://example.invalid/api
+          NUBEFACT_TOKEN: ci-only-fake-token
+        run: docker compose --env-file /dev/null -f compose.prod.yaml config --quiet
+      - name: Construir imágenes fijadas al commit
+        env:
+          SHA_TAG: sha-${{ github.sha }}
+          TEST_TAG: test-${{ github.sha }}
+          VITE_API_URL: https://api.inversionesmaguina.network
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-api:${SHA_TAG} -t magina-api:${TEST_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-ops:${SHA_TAG} -t magina-ops:${TEST_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-web:${SHA_TAG} -t magina-web:${TEST_TAG} .
+      - name: Liberar caché temporal del builder
+        run: |
+          docker system df
+          docker buildx prune --all --force
+          df -h / /tmp
+      - name: Escanear vulnerabilidades de las imágenes
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-api:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Escanear imagen de migraciones y administración
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-ops:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Escanear imagen web
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-web:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Crear entorno local ficticio de contenedores
+        id: testenv
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          cat > .env <<EOF
+          DEPLOY_SHA=${DEPLOY_SHA}
+          POSTGRES_DB=magina_test
+          POSTGRES_USER=ci
+          POSTGRES_PASSWORD=ci-only-password
+          AUTENTICACION_SECRETO=ci-only-random-secret-value-with-more-than-32-chars
+          FRONTEND_ORIGIN=http://localhost:8080
+          DATABASE_URL=postgres://ci:ci-only-password@db:5432/magina_test
+          NUBEFACT_RUTA=https://example.invalid/api
+          NUBEFACT_TOKEN=ci-only-fake-token
+          NODE_ENV=test
+          EOF
+      - name: Arrancar imágenes ya escaneadas y migrar una PostgreSQL limpia
+        run: docker compose --env-file .env -f compose.test.yaml up -d --no-build
+      - name: Esperar servicios y capturar diagnósticos
+        id: testservices
+        run: |
+          docker compose --env-file .env -f compose.test.yaml up -d --no-build --wait --wait-timeout 120 || {
+            docker compose --env-file .env -f compose.test.yaml ps -a
+            docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate db
+            exit 1
+          }
+      - name: Pruebas de humo aisladas
+        run: |
+          set -euxo pipefail
+          docker compose --env-file .env -f compose.test.yaml ps -a
+          docker compose --env-file .env -f compose.test.yaml logs --no-color api web migrate
+          docker compose --env-file .env -f compose.test.yaml exec -T api node --input-type=module -e 'const response = await fetch("http://localhost:3000/health", { headers: { Origin: "http://localhost:8080" } }); const health = await response.json(); console.log("API smoke:", response.status, health, Object.fromEntries(response.headers)); if (!response.ok || health.estado !== "ok" || health.baseDatos !== "ok") throw new Error(`API health failed: ${response.status}`); if (health.buildSha !== process.env.DEPLOY_SHA) throw new Error(`API image SHA mismatch: ${health.buildSha}`); if (response.headers.get("access-control-allow-origin") !== "http://localhost:8080") throw new Error("CORS origin header mismatch"); if (response.headers.get("access-control-allow-credentials") !== "true") throw new Error("CORS credentials header mismatch");'
+          web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
+          printf '%s\n' "$web_headers"
+          grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
+          grep -iq 'connect-src.*https://api.inversionesmaguina.network' <<< "$web_headers"
+          web_build_info="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -qO- http://127.0.0.1/build-info.json)"
+          printf 'Frontend build info: %s\n' "$web_build_info"
+          grep -Fq "{\"sha\":\"${GITHUB_SHA}\"}" <<< "$web_build_info"
+      - name: Verificar persistencia de PostgreSQL y archivos tras reiniciar contenedores
+        run: |
+          set -euxo pipefail
+          docker compose --env-file .env -f compose.test.yaml exec -T db \
+            psql -U ci -d magina_test -v ON_ERROR_STOP=1 \
+            -c 'CREATE TABLE IF NOT EXISTS ci_persistence_probe (id text PRIMARY KEY);' \
+            -c "INSERT INTO ci_persistence_probe (id) VALUES ('${GITHUB_SHA}') ON CONFLICT DO NOTHING;"
+          docker compose --env-file .env -f compose.test.yaml exec -T \
+            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" api \
+            node --input-type=module -e 'import { writeFileSync } from "node:fs"; writeFileSync("/data/uploads/ci-persistence-probe.txt", process.env.CI_PERSISTENCE_MARKER);'
+          docker compose --env-file .env -f compose.test.yaml restart db api
+          docker compose --env-file .env -f compose.test.yaml up -d --wait --wait-timeout 120 db api
+          docker compose --env-file .env -f compose.test.yaml exec -T db \
+            psql -U ci -d magina_test -v ON_ERROR_STOP=1 \
+            -c "SELECT 1 FROM ci_persistence_probe WHERE id = '${GITHUB_SHA}';"
+          docker compose --env-file .env -f compose.test.yaml exec -T \
+            -e CI_PERSISTENCE_MARKER="${GITHUB_SHA}" api \
+            node --input-type=module -e 'import { readFileSync } from "node:fs"; if (readFileSync("/data/uploads/ci-persistence-probe.txt", "utf8") !== process.env.CI_PERSISTENCE_MARKER) process.exit(1);'
+      - name: Detener contenedores de CI
+        if: always() && steps.testenv.outcome == 'success'
+        run: docker compose --env-file .env -f compose.test.yaml down
+      - name: Retirar entorno ficticio
+        if: always() && steps.testenv.outcome == 'success'
+        run: rm -f .env
+
+  publish:
+    name: Publicar solo después de CI, escaneos y humo
+    runs-on: ubuntu-latest
+    needs: [quality, images]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout del commit aprobado por CI
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Preparar Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Construir imágenes con etiqueta inmutable
+        env:
+          SHA_TAG: sha-${{ github.sha }}
+          VITE_API_URL: https://api.inversionesmaguina.network
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          docker buildx build --load --cache-from type=gha,scope=api --cache-to type=gha,scope=api,mode=max -f docker/api.Dockerfile --target api --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-api:${SHA_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=ops --cache-to type=gha,scope=ops,mode=max -f docker/api.Dockerfile --target ops --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-ops:${SHA_TAG} .
+          docker buildx build --load --cache-from type=gha,scope=web --cache-to type=gha,scope=web,mode=max -f docker/web.Dockerfile --target web --build-arg VITE_API_URL=${VITE_API_URL} --build-arg BUILD_SHA=${DEPLOY_SHA} -t magina-web:${SHA_TAG} .
+      - name: Escanear antes de publicar
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-api:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Escanear operaciones antes de publicar
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-ops:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Escanear web antes de publicar
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: magina-web:sha-${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+      - name: Publicar imágenes escaneadas en GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA_TAG: sha-${{ github.sha }}
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          for pair in "magina-api:inversiones-maguina-api" "magina-ops:inversiones-maguina-ops" "magina-web:inversiones-maguina-web"; do
+            local_image="${pair%%:*}"
+            remote_image="${pair##*:}"
+            docker tag "${local_image}:${SHA_TAG}" "ghcr.io/${owner}/${remote_image}:${SHA_TAG}"
+            docker push "ghcr.io/${owner}/${remote_image}:${SHA_TAG}"
+            digest="$(docker image inspect "ghcr.io/${owner}/${remote_image}:${SHA_TAG}" --format '{{index .RepoDigests 0}}')"
+            echo "${remote_image}: ${digest}" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  deploy:
+    name: Desplegar con Dokploy después de CI y escaneo
+    runs-on: ubuntu-latest
+    needs: publish
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_DEPLOY_ENABLED == 'true' &&
+      vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED == 'true'
+    environment: production
+    permissions:
+      contents: read
+    concurrency:
+      group: inversiones-maguina-production
+      cancel-in-progress: false
+    steps:
+      - name: Checkout del commit aprobado
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Actualizar despliegue preservando el entorno Dokploy
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          DEPLOY_SHA: ${{ github.sha }}
+          DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED: ${{ vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED }}
+        id: deploy
+        run: node .github/scripts/deploy-dokploy.mjs
+      - name: Comprobar HTTPS de frontend y API
+        id: smoke
+        run: |
+          api_health="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health)"
+          printf 'API health: %s\n' "$api_health"
+          jq -e --arg sha "$GITHUB_SHA" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health"
+          web_build_info="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/build-info.json)"
+          printf 'Frontend build info: %s\n' "$web_build_info"
+          jq -e --arg sha "$GITHUB_SHA" '.sha == $sha' <<< "$web_build_info"
+          deployment_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Despliegue verificado en ${deployment_time}: API, PostgreSQL y frontend sirven el commit ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
+      - name: Restaurar aplicación anterior si falla el humo
+        id: rollback
+        if: failure() && steps.deploy.outputs.previous_sha != ''
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          DEPLOY_SHA: ${{ steps.deploy.outputs.previous_sha }}
+          DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED: ${{ vars.DOKPLOY_ENV_UPDATE_ATOMIC_VERIFIED }}
+        run: node .github/scripts/deploy-dokploy.mjs
+      - name: Comprobar salud tras restaurar aplicación anterior
+        if: always() && steps.rollback.outcome == 'success'
+        run: |
+          api_health="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health)"
+          printf 'API health tras rollback: %s\n' "$api_health"
+          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health"
+          web_build_info="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/build-info.json)"
+          printf 'Frontend build info tras rollback: %s\n' "$web_build_info"
+          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.sha == $sha' <<< "$web_build_info"
+          rollback_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Rollback verificado en ${rollback_time}: API y frontend sirven el commit ${{ steps.deploy.outputs.previous_sha }}." >> "$GITHUB_STEP_SUMMARY"

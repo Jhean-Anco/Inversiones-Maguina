@@ -1,0 +1,67 @@
+﻿services:
+  db:
+    image: postgres:16.15-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-magina}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set local POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - dev-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.dev.Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina}
+      PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:5173
+      UPLOADS_DIR: /data/uploads
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - .:/workspace
+      - api-node-modules:/workspace/node_modules
+      - api-package-modules:/workspace/apps/api/node_modules
+      - web-package-modules:/workspace/apps/web/node_modules
+      - database-package-modules:/workspace/packages/database/node_modules
+      - dev-uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.dev.Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - .:/workspace
+      - web-node-modules:/workspace/node_modules
+      - web-package-modules:/workspace/apps/web/node_modules
+
+volumes:
+  dev-postgres-data:
+  dev-uploads:
+  api-node-modules:
+  api-package-modules:
+  database-package-modules:
+  web-node-modules:
+  web-package-modules:

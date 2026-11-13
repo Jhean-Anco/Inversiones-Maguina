@@ -1,0 +1,17 @@
+.git
+.github
+.playwright-mcp
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+.env
+.env.*
+!.env.example
+**/*.log
+**/*.tsbuildinfo
+storage
+apps/api/storage
+docs
+*.md

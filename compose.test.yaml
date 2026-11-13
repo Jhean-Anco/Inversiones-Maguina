@@ -1,0 +1,84 @@
+﻿services:
+  db:
+    image: postgres:16.15-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-magina_test}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Use a disposable local password}
+    volumes:
+      - test-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - test-private
+
+  migrate:
+    image: magina-ops:test-${DEPLOY_SHA:-local}
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: ops
+      args:
+        BUILD_SHA: ${DEPLOY_SHA:-local}
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      [
+        "sh",
+        "-c",
+        "cd packages/database && node node_modules/drizzle-kit/bin.cjs migrate",
+      ]
+    networks:
+      - test-private
+
+  api:
+    image: magina-api:test-${DEPLOY_SHA:-local}
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: api
+      args:
+        BUILD_SHA: ${DEPLOY_SHA:-local}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-magina_test}
+      FRONTEND_ORIGIN: http://localhost:8080
+      UPLOADS_DIR: /data/uploads
+      DEPLOY_SHA: ${DEPLOY_SHA:-local}
+    volumes:
+      - test-uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - test-private
+
+  web:
+    image: magina-web:test-${DEPLOY_SHA:-local}
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      target: web
+      args:
+        VITE_API_URL: http://localhost:3000
+        BUILD_SHA: ${DEPLOY_SHA:-local}
+    networks:
+      - test-private
+
+volumes:
+  test-postgres-data:
+  test-uploads:
+
+networks:
+  test-private:
+    internal: true

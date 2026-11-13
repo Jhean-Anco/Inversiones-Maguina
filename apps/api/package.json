@@ -5,19 +5,27 @@
     "dev": "corepack pnpm --filter @magina/database build && nest start --watch",
     "admin:crear": "corepack pnpm --filter @magina/database build && tsx src/comandos/crear-administrador.ts",
     "build": "nest build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.e2e.json",
+    "test": "node scripts/run-tests.mjs unit",
+    "test:unit": "node scripts/run-tests.mjs unit",
+    "test:integration": "node scripts/run-tests.mjs integration",
+    "test:api": "node scripts/run-tests.mjs api",
+    "test:security": "node scripts/run-tests.mjs security",
+    "test:all": "node scripts/run-tests.mjs all",
+    "test:coverage": "node scripts/run-tests.mjs all --coverage"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",
     "@fastify/multipart": "^10.1.6",
     "@magina/database": "workspace:*",
+    "argon2": "^0.45.1",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-fastify": "^11.1.6",
     "csv-parse": "^7.0.3",
-    "drizzle-orm": "^0.44.5",
-    "fastify": "^5.6.2",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.12.2",
     "fflate": "^0.8.3",
     "pdfjs-dist": "4.10.38",
     "reflect-metadata": "^0.2.2",
@@ -27,7 +35,6 @@
     "@inquirer/prompts": "^8.7.4",
     "@nestjs/cli": "^11.0.10",
     "@types/node": "^22.18.6",
-    "argon2": "^0.45.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }

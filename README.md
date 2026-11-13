@@ -1,63 +1,83 @@
 # Inversiones Maguiña
 
-Monorepo TypeScript para el POS de una tienda, inventario, ventas y facturación electrónica.
+Sistema web de gestión comercial con frontend React, API NestJS/Fastify y persistencia PostgreSQL mediante Drizzle ORM. Este README se reconstruye desde los archivos de código y configuración del commit de trabajo; no certifica la disponibilidad del entorno productivo.
 
-## Estructura
+## Alcance visible en el código
 
-```text
-apps/
-  api/          API modular con NestJS y Fastify
-  web/          React + Vite
-packages/
-  database/     PostgreSQL + Drizzle ORM y migraciones
+El monorepositorio contiene aplicaciones web y API, y un paquete de base de datos. La API agrupa autenticación, personas, almacenamiento, inventario/SIRE, ingresos y facturación, reportes, egresos, mototaxis y finanzas. La web registra rutas de acceso para áreas de compras, ventas, inventario, reportes y personas; varias rutas montan un punto de entrada común, por lo que su presencia no demuestra por sí sola el flujo completo.
+
+## Arquitectura y tecnología
+
+- Workspace pnpm 10.20.0 y tareas coordinadas con Turborepo.
+- Node.js >=22; React 19 y Vite 7 en `apps/web`.
+- NestJS 11 sobre Fastify 5 en `apps/api`.
+- PostgreSQL 16 en Compose y Drizzle ORM en `packages/database`.
+- Dockerfiles separados para web, API y operaciones/migraciones.
+
+```mermaid
+flowchart LR
+  Browser[ navegador ] -->|HTTPS / cookies| Web[Nginx y aplicación React]
+  Web -->|VITE_API_URL; credenciales incluidas| API[NestJS sobre Fastify]
+  API --> DB[(PostgreSQL)]
+  API --> Local[(volumen de archivos)]
+  API --> NF[NubeFact]
+  API --> SIRE[API SUNAT SIRE]
+  API --> Peru[API Perú identidad]
 ```
 
-## Requisitos
+## Requisitos e inicio local
 
-- Node.js 22 o superior.
-- Corepack y pnpm 10.
-- Docker Compose para PostgreSQL local.
-
-
-## Desarrollo local
+Requisitos declarados: Node.js 22 o superior, Corepack/pnpm 10.20.0 y PostgreSQL accesible. Docker Desktop sirve para los perfiles Compose. En Windows, los comandos se ejecutan desde PowerShell en la raíz:
 
 ```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-corepack pnpm install
+corepack enable
+corepack prepare pnpm@10.20.0 --activate
+Copy-Item .env.example .env
 docker compose up -d
+```
+
+Complete en `.env` las variables que valida la API (ver [variables](docs/10-variables-de-entorno.md)); luego:
+
+```powershell
+corepack pnpm install --frozen-lockfile
 corepack pnpm --filter @magina/database db:migrate
 corepack pnpm dev
 ```
 
-Configura `NUBEFACT_RUTA` y `NUBEFACT_TOKEN` en `.env` para indicar la cuenta NubeFact de esta instalación. Desarrollo y servidor ejecutan el mismo código; el endpoint y el token seleccionan la cuenta. `.env` está ignorado por Git: no lo publiques ni copies secretos al frontend. La plantilla `.env.example` contiene valores locales.
+La API requiere `DATABASE_URL`, `FRONTEND_ORIGIN`, `AUTENTICACION_SECRETO`, `NUBEFACT_RUTA` HTTPS y `NUBEFACT_TOKEN` al iniciar. Por eso el arranque real depende de configurar integraciones, incluso si solo se desea probar pantallas; consulte [desarrollo local](docs/03-instalacion-y-desarrollo-local.md).
 
-Para crear el primer administrador:
+## Comprobaciones disponibles
 
-```powershell
-corepack pnpm --filter @magina/api admin:crear
-```
+`pnpm build`, `pnpm typecheck`, suites API (unitarias, integración PostgreSQL, API HTTP y seguridad) y Playwright E2E están declaradas. No se ejecutaron durante esta reconstrucción; los resultados de CI son evidencia por commit, no prueba de este entorno. Consulte [pruebas](docs/12-pruebas-y-calidad.md).
 
-El comando solicita los datos interactivamente. Luego registra los datos fiscales en **Facturación electrónica → Datos del emisor**; deben coincidir con la cuenta indicada por `NUBEFACT_RUTA` y `NUBEFACT_TOKEN`. Las credenciales permanecen en el servidor.
+## Docker y despliegue
 
-## Funciones disponibles en esta primera versión
+Hay Compose para desarrollo, pruebas, integración y producción. Producción define PostgreSQL, tarea de migración, API y web; requiere red externa `dokploy-network`, imágenes GHCR por SHA completo y variables de despliegue. GitHub Actions publica imágenes y tiene un job Dokploy condicionado a variables/repositorio y secretos. No se verificó acceso al proveedor ni publicación desde este checkout. Véase [Docker](docs/11-docker-y-contenedores.md), [CI/CD](docs/13-integracion-y-despliegue-continuo.md) y [Dokploy](docs/14-despliegue-en-dokploy.md).
 
-- Catálogo de productos, categorías y marcas.
-- Entradas, consulta de movimientos y ajustes unitarios de stock.
-- Clientes básicos y ventas con cálculo de precio/precio por cantidad en API, IGV, descuento limitado y descuento de existencias.
-- Emisión de comprobantes mediante un flujo común de NubeFact; la cuenta depende de la ruta y las credenciales configuradas en cada despliegue.
-- Configuración del emisor y series documentales en la aplicación, con consulta paginada de comprobantes.
-- Permisos de API basados en asignaciones de rol y claves de idempotencia para evitar duplicar ventas ante repetición de solicitudes.
+## Estado de verificación
 
-Las ventas admiten condición contado o crédito, pagos iniciales y pagos posteriores, y emisión de notas de crédito/débito sobre comprobantes emitidos. No reemplaza un sistema contable ni incluye cierre de caja, almacenes múltiples, ni un flujo automatizado para anular comprobantes o recibir devoluciones físicas. La operación con una cuenta real requiere credenciales, series y datos del emisor coincidentes, además de un piloto autorizado; la compilación no acredita una emisión aceptada por SUNAT.
+La documentación distingue código presente, pruebas declaradas y comportamiento ejecutado. Varias reglas comerciales, recuperación de respaldos, conectividad con proveedores y rutas funcionales necesitan validación funcional. Empiece por el [índice documental](docs/README.md) y revise la [matriz](docs/19-matriz-de-funcionalidades.md).
 
-## Construcción y validación
+## Documentación detallada
 
-```powershell
-corepack pnpm typecheck
-corepack pnpm build
-```
-
-Si el frontend y la API se encuentran en orígenes distintos, define `VITE_API_URL` a una URL HTTPS **al compilar**. Si comparten origen y reverse proxy, déjala vacía. La compilación de producción rechaza localhost y HTTP.
-
-Consulta [Configuración de producción](docs/CONFIGURACION_PRODUCCION.md), [Auditoría de variables y seguridad](docs/AUDITORIA_VARIABLES_SEGURIDAD.md), la [auditoría de preentrega](docs/AUDITORIA_PREENTREGA_INVENTARIO_FACTURACION.md) y el [modelo de personas y acceso](docs/MODELO_PERSONAS_Y_ACCESO.md).
-
+- [01 Arquitectura general](docs/01-arquitectura-general.md)
+- [02 Estructura del monorepositorio](docs/02-estructura-del-monorepositorio.md)
+- [03 Instalación y desarrollo local](docs/03-instalacion-y-desarrollo-local.md)
+- [04 Backend y API](docs/04-backend-y-api.md)
+- [05 Frontend](docs/05-frontend.md)
+- [06 Modelo de datos](docs/06-modelo-de-datos.md)
+- [Catálogo de datos generado desde Drizzle](docs/catalogo-de-datos.md)
+- [07 Módulos y reglas de negocio](docs/07-modulos-y-reglas-de-negocio.md)
+- [08 Autenticación y permisos](docs/08-autenticacion-y-permisos.md)
+- [09 Integraciones externas](docs/09-integraciones-externas.md)
+- [10 Variables de entorno](docs/10-variables-de-entorno.md)
+- [11 Docker y contenedores](docs/11-docker-y-contenedores.md)
+- [12 Pruebas y calidad](docs/12-pruebas-y-calidad.md)
+- [13 Integración y despliegue continuo](docs/13-integracion-y-despliegue-continuo.md)
+- [14 Despliegue en Dokploy](docs/14-despliegue-en-dokploy.md)
+- [15 Respaldo y restauración](docs/15-respaldo-y-restauracion.md)
+- [16 Seguridad](docs/16-seguridad.md)
+- [17 Operación y monitoreo](docs/17-operacion-y-monitoreo.md)
+- [18 Solución de problemas](docs/18-solucion-de-problemas.md)
+- [19 Matriz de funcionalidades](docs/19-matriz-de-funcionalidades.md)
+- [20 Proceso de versiones](docs/20-proceso-de-versiones.md)

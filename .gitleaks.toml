@@ -1,0 +1,17 @@
+title = "Inversiones Maguina secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic test JWT fixtures and documented non-secret test placeholder"
+condition = "AND"
+regexTarget = "secret"
+regexes = [
+  '''^eyJhbGciOiJub25lIn0\.eyJzdWIiOiJhZG1pbiJ9\.$''',
+  '''^solo-pruebas-aleatorio-ficticio-de-mas-de-32-caracteres$''',
+]
+paths = [
+  '''^apps/api/src/controles-seguridad\.security\.spec\.ts$''',
+  '''^docs/EJECUCION LOCAL DE PRUEBAS\.md$''',
+]
