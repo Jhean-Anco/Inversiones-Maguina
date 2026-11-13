@@ -394,11 +394,21 @@ jobs:
       - name: Comprobar salud tras restaurar aplicación anterior
         if: always() && steps.rollback.outcome == 'success'
         run: |
-          api_health="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://api.inversionesmaguina.network/health)"
-          printf 'API health tras rollback: %s\n' "$api_health"
-          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health"
-          web_build_info="$(curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 10 https://inversionesmaguina.network/build-info.json)"
-          printf 'Frontend build info tras rollback: %s\n' "$web_build_info"
-          jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.sha == $sha' <<< "$web_build_info"
+          verified=false
+          for attempt in $(seq 1 30); do
+            api_health="$(curl --fail --silent --show-error --max-time 10 https://api.inversionesmaguina.network/health || true)"
+            web_build_info="$(curl --fail --silent --show-error --max-time 10 https://inversionesmaguina.network/build-info.json || true)"
+            if jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.estado == "ok" and .servicio == "api" and .baseDatos == "ok" and .buildSha == $sha' <<< "$api_health" > /dev/null 2>&1 &&
+              jq -e --arg sha "${{ steps.deploy.outputs.previous_sha }}" '.sha == $sha' <<< "$web_build_info" > /dev/null 2>&1; then
+              verified=true
+              break
+            fi
+            echo "Esperando la versión anterior en API y frontend (intento $attempt/30)."
+            sleep 10
+          done
+          if [ "$verified" != true ]; then
+            echo "No se pudo verificar la versión anterior dentro del plazo."
+            exit 1
+          fi
           rollback_time="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "Rollback verificado en ${rollback_time}: API y frontend sirven el commit ${{ steps.deploy.outputs.previous_sha }}." >> "$GITHUB_STEP_SUMMARY"
