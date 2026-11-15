@@ -10,11 +10,13 @@ import {
   archivosLocales,
   cerrarBaseDatos,
   categoriasProductos,
+  cuentasFinancieras,
   db,
   entradasStock,
   entradasStockDetalle,
   marcasProductos,
   movimientosStock,
+  pagosEntradasStock,
   personas,
   productos,
   productosPresentaciones,
@@ -368,6 +370,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
   let categoriaId: string | undefined;
   let marcaId: string | undefined;
   let productoId: string | undefined;
+  let cuentaFinancieraId: string | undefined;
   let rolAsignado = false;
 
   try {
@@ -405,6 +408,11 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
       seVende: true,
       esBase: true,
     });
+    const [cuenta] = await db
+      .insert(cuentasFinancieras)
+      .values({ tipo: "EFECTIVO", nombre: `Caja E2E ${sufijo}`, moneda: "PEN", usuarioId })
+      .returning({ id: cuentasFinancieras.id });
+    cuentaFinancieraId = cuenta.id;
     await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
     rolAsignado = true;
 
@@ -417,17 +425,19 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const dialogo = page.getByRole("dialog", { name: "Nueva compra de repuestos" });
+    const dialogo = page.locator(".stock-entry-modal");
+    await expect(dialogo.getByRole("heading", { name: "Registrar compra" })).toBeVisible();
     await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
     await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
     const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });
     await expect(resultadoProducto).toBeVisible();
     await resultadoProducto.click();
-    await dialogo.getByLabel("Cantidad recibida").fill("4");
-    await dialogo.getByLabel("Costo por presentación (S/)").fill("3.25");
-    await dialogo.getByRole("button", { name: /Agregar a la compra/ }).click();
+    await dialogo.getByLabel(`Cantidad de ${nombreProducto}`).fill("4");
+    await dialogo.getByLabel(`Precio total de ${nombreProducto}`).fill("13.00");
+    await dialogo.getByLabel("Cuenta o medio de pago").selectOption(cuentaFinancieraId!);
     await expect(dialogo.locator(".stock-entry-total")).toContainText("S/ 13.00");
 
+    await dialogo.getByRole("button", { name: /Continuar/ }).click();
     const respuestaCompra = page.waitForResponse((respuesta) =>
       respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname === "/inventario/entradas-stock",
     );
@@ -478,9 +488,11 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
         .where(eq(entradasStockDetalle.productoId, productoId));
       await db.delete(movimientosStock).where(eq(movimientosStock.productoId, productoId));
       await db.delete(saldosStock).where(eq(saldosStock.productoId, productoId));
+      if (cuentaFinancieraId) await db.delete(pagosEntradasStock).where(eq(pagosEntradasStock.cuentaFinancieraId, cuentaFinancieraId));
       for (const entrada of entradas) await db.delete(entradasStock).where(eq(entradasStock.id, entrada.id));
       await db.delete(productos).where(eq(productos.id, productoId));
     }
+    if (cuentaFinancieraId) await db.delete(cuentasFinancieras).where(eq(cuentasFinancieras.id, cuentaFinancieraId));
     if (categoriaId) await db.delete(categoriasProductos).where(eq(categoriasProductos.id, categoriaId));
     if (marcaId) await db.delete(marcasProductos).where(eq(marcasProductos.id, marcaId));
     if (rolAsignado && usuarioId) {
