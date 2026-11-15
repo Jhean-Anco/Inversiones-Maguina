@@ -205,6 +205,8 @@ export class ServicioProductos {
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
       if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") throw new ConflictException("El producto o uno de sus códigos ya está registrado.");
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "23503") throw new BadRequestException("Una categoría, marca, unidad o lista seleccionada ya no está disponible. Actualiza los catálogos e intenta nuevamente.");
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "23514") throw new BadRequestException("Los datos del producto no cumplen las reglas del inventario. Revisa presentaciones, precios y códigos.");
       throw error;
     }
   }
