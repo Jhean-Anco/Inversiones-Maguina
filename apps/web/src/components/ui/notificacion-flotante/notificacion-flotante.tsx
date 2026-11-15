@@ -34,7 +34,7 @@ export function AlertasProvider({ children }: { children: ReactNode }) {
     informacion: (mensaje) => mostrar({ tipo: "informacion", mensaje }),
   }), [mostrar]);
 
-  return <AlertasContext.Provider value={api}>{children}<div className="alertas-globales" aria-label="Alertas del sistema" aria-live="polite">
+  return <AlertasContext.Provider value={api}>{children}<div className="alertas-globales" role="region" aria-label="Alertas del sistema">
     {alertas.map(({ id, alCerrar, ...alerta }) => <TarjetaNotificacion key={id} {...alerta} onCerrar={() => { cerrar(id); alCerrar?.(); }} />)}
   </div></AlertasContext.Provider>;
 }

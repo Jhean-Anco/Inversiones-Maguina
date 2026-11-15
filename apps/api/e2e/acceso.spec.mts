@@ -43,7 +43,7 @@ const sufijo = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
 const nombreUsuario = `qa-e2e-${sufijo}`;
 const correo = `qa-e2e-${sufijo}@example.invalid`;
 const contrasena = randomBytes(24).toString("base64url");
-const imagenCategoria = resolve(process.cwd(), "apps/web/src/pages/login-page/logo-transparente.png");
+const imagenCategoria = resolve(process.cwd(), "apps/web/public/logo.png");
 let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
