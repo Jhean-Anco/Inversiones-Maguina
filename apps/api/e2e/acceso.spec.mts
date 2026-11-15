@@ -428,20 +428,20 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     const dialogo = page.locator(".stock-entry-modal");
     await expect(dialogo.getByRole("heading", { name: "Registrar compra" })).toBeVisible();
     await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
-    await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
-    const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });
+    await page.getByRole("textbox", { name: "Buscar repuestos para comprar" }).fill(nombreProducto);
+    const resultadoProducto = page.locator(".stock-purchase-catalog-results .venta-catalog-product").filter({ hasText: nombreProducto });
     await expect(resultadoProducto).toBeVisible();
-    await resultadoProducto.click();
+    await resultadoProducto.getByRole("button", { name: "Seleccionar" }).click();
     await dialogo.getByLabel(`Cantidad de ${nombreProducto}`).fill("4");
     await dialogo.getByLabel(`Precio total de ${nombreProducto}`).fill("13.00");
-    await dialogo.getByLabel("Cuenta o medio de pago").selectOption(cuentaFinancieraId!);
+    await page.getByLabel("Cuenta o medio de pago").selectOption(cuentaFinancieraId!);
     await expect(dialogo.locator(".stock-entry-total")).toContainText("S/ 13.00");
 
-    await dialogo.getByRole("button", { name: /Continuar/ }).click();
+    await page.getByRole("button", { name: /Continuar/ }).click();
     const respuestaCompra = page.waitForResponse((respuesta) =>
       respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname === "/inventario/entradas-stock",
     );
-    await dialogo.getByRole("button", { name: "Registrar compra" }).click();
+    await page.getByRole("button", { name: "Registrar compra" }).click();
     const respuesta = await respuestaCompra;
     const cuerpoRespuesta = await respuesta.text();
     expect(respuesta.status(), `Respuesta de la API: ${cuerpoRespuesta}`).toBe(201);
