@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
-import { RequiereCualquieraPermiso, RequierePermiso } from "../autenticacion/permisos";
+import { RequiereCualquieraPermiso } from "../autenticacion/permisos";
 import { ServicioConductores } from "./conductores.service";
 
 @Controller("personas/conductores")
@@ -18,6 +18,6 @@ export class ControladorConductores {
   listarPaginado(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) { return this.conductores.listarPaginado(pagina, porPagina, busqueda); }
 
   @Post()
-  @RequierePermiso("PERSONAS.CREAR")
+  @RequiereCualquieraPermiso("PERSONAS.CREAR", "INGRESOS.CREAR")
   crear(@Body() datos: unknown) { return this.conductores.crear(datos); }
 }

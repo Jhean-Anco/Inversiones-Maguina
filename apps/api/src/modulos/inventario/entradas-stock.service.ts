@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import type { FastifyRequest } from "fastify";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { and, asc, count, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
@@ -11,9 +10,9 @@ import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
-type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown };
+type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown; importeTotal?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
-type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
+type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; pagos?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
 const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO", "OTRO"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
@@ -115,36 +114,6 @@ export class ServicioEntradasStock {
     ]);
     return { ...entrada, detalles, detallesDocumento };
   }
-  async guardarEvidencia(idEntrada: string, solicitud: FastifyRequest) {
-    const id = uuid(idEntrada, "La entrada");
-    const [entrada] = await db.select({ id: entradasStock.id, evidenciaRuta: entradasStock.evidenciaRuta }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
-    if (!entrada) throw new NotFoundException("No se encontró la compra.");
-    const archivo = await solicitud.file();
-    if (!archivo) throw new BadRequestException("Selecciona un PDF o una imagen como evidencia.");
-    const formatos: Record<string, { ext: string; firma: (contenido: Buffer) => boolean }> = {
-      "application/pdf": { ext: ".pdf", firma: (b) => b.subarray(0, 5).toString("ascii") === "%PDF-" },
-      "image/jpeg": { ext: ".jpg", firma: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-      "image/png": { ext: ".png", firma: (b) => b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) },
-      "image/webp": { ext: ".webp", firma: (b) => b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP" },
-    };
-    const formato = formatos[archivo.mimetype];
-    if (!formato) throw new BadRequestException("La evidencia debe ser PDF, JPG, PNG o WebP.");
-    const contenido = await archivo.toBuffer();
-    if (contenido.length > 15 * 1024 * 1024 || !formato.firma(contenido)) throw new BadRequestException("El archivo supera 15 MB o su contenido no coincide con el formato.");
-    const nombreArchivo = `${randomUUID()}${formato.ext}`;
-    const nombreOriginal = archivo.filename.slice(0, 255);
-    const subida = await this.almacenamiento.guardarArchivo("EVIDENCIA_COMPRA", "EVIDENCIA_COMPRA", "ENTRADA_STOCK", id, nombreArchivo, archivo.mimetype, contenido);
-    try {
-      await db.update(entradasStock).set({ evidenciaRuta: subida.ruta, evidenciaNombre: nombreOriginal, evidenciaMime: archivo.mimetype }).where(eq(entradasStock.id, id));
-    } catch (error) {
-      await this.almacenamiento.eliminarArchivoRegistrado(subida.id).catch(() => undefined);
-      throw error;
-    }
-    const anteriorId = entrada.evidenciaRuta?.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
-    if (anteriorId) await this.almacenamiento.eliminarArchivoRegistrado(anteriorId).catch(() => undefined);
-    return { evidenciaNombre: nombreOriginal, ruta: subida.ruta };
-  }
-
   async leerEvidencia(idEntrada: string) {
     const id = uuid(idEntrada, "La entrada");
     const [entrada] = await db.select({ ruta: entradasStock.evidenciaRuta, mime: entradasStock.evidenciaMime, nombre: entradasStock.evidenciaNombre }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
@@ -198,8 +167,17 @@ export class ServicioEntradasStock {
     const medioPago = texto(datos.medioPago, "El medio de pago", 30, true);
     if (medioPago && !(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
     const montoPagado = datos.montoPagado === undefined || datos.montoPagado === null || datos.montoPagado === "" ? null : decimal(datos.montoPagado, "El monto pagado", 2, 0);
-    if ((montoPagado ?? 0) > 0 && !medioPago) throw new BadRequestException("Selecciona el medio de pago del abono registrado.");
-    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, (montoPagado ?? 0) > 0);
+    const pagosSolicitados = Array.isArray(datos.pagos) ? datos.pagos : (montoPagado ?? 0) > 0 ? [{ cuentaFinancieraId: datos.cuentaFinancieraId, medioPago, importePagado: montoPagado }] : [];
+    const pagos = await Promise.all(pagosSolicitados.map(async (valor) => {
+      if (typeof valor !== "object" || valor === null || Array.isArray(valor)) throw new BadRequestException("Revisa los medios de pago ingresados.");
+      const pago = valor as Record<string, unknown>;
+      const importe = decimal(pago.importePagado, "El importe del medio de pago", 2, 0.01);
+      const medio = texto(pago.medioPago, "El medio de pago", 30, true)!;
+      if (!(mediosPago as readonly string[]).includes(medio)) throw new BadRequestException("Selecciona un medio de pago válido.");
+      const cuentaId = await validarCuentaFinanciera(pago.cuentaFinancieraId, medio, true);
+      return { importe, medio, cuentaId };
+    }));
+    const cuentaFinancieraId = pagos.length === 1 ? pagos[0].cuentaId : null;
     if (proveedorTipoPersona && !["NATURAL", "JURIDICA"].includes(proveedorTipoPersona)) throw new BadRequestException("Selecciona si el proveedor es persona natural o jurídica.");
     if (proveedorTipoDocumento && !["DNI", "RUC", "EXT"].includes(proveedorTipoDocumento)) throw new BadRequestException("Selecciona DNI, RUC o identificación extranjera para el proveedor.");
     if (proveedorNumeroDocumento && (!proveedorTipoDocumento || (proveedorTipoDocumento === "DNI" ? !/^\d{8}$/.test(proveedorNumeroDocumento) : proveedorTipoDocumento === "RUC" ? !rucPeruValido(proveedorNumeroDocumento) : proveedorTipoDocumento === "EXT" ? !/^[A-Za-z0-9][A-Za-z0-9 .\-/]{0,99}$/.test(proveedorNumeroDocumento) : true))) throw new BadRequestException("El número debe corresponder al tipo de documento seleccionado: DNI de 8 dígitos, RUC peruano válido o identificación extranjera alfanumérica.");
@@ -219,7 +197,7 @@ export class ServicioEntradasStock {
       const fila = valor as DetalleEntrada;
       const detalleDocumentoId = fila.detalleDocumentoId === undefined || fila.detalleDocumentoId === null || fila.detalleDocumentoId === "" ? null : uuid(fila.detalleDocumentoId, `La linea del documento asociada al producto ${indice + 1}`);
       if (detalleDocumentoId && !detallesDocumento.some((linea) => linea.clave === detalleDocumentoId)) throw new BadRequestException("Un producto recibido hace referencia a una linea documental inexistente.");
-      return { productoId: uuid(fila.productoId, `El producto ${indice + 1}`), presentacionId: uuid(fila.presentacionId, `La presentación ${indice + 1}`), detalleDocumentoId, cantidad: decimal(fila.cantidad, `La cantidad del producto ${indice + 1}`, 3, 0.001), costoUnitario: decimal(fila.costoUnitario, `El costo del producto ${indice + 1}`, 4, 0) };
+      return { productoId: uuid(fila.productoId, `El producto ${indice + 1}`), presentacionId: uuid(fila.presentacionId, `La presentación ${indice + 1}`), detalleDocumentoId, cantidad: decimal(fila.cantidad, `La cantidad del producto ${indice + 1}`, 3, 0.001), costoUnitario: decimal(fila.costoUnitario, `El costo del producto ${indice + 1}`, 4, 0), importeTotal: fila.importeTotal === undefined ? null : decimal(fila.importeTotal, `El precio total del producto ${indice + 1}`, 2, 0.01) };
     });
     const pares = detalles.map((fila) => `${fila.productoId}:${fila.presentacionId}`);
     if (new Set(pares).size !== pares.length) throw new BadRequestException("Hay productos y presentaciones repetidos. Agrupa sus cantidades en una sola línea.");
@@ -248,24 +226,26 @@ export class ServicioEntradasStock {
           if (!producto) throw new BadRequestException("Un producto o presentación ya no está disponible para compra.");
           const factor = Number(producto.factorAUnidadBase);
           const cantidadBase = Number((detalle.cantidad * factor).toFixed(6));
-          const subtotal = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          const subtotal = detalle.importeTotal ?? Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          const costoUnitario = Number((subtotal / detalle.cantidad).toFixed(4));
           if (!Number.isFinite(cantidadBase) || cantidadBase <= 0 || !Number.isFinite(subtotal)) throw new BadRequestException("La cantidad o el subtotal calculado no es válido.");
-          productosValidados.push({ ...detalle, producto, factor, cantidadBase, subtotal, costoBase: Number((detalle.costoUnitario / factor).toFixed(6)) });
+          productosValidados.push({ ...detalle, costoUnitario, producto, factor, cantidadBase, subtotal, costoBase: Number((costoUnitario / factor).toFixed(6)) });
         }
         const total = productosValidados.reduce((suma, detalle) => suma + detalle.subtotal, 0);
-        if (montoPagado !== null && montoPagado > (totalDocumento ?? total)) throw new BadRequestException("El monto pagado no puede superar el total indicado en el documento.");
+        const totalPagos = pagos.reduce((suma, pago) => suma + pago.importe, 0);
+        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
         const [nuevaEntrada] = await tx.insert(entradasStock).values({
           codigo, fecha, tipoDocumento, numeroDocumento, proveedor, proveedorTipoPersona, proveedorTipoDocumento,
           proveedorNumeroDocumento, proveedorDireccion,
-          medioPago: (montoPagado ?? 0) > 0 ? medioPago : null,
+          medioPago: pagos.length === 1 ? pagos[0].medio : null,
           cuentaFinancieraId,
-          montoPagado: montoPagado === null ? null : montoPagado.toFixed(2), observacion,
+          montoPagado: totalPagos.toFixed(2), observacion,
           totalDocumento: totalDocumento === null ? null : totalDocumento.toFixed(2), total: total.toFixed(2), usuarioId,
         }).returning({ id: entradasStock.id });
-        if ((montoPagado ?? 0) > 0) await tx.insert(pagosEntradasStock).values({
-          entradaId: nuevaEntrada.id, fechaPago: fechaActualPeru(), importePagado: montoPagado!.toFixed(2), medioPago: medioPago!,
-          cuentaFinancieraId, usuarioId,
-        });
+        if (pagos.length) await tx.insert(pagosEntradasStock).values(pagos.map((pago) => ({
+          entradaId: nuevaEntrada.id, fechaPago: fechaActualPeru(), importePagado: pago.importe.toFixed(2), medioPago: pago.medio,
+          cuentaFinancieraId: pago.cuentaId, usuarioId,
+        })));
         const idsDocumento = new Map<string, string>();
         for (const [orden, linea] of detallesDocumento.entries()) {
           const [documentoDetalle] = await tx.insert(entradasStockDocumentoDetalle).values({

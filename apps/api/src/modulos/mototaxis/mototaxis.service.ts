@@ -312,10 +312,17 @@ export class ServicioMototaxis {
     const documentoTipo = texto(d.documentoTipo, "El tipo de documento", 20, true)!;
     if (!["FACTURA", "BOLETA", "NOTA", "OTRO", "SIN_DOCUMENTO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
     if (!Array.isArray(d.unidades) || d.unidades.length < 1 || d.unidades.length > 30) throw new BadRequestException("Registra entre 1 y 30 unidades por compra.");
-    const inicial = importe(d.importePagoInicial ?? 0, "El pago inicial");
-    const medioPago = texto(d.medioPago ?? "EFECTIVO", "El medio de pago", 30, true)!;
-    if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
-    const cuentaFinancieraId = await validarCuentaFinanciera(d.cuentaFinancieraId, medioPago, inicial > 0);
+    const pagoTotal = importe(d.importePagoInicial, "El pago al contado");
+    const pagosSolicitados = Array.isArray(d.pagosIniciales) ? d.pagosIniciales : [{ importePagado: pagoTotal, medioPago: d.medioPago ?? "EFECTIVO", cuentaFinancieraId: d.cuentaFinancieraId }];
+    const pagosIniciales = await Promise.all(pagosSolicitados.map(async (valor) => {
+      if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Revisa los medios de pago ingresados.");
+      const pago = valor as Record<string, unknown>;
+      const importePagado = importe(pago.importePagado, "El importe del medio de pago");
+      const medio = texto(pago.medioPago, "El medio de pago", 30, true)!;
+      if (!(mediosPago as readonly string[]).includes(medio)) throw new BadRequestException("Selecciona un medio de pago válido.");
+      const cuentaFinancieraId = await validarCuentaFinanciera(pago.cuentaFinancieraId, medio, true);
+      return { importePagado, medioPago: medio, cuentaFinancieraId };
+    }));
     const unidades = d.unidades.map((entrada, i) => {
       if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`La unidad ${i + 1} no es válida.`);
       const u = entrada as Record<string, unknown>;
@@ -328,7 +335,8 @@ export class ServicioMototaxis {
       return { modeloId: u.modeloId as string, costo, porcentaje, meses, vin: texto(u.vin, "El VIN", 40, true), motor: texto(u.numeroMotor, "El número de motor", 100, true), chasis: texto(u.numeroChasis, "El número de chasis", 100), anio: u.anioModelo == null || u.anioModelo === "" ? null : Number(u.anioModelo), color: texto(u.color, "El color", 60, true)! };
     });
     const total = redondear(unidades.reduce((s, u) => s + u.costo, 0));
-    if (inicial > total) throw new BadRequestException("El pago inicial supera el total de compra.");
+    const sumaPagos = pagosIniciales.reduce((suma, pago) => suma + pago.importePagado, 0);
+    if (Math.round(sumaPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
     const codigo = `CM-${fecha.replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     return db.transaction(async (tx) => {
       const proveedorId = d.proveedorPersonaId as string;
@@ -355,8 +363,8 @@ export class ServicioMototaxis {
         const termina = this.sumarMeses(fecha, unidad.meses);
         await tx.insert(garantiasMototaxis).values({ unidadId: insertada.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(unidad.porcentaje), mesesVigencia: unidad.meses, iniciaEn, terminaEn: termina });
       }
-      if (inicial > 0) await tx.insert(pagosComprasMototaxis).values({ compraId: compra.id, fechaPago: fecha, importePagado: inicial.toFixed(2), medioPago, cuentaFinancieraId, claveIdempotencia: uuidValido(d.claveIdempotencia) ? d.claveIdempotencia : randomUUID(), usuarioId });
-      return { id: compra.id, codigo, fecha, total: compra.total, unidades: unidades.length, importePagado: inicial.toFixed(2), saldoPendiente: (total - inicial).toFixed(2) };
+      await tx.insert(pagosComprasMototaxis).values(pagosIniciales.map((pago) => ({ compraId: compra.id, fechaPago: fecha, importePagado: pago.importePagado.toFixed(2), medioPago: pago.medioPago, cuentaFinancieraId: pago.cuentaFinancieraId, claveIdempotencia: randomUUID(), usuarioId })));
+      return { id: compra.id, codigo, fecha, total: compra.total, unidades: unidades.length, importePagado: pagoTotal.toFixed(2), saldoPendiente: "0.00" };
     }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("El VIN, la placa u otro identificador de la unidad ya está registrado."); throw error; });
   }
 
@@ -402,7 +410,7 @@ export class ServicioMototaxis {
       const [resumen] = await tx.select({ pagado: sql<string>`coalesce(sum(${pagosComprasMototaxis.importePagado}),0)::numeric(14,2)` })
         .from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.compraId, compraId));
       const saldo = redondear(Number(compra.total) - Number(resumen?.pagado ?? 0));
-      if (importePagado > saldo) throw new BadRequestException(`El pago supera el saldo pendiente de S/ ${saldo.toFixed(2)}.`);
+      if (Math.round(importePagado * 100) !== Math.round(saldo * 100)) throw new BadRequestException(`Las compras de mototaxi se cancelan al contado. Registra el saldo completo de S/ ${saldo.toFixed(2)} en una sola operación.`);
       const [pago] = await tx.insert(pagosComprasMototaxis).values({ compraId, fechaPago, importePagado: importePagado.toFixed(2), medioPago, cuentaFinancieraId,
         claveIdempotencia: d.claveIdempotencia as string, usuarioId }).returning();
       return pago;

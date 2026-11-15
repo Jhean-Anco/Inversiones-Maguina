@@ -148,3 +148,52 @@ html[data-theme="oscuro"] .guide-form-pane legend { color: #dce9f7; }
   .guide-form-heading h2 { font-size: 20px; }
   .guide-number-preview { width: 100%; }
 }
+
+/* Flujo de guía vinculado a comprobantes y catálogos internos. */
+.guide-create-layout { display:grid; grid-template-columns:minmax(280px,.72fr) minmax(0,1.8fr); align-items:start; gap:18px; max-width:1600px; }
+.guide-source-sidebar { position:sticky; top:14px; display:grid; gap:12px; max-height:calc(100vh - 28px); overflow:auto; }
+.guide-source-card { padding:18px; border:1px solid #dce5ee; border-radius:14px; background:#fff; box-shadow:0 7px 22px #173b600a; }
+.guide-source-card h2 { margin:4px 0 5px; color:#173b60; font-size:17px; }
+.guide-source-card p { margin:0 0 12px; color:#65788a; font-size:12px; line-height:1.5; }
+.guide-section-kicker { color:#bd3548; font-size:9px; font-weight:850; letter-spacing:.1em; }
+.guide-source-card > label,.guide-catalog-field > label { display:grid; gap:6px; color:#476078; font-size:11px; font-weight:750; }
+.guide-source-card input,.guide-catalog-field input,.guide-quick-create-form input,.guide-quick-create-form select { box-sizing:border-box; width:100%; min-height:40px; padding:0 10px; border:1px solid #d2deea; border-radius:8px; background:#fff; color:#183b5c; font:inherit; font-size:12px; }
+.guide-source-results,.guide-catalog-results { display:grid; gap:7px; max-height:260px; margin-top:10px; overflow:auto; }
+.guide-source-results > button,.guide-catalog-results > button { display:grid; gap:3px; padding:10px 11px; border:1px solid #e0e8ef; border-radius:9px; background:#fff; color:#31516e; text-align:left; cursor:pointer; }
+.guide-source-results > button:hover,.guide-source-results > button.is-selected,.guide-catalog-results > button:hover { border-color:#a6bfd6; background:#f2f7fb; }
+.guide-source-results > button:disabled { cursor:default; opacity:.6; }
+.guide-source-results strong,.guide-catalog-results strong { color:#173b60; font-size:12px; }
+.guide-source-results span,.guide-catalog-results span,.guide-source-results small { color:#6a7f91; font-size:10px; }
+.guide-goods-card { border-top:3px solid #d5223d; }
+.guide-form-pane { min-width:0; }
+.guide-form-pane fieldset { min-width:0; }
+.guide-instruction { margin:0; padding:12px; border-radius:8px; background:#f4f7fa; color:#63788b; font-size:12px; line-height:1.5; }
+.guide-linked-customer { display:grid; gap:4px; color:#284765; }
+.guide-linked-customer strong { font-size:15px; }
+.guide-linked-customer > span,.guide-linked-customer > small { color:#677d90; font-size:11px; }
+.guide-linked-customer label { margin-top:9px; }
+.guide-address-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.guide-ubigeo { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:8px; padding:12px; border:1px solid #e0e8ef; border-radius:10px; background:#f8fafc; }
+.guide-ubigeo > strong { grid-column:1/-1; color:#173b60; font-size:12px; }
+.guide-ubigeo label { display:grid; gap:5px; color:#526b81; font-size:10px; font-weight:750; }
+.guide-ubigeo select { box-sizing:border-box; width:100%; min-width:0; min-height:42px; padding:0 8px; border:1px solid #d2deea; border-radius:8px; background:#fff; color:#183b5c; font:inherit; font-size:11px; }
+.guide-catalog-field { margin-top:12px; }
+.guide-selection { margin:7px 0 0; color:#24724e; font-size:11px; font-weight:750; }
+.guide-quick-create { margin-top:10px; color:#31516e; font-size:11px; }
+.guide-quick-create summary { width:max-content; cursor:pointer; font-weight:750; }
+.guide-quick-create-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:10px; padding:11px; border-radius:9px; background:#f5f8fa; }
+.guide-quick-create-form label { display:grid; gap:5px; color:#526b81; font-size:10px; font-weight:700; }
+.guide-quick-create-form button { width:max-content; min-height:36px; padding:0 12px; border:0; border-radius:8px; background:#173b60; color:#fff; font:inherit; font-size:11px; font-weight:750; cursor:pointer; }
+.guide-selected-items { display:grid; gap:8px; }
+.guide-selected-items .guide-item { grid-template-columns:minmax(180px,1fr) 110px auto auto; align-items:center; }
+.guide-selected-items .guide-item > div { display:grid; gap:3px; }
+.guide-selected-items .guide-item > div strong { color:#244867; font-size:12px; }
+.guide-selected-items .guide-item > div small,.guide-selected-items .guide-item > small { color:#708395; font-size:10px; }
+.guide-selected-items .guide-item > button { grid-column:auto; }
+html[data-theme="oscuro"] .guide-source-card { border-color:#34485e; background:#17263a; box-shadow:none; }
+html[data-theme="oscuro"] .guide-source-card h2,html[data-theme="oscuro"] .guide-source-results strong,html[data-theme="oscuro"] .guide-catalog-results strong,html[data-theme="oscuro"] .guide-linked-customer strong,html[data-theme="oscuro"] .guide-ubigeo > strong { color:#e1ebf5; }
+html[data-theme="oscuro"] .guide-source-results > button,html[data-theme="oscuro"] .guide-catalog-results > button,html[data-theme="oscuro"] .guide-ubigeo,html[data-theme="oscuro"] .guide-instruction,html[data-theme="oscuro"] .guide-quick-create-form { border-color:#34485e; background:#1d3046; color:#c6d7e6; }
+html[data-theme="oscuro"] .guide-source-card input,html[data-theme="oscuro"] .guide-catalog-field input,html[data-theme="oscuro"] .guide-quick-create-form input,html[data-theme="oscuro"] .guide-quick-create-form select,html[data-theme="oscuro"] .guide-ubigeo select { border-color:#3a5673; background:#1b3048; color:#e0edf8; }
+@media(max-width:1120px) { .guide-create-layout { grid-template-columns:minmax(250px,.8fr) minmax(0,1.5fr); gap:12px; } .guide-source-card { padding:14px; } }
+@media(max-width:900px) { .guide-create-layout { grid-template-columns:minmax(0,1fr); } .guide-source-sidebar { position:static; max-height:none; grid-template-columns:repeat(2,minmax(0,1fr)); } .guide-address-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:560px) { .guide-source-sidebar { grid-template-columns:minmax(0,1fr); } .guide-ubigeo { grid-template-columns:minmax(0,1fr); } .guide-ubigeo > strong { grid-column:auto; } .guide-selected-items .guide-item { grid-template-columns:1fr 1fr; } .guide-selected-items .guide-item > div { grid-column:1/-1; } .guide-selected-items .guide-item > button { grid-column:2; } .guide-quick-create-form { grid-template-columns:minmax(0,1fr); } }

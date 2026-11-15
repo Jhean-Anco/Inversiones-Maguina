@@ -489,3 +489,137 @@ html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-footer{border-col
 html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-footer button:not(.moto-purchase-submit){border-color:var(--moto-border);background:var(--moto-soft);color:var(--moto-ink)}
 @media(max-width:850px){.moto-purchase-dialog{height:min(900px,calc(100dvh - 32px))}.moto-purchase-dialog>.moto-purchase-form{gap:0}.moto-purchase-dialog .moto-purchase-layout{grid-template-columns:minmax(0,1fr);padding:18px 20px}.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(2) .moto-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-summary{position:static;grid-column:1;grid-template-columns:repeat(3,minmax(0,1fr))}.moto-purchase-dialog .moto-purchase-layout>.moto-add-unit{grid-column:1}}
 @media(max-width:560px){.moto-purchase-dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}.moto-purchase-dialog>.moto-purchase-form{gap:0}.moto-purchase-dialog .moto-purchase-layout{padding:14px}.moto-purchase-dialog .moto-purchase-summary{grid-template-columns:minmax(0,1fr)}.moto-purchase-dialog .moto-purchase-summary>div{grid-template-columns:1fr auto;border-bottom:1px solid var(--moto-border)}.moto-purchase-dialog .moto-purchase-footer{padding:11px 12px}.moto-purchase-dialog .moto-purchase-footer button{flex:1;padding:0 9px}}
+.moto-purchase-page { width: 100%; height: 100%; min-height: 0; padding: 0; box-sizing: border-box; color: #102b4d; }
+.moto-purchase-editor { width: 100%; height: 100%; min-height: 0; grid-template-columns: minmax(250px, 330px) minmax(0, 1fr); align-items: stretch; gap: 16px; overflow: hidden; }
+.moto-purchase-catalog { height: 100%; max-height: none; min-height: 0; }
+.moto-purchase-catalog .moto-purchase-model-selected { margin: 0 14px 14px; padding: 10px; border: 1px solid #cddff0; border-radius: 8px; background: #eff6fc; color: #174b80; font-size: 12px; font-weight: 700; }
+.moto-purchase-add-model { min-height: 40px; margin: 0 14px 12px; border: 1px solid #d5e1ed; border-radius: 8px; background: #fff; color: #174b80; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.moto-purchase-inline { display: flex; width: 100%; max-width: none; height: 100%; max-height: none; min-width: 0; flex-direction: column; margin: 0; overflow: hidden; border: 1px solid #dce5ed; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px #102b4d0a; }
+.moto-purchase-inline > .moto-modal-title { flex: 0 0 auto; min-height: 78px; }
+.moto-purchase-inline > .moto-modal-title > div { min-width: 0; flex: 1 1 auto; }
+.moto-purchase-inline .moto-purchase-form { display: flex; min-height: 0; flex: 1 1 0%; flex-direction: column; overflow: hidden; }
+.moto-purchase-inline .moto-purchase-layout { display: grid; min-height: 0; flex: 1 1 0%; grid-template-columns: minmax(0, 1fr); overflow: auto; }
+.moto-purchase-inline .moto-model-field { display: none; }
+.moto-purchase-inline .moto-purchase-footer { position: sticky; bottom: 0; z-index: 2; flex: 0 0 auto; background: #fff; }
+#root .moto-purchase-page.venta-page.is-data-step { height: calc(100dvh - 140px) !important; max-height: calc(100dvh - 140px); min-height: 430px; overflow: hidden !important; }
+#root .moto-purchase-page.venta-page.is-data-step .moto-purchase-editor { height: 100%; min-height: 0; overflow: hidden; }
+@media(max-width:760px){#root .moto-purchase-page.venta-page.is-data-step{height:auto!important;max-height:none;min-height:100%;overflow:visible!important}.moto-purchase-editor{height:auto;min-height:0;grid-template-columns:minmax(0,1fr);overflow:visible}.moto-purchase-catalog{height:320px}.moto-purchase-inline{height:auto;max-height:none}.moto-purchase-inline .moto-purchase-form{overflow:visible}.moto-purchase-inline .moto-purchase-layout{max-height:none;overflow:visible}}
+.moto-purchase-inline .moto-modal-title p { font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.45; text-transform: none; }
+.erp-content:has(> .moto-purchase-page) { display: block; }
+.erp-content:has(> .moto-purchase-page) > .mototaxis-page { display: none; }
+.moto-purchase-page .moto-purchase-catalog { border-color:#dce6ef; border-radius:14px; box-shadow:0 8px 22px #173b5d0a; }
+.moto-purchase-page .moto-purchase-catalog > header { flex:0 0 auto; padding:20px 18px 16px; }
+.moto-purchase-page .moto-purchase-catalog > header h2 { font-size:20px; letter-spacing:-.02em; }
+.moto-purchase-page .moto-purchase-catalog > header p { max-width:28ch; line-height:1.45; }
+.moto-purchase-page .moto-purchase-catalog .venta-catalog-search { flex:0 0 auto; min-height:46px; margin:14px 14px 8px; border-radius:11px; box-shadow:0 2px 6px #173b5d08; }
+.moto-purchase-page .moto-purchase-catalog .venta-catalog-search:focus-within { border-color:#6e9ec7; box-shadow:0 0 0 3px #6e9ec71c; }
+.moto-purchase-page .moto-purchase-catalog .venta-catalog-search input { height:44px; }
+.moto-purchase-page .moto-purchase-catalog-results { display:grid; flex:1 1 auto; grid-template-columns:minmax(0,1fr); grid-auto-rows:max-content; align-content:start; gap:9px; padding:6px 14px 14px; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-product { align-content:start; gap:10px; min-height:0; padding:12px; border-color:#e0e8f0; box-shadow:0 3px 10px #173b5d08; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-product-title strong { white-space:normal; line-height:1.4; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-product > button,
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-empty > button { width:100%; min-height:38px; height:38px; justify-self:stretch; border-radius:9px; }
+.moto-purchase-page .moto-purchase-add-model { flex:0 0 auto; min-height:42px; margin:0 14px 14px; border-radius:10px; background:#f7fafe; }
+.moto-purchase-page .moto-purchase-model-selected { flex:0 0 auto; line-height:1.45; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-empty { align-content:center; gap:8px; padding:18px 14px; border:1px solid #dce6ef; border-radius:12px; background:#f8fbfe; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-empty > strong { color:#174b80; font-size:14px; }
+.moto-purchase-page .moto-purchase-catalog-results .venta-catalog-empty > span { line-height:1.5; }
+.erp-content:has(> .moto-purchase-page) > .modulo-route-transition { display: none; }
+
+/* Compras de mototaxis: jerarquía, líneas y resumen siguiendo Nueva venta. */
+.moto-purchase-page .moto-purchase-editor { grid-template-columns: minmax(260px,.4fr) minmax(0,2fr); gap: 12px; }
+.moto-purchase-editor.is-review { grid-template-columns: minmax(0,1fr); }
+.moto-purchase-inline > .moto-modal-title { min-height: 78px; align-items: center; gap: 16px; padding: 16px 22px; border-left: 5px solid #e72f43; border-bottom: 0; border-radius: 13px 13px 0 0; background: linear-gradient(112deg,#0b376a 0%,#103f72 64%,#092c53 100%); }
+.moto-purchase-inline > .moto-modal-title::before { display: none; }
+.moto-purchase-inline .moto-modal-title > div { display: grid; min-width: 0; flex: 1 1 auto; gap: 5px; }
+.moto-purchase-inline .moto-modal-title .moto-eyebrow { color: #c5d9ed; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.moto-purchase-inline .moto-modal-title h2 { margin: 0; color: #fff; font-size: 22px; letter-spacing: -.025em; }
+.moto-purchase-inline .moto-modal-title p { max-width: none; margin: 0; color: #dce9f5; font-size: 12px; font-weight: 400; letter-spacing: 0; line-height: 1.45; }
+.moto-purchase-inline .moto-purchase-layout { display: flex; flex: 1 1 auto; flex-direction: column; gap: 14px; padding: 20px 26px 24px; background: #f7f9fb; }
+.moto-purchase-inline .moto-purchase-section { min-width: 0; margin: 0; border: 1px solid #dfe7ee; border-radius: 15px; padding: 18px; background: #fff; box-shadow: 0 4px 14px #17354b08; }
+.moto-purchase-inline .moto-purchase-section + .moto-purchase-section { padding-top: 18px; }
+.moto-purchase-inline .moto-purchase-section-title { margin: 0 0 15px; }
+.moto-purchase-inline .moto-purchase-section-title > span { display: none; }
+.moto-purchase-inline .moto-purchase-section-title h3 { margin: 0; color: #1b405e; font-size: 14px; font-weight: 800; letter-spacing: -.015em; }
+.moto-purchase-inline .moto-purchase-section-title p { margin: 4px 0 0; color: #71849a; font-size: 11px; line-height: 1.45; }
+.moto-purchase-inline .moto-fields { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.moto-purchase-inline .moto-provider-field { grid-column: span 2; }
+.moto-purchase-inline .moto-provider-field .moto-provider-control { grid-template-columns: minmax(0,1fr) auto; }
+.moto-purchase-inline .moto-fields > .moto-field-wide:not(.moto-provider-field) { grid-column: 1 / -1; }
+.moto-purchase-inline .moto-purchase-section:first-child .moto-fields { width:100%; grid-template-columns:repeat(12,minmax(0,1fr)); }
+.moto-purchase-inline .moto-purchase-section:first-child .moto-provider-field { grid-column:span 7; }
+.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(2) { grid-column:span 5; }
+.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(3),
+.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(4) { grid-column:span 6; }
+.moto-purchase-inline .moto-model-field { display: none; }
+.moto-purchase-inline .moto-purchase-summary { display: none; }
+.moto-purchase-inline .moto-purchase-footer { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; justify-content: initial; gap: 14px; padding: 12px 20px; border-top: 1px solid #e2eaf3; background: #fff; }
+.moto-purchase-footer-summary { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.moto-purchase-footer-summary > div { display: grid; gap: 3px; }
+.moto-purchase-footer-summary span { color: #617b97; font-size: 10px; font-weight: 700; }
+.moto-purchase-footer-summary strong { color: #0f3b68; font-size: 17px; white-space: nowrap; }
+.moto-purchase-footer-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.moto-purchase-inline .moto-purchase-footer .moto-purchase-submit { min-width: 160px; background: linear-gradient(110deg,#123c6a,#17649a); }
+.moto-purchase-inline .moto-purchase-footer button:not(.moto-purchase-submit) { min-height: 42px; padding: 0 14px; border: 1px solid #d9e3ed; border-radius: 9px; background: #fff; color: #425c7a; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.moto-purchase-review { display: grid; align-content: start; gap: 14px; overflow: auto; padding: 20px 24px; background: #f8fafc; }
+.moto-purchase-review-card { border: 1px solid #e0e8f0; border-radius: 11px; padding: 16px; background: #fff; }
+.moto-purchase-review-card h3 { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; color: #173b65; font-size: 15px; }
+.moto-purchase-review-card h3 span { color: #6e849b; font-size: 11px; font-weight: 600; }
+.moto-purchase-review-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.moto-purchase-review-grid > div { display: grid; gap: 4px; }
+.moto-purchase-review-grid span,.moto-purchase-review-unit small { color: #71849a; font-size: 11px; }
+.moto-purchase-review-grid strong,.moto-purchase-review-unit strong { color: #173b65; font-size: 13px; }
+.moto-purchase-review-grid small { color: #71849a; font-size: 11px; }
+.moto-purchase-review-unit { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 12px; border-top: 1px solid #edf1f5; padding: 11px 2px; }
+.moto-purchase-review-unit > div { display: grid; gap: 4px; }
+.moto-purchase-review-totals { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; border: 1px solid #d9e5ef; border-radius: 11px; padding: 16px; background: #f0f6fb; }
+.moto-purchase-review-totals > div { display: grid; gap: 4px; }
+.moto-purchase-review-totals span { color: #617b97; font-size: 11px; font-weight: 700; }
+.moto-purchase-review-totals strong { color: #123c6a; font-size: 18px; }
+.moto-purchase-review-totals p { grid-column: 1/-1; margin: 0; color: #b42335; }
+@media(max-width:760px){.moto-purchase-inline .moto-purchase-footer{grid-template-columns:minmax(0,1fr)}.moto-purchase-footer-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.moto-purchase-footer-actions{display:grid;grid-template-columns:1fr 1.5fr}.moto-purchase-inline .moto-purchase-footer .moto-purchase-submit{min-width:0}.moto-purchase-inline .moto-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.moto-purchase-inline .moto-provider-field{grid-column:1/-1}.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(2){grid-column:1/-1}.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(3),.moto-purchase-inline .moto-purchase-section:first-child .moto-fields > label:nth-child(4){grid-column:span 1}.moto-purchase-review-grid,.moto-purchase-review-totals{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.moto-purchase-inline .moto-fields{grid-template-columns:minmax(0,1fr)}.moto-purchase-inline .moto-fields > .moto-field-wide:not(.moto-provider-field){grid-column:1}.moto-purchase-footer-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.moto-purchase-footer-summary strong{font-size:14px}.moto-purchase-review{padding:14px}}
+.moto-purchase-inline .moto-purchase-layout { overflow: auto; }
+/* La captura de compra comparte el detalle abierto y continuo de Nueva venta. */
+.moto-purchase-inline .moto-purchase-layout { gap:0; padding:0 26px 18px; background:#fff; }
+.moto-purchase-inline .moto-purchase-section { border:0; border-radius:0; padding:18px 0; box-shadow:none; }
+.moto-purchase-inline .moto-purchase-section + .moto-purchase-section { border-top:1px dashed #ccd8e1; padding-top:18px; }
+.moto-purchase-inline .moto-purchase-section:first-child .moto-purchase-section-title { display:none; }
+.moto-purchase-inline .moto-purchase-section-title { margin-bottom:14px; }
+.moto-purchase-inline .moto-purchase-section-title h3 { font-size:18px; letter-spacing:-.02em; }
+.moto-purchase-inline .moto-purchase-section-title p { font-size:12px; }
+.moto-purchase-inline .moto-purchase-footer { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:18px; padding:14px 22px; }
+.moto-purchase-inline .moto-purchase-footer { border-top:1px dashed #ccd8e1; }
+.moto-purchase-inline .moto-purchase-footer-summary { align-content:center; }
+.moto-purchase-inline .moto-purchase-footer-summary > div { min-height:60px; align-content:center; padding:8px 12px; border:1px solid #dce6ef; border-radius:10px; background:#fff; }
+.moto-purchase-inline .moto-purchase-footer-actions { align-items:end; }
+@media(max-width:760px){.moto-purchase-inline .moto-purchase-footer{grid-template-columns:minmax(0,1fr)}.moto-purchase-inline .moto-purchase-layout{padding:0 16px 14px}}
+.moto-purchase-inline .moto-modal-title > div { text-align:left; justify-items:start; }
+#root .moto-purchase-page .moto-purchase-inline > .moto-modal-title { box-sizing:border-box; min-height:78px !important; height:auto !important; padding:14px 22px !important; }
+#root .moto-purchase-page .moto-purchase-inline > .moto-modal-title::before { display:none !important; }
+#root .moto-purchase-page .moto-purchase-inline > .moto-modal-title h2 { margin:0 !important; font-size:22px !important; line-height:1.25 !important; }
+#root .moto-purchase-page .moto-purchase-inline > .moto-modal-title p { display:block !important; max-width:none; margin:0; color:#dce9f5; font-size:12px; font-weight:400; line-height:1.45; letter-spacing:0; text-transform:none; }
+.moto-purchase-inline .moto-purchase-footer.is-inline { display:grid; grid-template-columns:minmax(220px,1.1fr) minmax(120px,.55fr) minmax(300px,1.35fr); grid-template-rows:auto auto; align-items:center; justify-content:initial; gap:8px 18px; padding:10px 20px; border-top:1px solid #e2eaf3; background:#fff; }
+.moto-purchase-observation { grid-column:1; grid-row:1 / span 2; display:grid; align-self:stretch; gap:5px; color:#355372; font-size:11px; font-weight:700; }
+.moto-purchase-observation textarea { box-sizing:border-box; width:100%; min-height:60px; height:60px; resize:vertical; border:1px solid #d5e0ec; border-radius:8px; padding:9px 10px; color:#173c67; font:inherit; font-weight:400; }
+.moto-purchase-total { grid-column:2; grid-row:1 / span 2; display:grid; align-content:center; gap:5px; color:#617b97; font-size:11px; }
+.moto-purchase-total strong { color:#0f3b68; font-size:17px; white-space:nowrap; }
+.moto-initial-payments { grid-column:3; grid-row:1; display:grid; gap:8px; min-width:0; }
+.moto-initial-payment-row { display:grid; grid-template-columns:minmax(170px,1fr) minmax(100px,.55fr) auto; align-items:end; gap:10px; }
+.moto-initial-payment-row > label { display:grid; gap:4px; color:#355372; font-size:11px; font-weight:700; }
+.moto-initial-payment-row > label input { box-sizing:border-box; width:100%; min-height:38px; border:1px solid #d5e0ec; border-radius:8px; padding:0 9px; color:#173c67; font:inherit; }
+.moto-add-payment { justify-self:start; border:0; padding:3px 0; background:transparent; color:#17649a; font:inherit; font-size:12px; font-weight:750; cursor:pointer; }
+.moto-purchase-footer.is-inline .moto-purchase-footer-actions { grid-column:3; grid-row:2; justify-content:flex-end; align-items:center; gap:8px; }
+.moto-purchase-footer.is-inline .moto-purchase-footer-actions button:not(.moto-purchase-submit) { min-height:36px; }
+.moto-purchase-review-total { display:grid; gap:4px; color:#617b97; font-size:11px; }
+.moto-purchase-review-total strong { color:#123c6a; font-size:16px; }
+.moto-purchase-footer.is-inline.is-review { grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto; }
+.moto-purchase-footer.is-inline.is-review .moto-purchase-review-total { grid-column:1; grid-row:1; }
+.moto-purchase-footer.is-inline.is-review .moto-purchase-total,.moto-purchase-footer.is-inline.is-review .moto-initial-payments { display:none; }
+.moto-purchase-footer.is-inline.is-review .moto-purchase-footer-actions { grid-column:2; grid-row:1; }
+@media(max-width:980px){.moto-purchase-inline .moto-purchase-footer.is-inline:not(.is-review){grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)}.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-observation{grid-row:1 / span 2}.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-total{grid-column:2;grid-row:1}.moto-purchase-footer.is-inline:not(.is-review) .moto-initial-payments,.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-footer-actions{grid-column:2}.moto-purchase-footer.is-inline:not(.is-review) .moto-initial-payments{grid-row:2}.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-footer-actions{grid-row:3}}
+@media(max-width:700px){.moto-purchase-inline .moto-purchase-footer.is-inline:not(.is-review){grid-template-columns:minmax(0,1fr);padding:10px 12px}.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-observation,.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-total,.moto-purchase-footer.is-inline:not(.is-review) .moto-initial-payments,.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-footer-actions{grid-column:1;grid-row:auto}.moto-purchase-footer.is-inline:not(.is-review) .moto-purchase-footer-actions{display:grid;grid-template-columns:1fr 1.5fr}.moto-initial-payment-row{grid-template-columns:minmax(0,1fr) minmax(90px,.6fr) auto}}
+html[data-theme="oscuro"] .moto-purchase-inline .moto-purchase-footer.is-inline{border-color:var(--tema-borde);background:var(--tema-superficie)}
+html[data-theme="oscuro"] .moto-purchase-inline .moto-purchase-observation{color:var(--tema-texto)}
+html[data-theme="oscuro"] .moto-purchase-inline .moto-purchase-observation textarea,html[data-theme="oscuro"] .moto-initial-payment-row > label input{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] .moto-purchase-total strong,html[data-theme="oscuro"] .moto-purchase-review-total strong{color:var(--tema-texto)}

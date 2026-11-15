@@ -23,6 +23,9 @@ export class ControladorIngresos {
   @Get("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") listarSeriesConfiguradas() { return this.ingresos.listarSeriesConfiguradas(); }
   @Post("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarSerieConfigurada(@Body() datos: unknown) { return this.ingresos.guardarSerieConfigurada(datos); }
   @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }
+  @Get("guias/documentos") @RequierePermiso("INGRESOS.LEER") buscarDocumentosParaGuia(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarDocumentosParaGuia(busqueda); }
+  @Get("guias/documentos/:id") @RequierePermiso("INGRESOS.LEER") obtenerDocumentoParaGuia(@Param("id") id: string) { return this.ingresos.obtenerDocumentoParaGuia(id); }
+  @Get("ubigeos") @RequierePermiso("INGRESOS.LEER") listarUbigeos() { return this.ingresos.listarUbigeos(); }
   @Post("guias") @RequierePermiso("INGRESOS.CREAR") emitirGuia(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirGuia(datos, solicitud.usuario.id); }
   @Post("guias/:id/consultar") @RequierePermiso("INGRESOS.LEER") consultarGuia(@Param("id") id: string) { return this.ingresos.consultarGuia(id); }
   @Get("medios-pago") @RequierePermiso("INGRESOS.CREAR") obtenerMediosPagoDisponibles() { return this.ingresos.mediosPagoDisponibles(); }

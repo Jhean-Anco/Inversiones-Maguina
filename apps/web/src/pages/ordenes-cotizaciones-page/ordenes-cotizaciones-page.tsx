@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { FileOutput, MessageCircle } from "lucide-react";
 import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
@@ -18,6 +19,17 @@ const sumarDias = (fecha: string, dias: number) => { const resultado = new Date(
 const dinero = (valor: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(valor);
 const nombreCliente = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const totalLineas = (lineas: Record<string, unknown>[]) => lineas.reduce((suma, linea) => suma + Number(linea.cantidad ?? 1) * Number(linea.precioUnitario ?? 0) - Number(linea.descuento ?? 0), 0);
+const mensajeWhatsAppCotizacion = (cotizacion: Cotizacion) => [
+  `Cotización ${cotizacion.codigo}`,
+  `Cliente: ${cotizacion.clienteNombre ?? "Sin cliente"}`,
+  `Vigente hasta: ${cotizacion.vigenteHasta ?? "sin fecha"}`,
+  ...cotizacion.detalles.map((linea) => {
+    const cantidad = Number(linea.cantidad ?? 1);
+    const precio = Number(linea.precioUnitario ?? 0);
+    return `${String(linea.nombreVisible ?? linea.descripcion ?? "Artículo")} · ${cantidad} x ${dinero(cantidad * precio - Number(linea.descuento ?? 0))}`;
+  }),
+  `Total: ${dinero(totalLineas(cotizacion.detalles))}`,
+].join("\n");
 
 export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestion; puedeCrear: boolean }) {
   const navegar = useNavigate();
@@ -25,6 +37,9 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
   const [registrosOrden, setRegistrosOrden] = useState<OrdenServicio[]>([]);
   const [registrosCotizacion, setRegistrosCotizacion] = useState<Cotizacion[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstadoCotizacion, setFiltroEstadoCotizacion] = useState("TODAS");
+  const [filtroVigenciaDesde, setFiltroVigenciaDesde] = useState("");
+  const [filtroVigenciaHasta, setFiltroVigenciaHasta] = useState("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -171,7 +186,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
     setError("");
   }
   async function guardarGestion() {
-    if (!cliente && !ordenActiva) { setError("Selecciona un cliente."); return; }
+    if (esOrden && !cliente && !ordenActiva) { setError("Selecciona un cliente."); return; }
     if (!esOrden && !codigoCotizacionPrevisualizado) { setError(errorConsultaSerieCotizacion ? "No se pudo consultar la serie de cotización." : "Falta configurar una serie para cotizaciones."); return; }
     if (esOrden && !vehiculo.placa.trim()) { setError("Ingresa la placa o el identificador del vehículo."); return; }
     if (esOrden && !vehiculo.motivo.trim()) { setError("Indica el motivo de ingreso del vehículo."); return; }
@@ -190,7 +205,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
         if (ordenActiva) await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { diagnostico: vehiculo.diagnostico, motivo: vehiculo.motivo, detalles, estado: estadoOrden, notaAvance, fechaAcabado: fechaAcabadoOrden });
         else await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, vehiculoPlaca: vehiculo.placa, motivo: vehiculo.motivo, diagnostico: vehiculo.diagnostico || null, fechaRecepcion: fechaRecepcionOrden, fechaAcabado: fechaAcabadoOrden, detalles });
       } else {
-        await servicioIngresos.crearCotizacion({ clienteId: cliente!.id, detalles, observacion, vigenteHasta: vigenteHasta || null });
+        await servicioIngresos.crearCotizacion({ clienteId: cliente?.id ?? null, detalles, observacion, vigenteHasta: vigenteHasta || null });
         setConfirmarDescarteCotizacion(false); limpiarBorradorCotizacion();
       }
       setMostrarFormulario(false); setOrdenActiva(null); await cargar();
@@ -207,22 +222,24 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
     catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo emitir el documento."); }
     finally { setGuardando(false); }
   }
-  async function cambiarEstadoCotizacion(cotizacion: Cotizacion, estado: string) {
-    try { await servicioIngresos.cambiarEstadoCotizacion(cotizacion.id, estado); await cargar(); }
-    catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo actualizar el estado."); }
-  }
   function imprimirCotizacion(cotizacion: Cotizacion) {
-    return (formato: "A4" | "TICKET") => imprimirDocumento({ tipo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, cliente: cotizacion.clienteNombre, vigencia: cotizacion.vigenteHasta ?? undefined, estado: cotizacion.estado, lineas: cotizacion.detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad: String(cantidad), precio: dinero(precio), total: dinero(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: dinero(totalLineas(cotizacion.detalles)), observacion: cotizacion.observacion ?? undefined }, formato);
-  }
-  async function convertirCotizacion(cotizacion: Cotizacion) {
-    setGuardando(true); setError("");
-    try { await servicioIngresos.convertirCotizacion(cotizacion.id, { tipoComprobante: "BOLETA", medioPago: "EFECTIVO" }); await cargar(); }
-    catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo convertir la cotización."); }
-    finally { setGuardando(false); }
+    return (formato: "A4" | "TICKET") => imprimirDocumento({ tipo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, cliente: cotizacion.clienteNombre ?? "Sin cliente", vigencia: cotizacion.vigenteHasta ?? undefined, estado: cotizacion.estado, lineas: cotizacion.detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad: String(cantidad), precio: dinero(precio), total: dinero(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: dinero(totalLineas(cotizacion.detalles)), observacion: cotizacion.observacion ?? undefined }, formato);
   }
 
-  const controlesListado = <div className="gestion-ingresos-heading"><input aria-label="Buscar" placeholder={esOrden ? "Buscar código, cliente o vehículo" : "Buscar código o cliente"} value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} /></div>;
+  function abrirVentaCotizacion(cotizacion: Cotizacion, tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA") {
+    navegar("/ingresos/nuevo/repuestos", { state: { cotizacion: { id: cotizacion.id, codigo: cotizacion.codigo, clienteId: cotizacion.clienteId, clienteNombre: cotizacion.clienteNombre, detalles: cotizacion.detalles, observacion: cotizacion.observacion, tipoComprobante } } });
+  }
 
+  const controlesListado = <div className={`gestion-ingresos-heading${esOrden ? "" : " cotizaciones-list-filters"}`}><input aria-label="Buscar" placeholder={esOrden ? "Buscar código, cliente o vehículo" : "Buscar código o cliente"} value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} />{!esOrden && <><label>Estado<select value={filtroEstadoCotizacion} onChange={(evento) => setFiltroEstadoCotizacion(evento.target.value)}><option value="TODAS">Todos los estados</option><option value="ACTIVA">Activa</option><option value="INACTIVA">Inactiva</option><option value="EMITIDA">Emitida</option></select></label><label>Vigencia desde<input type="date" value={filtroVigenciaDesde} onChange={(evento) => setFiltroVigenciaDesde(evento.target.value)} /></label><label>Vigencia hasta<input type="date" value={filtroVigenciaHasta} onChange={(evento) => setFiltroVigenciaHasta(evento.target.value)} /></label></>}</div>;
+
+  const documentoCotizacionCompletado = (cotizacion: Cotizacion) => Boolean(cotizacion.ingresoId && (cotizacion.ingresoTipoComprobante === "NOTA_VENTA" ? cotizacion.ingresoEstado === "REGISTRADO" : cotizacion.ingresoEstado === "EMITIDO"));
+  const estadoVisibleCotizacion = (cotizacion: Cotizacion) => documentoCotizacionCompletado(cotizacion) ? "EMITIDA" : cotizacion.estado === "ANULADA" || cotizacion.estado === "RECHAZADA" || Boolean(cotizacion.vigenteHasta && cotizacion.vigenteHasta < hoy()) ? "INACTIVA" : "ACTIVA";
+  const cotizacionesFiltradas = registrosCotizacion.filter((cotizacion) => {
+    const fecha = cotizacion.vigenteHasta ?? "";
+    return (filtroEstadoCotizacion === "TODAS" || estadoVisibleCotizacion(cotizacion) === filtroEstadoCotizacion)
+      && (!filtroVigenciaDesde || fecha >= filtroVigenciaDesde)
+      && (!filtroVigenciaHasta || (fecha && fecha <= filtroVigenciaHasta));
+  });
   return <section className={`gestion-ingresos-page ${esOrden ? "is-ordenes" : "is-cotizaciones"}${mostrarFormulario ? " is-editing" : ""}`}>
     {error && <p className="gestion-ingresos-error" role="alert">{error}</p>}
     {!mostrarFormulario && (esOrden ? (
@@ -246,7 +263,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
         controlesCabecera={controlesListado}
         titulo="Cotizaciones"
         descripcion="Propuestas comerciales y su conversión en ventas."
-        registros={registrosCotizacion}
+        registros={cotizacionesFiltradas}
         cargando={cargando}
         error={null}
         claseTabla="cotizaciones-tabla"
@@ -257,15 +274,15 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
         renderizarFila={(cotizacion) => <tr key={cotizacion.id}>
           <td className="cotizacion-code">{cotizacion.codigo}</td>
           <td>{cotizacion.fecha}</td>
-          <td className="cotizacion-client">{cotizacion.clienteNombre}</td>
+          <td className="cotizacion-client">{cotizacion.clienteNombre || "Sin cliente"}</td>
           <td>{cotizacion.vigenteHasta ?? "Sin fecha"}</td>
-          <td><span className={`gestion-status is-${cotizacion.estado.toLowerCase()}`}>{cotizacion.estado}</span></td>
-          <td className="cotizacion-total">{dinero(totalLineas(cotizacion.detalles))}<details><summary>Ver detalle</summary>{cotizacion.detalles.map((linea, i) => <div key={i}>{String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto")} · {String(linea.cantidad ?? "1")} × {dinero(Number(linea.precioUnitario ?? 0))}</div>)}</details></td>
+          <td><span className={`gestion-status is-${estadoVisibleCotizacion(cotizacion).toLowerCase()}`}>{estadoVisibleCotizacion(cotizacion) === "EMITIDA" ? "Emitida" : estadoVisibleCotizacion(cotizacion) === "INACTIVA" ? "Inactiva" : "Activa"}</span></td>
+          <td className="cotizacion-total">{dinero(totalLineas(cotizacion.detalles))}</td>
           <td><div className="cotizacion-actions">
             <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} alImprimirA4={() => imprimirCotizacion(cotizacion)("A4")} alImprimirTicket={() => imprimirCotizacion(cotizacion)("TICKET")} />
-            {cotizacion.estado === "BORRADOR" && <button type="button" className="is-secondary" onClick={() => void cambiarEstadoCotizacion(cotizacion, "ENVIADA")}>Marcar como enviada</button>}
-            {["BORRADOR", "ENVIADA"].includes(cotizacion.estado) && <button type="button" className="is-secondary" onClick={() => void cambiarEstadoCotizacion(cotizacion, "ACEPTADA")}>Marcar como aceptada</button>}
-            {cotizacion.estado === "ACEPTADA" && <button type="button" className="is-primary" disabled={guardando} onClick={() => void convertirCotizacion(cotizacion)}>Convertir a venta</button>}
+            <a className="cotizacion-whatsapp cotizacion-icon-action erp-icon-action" href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsAppCotizacion(cotizacion))}`} target="_blank" rel="noreferrer" title={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} aria-label={`Enviar cotización ${cotizacion.codigo} por WhatsApp`}><MessageCircle aria-hidden="true" size={17}/></a>
+            {!cotizacion.ingresoId && estadoVisibleCotizacion(cotizacion) !== "EMITIDA" && <details className="cotizacion-document-menu"><summary className="cotizacion-document-trigger erp-icon-action is-primary" title={`Preparar documento de ${cotizacion.codigo}`} aria-label={`Preparar documento de ${cotizacion.codigo}`} aria-haspopup="menu"><FileOutput aria-hidden="true" size={17}/></summary><div className="cotizacion-document-options" role="menu" aria-label={`Tipo de documento para ${cotizacion.codigo}`}><button type="button" role="menuitem" disabled={estadoVisibleCotizacion(cotizacion) === "INACTIVA"} onClick={() => abrirVentaCotizacion(cotizacion, "FACTURA")}>Factura</button><button type="button" role="menuitem" disabled={estadoVisibleCotizacion(cotizacion) === "INACTIVA"} onClick={() => abrirVentaCotizacion(cotizacion, "BOLETA")}>Boleta de venta</button><button type="button" role="menuitem" disabled={estadoVisibleCotizacion(cotizacion) === "INACTIVA"} onClick={() => abrirVentaCotizacion(cotizacion, "NOTA_VENTA")}>Nota de venta</button></div></details>}
+            {cotizacion.ingresoId && !documentoCotizacionCompletado(cotizacion) && <span className="cotizacion-emision-pendiente">Documento pendiente de confirmación</span>}
           </div></td>
         </tr>}
       />

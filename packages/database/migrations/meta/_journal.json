@@ -1254,6 +1254,20 @@
       "when": 1794700000000,
       "tag": "0178_add_fecha_acabado_orden_servicio",
       "breakpoints": true
+    },
+    {
+      "idx": 179,
+      "version": "7",
+      "when": 1794730525351,
+      "tag": "0179_guias_vinculo_ubigeos",
+      "breakpoints": true
+    },
+    {
+      "idx": 180,
+      "version": "7",
+      "when": 1794744809279,
+      "tag": "0180_cotizaciones_cliente_opcional",
+      "breakpoints": true
     }
   ]
 }

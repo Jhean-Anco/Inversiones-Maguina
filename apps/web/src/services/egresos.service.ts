@@ -1,6 +1,6 @@
 import { solicitarApi } from "./api-cliente";
 
-export type TipoEgreso = "GASTO_OPERATIVO" | "ACTIVO_HERRAMIENTA" | "MOTOTAXI";
+export type TipoEgreso = "MOTOTAXI";
 export type PagoEgreso = { id: string; egresoId: string; fechaPago: string; importePagado: string; medioPago: string; claveIdempotencia: string; usuarioId: string; creadoEn: string };
 export type Egreso = {
   id: string; codigo: string; tipo: TipoEgreso; fecha: string; categoria: string; concepto: string;
@@ -22,11 +22,11 @@ export type DatosEgreso = {
 export const servicioEgresos = {
   listar(tipo: TipoEgreso, pagina: number, porPagina: number, busqueda: string, contextoInventario = false) {
     const parametros = new URLSearchParams({ tipo, pagina: String(pagina), porPagina: String(porPagina), busqueda });
-    const ruta = contextoInventario && tipo === "MOTOTAXI" ? "/inventario/mototaxis" : "/egresos";
+    const ruta = contextoInventario ? "/inventario/mototaxis" : "/egresos";
     return solicitarApi<PaginaEgresos>(`${ruta}?${parametros.toString()}`);
   },
   crear(datos: DatosEgreso, contextoInventario = false) {
-    const ruta = contextoInventario && datos.tipo === "MOTOTAXI" ? "/inventario/mototaxis" : "/egresos";
+    const ruta = contextoInventario ? "/inventario/mototaxis" : "/egresos";
     return solicitarApi<Egreso>(ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },
   registrarPago(id: string, datos: { fechaPago: string; importePagado: string; medioPago: string; cuentaFinancieraId: string; claveIdempotencia: string }, contextoInventario = false) {

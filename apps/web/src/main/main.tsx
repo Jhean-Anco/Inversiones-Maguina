@@ -45,10 +45,10 @@ function App() {
           <Route path="/mototaxis/resumen" element={<Navigate to="/inventario/mototaxis" replace />} />
           <Route path="/mototaxis/modelos" element={<Navigate to="/inventario/mototaxis" replace />} />
           <Route path="/mototaxis/unidades" element={<Navigate to="/inventario/mototaxis/unidades" replace />} />
+          <Route path="/mototaxis/compras/nueva" element={<InicioPage />} />
           <Route path="/mototaxis/:seccion" element={<InicioPage />} />
+          <Route path="/egresos/compras/nueva" element={<InicioPage />} />
           <Route path="/egresos/compras" element={<InicioPage />} />
-          <Route path="/egresos/gastos-operativos" element={<InicioPage />} />
-          <Route path="/egresos/activos-herramientas" element={<InicioPage />} />
           <Route path="/egresos/mototaxis" element={<Navigate to="/mototaxis/compras" replace />} />
           <Route path="/inventario/entradas-stock" element={<Navigate to="/egresos/compras" replace />} />
           <Route path="/inventario/movimientos-ajustes" element={<InicioPage />} />

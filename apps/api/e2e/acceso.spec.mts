@@ -10,11 +10,13 @@ import {
   archivosLocales,
   cerrarBaseDatos,
   categoriasProductos,
+  cuentasFinancieras,
   db,
   entradasStock,
   entradasStockDetalle,
   marcasProductos,
   movimientosStock,
+  pagosEntradasStock,
   personas,
   productos,
   productosPresentaciones,
@@ -208,6 +210,46 @@ test("el formulario de acceso expone controles utilizables con teclado y viewpor
   assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
 });
 
+test("el tema claro y oscuro se alterna y persiste entre recargas", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  const raiz = page.locator("html");
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
+  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
+  await expect(raiz).toHaveJSProperty("style.colorScheme", "dark");
+  await page.reload();
+  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
+
+  await page.getByRole("button", { name: "Activar modo claro" }).click();
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+  await expect(raiz).toHaveJSProperty("style.colorScheme", "light");
+  await page.reload();
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+});
+
+test("el shell autenticado no se desborda en anchos móviles, tablet y escritorio", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  for (const width of [320, 360, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width < 500 ? 800 : 900 });
+    await expect(page.getByRole("main")).toBeVisible();
+    const dimensiones = await page.evaluate(() => ({
+      documento: document.documentElement.scrollWidth,
+      ventana: document.documentElement.clientWidth,
+    }));
+    expect(dimensiones.documento, `Desbordamiento horizontal con viewport de ${width}px.`).toBeLessThanOrEqual(dimensiones.ventana);
+  }
+});
+
 test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async ({ request }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de validar su sesión.");
   const api = process.env.VITE_API_URL;
@@ -328,6 +370,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
   let categoriaId: string | undefined;
   let marcaId: string | undefined;
   let productoId: string | undefined;
+  let cuentaFinancieraId: string | undefined;
   let rolAsignado = false;
 
   try {
@@ -365,6 +408,11 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
       seVende: true,
       esBase: true,
     });
+    const [cuenta] = await db
+      .insert(cuentasFinancieras)
+      .values({ tipo: "EFECTIVO", nombre: `Caja E2E ${sufijo}`, moneda: "PEN", usuarioId })
+      .returning({ id: cuentasFinancieras.id });
+    cuentaFinancieraId = cuenta.id;
     await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
     rolAsignado = true;
 
@@ -377,21 +425,23 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const dialogo = page.getByRole("dialog", { name: "Nueva compra de repuestos" });
+    const dialogo = page.locator(".stock-entry-modal");
+    await expect(dialogo.getByRole("heading", { name: "Registrar compra" })).toBeVisible();
     await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
-    await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
-    const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });
+    await page.getByRole("textbox", { name: "Buscar repuestos para comprar" }).fill(nombreProducto);
+    const resultadoProducto = page.locator(".stock-purchase-catalog-results .venta-catalog-product").filter({ hasText: nombreProducto });
     await expect(resultadoProducto).toBeVisible();
-    await resultadoProducto.click();
-    await dialogo.getByLabel("Cantidad recibida").fill("4");
-    await dialogo.getByLabel("Costo por presentación (S/)").fill("3.25");
-    await dialogo.getByRole("button", { name: /Agregar a la compra/ }).click();
+    await resultadoProducto.getByRole("button", { name: "Seleccionar" }).click();
+    await dialogo.getByLabel(`Cantidad de ${nombreProducto}`).fill("4");
+    await dialogo.getByLabel(`Precio total de ${nombreProducto}`).fill("13.00");
+    await page.getByLabel("Cuenta o medio de pago").selectOption(cuentaFinancieraId!);
     await expect(dialogo.locator(".stock-entry-total")).toContainText("S/ 13.00");
 
+    await page.getByRole("button", { name: /Continuar/ }).click();
     const respuestaCompra = page.waitForResponse((respuesta) =>
       respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname === "/inventario/entradas-stock",
     );
-    await dialogo.getByRole("button", { name: "Registrar compra" }).click();
+    await page.getByRole("button", { name: "Registrar compra" }).click();
     const respuesta = await respuestaCompra;
     const cuerpoRespuesta = await respuesta.text();
     expect(respuesta.status(), `Respuesta de la API: ${cuerpoRespuesta}`).toBe(201);
@@ -438,9 +488,11 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
         .where(eq(entradasStockDetalle.productoId, productoId));
       await db.delete(movimientosStock).where(eq(movimientosStock.productoId, productoId));
       await db.delete(saldosStock).where(eq(saldosStock.productoId, productoId));
+      if (cuentaFinancieraId) await db.delete(pagosEntradasStock).where(eq(pagosEntradasStock.cuentaFinancieraId, cuentaFinancieraId));
       for (const entrada of entradas) await db.delete(entradasStock).where(eq(entradasStock.id, entrada.id));
       await db.delete(productos).where(eq(productos.id, productoId));
     }
+    if (cuentaFinancieraId) await db.delete(cuentasFinancieras).where(eq(cuentasFinancieras.id, cuentaFinancieraId));
     if (categoriaId) await db.delete(categoriasProductos).where(eq(categoriasProductos.id, categoriaId));
     if (marcaId) await db.delete(marcasProductos).where(eq(marcasProductos.id, marcaId));
     if (rolAsignado && usuarioId) {
