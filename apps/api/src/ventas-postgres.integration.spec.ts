@@ -58,6 +58,9 @@ before(async () => {
   const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
   seriesFiscalesPrueba.push(serieBoleta);
   await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });
+  const serieNotaVenta = `NQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
+  seriesFiscalesPrueba.push(serieNotaVenta);
+  await servicio.guardarSerieConfigurada({ tipoComprobante: "NOTA_VENTA", serie: serieNotaVenta, ultimoNumero: 0 });
 
   const [tipoNatural] = await db.select({ id: esquema.tiposPersona.id }).from(esquema.tiposPersona)
     .where(eq(esquema.tiposPersona.codigo, "NATURAL")).limit(1);
