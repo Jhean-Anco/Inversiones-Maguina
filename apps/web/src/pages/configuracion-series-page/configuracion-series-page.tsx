@@ -7,20 +7,20 @@ import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { solicitarApi } from "../../services/api-cliente";
 import "./configuracion-series-page.css";
 
-type Tipo = "BOLETA" | "FACTURA" | "NOTA_CREDITO_FACTURA" | "NOTA_DEBITO_FACTURA" | "NOTA_CREDITO_BOLETA" | "NOTA_DEBITO_BOLETA" | "GUIA_REMITENTE" | "GUIA_TRANSPORTISTA" | "NOTA_VENTA" | "ORDEN_SERVICIO" | "COTIZACION";
+type Tipo = "BOLETA" | "FACTURA" | "NOTA_CREDITO_FACTURA" | "NOTA_DEBITO_FACTURA" | "NOTA_CREDITO_BOLETA" | "NOTA_DEBITO_BOLETA" | "GUIA_REMITENTE" | "NOTA_VENTA" | "ORDEN_SERVICIO" | "COTIZACION";
 type Serie = { id: string; tipoComprobante: Tipo; serie: string; activa: boolean; ultimoNumero: number };
 const tipos: { tipo: Tipo; nombre: string; regla: RegExp }[] = [
   { tipo: "BOLETA", nombre: "Boleta", regla: /^B[A-Z0-9]{3}$/ }, { tipo: "FACTURA", nombre: "Factura", regla: /^F[A-Z0-9]{3}$/ },
   { tipo: "NOTA_CREDITO_FACTURA", nombre: "Nota de crédito · factura", regla: /^F[A-Z0-9]{3}$/ }, { tipo: "NOTA_DEBITO_FACTURA", nombre: "Nota de débito · factura", regla: /^F[A-Z0-9]{3}$/ },
   { tipo: "NOTA_CREDITO_BOLETA", nombre: "Nota de crédito · boleta", regla: /^B[A-Z0-9]{3}$/ }, { tipo: "NOTA_DEBITO_BOLETA", nombre: "Nota de débito · boleta", regla: /^B[A-Z0-9]{3}$/ },
-  { tipo: "GUIA_REMITENTE", nombre: "Guía de remisión · remitente", regla: /^T[A-Z0-9]{3}$/ }, { tipo: "GUIA_TRANSPORTISTA", nombre: "Guía de remisión · transportista", regla: /^V[A-Z0-9]{3}$/ },
+  { tipo: "GUIA_REMITENTE", nombre: "Guía de remisión · remitente", regla: /^T[A-Z0-9]{3}$/ },
   { tipo: "NOTA_VENTA", nombre: "Nota de venta", regla: /^[A-Z0-9]{1,4}$/ }, { tipo: "ORDEN_SERVICIO", nombre: "Orden de servicio", regla: /^[A-Z0-9]{1,4}$/ }, { tipo: "COTIZACION", nombre: "Cotización", regla: /^[A-Z0-9]{1,4}$/ },
 ];
 
 const nombreDocumento = (tipo: Tipo) => tipos.find((opcion) => opcion.tipo === tipo)?.nombre ?? tipo;
 const ejemploSerie = (tipo: Tipo) => tipo.startsWith("NOTA_CREDITO_FACTURA") || tipo.startsWith("NOTA_DEBITO_FACTURA") || tipo === "FACTURA" ? "F001"
   : tipo.startsWith("NOTA_CREDITO_BOLETA") || tipo.startsWith("NOTA_DEBITO_BOLETA") || tipo === "BOLETA" ? "B001"
-    : tipo === "GUIA_REMITENTE" ? "T001" : tipo === "GUIA_TRANSPORTISTA" ? "V001"
+    : tipo === "GUIA_REMITENTE" ? "T001"
       : tipo === "ORDEN_SERVICIO" ? "OS01" : tipo === "COTIZACION" ? "COT1" : "NV01";
 
 export function ConfiguracionSeriesPage() {

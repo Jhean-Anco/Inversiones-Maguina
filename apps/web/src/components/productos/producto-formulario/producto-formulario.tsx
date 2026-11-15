@@ -48,7 +48,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
   return createPortal(<div className="catalog-modal-backdrop producto-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.guardando) alCerrar(); }}>
     <section className="catalog-modal producto-modal" role="dialog" aria-modal="true" aria-labelledby="producto-form-title">
       <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario" onClick={alCerrar}>×</button>
-      {(error || formulario.errorLocal) && <div className="catalog-alert catalog-modal-alert" role="alert">{formulario.errorLocal || error}</div>}
+      {(error || formulario.errorLocal) && <div className="catalog-alert catalog-modal-alert" role="alert"><strong>{formulario.errorLocal ? "Revisa los datos del formulario." : "No se guardó el repuesto."}</strong><span>{formulario.errorLocal || error}</span></div>}
       <form className="catalog-form producto-form" onSubmit={manejarEnvio}>
         <div className="catalog-form-title"><span>▧</span><div><h2 id="producto-form-title">{formulario.modoEdicion ? "Editar repuesto" : "Nuevo repuesto"}</h2><p>Registra los datos de catálogo, venta y presentaciones del repuesto.</p></div></div>
         <div className="producto-form-scroll" ref={desplazamientoFormulario}>
@@ -129,12 +129,12 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
           <fieldset className="producto-form-section">
             <legend>Ficha técnica</legend>
             <p className="producto-section-help">Añade solo las características que correspondan al repuesto; por ejemplo, viscosidad, voltaje, medidas o aplicación.</p>
-            <div className="producto-spec-list">{formulario.ficha.map((dato, indice) => <div className="producto-row" key={`${dato.clave}-${indice}`}>
+            <div className="producto-spec-list">{formulario.ficha.map((dato, indice) => <div className="producto-row" key={dato.id}>
               <input aria-label="Característica técnica" value={dato.clave} onChange={(event) => formulario.setFicha((actual) => actual.map((fila, i) => i === indice ? { ...fila, clave: event.target.value } : fila))} maxLength={60} placeholder="Característica" />
               <input aria-label="Valor de característica" value={dato.valor} onChange={(event) => formulario.setFicha((actual) => actual.map((fila, i) => i === indice ? { ...fila, valor: event.target.value } : fila))} maxLength={300} placeholder="Valor" />
               <AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar característica" onClick={() => formulario.setFicha((actual) => actual.filter((_, i) => i !== indice))} />
             </div>)}</div>
-            <button type="button" className="producto-add-row" onClick={() => formulario.setFicha((actual) => [...actual, { clave: "", valor: "" }])}>+ Agregar característica</button>
+            <button type="button" className="producto-add-row" onClick={() => formulario.setFicha((actual) => [...actual, { id: globalThis.crypto?.randomUUID?.() ?? `ficha-${Date.now()}-${Math.random().toString(36).slice(2)}`, clave: "", valor: "" }])}>+ Agregar característica</button>
           </fieldset>
           <fieldset className="producto-form-section">
             <legend>Imágenes y estado</legend>

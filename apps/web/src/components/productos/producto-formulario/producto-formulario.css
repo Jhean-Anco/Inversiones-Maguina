@@ -1,5 +1,8 @@
 
 .producto-form { background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%); }
+.producto-form .catalog-modal-alert { display: grid; gap: 3px; }
+.producto-form .catalog-modal-alert > strong { font-size: 12px; }
+.producto-form .catalog-modal-alert > span { line-height: 1.45; }
 .catalog-form .producto-check-label input[type="checkbox"]{ width: 18px; height: 18px; min-width: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: #155b9c; }
 .catalog-form .producto-editor-table input:not([type="checkbox"]), .catalog-form .producto-editor-table select { min-width: 96px; min-height: 38px; padding: 0 8px; font-size: 12px; }
 .producto-editor-table input[type="checkbox"] { width: 16px; min-height: 16px; accent-color: #15569a; }

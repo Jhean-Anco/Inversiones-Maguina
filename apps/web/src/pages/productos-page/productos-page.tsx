@@ -1,6 +1,7 @@
 import "./productos-page.css";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
+import { EtiquetaCodigoBarras } from "../../components/productos/etiqueta-codigo-barras";
 import { useProductos } from "../../hooks/use-productos";
 import type { Producto } from "../../services/inventario/productos.service";
 
@@ -10,6 +11,7 @@ export function ProductosPage() {
   const modulo = useProductos();
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
+  const [productoParaEtiqueta, setProductoParaEtiqueta] = useState<Producto | null>(null);
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
@@ -28,6 +30,10 @@ export function ProductosPage() {
     const completo = await modulo.consultar(id);
     if (completo) { setProductoEditando(completo); setFormularioAbierto(true); }
   }
+  async function imprimirCodigoBarras(id: string) {
+    const completo = await modulo.consultar(id);
+    if (completo) setProductoParaEtiqueta(completo);
+  }
   async function guardarProducto(datos: Parameters<typeof modulo.guardar>[0], imagenesNuevas: File[], imagenesEliminadas: string[]) {
     const guardado = await modulo.guardar(datos, productoEditando?.id, imagenesNuevas, imagenesEliminadas);
     if (guardado) { setRevision((actual) => actual + 1); cerrarFormulario(); }
@@ -40,8 +46,9 @@ export function ProductosPage() {
 
   return <section className="repuestos-module">
     <Suspense fallback={<div className="repuestos-module-loading" role="status">Cargando catálogo y precios…</div>}>
-      <PreciosProductosPage integrado revision={revision} alCrearProducto={nuevoProducto} alEditarProducto={editarProducto} alCambiarEstado={cambiarEstado} />
+      <PreciosProductosPage integrado revision={revision} alCrearProducto={nuevoProducto} alEditarProducto={editarProducto} alCambiarEstado={cambiarEstado} alImprimirCodigo={imprimirCodigoBarras} />
     </Suspense>
     {formularioAbierto && <ProductoFormulario catalogos={modulo.catalogos} producto={productoEditando} error={modulo.error} alCerrar={cerrarFormulario} alGuardar={guardarProducto} alCrearMarca={modulo.crearMarca} alCrearCategoria={modulo.crearCategoria} />}
+    {productoParaEtiqueta && <EtiquetaCodigoBarras producto={productoParaEtiqueta} alCerrar={() => setProductoParaEtiqueta(null)} />}
   </section>;
 }

@@ -34,7 +34,7 @@ function App() {
           <Route path="/reportes/ingresos" element={<InicioPage />} />
           <Route path="/clientes" element={<InicioPage />} />
           <Route path="/personas/proveedores" element={<InicioPage />} />
-          <Route path="/personas/conductores" element={<InicioPage />} />
+          <Route path="/personas/conductores" element={<Navigate to="/ingresos/guias" replace />} />
           <Route path="/inventario/categorias" element={<InicioPage />} />
           <Route path="/inventario/marcas" element={<InicioPage />} />
           <Route path="/inventario/productos" element={<InicioPage />} />
