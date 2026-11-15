@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { BadRequestException } from "@nestjs/common";
 import { ServicioProductos } from "./productos.service";
 import { esCodigoEAN13Valido } from "./codigo-barras";
 
@@ -22,7 +23,7 @@ function validar(datosParciales: Record<string, unknown> = {}) {
     precios: [{ presentacionClave: "base", tipoListaPrecioId: listaId, precio: "12.00", cantidadMinima: "1" }],
     ...datosParciales,
   };
-  const validador = servicio as unknown as { validarDatos: (entrada: unknown) => { codigos: Array<{ tipo: string; codigo: string }> } };
+  const validador = servicio as unknown as { validarDatos: (entrada: unknown) => { codigos: Array<{ tipo: string; codigo: string }>; fichaTecnica: Record<string, unknown> } };
   return validador.validarDatos(datos);
 }
 
@@ -37,4 +38,26 @@ test("conserva un GTIN ingresado y no genera otro código de barras", () => {
   const gtin = "4006381333931";
   const { codigos } = validar({ codigos: [{ tipo: "GTIN", codigo: gtin }] });
   assert.deepEqual(codigos.map((codigo) => codigo.codigo), [gtin]);
+});
+
+test("valida datos continuos de ficha técnica y conserva sus tipos", () => {
+  const { fichaTecnica } = validar({ fichaTecnica: { voltaje: 12, reforzado: true, compatibilidad: null } });
+  assert.deepEqual(fichaTecnica, { voltaje: 12, reforzado: true, compatibilidad: null });
+});
+
+test("rechaza ficha técnica que no sea un objeto", () => {
+  assert.throws(() => validar({ fichaTecnica: ["12V"] }), BadRequestException);
+});
+
+test("rechaza repuestos sin precio de unidad base", () => {
+  assert.throws(() => validar({ precios: [] }), /precio para la unidad base/i);
+});
+
+test("rechaza códigos externos con un tipo no permitido", () => {
+  assert.throws(() => validar({ codigos: [{ tipo: "DESCONOCIDO", codigo: "X-1" }] }), /tipo de código/i);
+});
+
+test("rechaza presentaciones duplicadas y presentaciones sin uso", () => {
+  assert.throws(() => validar({ presentaciones: [{ clave: "base", unidadMedidaCodigo: "NIU", nombre: "Duplicada", factorAUnidadBase: "1", seCompra: true, seVende: true }] }), /identificador diferente/i);
+  assert.throws(() => validar({ presentaciones: [{ clave: "caja", unidadMedidaCodigo: "NIU", nombre: "Caja", factorAUnidadBase: "12", seCompra: false, seVende: false }] }), /debe usarse para compra o venta/i);
 });
