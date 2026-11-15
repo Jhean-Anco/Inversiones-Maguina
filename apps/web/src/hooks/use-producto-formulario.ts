@@ -24,7 +24,7 @@ export function useProductoFormulario({ producto, catalogos, alGuardar, alCrearM
   const [imagenesNuevas, setImagenesNuevas] = useState<File[]>([]);
   const [imagenesEliminadas, setImagenesEliminadas] = useState<string[]>([]);
   const [vistasPreviasImagenes, setVistasPreviasImagenes] = useState<string[]>([]);
-  const [ficha, setFicha] = useState<Array<{ clave: string; valor: string }>>([]);
+  const [ficha, setFicha] = useState<Array<{ id: string; clave: string; valor: string }>>([]);
   const [codigos, setCodigos] = useState<Array<{ clave: string; tipo: CodigoProducto["tipo"]; codigo: string }>>([]);
   const [presentaciones, setPresentaciones] = useState<Array<PresentacionProducto & { clave: string }>>([]);
   const [precios, setPrecios] = useState<Array<PrecioProducto & { clave: string }>>([]);
@@ -47,7 +47,7 @@ export function useProductoFormulario({ producto, catalogos, alGuardar, alCrearM
     setMarcaId(producto?.marcaId ?? "");
     setUnidadBaseCodigo(producto?.unidadBaseCodigo ?? "NIU"); setStockMinimo(producto?.stockMinimo ?? "0"); setAfectacionIgv(producto?.afectacionIgv ?? (producto?.afectoIgv === false ? "INAFECTO" : "GRAVADO"));
     setActivo(producto?.activo ?? true); setImagenesNuevas([]); setImagenesEliminadas([]);
-    setFicha(Object.entries(producto?.fichaTecnica ?? {}).map(([clave, valor]) => ({ clave, valor: String(valor ?? "") })));
+    setFicha(Object.entries(producto?.fichaTecnica ?? {}).map(([clave, valor]) => ({ id: claveLocal(), clave, valor: String(valor ?? "") })));
     setCodigos((producto?.codigos ?? []).map((item) => ({ ...item, clave: item.id ?? claveLocal() })));
     const adicionales = (producto?.presentaciones ?? []).filter((item) => !item.esBase).map((item) => ({ ...item, clave: item.clave ?? item.id ?? claveLocal() }));
     setPresentaciones(adicionales);

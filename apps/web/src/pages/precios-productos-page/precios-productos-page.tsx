@@ -1,5 +1,6 @@
 import "./precios-productos-page.css";
 import { useEffect, useRef, useState } from "react";
+import { Printer } from "lucide-react";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
@@ -16,9 +17,10 @@ type PropiedadesPreciosProductos = {
   alCrearProducto?: () => void;
   alEditarProducto?: (id: string) => void;
   alCambiarEstado?: (id: string, activo: boolean) => void;
+  alImprimirCodigo?: (id: string) => void;
 };
 
-export function PreciosProductosPage({ integrado = false, revision = 0, alCrearProducto, alEditarProducto, alCambiarEstado }: PropiedadesPreciosProductos) {
+export function PreciosProductosPage({ integrado = false, revision = 0, alCrearProducto, alEditarProducto, alCambiarEstado, alImprimirCodigo }: PropiedadesPreciosProductos) {
   const [items, setItems] = useState<PrecioCatalogo[]>([]);
   const [precios, setPrecios] = useState<Record<string, string>>({});
   const [busqueda, setBusqueda] = useState("");
@@ -79,7 +81,7 @@ export function PreciosProductosPage({ integrado = false, revision = 0, alCrearP
           <td data-label="Desde">{Number(item.cantidadMinima).toLocaleString("es-PE")}</td>
           <td data-label="Precio S/"><label className="precios-productos-input"><span className="sr-only">Precio de {item.producto}, {item.listaPrecio}, {item.presentacion}</span><input type="number" inputMode="decimal" min="0" step="0.10" value={precio} onChange={(event) => setPrecios((actuales) => ({ ...actuales, [item.id]: event.target.value }))} onBlur={(event) => setPrecios((actuales) => ({ ...actuales, [item.id]: redondearPrecioADecimos(event.currentTarget.value) }))} /></label>{cambio && <small className="precios-productos-current">Antes {soles(item.precio)}</small>}</td>
           <td data-label="Guardar precio"><button type="button" disabled={!cambio || guardandoId !== null} onClick={() => void guardarPrecio(item)}>{guardandoId === item.id ? "Guardando…" : cambio ? "Guardar" : "Al día"}</button></td>
-          <td data-label="Acciones"><div className="precios-productos-row-actions">{alEditarProducto && <AccionIcono accion="editar" etiqueta={`Editar ${item.producto}`} onClick={() => alEditarProducto(item.productoId)} />}{alCambiarEstado && <AccionIcono accion={item.productoActivo ? "desactivar" : "activar"} etiqueta={`${item.productoActivo ? "Desactivar" : "Activar"} ${item.producto}`} onClick={() => { const accion = item.productoActivo ? "desactivar" : "activar"; if (window.confirm(`¿Deseas ${accion} ${item.producto}?`)) alCambiarEstado(item.productoId, item.productoActivo); }} />}</div></td>
+          <td data-label="Acciones"><div className="precios-productos-row-actions">{alImprimirCodigo && <button className="erp-icon-action" type="button" aria-label={`Imprimir código de barras de ${item.producto}`} title={`Imprimir código de barras de ${item.producto}`} onClick={() => alImprimirCodigo(item.productoId)}><Printer aria-hidden="true" size={16} /></button>}{alEditarProducto && <AccionIcono accion="editar" etiqueta={`Editar ${item.producto}`} onClick={() => alEditarProducto(item.productoId)} />}{alCambiarEstado && <AccionIcono accion={item.productoActivo ? "desactivar" : "activar"} etiqueta={`${item.productoActivo ? "Desactivar" : "Activar"} ${item.producto}`} onClick={() => { const accion = item.productoActivo ? "desactivar" : "activar"; if (window.confirm(`¿Deseas ${accion} ${item.producto}?`)) alCambiarEstado(item.productoId, item.productoActivo); }} />}</div></td>
         </tr>;
   };
 

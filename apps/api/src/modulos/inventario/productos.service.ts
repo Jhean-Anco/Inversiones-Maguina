@@ -14,6 +14,7 @@ import {
 } from "@magina/database";
 import { and, asc, count, eq, exists, gt, ilike, lte, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
+import { generarCodigoBarrasInterno } from "./codigo-barras";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
 type RegistroPresentacion = { clave?: unknown; unidadMedidaCodigo?: unknown; nombre?: unknown; factorAUnidadBase?: unknown; seCompra?: unknown; seVende?: unknown };
@@ -204,7 +205,7 @@ export class ServicioProductos {
       return this.consultar(productoId);
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") throw new ConflictException("El producto o uno de sus códigos ya está registrado.");
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") throw new ConflictException("El código de barras o uno de los códigos del repuesto ya está registrado. Revisa el código ingresado e intenta de nuevo; si era autogenerado, vuelve a guardar para obtener otro.");
       if (typeof error === "object" && error !== null && "code" in error && error.code === "23503") throw new BadRequestException("Una categoría, marca, unidad o lista seleccionada ya no está disponible. Actualiza los catálogos e intenta nuevamente.");
       if (typeof error === "object" && error !== null && "code" in error && error.code === "23514") throw new BadRequestException("Los datos del producto no cumplen las reglas del inventario. Revisa presentaciones, precios y códigos.");
       throw error;
@@ -234,6 +235,9 @@ export class ServicioProductos {
     if (!afectacionIgv) throw new BadRequestException("Selecciona si el producto está gravado, exonerado o inafecto al IGV.");
     const fichaTecnica = this.validarFichaTecnica(datos.fichaTecnica);
     const codigos = Array.isArray(datos.codigos) ? datos.codigos.map((item) => this.validarCodigo(item)) : [];
+    if (!codigos.some((item) => item.tipo === "BARRAS" || item.tipo === "GTIN")) {
+      codigos.push({ tipo: "BARRAS", codigo: generarCodigoBarrasInterno() });
+    }
     const presentacionesEntrada = Array.isArray(datos.presentaciones) ? datos.presentaciones as RegistroPresentacion[] : [];
     const presentaciones = [{ clave: "base", unidadMedidaCodigo: unidadBaseCodigo, nombre: "Unidad base", factorAUnidadBase: "1.000000", seCompra: true, seVende: true, esBase: true },
       ...presentacionesEntrada.map((item, indice) => this.validarPresentacion(item, indice))];
@@ -241,7 +245,7 @@ export class ServicioProductos {
     if (!presentaciones.some((item) => item.seCompra) || !presentaciones.some((item) => item.seVende)) throw new BadRequestException("Configura por lo menos una presentación para compra y otra para venta.");
     const preciosEntrada = Array.isArray(datos.precios) ? datos.precios as RegistroPrecio[] : [];
     const precios = preciosEntrada.map((item) => this.validarPrecio(item, presentaciones));
-    if (!precios.some((item) => item.tipoListaPrecioId === "GENERAL" && item.presentacionClave === "base")) throw new BadRequestException("Agrega un precio general para la unidad base.");
+    if (!precios.some((item) => item.presentacionClave === "base")) throw new BadRequestException("Agrega un precio para la unidad base.");
     const activo = typeof datos.activo === "boolean" ? datos.activo : undefined;
     return { nombre, descripcion, categoriaId, marcaId, unidadBaseCodigo, stockMinimo, afectacionIgv, afectoIgv: afectacionIgv === "GRAVADO", fichaTecnica, codigos, presentaciones, precios, activo };
   }
@@ -316,11 +320,16 @@ export class ServicioProductos {
       const [unidad] = await tx.select({ codigo: unidadesMedida.codigo }).from(unidadesMedida).where(and(eq(unidadesMedida.codigo, presentacion.unidadMedidaCodigo), eq(unidadesMedida.activo, true))).limit(1);
       if (!unidad) throw new BadRequestException(`La unidad «${presentacion.unidadMedidaCodigo}» no está en el catálogo de unidades activo.`);
     }
+    let tienePrecioGeneralBase = false;
     for (const precio of datos.precios) {
       const [lista] = await tx.select({ id: tiposListasPrecio.id, codigo: tiposListasPrecio.codigo }).from(tiposListasPrecio).where(and(eq(tiposListasPrecio.id, precio.tipoListaPrecioId), eq(tiposListasPrecio.activo, true))).limit(1);
       if (!lista) throw new BadRequestException("Selecciona un tipo de lista de precios activo.");
-      if (lista.codigo === "GENERAL" && precio.presentacionClave === "base" && Number(precio.cantidadMinima) !== 1) throw new BadRequestException("El precio general de la unidad base debe iniciar desde una unidad.");
+      if (lista.codigo === "GENERAL" && precio.presentacionClave === "base") {
+        if (Number(precio.cantidadMinima) !== 1) throw new BadRequestException("El precio general de la unidad base debe iniciar desde una unidad.");
+        tienePrecioGeneralBase = true;
+      }
     }
+    if (!tienePrecioGeneralBase) throw new BadRequestException("Agrega un precio general para la unidad base.");
     const idsPorClave = new Map<string, string>();
     for (const presentacion of datos.presentaciones) {
       const [guardada] = await tx.insert(productosPresentaciones).values({

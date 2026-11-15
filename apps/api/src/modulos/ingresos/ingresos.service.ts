@@ -348,13 +348,14 @@ export class ServicioIngresos {
   async emitirGuia(valor: unknown, usuarioId: string) {
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Completa los datos de la guía de remisión.");
     const datos = valor as Record<string, unknown>;
-    const tipo = datos.tipo === "REMITENTE" || datos.tipo === "TRANSPORTISTA" ? datos.tipo : null;
-    if (!tipo) throw new BadRequestException("Selecciona guía de remitente o transportista.");
-    const tipoNumero = tipo === "REMITENTE" ? 7 : 8;
+    if (datos.tipo === "TRANSPORTISTA") throw new BadRequestException("El sistema solo emite guías de remisión de remitente.");
+    const tipo = datos.tipo === "REMITENTE" ? datos.tipo : null;
+    if (!tipo) throw new BadRequestException("Selecciona guía de remisión de remitente.");
+    const tipoNumero = 7;
     const estadoEmisor = await this.estadoNubefact();
     if (!estadoEmisor.credencialesConfiguradas) throw new BadRequestException("Configura la ruta y el token de NubeFact antes de emitir una guía.");
-    const serie = await this.serieActiva(tipo === "REMITENTE" ? "GUIA_REMITENTE" : "GUIA_TRANSPORTISTA");
-    if (!new RegExp(tipo === "REMITENTE" ? "^T[A-Z0-9]{3}$" : "^V[A-Z0-9]{3}$").test(serie)) throw new BadRequestException(`Configura una serie de cuatro caracteres válida para la guía de ${tipo.toLocaleLowerCase("es-PE")} en el servidor.`);
+    const serie = await this.serieActiva("GUIA_REMITENTE");
+    if (!/^T[A-Z0-9]{3}$/.test(serie)) throw new BadRequestException("Configura una serie de cuatro caracteres válida para la guía de remitente en el servidor.");
     const requerido = (campo: string, etiqueta: string, maximo = 150) => texto(datos[campo], etiqueta, maximo, true)!;
     const ingresoId = requerido("ingresoId", "El comprobante de venta", 36);
     const documentoOrigen = await this.obtenerDocumentoParaGuia(ingresoId);
@@ -429,7 +430,7 @@ export class ServicioIngresos {
       solicitud.destinatario_denominacion = nombre;
     }
     solicitud.transportista_placa_numero = requerido("placa", "La placa del vehículo", 8).toLocaleUpperCase("es-PE");
-    if (tipo === "TRANSPORTISTA" || tipoTransporte === "02") {
+    if (tipoTransporte === "02") {
       const conductorId = requerido("conductorId", "El conductor registrado", 36);
       if (!uuidValido(conductorId)) throw new BadRequestException("Selecciona un conductor del catálogo.");
       const [conductor] = await db.select({ tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno, licencia: conductores.numeroLicencia })
@@ -842,7 +843,7 @@ export class ServicioIngresos {
       db.select({ tipo: correlativosDocumentosInternos.tipo, ultimoNumero: correlativosDocumentosInternos.ultimoNumero }).from(correlativosDocumentosInternos),
     ]);
     const tipoNumero: Record<string, number> = { FACTURA: 1, BOLETA: 2, NOTA_CREDITO_FACTURA: 3, NOTA_CREDITO_BOLETA: 3, NOTA_DEBITO_FACTURA: 4, NOTA_DEBITO_BOLETA: 4, GUIA_REMITENTE: 5, GUIA_TRANSPORTISTA: 6 };
-    return series.map((item) => ({ ...item, ultimoNumero: item.tipoComprobante === "NOTA_VENTA" || item.tipoComprobante === "ORDEN_SERVICIO" || item.tipoComprobante === "COTIZACION"
+    return series.filter((item) => item.tipoComprobante !== "GUIA_TRANSPORTISTA").map((item) => ({ ...item, ultimoNumero: item.tipoComprobante === "NOTA_VENTA" || item.tipoComprobante === "ORDEN_SERVICIO" || item.tipoComprobante === "COTIZACION"
       ? Number(correlativosInternos.find((correlativo) => correlativo.tipo === item.tipoComprobante)?.ultimoNumero ?? 0)
       : Number(correlativosFiscales.find((correlativo) => correlativo.serie === item.serie && correlativo.tipoComprobante === tipoNumero[item.tipoComprobante])?.ultimoNumero ?? 0) }));
   }
@@ -854,7 +855,8 @@ export class ServicioIngresos {
     const serie = String(datos.serie ?? "").trim().toUpperCase();
     const ultimoNumero = Number(datos.ultimoNumero ?? 0);
     if (!Number.isInteger(ultimoNumero) || ultimoNumero < 0 || ultimoNumero > 99_999_999) throw new BadRequestException("El último correlativo debe ser un entero entre 0 y 99 999 999.");
-    const reglas: Record<string, RegExp> = { BOLETA: /^B[A-Z0-9]{3}$/, FACTURA: /^F[A-Z0-9]{3}$/, NOTA_CREDITO_FACTURA: /^F[A-Z0-9]{3}$/, NOTA_DEBITO_FACTURA: /^F[A-Z0-9]{3}$/, NOTA_CREDITO_BOLETA: /^B[A-Z0-9]{3}$/, NOTA_DEBITO_BOLETA: /^B[A-Z0-9]{3}$/, GUIA_REMITENTE: /^T[A-Z0-9]{3}$/, GUIA_TRANSPORTISTA: /^V[A-Z0-9]{3}$/, NOTA_VENTA: /^[A-Z0-9]{1,4}$/, ORDEN_SERVICIO: /^[A-Z0-9]{1,4}$/, COTIZACION: /^[A-Z0-9]{1,4}$/ };
+    if (tipo === "GUIA_TRANSPORTISTA") throw new BadRequestException("Solo se permite configurar la serie de guía de remisión de remitente.");
+    const reglas: Record<string, RegExp> = { BOLETA: /^B[A-Z0-9]{3}$/, FACTURA: /^F[A-Z0-9]{3}$/, NOTA_CREDITO_FACTURA: /^F[A-Z0-9]{3}$/, NOTA_DEBITO_FACTURA: /^F[A-Z0-9]{3}$/, NOTA_CREDITO_BOLETA: /^B[A-Z0-9]{3}$/, NOTA_DEBITO_BOLETA: /^B[A-Z0-9]{3}$/, GUIA_REMITENTE: /^T[A-Z0-9]{3}$/, NOTA_VENTA: /^[A-Z0-9]{1,4}$/, ORDEN_SERVICIO: /^[A-Z0-9]{1,4}$/, COTIZACION: /^[A-Z0-9]{1,4}$/ };
     if (!reglas[tipo]?.test(serie)) throw new BadRequestException("La serie no cumple el formato esperado para ese tipo de documento.");
     const correlativoTipo: Record<string, number> = { FACTURA: 1, BOLETA: 2, NOTA_CREDITO_FACTURA: 3, NOTA_CREDITO_BOLETA: 3, NOTA_DEBITO_FACTURA: 4, NOTA_DEBITO_BOLETA: 4, GUIA_REMITENTE: 5, GUIA_TRANSPORTISTA: 6 };
     const esInterna = tipo === "NOTA_VENTA" || tipo === "ORDEN_SERVICIO" || tipo === "COTIZACION";
@@ -883,7 +885,6 @@ export class ServicioIngresos {
     const serieOrden = await this.serieActiva("ORDEN_SERVICIO").catch(() => null);
     const serieCotizacion = await this.serieActiva("COTIZACION").catch(() => null);
     const serieGuiaRemitente = await this.serieActiva("GUIA_REMITENTE").catch(() => null);
-    const serieGuiaTransportista = await this.serieActiva("GUIA_TRANSPORTISTA").catch(() => null);
     const correlativos = await db.select({ serie: nubefactCorrelativos.serie, tipoComprobante: nubefactCorrelativos.tipoComprobante, ultimoNumero: nubefactCorrelativos.ultimoNumero }).from(nubefactCorrelativos);
     let ultimoNumeroNota = 0;
     try {
@@ -900,7 +901,6 @@ export class ServicioIngresos {
     const numeroBoleta = siguiente(serieBoleta, 2);
     const numeroFactura = siguiente(serieFactura, 1);
     const numeroGuiaRemitente = siguiente(serieGuiaRemitente, 5);
-    const numeroGuiaTransportista = siguiente(serieGuiaTransportista, 6);
     const numeroNotaVenta = serieNotaVenta ? ultimoNumeroNota + 1 : null;
     const [correlativoOrden] = await db.select({ ultimoNumero: correlativosDocumentosInternos.ultimoNumero }).from(correlativosDocumentosInternos).where(eq(correlativosDocumentosInternos.tipo, "ORDEN_SERVICIO")).limit(1);
     const numeroOrdenServicio = serieOrden ? Number(correlativoOrden?.ultimoNumero ?? 0) + 1 : null;
@@ -909,7 +909,6 @@ export class ServicioIngresos {
     return { BOLETA: { serie: serieBoleta, numero: numeroBoleta, codigo: formato(serieBoleta, numeroBoleta) },
       FACTURA: { serie: serieFactura, numero: numeroFactura, codigo: formato(serieFactura, numeroFactura) },
       GUIA_REMITENTE: { serie: serieGuiaRemitente, numero: numeroGuiaRemitente, codigo: formato(serieGuiaRemitente, numeroGuiaRemitente) },
-      GUIA_TRANSPORTISTA: { serie: serieGuiaTransportista, numero: numeroGuiaTransportista, codigo: formato(serieGuiaTransportista, numeroGuiaTransportista) },
       NOTA_VENTA: { serie: serieNotaVenta, numero: numeroNotaVenta, codigo: serieNotaVenta && numeroNotaVenta ? `${serieNotaVenta}-${String(numeroNotaVenta).padStart(6, "0")}` : null },
       ORDEN_SERVICIO: { serie: serieOrden, numero: numeroOrdenServicio, codigo: serieOrden && numeroOrdenServicio ? `${serieOrden}-${String(numeroOrdenServicio).padStart(6, "0")}` : null },
       COTIZACION: { serie: serieCotizacion, numero: numeroCotizacion, codigo: serieCotizacion && numeroCotizacion ? `${serieCotizacion}-${String(numeroCotizacion).padStart(6, "0")}` : null } };
