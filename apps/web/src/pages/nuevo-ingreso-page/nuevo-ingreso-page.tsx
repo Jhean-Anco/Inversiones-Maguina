@@ -13,11 +13,6 @@ import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/
 
 const soles = (monto: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(monto);
 const redondearCentimos = (monto: number) => Math.round((monto + Number.EPSILON) * 100) / 100;
-const sumarDiasFecha = (fecha: string, dias: number) => {
-  const resultado = new Date(`${fecha}T12:00:00.000Z`);
-  resultado.setUTCDate(resultado.getUTCDate() + dias);
-  return resultado.toISOString().slice(0, 10);
-};
 const fechaHoyPeru = () => {
   const partes = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const parte = (tipo: string) => partes.find((item) => item.type === tipo)?.value ?? "";
@@ -27,6 +22,7 @@ const fechaHoyPeru = () => {
 export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { tipoVenta?: TipoVenta; permisos?: string[] }) {
   const ubicacion = useLocation();
   const venta = useNuevoIngreso(tipoVenta);
+  const transferenciaCotizacion = (ubicacion.state as { cotizacion?: { id: string; codigo: string; clienteId: string | null; clienteNombre: string | null; observacion: string | null; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; detalles: Record<string, unknown>[] } } | null)?.cotizacion ?? null;
   const transferenciaOS = (ubicacion.state as { ordenServicio?: { id: string; codigo: string; clienteId: string; clienteNombre: string; motivo: string; adelanto: string; adelantoMedioPago: string | null; adelantoCuentaFinancieraId: string | null; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; detalles: Record<string, unknown>[] } } | null)?.ordenServicio ?? null;
   const [cuentaSaldoOS, setCuentaSaldoOS] = useState("");
   const [medioSaldoOS, setMedioSaldoOS] = useState("EFECTIVO");
@@ -35,6 +31,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const [vinculandoOS, setVinculandoOS] = useState(false);
   const [ordenVinculadaOS, setOrdenVinculadaOS] = useState(false);
   const cargaOSRef = useRef<string | null>(null);
+  const cargaCotizacionRef = useRef<string | null>(null);
   const vinculoOSRef = useRef<string | null>(null);
   const [paso, setPaso] = useState<"datos" | "previa">("datos");
   const [tamano, setTamano] = useState<"A4" | "TICKET">("A4");
@@ -83,7 +80,6 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const actualizar = (campo: string, valor: string) => venta.actualizarCampoNubefact(campo, valor);
   const cantidadTotal = venta.lineas.reduce((suma, linea) => suma + (Number(linea.cantidad) || 0), 0);
   const lineasOrdenadas = [...venta.lineas].sort((a, b) => Number(a.tipo === "SERVICIO") - Number(b.tipo === "SERVICIO"));
-  const saldoCreditoProgramado = redondearCentimos(Math.max(0, venta.totales.total - Number(venta.importePagoInicial || 0)));
   const saldoOrdenServicio = Math.max(0, redondearCentimos(venta.totales.total - Number(transferenciaOS?.adelanto || 0)));
   const medioAdelantoOrden = mediosPagoDisponibles.find((medio) => medio.codigo === transferenciaOS?.adelantoMedioPago)?.nombre ?? transferenciaOS?.adelantoMedioPago?.toLocaleLowerCase("es-PE").replaceAll("_", " ") ?? "Sin adelanto registrado";
   const numeracionActual = esNotaVenta ? venta.exito?.codigo ?? numeraciones?.NOTA_VENTA.codigo : venta.exito?.nubefact?.codigo ?? numeraciones?.[esFactura ? "FACTURA" : "BOLETA"].codigo;
@@ -99,6 +95,14 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     if (transferenciaOS.tipoComprobante === "FACTURA") setTipoDocumentoBusqueda("06");
     void venta.cargarOrdenServicio(transferenciaOS).catch((problema) => { venta.setError(problema instanceof Error ? problema.message : "No se pudo cargar la orden en el formulario de venta."); cargaOSRef.current = null; }).finally(() => setCargandoOS(false));
   }, [transferenciaOS, tipoVenta]);
+  useEffect(() => {
+    if (!transferenciaCotizacion || cargaCotizacionRef.current === transferenciaCotizacion.id) return;
+    cargaCotizacionRef.current = transferenciaCotizacion.id;
+    void venta.cargarCotizacion(transferenciaCotizacion).catch((problema) => {
+      venta.setError(problema instanceof Error ? problema.message : "No se pudo cargar la cotización en la venta.");
+      cargaCotizacionRef.current = null;
+    });
+  }, [transferenciaCotizacion, tipoVenta]);
   useEffect(() => {
     if (!transferenciaOS || !venta.exito || !venta.exito.id || vinculoOSRef.current === venta.exito.id) return;
     if (venta.exito.tipoComprobante !== "NOTA_VENTA" && venta.exito.nubefact?.estado !== "EMITIDO") return;
@@ -286,7 +290,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       return;
     }
     if (identificacionComprobantePendiente) { setIntentoIdentificacionComprobante(true); return; }
-    if (!venta.exito) void venta.guardar(evento, saldoCreditoProgramado);
+    if (!venta.exito) void venta.guardar(evento);
   }
 
   return <div className={`venta-page ${paso === "datos" ? "is-data-step" : "is-preview-step"}`}>
@@ -344,8 +348,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
           <div className="venta-fields venta-document-fields">
             <label className="venta-field-primary">Tipo de comprobante<select value={venta.tipoComprobante} onChange={(e) => { const tipo = e.target.value as "BOLETA" | "FACTURA" | "NOTA_VENTA"; setIntentoIdentificacionComprobante(false); venta.setTipoComprobante(tipo); if (tipo === "FACTURA") { setTipoDocumentoBusqueda("06"); if (String(venta.camposNubefact.cliente_tipo_de_documento ?? "") !== "6") venta.quitarCliente(); } else if (tipo === "BOLETA") setTipoDocumentoBusqueda("01"); venta.reiniciarIdempotencia(); venta.setExito(null); }}><option value="BOLETA">Boleta de venta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
             <label>{esNotaVenta ? "Fecha de salida" : "Fecha de emisión"}<input type="date" min={esNotaVenta ? undefined : venta.fechaMinimaComprobante} max={esNotaVenta ? undefined : fechaHoyPeru()} value={String(venta.camposNubefact.fecha_de_emision ?? venta.fecha)} onChange={(e) => { actualizar("fecha_de_emision", e.target.value); venta.setFecha(e.target.value); }} required /></label>
-            <label>Condición de pago<select disabled={Boolean(transferenciaOS)} value={venta.condicionPago} onChange={(evento) => venta.setCondicionPago(evento.target.value as "CONTADO" | "CREDITO")}><option value="CONTADO">Contado</option><option value="CREDITO">Crédito (pago único o en cuotas)</option></select></label>
-            {!transferenciaOS && venta.condicionPago === "CREDITO" && <fieldset className="venta-credit-schedule"><legend>Fechas de vencimiento y cuotas</legend><label>Pago inicial (S/)<input type="number" min="0" max={Math.max(0, venta.totales.total - 0.01).toFixed(2)} step="0.01" value={venta.importePagoInicial} onChange={(evento) => venta.setImportePagoInicial(evento.target.value)} placeholder="0.00" /></label>{Number(venta.importePagoInicial) > 0 && <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el adelanto" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} />}{venta.cuotasNubefact.map((cuota, indice) => <div className="venta-credit-installment" key={indice}><label>Cuota {indice + 1}<input type="date" min={sumarDiasFecha(indice && venta.cuotasNubefact[indice - 1].fecha_de_pago ? venta.cuotasNubefact[indice - 1].fecha_de_pago : venta.fecha, 1)} value={cuota.fecha_de_pago} onChange={(evento) => venta.actualizarCuotaCredito(indice, "fecha_de_pago", evento.target.value)} required /></label><label>Importe (S/)<input type="number" min="0.01" step="0.01" value={cuota.importe || (venta.cuotasNubefact.length === 1 ? saldoCreditoProgramado.toFixed(2) : "")} onChange={(evento) => venta.actualizarCuotaCredito(indice, "importe", evento.target.value)} required /></label>{venta.cuotasNubefact.length > 1 && <button type="button" aria-label={`Quitar cuota ${indice + 1}`} onClick={() => venta.quitarCuotaCredito(indice)}>Quitar</button>}</div>)}<button type="button" className="venta-credit-add" disabled={venta.cuotasNubefact.length >= 24} onClick={() => venta.agregarCuotaCredito(saldoCreditoProgramado)}>+ Agregar cuota</button></fieldset>}
+            <div className="venta-cash-condition"><span>Condición de pago</span><strong>Contado</strong><small>Pago completo al emitir la venta</small></div>
           </div>
           {transferenciaOS && <div className="venta-order-service-payment"><div><span>Adelanto pagado</span><strong>{soles(Number(transferenciaOS.adelanto || 0))}</strong><small>Medio de pago: {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto registrado"}</small></div></div>}
           {(errorMediosPago || (!cargandoMediosPago && mediosPagoDisponibles.length === 0)) && <p className="venta-client-hint" role="alert">{errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta bancaria en Tesorería."}</p>}
@@ -424,8 +427,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
           {esNotaVenta ? <div className="boleta-client"><span>CLIENTE · MOVIMIENTO INTERNO DE INVENTARIO</span><strong>{nombreCliente}</strong>{numeroDocumento && <small>{tipoDocumento === "6" ? "RUC" : tipoDocumento === "1" ? "DNI" : "Documento"}: {numeroDocumento}</small>}{String(venta.camposNubefact.cliente_direccion ?? "").trim() && <small>{String(venta.camposNubefact.cliente_direccion)}</small>}<small>Fecha de salida: {venta.fecha}</small></div> : <div className="boleta-client"><span>CLIENTE</span><strong>{nombreCliente || (esBoleta ? "CLIENTES VARIOS" : "")}</strong>{numeroDocumento && <small>{tipoDocumento === "6" ? "RUC" : tipoDocumento === "1" ? "DNI" : "Documento"}: {numeroDocumento}</small>}{String(venta.camposNubefact.cliente_direccion ?? "").trim() && <small>{String(venta.camposNubefact.cliente_direccion)}</small>}<small>Emisión: {venta.fecha}</small></div>}
           <div className="boleta-items"><div className="boleta-items-head"><span>CANT.</span><span>DESCRIPCIÓN</span>{mostrarAfectacionIgv && <span>OPERACIÓN</span>}<span>IMPORTE</span></div>{venta.lineas.length ? lineasOrdenadas.map((linea) => { const precio = linea.tipo === "PRODUCTO" ? Number(linea.producto.precio) : Number(linea.precio) || 0; const descripcion = linea.tipo === "PRODUCTO" ? linea.producto.nombre : linea.tipo === "MOTOTAXI" ? `${linea.mototaxi.marca} ${linea.mototaxi.modelo} · VIN ${linea.mototaxi.vin}` : linea.descripcion || "Servicio"; return <div className="boleta-item" key={linea.clave}><span>{linea.cantidad}</span><span>{descripcion}</span>{mostrarAfectacionIgv && <span>{linea.afectacionIgv === "GRAVADO" ? "Gravada" : linea.afectacionIgv === "EXONERADO" ? "Exonerada" : "Inafecta"}</span>}<span>{soles(Math.max(0, precio * (Number(linea.cantidad) || 0) - (Number(linea.descuento) || 0)))}</span></div>; }) : <p>Los artículos de la venta aparecerán aquí.</p>}</div>
           <div className="boleta-totals">{esBoleta && venta.estadoNubefact?.regimenTributario === "NRUS" && <div><span>Tratamiento NRUS</span><strong>Sin IGV desglosado</strong></div>}{(esFactura || esBoleta && venta.estadoNubefact?.regimenTributario !== "NRUS") && <><div><span>Gravada</span><strong>{soles(venta.totales.gravada)}</strong></div>{venta.totales.exonerada > 0 && <div><span>Exonerada</span><strong>{soles(venta.totales.exonerada)}</strong></div>}{venta.totales.inafecta > 0 && <div><span>Inafecta</span><strong>{soles(venta.totales.inafecta)}</strong></div>}<div><span>IGV (18%)</span><strong>{soles(venta.totales.igv)}</strong></div></>}<div className="boleta-total"><span>{esNotaVenta ? "VALOR REFERENCIAL" : "TOTAL"}</span><strong>{soles(venta.totales.total)}</strong></div></div>
-          <div className="boleta-payment-terms"><div><span>Condición de pago</span><strong>{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</strong></div>{venta.condicionPago === "CREDITO" && <><div><span>Pago inicial</span><strong>{soles(Number(venta.importePagoInicial || 0))}{Number(venta.importePagoInicial) > 0 ? ` · ${venta.medioPago.toLocaleLowerCase("es-PE").replaceAll("_", " ")}` : ""}</strong></div>{venta.cuotasNubefact.map((cuota, indice) => <div key={indice}><span>Cuota {indice + 1} · {cuota.fecha_de_pago || "Fecha pendiente"}</span><strong>{soles(Number(cuota.importe || (venta.cuotasNubefact.length === 1 ? saldoCreditoProgramado : 0)))}</strong></div>)}</>}</div>
-          <div className="boleta-foot"><span>Unidades: {cantidadTotal.toLocaleString("es-PE")}</span>{venta.condicionPago === "CONTADO" && <span>Medio de pago: {venta.medioPago.toLocaleLowerCase("es-PE").replaceAll("_", " ")}</span>}</div>
+          <div className="boleta-payment-terms"><div><span>Condición de pago</span><strong>Contado</strong></div></div>
+          <div className="boleta-foot"><span>Unidades: {cantidadTotal.toLocaleString("es-PE")}</span><span>Medio de pago: {venta.medioPago.toLocaleLowerCase("es-PE").replaceAll("_", " ")}</span></div>
         </article>
         <div className="boleta-actions"><button className="venta-submit" type="submit" disabled={venta.guardando || cargandoOS || vinculandoOS || !venta.lineas.length || Boolean(venta.exito) || Boolean(transferenciaOS && venta.totales.total > Number(transferenciaOS.adelanto || 0) && !cuentaSaldoOS) || (esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada)} title={esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada ? "Configura la conexión de NubeFact y la serie de facturas en el servidor." : undefined}>{venta.exito ? venta.tipoComprobante === "NOTA_VENTA" ? "Nota interna guardada" : venta.exito.nubefact?.estado === "EMITIDO" ? "Emitido en NubeFact" : "Emisión no confirmada" : venta.guardando ? esFactura ? "Enviando factura…" : venta.tipoComprobante === "BOLETA" ? "Enviando boleta…" : "Registrando nota interna…" : esFactura ? "Emitir factura" : venta.tipoComprobante === "BOLETA" ? "Emitir boleta" : "Registrar nota de venta"}<span aria-hidden="true">→</span></button></div>
       </aside>

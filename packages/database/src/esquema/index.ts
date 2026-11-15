@@ -95,6 +95,13 @@ export const proveedores = pgTable("proveedores", {
   actualizadoEn: fechaActualizacion(),
 }, (tabla) => [index("proveedores_activo_idx").on(tabla.activo)]);
 
+export const transportistas = pgTable("transportistas", {
+  personaId: uuid("persona_id").primaryKey().references(() => personas.id, { onDelete: "restrict" }),
+  activo: boolean("activo").notNull().default(true),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [index("transportistas_activo_idx").on(tabla.activo)]);
+
 export const conductores = pgTable("conductores", {
   personaId: uuid("persona_id").primaryKey().references(() => personas.id, { onDelete: "restrict" }),
   numeroLicencia: varchar("numero_licencia", { length: 10 }).notNull(),
@@ -833,8 +840,19 @@ export const correlativosDocumentosInternos = pgTable("correlativos_documentos_i
   check("correlativos_documentos_internos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
 ]);
 
+export const ubigeosPeru = pgTable("ubigeos_peru", {
+  codigo: varchar("codigo", { length: 6 }).primaryKey(),
+  departamento: varchar("departamento", { length: 80 }).notNull(),
+  provincia: varchar("provincia", { length: 80 }).notNull(),
+  distrito: varchar("distrito", { length: 100 }).notNull(),
+}, (tabla) => [
+  index("ubigeos_peru_departamento_provincia_idx").on(tabla.departamento, tabla.provincia),
+  index("ubigeos_peru_nombre_idx").on(tabla.departamento, tabla.provincia, tabla.distrito),
+]);
+
 export const guiasRemision = pgTable("guias_remision", {
   id: uuid("id").defaultRandom().primaryKey(),
+  ingresoId: uuid("ingreso_id").references(() => ingresos.id, { onDelete: "restrict" }),
   tipo: varchar("tipo", { length: 20 }).notNull(),
   fecha: date("fecha").notNull(),
   serie: varchar("serie", { length: 4 }).notNull(),
@@ -845,6 +863,7 @@ export const guiasRemision = pgTable("guias_remision", {
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("guias_remision_fecha_idx").on(tabla.fecha),
+  index("guias_remision_ingreso_idx").on(tabla.ingresoId),
   index("guias_remision_tipo_estado_idx").on(tabla.tipo, tabla.estado),
   uniqueIndex("guias_remision_correlativo_unico").on(tabla.tipo, tabla.serie, tabla.numero),
   check("guias_remision_tipo_ck", sql`${tabla.tipo} IN ('REMITENTE', 'TRANSPORTISTA')`),
@@ -888,7 +907,7 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
 export const ordenesServicio = pgTable("ordenes_servicio", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigo: varchar("codigo", { length: 24 }).notNull().unique(),
-  clienteId: uuid("cliente_id").notNull().references(() => clientes.personaId, { onDelete: "restrict" }),
+  clienteId: uuid("cliente_id").references(() => clientes.personaId, { onDelete: "restrict" }),
   vehiculoPlaca: varchar("vehiculo_placa", { length: 20 }).notNull(),
   motivo: text("motivo").notNull(),
   adelanto: numeric("adelanto", { precision: 14, scale: 2 }).notNull().default("0"),
@@ -917,7 +936,7 @@ export const ordenesServicio = pgTable("ordenes_servicio", {
 export const cotizaciones = pgTable("cotizaciones", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigo: varchar("codigo", { length: 24 }).notNull().unique(),
-  clienteId: uuid("cliente_id").notNull().references(() => clientes.personaId, { onDelete: "restrict" }),
+  clienteId: uuid("cliente_id").references(() => clientes.personaId, { onDelete: "restrict" }),
   detalles: jsonb("detalles").$type<Record<string, unknown>[]>().notNull().default([]),
   observacion: text("observacion"),
   estado: varchar("estado", { length: 20 }).notNull().default("BORRADOR"),

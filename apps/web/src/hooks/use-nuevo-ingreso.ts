@@ -47,6 +47,7 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
   const [tipoComprobante, setTipoComprobante] = useState<"BOLETA" | "FACTURA" | "NOTA_VENTA">("BOLETA");
   const [condicionPago, setCondicionPago] = useState<"CONTADO" | "CREDITO">("CONTADO"); const [fechaVencimientoPago, setFechaVencimientoPago] = useState(sumarDiasFecha(fechaHoy(), 15));
   const [ordenServicioId, setOrdenServicioId] = useState<string | null>(null);
+  const [cotizacionId, setCotizacionId] = useState<string | null>(null);
   const [importePagoInicial, setImportePagoInicial] = useState("");
   const [guardando, setGuardando] = useState(false); const [error, setError] = useState(""); const [exito, setExito] = useState<IngresoCreado | null>(null);
   const [estadoNubefact, setEstadoNubefact] = useState<EstadoNubefact | null>(null);
@@ -208,7 +209,36 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
   function actualizarCampoNubefact(clave: string, valor: ValorNubefact) { setCamposNubefact((actuales) => ({ ...actuales, [clave]: valor })); }
   function reiniciarIdempotencia() { claveIdempotencia.current = ordenServicioId ?? nuevaClaveIdempotencia(); }
   function quitarLinea(clave: string) { setLineas((actuales) => actuales.filter((linea) => linea.clave !== clave)); }
-  async function guardar(evento: FormEvent<HTMLFormElement>, saldoCreditoEsperado = totales.total) {
+  async function cargarCotizacion(datos: { id: string; codigo: string; clienteId: string | null; clienteNombre: string | null; observacion: string | null; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; detalles: Record<string, unknown>[] }) {
+    setCotizacionId(datos.id); setOrdenServicioId(null); claveIdempotencia.current = nuevaClaveIdempotencia();
+    setError(""); setExito(null); setTipoComprobante(datos.tipoComprobante); setCondicionPago("CONTADO"); setImportePagoInicial(""); setFecha(fechaHoy());
+    if (datos.clienteId) {
+      const clientes = await servicioIngresos.buscarClientes(datos.clienteNombre ?? "");
+      const cliente = clientes.find((item) => item.id === datos.clienteId);
+      if (!cliente) throw new Error("No se pudo cargar el cliente de la cotización. Búscalo nuevamente en la venta.");
+      seleccionarCliente(cliente);
+      if (datos.tipoComprobante === "FACTURA") {
+        const ruc = cliente.documentos?.find((item) => item.tipoDocumento === "06") ?? (cliente.tipoDocumento === "06" ? { tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento } : null);
+        if (ruc) { actualizarCampoNubefact("cliente_tipo_de_documento", "6"); actualizarCampoNubefact("cliente_numero_de_documento", ruc.numeroDocumento); }
+      }
+    } else quitarCliente();
+    const lineasImportadas: LineaCarrito[] = await Promise.all(datos.detalles.map(async (entrada) => {
+      const cantidad = String(entrada.cantidad ?? "1"); const descuento = String(entrada.descuento ?? "0.00");
+      const afectacionIgv = (entrada.afectacionIgv === "EXONERADO" || entrada.afectacionIgv === "INAFECTO" ? entrada.afectacionIgv : "GRAVADO") as AfectacionIgv;
+      if (entrada.tipo === "SERVICIO") return { clave: nuevoUuid(), tipo: "SERVICIO", descripcion: String(entrada.descripcion ?? entrada.nombreVisible ?? "Servicio"), cantidad, precio: Number(entrada.precioUnitario ?? 0).toFixed(2), descuento, afectacionIgv };
+      if (entrada.tipo !== "PRODUCTO") throw new Error("La cotización contiene una línea que no se puede cargar en venta de repuestos.");
+      const presentacionId = String(entrada.presentacionId ?? "");
+      const nombre = String(entrada.nombreVisible ?? "").split(" · ")[0].slice(0, 100);
+      const opciones = await servicioIngresos.buscarProductos(nombre);
+      const producto = opciones.find((item) => item.presentacionId === presentacionId);
+      if (!producto) throw new Error(`No se encontró en el inventario la presentación de ${String(entrada.nombreVisible ?? "un repuesto")}. Revisa esa línea antes de emitir.`);
+      return { clave: nuevoUuid(), tipo: "PRODUCTO", producto: { ...producto, precio: String(entrada.precioUnitario ?? producto.precio) }, cantidad, descuento, afectacionIgv };
+    }));
+    setLineas(lineasImportadas);
+    setObservacion([`Cotización ${datos.codigo}`, datos.observacion].filter(Boolean).join(" · "));
+    setBusqueda(""); setResultados([]);
+  }
+  async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setError(""); setExito(null);
     if (tipoComprobante === "FACTURA" && !estadoNubefact?.emisionFacturaHabilitada) { setError("Completa las credenciales y la serie de factura de NubeFact."); return; }
     const diasAntiguedadComprobante = Math.floor((Date.parse(`${fechaHoy()}T00:00:00.000Z`) - Date.parse(`${fecha}T00:00:00.000Z`)) / 86_400_000);
@@ -220,10 +250,6 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
     if (tipoVenta === "MOTOTAXIS" && !lineas.some((linea) => linea.tipo === "MOTOTAXI")) { setError("Agrega al menos una mototaxi para continuar con esta venta."); return; }
     if (tipoVenta === "MOTOTAXIS" && lineas.some((linea) => linea.tipo !== "MOTOTAXI")) { setError("La venta de mototaxis se registra por separado de los repuestos y servicios."); return; }
     if (tipoVenta === "REPUESTOS" && lineas.some((linea) => linea.tipo === "MOTOTAXI")) { setError("Registra la mototaxi desde el flujo de venta de mototaxis."); return; }
-    const pagoInicial = condicionPago === "CREDITO" ? Number(importePagoInicial || 0) : 0;
-    if (!Number.isFinite(pagoInicial) || pagoInicial < 0 || Number(pagoInicial.toFixed(2)) !== pagoInicial || (condicionPago === "CREDITO" && saldoCreditoEsperado <= 0)) { setError("El pago inicial debe ser válido y dejar un saldo pendiente para financiar."); return; }
-    const cuotasCredito = condicionPago === "CREDITO" ? cuotasNubefact.map((cuota, indice) => ({ cuota: indice + 1, fechaDePago: cuota.fecha_de_pago, importe: cuota.importe.trim() || (cuotasNubefact.length === 1 ? saldoCreditoEsperado.toFixed(2) : "0.00") })) : [];
-    if (condicionPago === "CREDITO" && (!cuotasCredito.length || cuotasCredito.some((cuota, indice) => !/^\d{4}-\d{2}-\d{2}$/.test(cuota.fechaDePago) || Number.isNaN(Date.parse(`${cuota.fechaDePago}T00:00:00Z`)) || cuota.fechaDePago <= (indice ? cuotasCredito[indice - 1].fechaDePago : fecha) || !Number.isFinite(Number(cuota.importe)) || Number(cuota.importe) <= 0 || Number(Number(cuota.importe).toFixed(2)) !== Number(cuota.importe)) || redondear(cuotasCredito.reduce((suma, cuota) => suma + Number(cuota.importe), 0)) !== saldoCreditoEsperado)) { setError(`Las cuotas deben tener fechas posteriores y sumar el saldo neto financiado de S/ ${saldoCreditoEsperado.toFixed(2)}.`); return; }
     const detalles: LineaIngreso[] = [];
     for (const [i, linea] of lineas.entries()) {
       const cantidad = Number(linea.cantidad);
@@ -242,8 +268,7 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
     }
     const tipoDocumentoNubefact = String(camposNubefact.cliente_tipo_de_documento ?? "");
     const tipoDocInterno = tipoDocumentoNubefact === "1" ? "DNI" : tipoDocumentoNubefact === "6" ? "RUC" : tipoDocumentoNubefact === "4" ? "CE" : tipoDocumentoNubefact === "7" ? "PASAPORTE" : undefined;
-    const fechaVencimientoCredito = cuotasCredito.at(-1)?.fechaDePago;
-    const datos: DatosNuevoIngreso = { idempotencyKey: claveIdempotencia.current, fecha, tipoComprobante, ordenServicioId: ordenServicioId ?? undefined, clienteId: clienteSeleccionado?.id, clienteDireccion: String(camposNubefact.cliente_direccion || "") || undefined, clienteTipoDocumento: tipoDocInterno, clienteNumeroDocumento: String(camposNubefact.cliente_numero_de_documento || "") || undefined, clienteNombre: clienteSeleccionado ? String(camposNubefact.cliente_denominacion || "") || undefined : tipoComprobante === "BOLETA" ? "CLIENTES VARIOS" : undefined, medioPago, condicionPago, importePagoInicial: pagoInicial.toFixed(2), fechaVencimientoPago: fechaVencimientoCredito, cuotasPago: cuotasCredito, observacion: observacion.trim() || undefined, detalles };
+    const datos: DatosNuevoIngreso = { idempotencyKey: claveIdempotencia.current, fecha, tipoComprobante, ordenServicioId: ordenServicioId ?? undefined, cotizacionId: cotizacionId ?? undefined, clienteId: clienteSeleccionado?.id, clienteDireccion: String(camposNubefact.cliente_direccion || "") || undefined, clienteTipoDocumento: tipoDocInterno, clienteNumeroDocumento: String(camposNubefact.cliente_numero_de_documento || "") || undefined, clienteNombre: clienteSeleccionado ? String(camposNubefact.cliente_denominacion || "") || undefined : tipoComprobante === "BOLETA" ? "CLIENTES VARIOS" : undefined, medioPago, condicionPago: "CONTADO", importePagoInicial: "0.00", cuotasPago: [], observacion: observacion.trim() || undefined, detalles };
     setGuardando(true);
     try { const creado = await servicioIngresos.crear(datos); setExito(creado); }
     catch (problema) { if (problema instanceof ErrorApi && problema.estado === 401) navegar("/login", { replace: true }); else setError(problema instanceof Error ? problema.message : "No se pudo guardar el ingreso."); }
@@ -280,5 +305,5 @@ export function useNuevoIngreso(tipoVenta: TipoVenta = "REPUESTOS") {
     setFechaVencimientoPago(siguiente.at(-1)!.fecha_de_pago);
   }
   const fechaMinimaComprobante = sumarDiasFecha(fechaHoy(), tipoComprobante === "FACTURA" ? -3 : -5);
-  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, busquedaMototaxi, setBusquedaMototaxi, resultadosMototaxi, buscandoMototaxis, agregarMototaxi, agregarServicio, actualizarLinea, quitarLinea, cargarOrdenServicio, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, fechaMinimaComprobante, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, buscandoClientes, registrandoCliente, clienteSeleccionado, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
+  return { busqueda, setBusqueda, resultados, buscando, productosRecientes, lineas, agregarProducto, busquedaMototaxi, setBusquedaMototaxi, resultadosMototaxi, buscandoMototaxis, agregarMototaxi, agregarServicio, actualizarLinea, quitarLinea, cargarOrdenServicio, cargarCotizacion, tipoComprobante, setTipoComprobante, medioPago, setMedioPago, condicionPago, setCondicionPago, importePagoInicial, setImportePagoInicial, fechaVencimientoPago, setFechaVencimientoPago, fecha, setFecha, fechaMinimaComprobante, observacion, setObservacion, guardando, error, setError, exito, setExito, guardar, totales, camposNubefact, actualizarCampoNubefact, reiniciarIdempotencia, seleccionarDocumentoCliente, cuotasNubefact, setCuotasNubefact, actualizarCuotaCredito, agregarCuotaCredito, quitarCuotaCredito, busquedaCliente, setBusquedaCliente, buscarClientes, clientesEncontrados, buscandoClientes, registrandoCliente, clienteSeleccionado, seleccionarCliente, actualizarClienteEnResultados, guardarCliente, quitarCliente, estadoNubefact };
 }

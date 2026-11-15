@@ -208,6 +208,46 @@ test("el formulario de acceso expone controles utilizables con teclado y viewpor
   assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
 });
 
+test("el tema claro y oscuro se alterna y persiste entre recargas", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  const raiz = page.locator("html");
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
+  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
+  await expect(raiz).toHaveJSProperty("style.colorScheme", "dark");
+  await page.reload();
+  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
+
+  await page.getByRole("button", { name: "Activar modo claro" }).click();
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+  await expect(raiz).toHaveJSProperty("style.colorScheme", "light");
+  await page.reload();
+  await expect(raiz).toHaveAttribute("data-theme", "claro");
+});
+
+test("el shell autenticado no se desborda en anchos móviles, tablet y escritorio", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  for (const width of [320, 360, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width < 500 ? 800 : 900 });
+    await expect(page.getByRole("main")).toBeVisible();
+    const dimensiones = await page.evaluate(() => ({
+      documento: document.documentElement.scrollWidth,
+      ventana: document.documentElement.clientWidth,
+    }));
+    expect(dimensiones.documento, `Desbordamiento horizontal con viewport de ${width}px.`).toBeLessThanOrEqual(dimensiones.ventana);
+  }
+});
+
 test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async ({ request }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de validar su sesión.");
   const api = process.env.VITE_API_URL;

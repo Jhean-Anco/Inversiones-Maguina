@@ -6,7 +6,7 @@ import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
-const tiposEgreso = ["GASTO_OPERATIVO", "ACTIVO_HERRAMIENTA", "MOTOTAXI"] as const;
+const tiposEgreso = ["MOTOTAXI"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 type TipoEgreso = typeof tiposEgreso[number];
 type DatosEgreso = { tipo?: unknown; fecha?: unknown; categoria?: unknown; concepto?: unknown; beneficiario?: unknown; proveedorRuc?: unknown; documentoTipo?: unknown; documentoNumero?: unknown; moneda?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; monto?: unknown; importePagoInicial?: unknown; identificadorActivo?: unknown; mototaxiMarca?: unknown; mototaxiModelo?: unknown; mototaxiNumeroMotor?: unknown; mototaxiNumeroChasis?: unknown; observacion?: unknown };
@@ -81,7 +81,7 @@ export class ServicioEgresos {
     const cuentaFinancieraId = importePagoInicial > 0 ? await validarCuentaFinanciera(datos.cuentaFinancieraId, medioPago, true) : null;
     const categoria = texto(datos.categoria, "la categoría", 80, true)!;
     const concepto = texto(datos.concepto, "el concepto", 240, true)!;
-    const beneficiario = texto(datos.beneficiario, "el proveedor o beneficiario", 180, tipo !== "GASTO_OPERATIVO");
+    const beneficiario = texto(datos.beneficiario, "el proveedor o beneficiario", 180, true);
     const proveedorRuc = texto(datos.proveedorRuc, "el RUC del proveedor", 11);
     if (proveedorRuc && !rucPeruValido(proveedorRuc)) throw new BadRequestException("El RUC del proveedor no es válido.");
     const documentoTipo = texto(datos.documentoTipo, "el tipo de documento", 30);
@@ -90,8 +90,7 @@ export class ServicioEgresos {
     if (documentoTipo === "FACTURA" && (!proveedorRuc || !documentoNumero)) throw new BadRequestException("Para registrar una factura como sustento operativo indica el RUC del proveedor y su número.");
     const moneda = datos.moneda === undefined || datos.moneda === null || datos.moneda === "" ? "PEN" : texto(datos.moneda, "la moneda del comprobante", 3, true)!;
     if (!( ["PEN", "USD", "EUR"] as const).includes(moneda as "PEN" | "USD" | "EUR")) throw new BadRequestException("Selecciona PEN, USD o EUR.");
-    const identificadorActivo = texto(datos.identificadorActivo, "el identificador", 100);
-    if (tipo === "ACTIVO_HERRAMIENTA" && !identificadorActivo) throw new BadRequestException("Indica el modelo, serie o identificación del activo o herramienta.");
+    const identificadorActivo = null;
     const mototaxiMarca = texto(datos.mototaxiMarca, "la marca del mototaxi", 100, tipo === "MOTOTAXI");
     const mototaxiModelo = texto(datos.mototaxiModelo, "el modelo del mototaxi", 100, tipo === "MOTOTAXI");
     const mototaxiNumeroMotor = texto(datos.mototaxiNumeroMotor, "el número de motor", 100, tipo === "MOTOTAXI")?.toUpperCase() ?? null;

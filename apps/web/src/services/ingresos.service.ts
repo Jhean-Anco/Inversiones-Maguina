@@ -12,7 +12,7 @@ export type LineaIngreso =
   | { tipo: "SERVICIO"; descripcion: string; cantidad: string; precioUnitario: string; descuento: string; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO" }
   | { tipo: "MOTOTAXI"; mototaxiUnidadId: string; cantidad: "1"; precioUnitario: string; descuento: string; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO" };
 export type DatosNuevoIngreso = {
-  idempotencyKey: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; ordenServicioId?: string; clienteId?: string; clienteDireccion?: string; clienteTipoDocumento?: string; clienteNumeroDocumento?: string; clienteNombre?: string;
+  idempotencyKey: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; ordenServicioId?: string; cotizacionId?: string; clienteId?: string; clienteDireccion?: string; clienteTipoDocumento?: string; clienteNumeroDocumento?: string; clienteNombre?: string;
   medioPago: string; condicionPago?: "CONTADO" | "CREDITO"; importePagoInicial?: string; fechaVencimientoPago?: string; cuotasPago?: { cuota: number; fechaDePago: string; importe: string }[]; observacion?: string; detalles: LineaIngreso[];
 };
 export type IngresoCreado = { id: string; codigo: string; tipoComprobante?: "BOLETA" | "FACTURA" | "NOTA_VENTA"; condicionPago?: "CONTADO" | "CREDITO"; medioPago?: string; importePagoInicial?: string; total: string; igv: string; subtotal: string; estado: string; archivos?: { guardados: { id: string; tipo: string; ruta: string }[]; errores: { tipo: string; mensaje: string }[] }; nubefact?: { estado: "EMITIDO" | "PENDIENTE" | "ERROR"; serie: string; numero: number; codigo: string; enlace?: string; enlacePdf?: string; archivos?: { guardados: { id: string; tipo: string; ruta: string }[]; errores: { tipo: string; mensaje: string }[] }; mensaje?: string } | null };
@@ -23,19 +23,23 @@ export type LineaFuenteNota = { id: string; tipo: "PRODUCTO" | "SERVICIO" | "MOT
 export type FuenteNota = { id: string; codigo: string; tipoComprobante: "BOLETA" | "FACTURA"; fecha: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; total: string; moneda: "PEN"; lineas: LineaFuenteNota[] };
 export type PaginaVentas = { items: VentaListado[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
 export type EstadoNubefact = { regimenTributario: "NRUS" | "RER" | "RMT" | "GENERAL"; credencialesConfiguradas: boolean; seriesConfiguradas: boolean; emisionHabilitada: boolean; serieFacturaConfigurada: boolean; emisionFacturaHabilitada: boolean };
-export type GuiaRemision = { id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; fecha: string; codigo: string; estado: string; detalle: string | null; enlacePdf: string | null; enlaceXml: string | null; enlaceCdr: string | null };
+export type GuiaRemision = { id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; fecha: string; codigo: string; ingresoId?: string | null; comprobanteOrigen?: { codigo: string; tipo: string } | null; estado: string; detalle: string | null; enlacePdf: string | null; enlaceXml: string | null; enlaceCdr: string | null };
+export type UbigeoPeru = { codigo: string; departamento: string; provincia: string; distrito: string };
+export type DocumentoOrigenGuia = { id: string; codigo: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; estado: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; total: string };
+export type DetalleDocumentoGuia = { id: string; tipo: "PRODUCTO" | "MOTOTAXI"; codigo: string | null; descripcion: string; unidad: string | null; cantidad: string };
+export type DocumentoGuia = { id: string; codigo: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; clienteId: string; clienteNombreCompleto: string; clienteTipoDocumento: string; clienteNumeroDocumento: string; clienteDireccion: string; detalles: DetalleDocumentoGuia[] };
 export type PaginaGuiasRemision = { items: GuiaRemision[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
 export type NumeracionesIngreso = { BOLETA: { serie: string | null; numero: number | null; codigo: string | null }; FACTURA: { serie: string | null; numero: number | null; codigo: string | null }; NOTA_VENTA: { serie: string | null; numero: number | null; codigo: string | null }; ORDEN_SERVICIO: { serie: string | null; numero: number | null; codigo: string | null }; COTIZACION: { serie: string | null; numero: number | null; codigo: string | null }; GUIA_REMITENTE: { serie: string | null; numero: number | null; codigo: string | null }; GUIA_TRANSPORTISTA: { serie: string | null; numero: number | null; codigo: string | null } };
 export type DatosPagoIngreso = { idempotencyKey: string; fechaPago: string; importeAplicado: string; medioPago: string; cuentaFinancieraId: string; referenciaPago?: string; observacion?: string };
 export type MedioPagoDisponible = { codigo: "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "BILLETERA_DIGITAL"; nombre: string };
 export type PagoIngreso = { id: string; fechaPago: string; importeAplicado: string; medioPago: string; cuentaFinancieraId?: string | null; cuentaFinancieraNombre?: string | null; observacion?: string | null };
-export type TrazabilidadPagosIngreso = { items: PagoIngreso[]; importeAplicadoTotal: string };
+export type TrazabilidadPagosIngreso = { items: PagoIngreso[]; importeAplicadoTotal: string; saldoPendiente: string };
 export type IdentificadorCliente = { tipoDocumento: "01" | "04" | "06" | "07"; numeroDocumento: string };
 export type ClienteRegistrado = { id: string; tipoPersona: "NATURAL" | "JURIDICA"; tipoDocumento: "01" | "04" | "06" | "07"; numeroDocumento: string; documentos?: IdentificadorCliente[]; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; fechaNacimiento: string | null; razonSocial: string | null; nombreComercial: string | null; contactoNombre: string | null; correo: string | null; telefono: string | null; direccion: string | null; direccionEntrega: string | null; observacion: string | null };
 export type PaginaClientes = { items: ClienteRegistrado[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
 export type DatosClienteNuevo = { tipoPersona?: "NATURAL" | "JURIDICA"; tipoDocumento: "DNI" | "RUC" | "CE" | "PASAPORTE"; numeroDocumento: string; nombres?: string; apellidoPaterno?: string; apellidoMaterno?: string; fechaNacimiento?: string; razonSocial?: string; nombreComercial?: string; contactoNombre?: string; correo?: string; telefono?: string; direccion?: string; direccionEntrega?: string; observacion?: string };
 export type OrdenServicio = { id: string; codigo: string; clienteId: string; clienteNombre: string; clienteTelefono: string | null; clienteCorreo: string | null; vehiculoPlaca: string; motivo: string; adelanto: string; adelantoMedioPago: string | null; adelantoCuentaFinancieraId: string | null; diagnostico: string | null; detalles: Record<string, unknown>[]; notasTrabajo: { fecha: string; texto: string; usuarioId: string }[]; estado: "ABIERTA" | "EN_PROCESO" | "ESPERANDO_REPUESTOS" | "COMPLETADA" | "EMITIENDO" | "FACTURADA" | "ANULADA"; fechaRecepcion: string; fechaAcabado: string | null; fechaCierre: string | null; ingresoId: string | null };
-export type Cotizacion = { id: string; codigo: string; clienteId: string; clienteNombre: string; detalles: Record<string, unknown>[]; observacion: string | null; estado: "BORRADOR" | "ENVIADA" | "ACEPTADA" | "RECHAZADA" | "VENCIDA" | "CONVERTIDA" | "ANULADA"; fecha: string; vigenteHasta: string | null; ingresoId: string | null };
+export type Cotizacion = { id: string; codigo: string; clienteId: string | null; clienteNombre: string | null; detalles: Record<string, unknown>[]; observacion: string | null; estado: "BORRADOR" | "ENVIADA" | "ACEPTADA" | "RECHAZADA" | "VENCIDA" | "CONVERTIDA" | "ANULADA"; fecha: string; vigenteHasta: string | null; ingresoId: string | null; ingresoEstado?: string | null; ingresoTipoComprobante?: "BOLETA" | "FACTURA" | "NOTA_VENTA" | null };
 export type { IdentidadConsultada } from "./identidad.service";
 
 export const servicioIngresos = {
@@ -43,6 +47,9 @@ export const servicioIngresos = {
     const consulta = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina) });
     return solicitarApi<PaginaGuiasRemision>(`/ingresos/guias?${consulta}`);
   },
+  listarUbigeos() { return solicitarApi<UbigeoPeru[]>("/ingresos/ubigeos"); },
+  buscarDocumentosParaGuia(busqueda = "") { return solicitarApi<DocumentoOrigenGuia[]>(`/ingresos/guias/documentos?busqueda=${encodeURIComponent(busqueda)}`); },
+  obtenerDocumentoParaGuia(id: string) { return solicitarApi<DocumentoGuia>(`/ingresos/guias/documentos/${encodeURIComponent(id)}`); },
   emitirGuia(datos: Record<string, unknown>) {
     return solicitarApi<{ id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; codigo: string; estado: string; mensaje?: string | null }>("/ingresos/guias", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },

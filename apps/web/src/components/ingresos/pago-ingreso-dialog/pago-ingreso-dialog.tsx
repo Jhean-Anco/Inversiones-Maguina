@@ -25,7 +25,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
     setCargando(true);
     try {
       const datos = await servicioIngresos.listarPagos(ingresoId);
-      setItems(datos.items); setImporteAplicadoTotal(Number(datos.importeAplicadoTotal)); setError("");
+      setItems(datos.items); setImporteAplicadoTotal(Number(datos.importeAplicadoTotal)); if (contadoPendiente) setImporteAplicado(datos.saldoPendiente); setError("");
     } catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo cargar el historial de pagos."); }
     finally { setCargando(false); }
   }
@@ -34,7 +34,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
   async function registrar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setError("");
     const importe = Number(importeAplicado);
-    if (!Number.isFinite(importe) || importe <= 0 || importe > saldo) { setError("Ingresa un importe válido que no supere el saldo pendiente."); return; }
+    if (!Number.isFinite(importe) || importe <= 0 || importe > saldo || (contadoPendiente && Math.round(importe * 100) !== Math.round(saldo * 100))) { setError(contadoPendiente ? "La venta debe cancelarse por el saldo completo." : "Ingresa un importe válido que no supere el saldo pendiente."); return; }
     setGuardando(true);
     try {
       await servicioIngresos.registrarPago(ingresoId, { idempotencyKey: uuid(), fechaPago, importeAplicado: importe.toFixed(2), medioPago, cuentaFinancieraId, referenciaPago: referenciaPago.trim() || undefined, observacion: observacion.trim() || undefined });
@@ -52,7 +52,7 @@ export function PagoIngresoDialog({ ingresoId, total, contadoPendiente = false, 
     {saldo > 0 && <form id="pago-ingreso-form" onSubmit={(evento) => void registrar(evento)}>
       <label>Fecha de pago<input type="date" max={hoy()} required value={fechaPago} onChange={(evento) => setFechaPago(evento.target.value)} /></label>
       <div className="pago-payment-pair">
-        <label>Importe aplicado (S/)<input type="number" min="0.01" max={saldo.toFixed(2)} step="0.01" required value={importeAplicado} onChange={(evento) => setImporteAplicado(evento.target.value)} /></label>
+        <label>{contadoPendiente ? "Saldo a cancelar (S/)" : "Importe aplicado (S/)"}<input type="number" min="0.01" max={saldo.toFixed(2)} step="0.01" required value={importeAplicado} readOnly={contadoPendiente || importeInicialObligatorio} onChange={(evento) => setImporteAplicado(evento.target.value)} /></label>
         <SelectorCuentaFinanciera value={cuentaFinancieraId} medioActual={medioPago} onChange={(id, medio) => { setCuentaFinancieraId(id); setMedioPago(medio); }} />
       </div>
       <label>Referencia (opcional)<input maxLength={100} value={referenciaPago} onChange={(evento) => setReferenciaPago(evento.target.value)} /></label>

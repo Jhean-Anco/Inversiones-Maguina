@@ -1,6 +1,7 @@
 import "./compras-page.css";
 import "../../styles/egresos-tabla.css";
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { CatalogoListado } from "../../components/catalogo/catalogo-listado/catalogo-listado";
 import { EntradaStockDetalle } from "../../components/inventario/entrada-stock-detalle/entrada-stock-detalle";
@@ -21,11 +22,14 @@ function filaCompra(entrada: EntradaStock, alAbrir: (id: string) => void) {
   return <tr key={entrada.id}><td>{new Date(`${entrada.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{entrada.codigo}</strong><small>{documentosCompra[entrada.tipoDocumento] ?? entrada.tipoDocumento} · {entrada.numeroDocumento || "Registro interno"}</small></td><td><strong>{entrada.proveedor || "No especificado"}</strong>{entrada.proveedorTipoDocumento && entrada.proveedorNumeroDocumento && <small>{entrada.proveedorTipoDocumento} · {entrada.proveedorNumeroDocumento}</small>}</td><td>{entrada.cantidadProductos ?? 0} {(entrada.cantidadProductos ?? 0) === 1 ? "producto" : "productos"}</td><td>{entrada.medioPago || "Sin registrar"}<small>{pagado == null ? "Pago no registrado" : saldo === 0 ? "Pagada" : `Pagado ${soles(pagado)}`}</small></td><td className="is-number"><strong>{soles(total)}</strong></td><td><span className={`egresos-status${saldo === null ? " is-muted" : saldo > 0 ? " is-pending" : " is-paid"}`}>{saldo === null ? "Sin pago" : saldo > 0 ? `Saldo ${soles(saldo)}` : "Pagada"}</span></td><td><button className="egresos-row-button" type="button" onClick={() => alAbrir(entrada.id)}>Ver detalle</button></td></tr>;
 }
 
-export function ComprasPage() {
-  const modulo = useEntradasStock();
+export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean }) {
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
+  const modulo = useEntradasStock(esNuevaCompra ? () => navegar("/egresos/compras") : undefined);
   const [productoFormularioAbierto, setProductoFormularioAbierto] = useState(false);
+  useEffect(() => { if (esNuevaCompra) modulo.abrirNuevo(); }, [esNuevaCompra, ubicacion.key]);
   return <>
-    <CatalogoListado
+    {!esNuevaCompra && <CatalogoListado
       titulo="Compras de repuestos"
       descripcion="Registra las compras de repuestos para mantener actualizado el inventario."
       etiquetaCrear="Crear compra de repuestos"
@@ -52,13 +56,13 @@ export function ComprasPage() {
       claseTabla="egresos-table stock-purchases-table"
       claseContenedorTabla="egresos-table-scroll"
       alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}
-      alCrear={modulo.abrirNuevo}
+      alCrear={() => navegar("/egresos/compras/nueva")}
       alCambiarPagina={modulo.cambiarPagina}
       alCambiarTamanioPagina={modulo.cambiarPorPagina}
-    />
-    {modulo.modalAbierto && <EntradaStockFormulario {...modulo} alAgregarProducto={() => setProductoFormularioAbierto(true)} />}
+    />}
+    {modulo.modalAbierto && <EntradaStockFormulario {...modulo} cerrarModal={() => { modulo.cerrarModal(); if (esNuevaCompra) navegar("/egresos/compras"); }} modoPagina={esNuevaCompra} alAgregarProducto={() => setProductoFormularioAbierto(true)} />}
     {productoFormularioAbierto && <ProductoNuevoCompra alCerrar={() => setProductoFormularioAbierto(false)} alCrear={(nombre) => { setProductoFormularioAbierto(false); modulo.cambiarBusquedaProducto(nombre); }} />}
-    {modulo.entradaDetalle && <EntradaStockDetalle entrada={modulo.entradaDetalle} alCerrar={modulo.cerrarDetalle} />}
+    {!esNuevaCompra && modulo.entradaDetalle && <EntradaStockDetalle entrada={modulo.entradaDetalle} alCerrar={modulo.cerrarDetalle} />}
   </>;
 }
 

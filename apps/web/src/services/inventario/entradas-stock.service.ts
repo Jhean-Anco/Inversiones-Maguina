@@ -75,9 +75,10 @@ export type DatosEntradaStock = {
   medioPago: string | null;
   cuentaFinancieraId: string | null;
   montoPagado: string;
+  pagos: Array<{ cuentaFinancieraId: string; medioPago: string; importePagado: string }>;
   totalDocumento?: string | null;
   observacion: string;
-  detalles: Array<{ productoId: string; presentacionId: string; cantidad: string; costoUnitario: string }>;
+  detalles: Array<{ productoId: string; presentacionId: string; cantidad: string; costoUnitario: string; importeTotal: string }>;
 };
 
 export const servicioEntradasStock = {
@@ -90,8 +91,4 @@ export const servicioEntradasStock = {
   crear: (datos: DatosEntradaStock) => solicitarApi<EntradaStock>("/inventario/entradas-stock", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos),
   }),
-  subirEvidencia: async (id: string, archivo: File) => {
-    const datos = new FormData(); datos.append("archivo", archivo);
-    return solicitarApi<{ evidenciaNombre: string }>(`/inventario/entradas-stock/${id}/evidencia`, { method: "POST", body: datos });
-  },
 };
