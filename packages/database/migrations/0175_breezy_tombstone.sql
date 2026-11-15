@@ -1,0 +1,1 @@
+ALTER TABLE "modelos_mototaxis" ADD COLUMN "colores_disponibles" varchar(60)[] DEFAULT ARRAY[]::varchar[] NOT NULL;

@@ -16,8 +16,8 @@ export function AjusteStockFormulario({ cerrarModal, guardando, error, setError,
     <section className="catalog-modal stock-adjustment-modal" role="dialog" aria-modal="true" aria-labelledby="stock-adjustment-title">
       <button className="catalog-modal-close" type="button" aria-label="Cerrar ajuste de stock" onClick={cerrarModal}>×</button>
       <form className="catalog-form stock-adjustment-form" onSubmit={enviar}>
-        <div className="stock-adjustment-scroll">
         <div className="catalog-form-title"><span aria-hidden="true">±</span><div><h2 id="stock-adjustment-title">Nuevo ajuste de inventario</h2><p>Registra una corrección de stock con motivo y trazabilidad.</p></div></div>
+        <div className="stock-adjustment-scroll">
         {error && <div className="catalog-alert" role="alert">{error}</div>}
         <fieldset className="stock-entry-section"><legend>Producto</legend>
           {productoElegido ? <div className="stock-adjustment-selected"><div><span>{productoElegido.codigo} · {productoElegido.marca}</span><strong>{productoElegido.nombre}</strong><small>Stock actual: {productoElegido.cantidadActual} {productoElegido.unidad}</small></div><button type="button" onClick={limpiarProducto}>Cambiar producto</button></div> : <div className="stock-product-search-field stock-adjustment-search">

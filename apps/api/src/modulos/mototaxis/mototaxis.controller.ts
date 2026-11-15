@@ -16,7 +16,9 @@ export class ControladorMototaxis {
   @Get("marcas") @RequierePermiso("MOTOTAXIS.LEER") listarMarcas() { return this.mototaxis.listarMarcas(); }
   @Post("marcas") @RequierePermiso("MOTOTAXIS.CREAR") crearMarca(@Body() datos: unknown) { return this.mototaxis.crearMarca(datos); }
   @Get("modelos") @RequierePermiso("MOTOTAXIS.LEER") listarModelos(@Query("busqueda") busqueda?: string, @Query("incluirInactivos") incluirInactivos?: string) { return this.mototaxis.listarModelos(busqueda, incluirInactivos === "true"); }
+  @Get("modelos/:id/analisis") @RequierePermiso("MOTOTAXIS.LEER") obtenerAnalisisModelo(@Param("id") id: string) { return this.mototaxis.obtenerAnalisisModelo(id); }
   @Post("modelos") @RequierePermiso("MOTOTAXIS.CREAR") crearModelo(@Body() datos: unknown) { return this.mototaxis.crearModelo(datos); }
+  @Patch("modelos/:id/precio-venta") @RequierePermiso("MOTOTAXIS.EDITAR") actualizarPrecioVentaModelo(@Param("id") id: string, @Body() datos: unknown) { return this.mototaxis.actualizarPrecioVentaModelo(id, datos); }
   @Patch("modelos/:id") @RequierePermiso("MOTOTAXIS.EDITAR") actualizarModelo(@Param("id") id: string, @Body() datos: unknown) { return this.mototaxis.actualizarModelo(id, datos); }
   @Get("proveedores") @RequierePermiso("MOTOTAXIS.LEER") listarProveedores(@Query("busqueda") busqueda?: string) { return this.mototaxis.listarProveedores(busqueda); }
   @Post("proveedores") @RequierePermiso("MOTOTAXIS.CREAR") crearProveedor(@Body() datos: unknown) { return this.mototaxis.crearProveedor(datos); }

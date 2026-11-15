@@ -43,7 +43,7 @@ const sufijo = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
 const nombreUsuario = `qa-e2e-${sufijo}`;
 const correo = `qa-e2e-${sufijo}@example.invalid`;
 const contrasena = randomBytes(24).toString("base64url");
-const imagenCategoria = resolve(process.cwd(), "apps/web/src/pages/login-page/logo-transparente.png");
+const imagenCategoria = resolve(process.cwd(), "apps/web/public/logo.png");
 let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
@@ -377,7 +377,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const dialogo = page.getByRole("dialog", { name: "Nueva compra de productos" });
+    const dialogo = page.getByRole("dialog", { name: "Nueva compra de repuestos" });
     await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
     await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
     const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });

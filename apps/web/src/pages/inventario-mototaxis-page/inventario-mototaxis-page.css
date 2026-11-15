@@ -1,4 +1,11 @@
 .inventory-moto-page{display:block;width:100%;min-width:0;min-height:0;box-sizing:border-box;overflow:visible;padding:12px clamp(16px,2.2vw,32px) 16px;color:#16344d}
+.inventory-moto-tabs,.moto-inventory-tabs{display:flex;gap:8px;margin:0 0 14px;padding:0;border-bottom:1px solid #dce5ed}
+.inventory-moto-tabs button,.moto-inventory-tabs button{padding:10px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:#60758a;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.inventory-moto-tabs button[aria-current="page"],.moto-inventory-tabs button[aria-current="page"]{border-bottom-color:#1b5c91;color:#174d78}
+.inventory-moto-model-image{width:42px;height:42px;flex:0 0 42px;object-fit:cover;border:1px solid #e2e8ee;border-radius:8px;background:#f5f8fa}
+.inventory-moto-image-upload{display:grid;gap:6px;color:#294762;font-size:12px;font-weight:700}
+.inventory-moto-image-upload input{height:auto!important;padding:8px!important;background:#fff}
+.inventory-moto-image-upload small{color:#74869a;font-size:11px;font-weight:500}
 .inventory-moto-catalog-view{display:block;min-width:0;min-height:0;overflow:visible}
 .inventory-moto-filterbar{position:sticky;z-index:3;top:0;display:flex;flex:0 0 auto;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:23px 25px;border-bottom:1px solid #e8edf2;border-radius:22px 22px 0 0;background:#ffffffed;backdrop-filter:blur(10px)}
 .inventory-moto-empty{display:grid;min-height:160px;place-content:center;gap:9px;padding:24px;color:#76879a;font-size:14px;text-align:center}
@@ -47,6 +54,74 @@
 .inventory-moto-row-actions button:disabled{color:#98a8b8;cursor:default;opacity:.75}
 .inventory-moto-row-actions .erp-icon-action{width:34px;height:34px;min-height:34px;flex:0 0 34px;padding:0;border-radius:9px;background:#fff;color:#315a7a}
 .inventory-moto-row-actions .erp-icon-action:hover:not(:disabled){border-color:#a9bfd2;background:#f3f8fc;color:var(--blue)}
+.inventory-moto-price-action span{display:grid;width:19px;height:19px;place-items:center;border:1.5px solid currentColor;border-radius:50%;font-size:8px;font-weight:850;line-height:1;letter-spacing:-.06em}
+.inventory-moto-analysis-backdrop{z-index:1110}
+.inventory-moto-analysis{width:min(1120px,100%);max-height:min(92dvh,980px);border-radius:20px}
+.inventory-moto-analysis-head{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:18px;padding:20px 26px;border:0!important;border-bottom:4px solid #e22c32!important;background:linear-gradient(110deg,#0b2b4b,#185985);color:#fff}
+.inventory-moto-analysis-brand{display:flex;align-items:center;gap:16px;min-width:0}
+.inventory-moto-analysis-brand img{width:58px;height:58px;padding:3px;border:1px solid #ffffff48;border-radius:12px;background:#fff;object-fit:contain}
+.inventory-moto-analysis-brand>div{min-width:0}
+.inventory-moto-analysis-brand span{color:#d5e8f7;font-size:10px;font-weight:800;letter-spacing:.14em}
+.inventory-moto-analysis-brand h2{margin:5px 0 3px;color:#fff;font-size:23px;letter-spacing:-.025em}
+.inventory-moto-analysis-brand p{margin:0;color:#c6dced;font-size:12px}
+.inventory-moto-analysis-head>button{display:grid;width:40px;height:40px;flex:0 0 40px;place-items:center;border:1px solid #ffffff55;border-radius:11px;background:#ffffff14;color:white;cursor:pointer}
+.inventory-moto-analysis-content{display:grid;align-content:start;gap:17px;min-height:160px;padding:22px 25px;overflow:auto;background:#f7f9fb;color:#183a59}
+.inventory-moto-analysis-loading{display:grid;min-height:240px;place-items:center;color:#71869a;font-size:14px}
+.inventory-moto-analysis-intro{margin:0;color:#657d91;font-size:13px}
+.inventory-moto-price-summary,.inventory-moto-kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.inventory-moto-price-summary article,.inventory-moto-kpi-grid article{display:grid;align-content:start;gap:6px;min-width:0;padding:16px 18px;border:1px solid #dce6ed;border-radius:13px;background:#fff}
+.inventory-moto-price-summary article>span,.inventory-moto-kpi-grid article>span{color:#6b8093;font-size:11px;font-weight:750}
+.inventory-moto-price-summary article>strong,.inventory-moto-kpi-grid article>strong{color:#123e64;font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+.inventory-moto-price-summary article>small,.inventory-moto-kpi-grid article>small{color:#8292a0;font-size:10px;line-height:1.45}
+.inventory-moto-list-price-form{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:14px;padding:17px;border:1px solid #dce6ed;border-radius:13px;background:#fff}
+.inventory-moto-list-price-form label{display:grid;gap:7px;color:#294d6b;font-size:12px;font-weight:750}
+.inventory-moto-list-price-form input{height:42px;box-sizing:border-box;padding:0 12px;border:1px solid #cfdae4;border-radius:9px;background:#fff;color:#173e5f;font:inherit;font-size:14px}
+.inventory-moto-list-price-form input:focus{border-color:#6b9ab9;outline:3px solid #3a7ba41a}
+.inventory-moto-list-price-form small{color:#7b8d9d;font-size:10px;font-weight:500}
+.inventory-moto-list-price-form button,.inventory-moto-analysis-footer button{min-height:42px;padding:0 17px;border:1px solid #cbdbe7;border-radius:10px;background:#fff;color:#24577e;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.inventory-moto-list-price-form button{border-color:#174f7c;background:#174f7c;color:white}
+.inventory-moto-list-price-form button:disabled{opacity:.5;cursor:not-allowed}
+.inventory-moto-analysis-latest{display:grid;gap:5px;padding:12px 14px;border-left:3px solid #e22c32;border-radius:8px;background:#fff}
+.inventory-moto-analysis-latest>span{color:#788a9a;font-size:10px;font-weight:700}
+.inventory-moto-analysis-latest>strong{color:#1a456a;font-size:12px}
+.inventory-moto-chart{display:grid;gap:9px;min-width:0;padding:15px 17px;border:1px solid #dce6ed;border-radius:13px;background:#fff}
+.inventory-moto-chart>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.inventory-moto-chart h3{margin:0;color:#244966;font-size:12px}
+.inventory-moto-chart>header span,.inventory-moto-chart footer{color:#8796a4;font-size:10px}
+.inventory-moto-chart svg{width:100%;height:auto;overflow:visible}
+.inventory-moto-chart-axis{stroke:#e3eaf0;stroke-width:1}
+.inventory-moto-chart-line{stroke:#176093;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.inventory-moto-chart.is-venta .inventory-moto-chart-line{stroke:#df3440}
+.inventory-moto-chart circle{fill:#fff;stroke:#176093;stroke-width:3}
+.inventory-moto-chart.is-venta circle{stroke:#df3440}
+.inventory-moto-chart-labels{display:flex;justify-content:space-between;gap:4px;color:#75899a;font-size:9px;text-transform:capitalize}
+.inventory-moto-chart-labels span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inventory-moto-chart-empty{display:grid;min-height:90px;place-items:center;border:1px dashed #d7e1e9;border-radius:9px;color:#8595a3;font-size:11px}
+.inventory-moto-analysis-footer{display:flex;flex:0 0 auto;justify-content:flex-end;padding:12px 24px;border-top:1px solid #e5ebf0;background:#fff}
+.inventory-moto-product-hero{display:flex;align-items:center;gap:15px;padding:16px;border:1px solid #dce6ed;border-radius:14px;background:#fff}
+.inventory-moto-product-hero>img{width:92px;height:74px;object-fit:contain;border:1px solid #e3eaf0;border-radius:10px;background:#f6f9fb}
+.inventory-moto-product-hero>span{width:74px;height:74px;flex:0 0 74px}
+.inventory-moto-product-hero>div>span{color:#7c8d9b;font-size:10px;font-weight:750}
+.inventory-moto-product-hero h3{margin:5px 0;color:#143f64;font-size:16px}
+.inventory-moto-product-hero p{margin:0;color:#788b9b;font-size:11px}
+.inventory-moto-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.inventory-moto-kpi-grid article>strong{font-size:18px}
+.inventory-moto-analysis-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.inventory-moto-analysis-sections{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+.inventory-moto-analysis-sections>section{min-width:0;padding:16px;border:1px solid #dce6ed;border-radius:13px;background:#fff}
+.inventory-moto-analysis-sections h3{margin:0 0 13px;color:#244966;font-size:13px}
+.inventory-moto-analysis-sections dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;margin:0}
+.inventory-moto-analysis-sections dl>div{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #edf1f4}
+.inventory-moto-analysis-sections dt{color:#758799;font-size:10px}
+.inventory-moto-analysis-sections dd{margin:0;color:#1e4667;font-size:10px;font-weight:700;text-align:right}
+.inventory-moto-additional-specs{display:grid;gap:6px;margin:12px 0 0;color:#667d91;font-size:11px;line-height:1.5}
+.inventory-moto-additional-specs strong{color:#234967}
+html[data-theme="oscuro"] #root .inventory-moto-analysis-content{background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .inventory-moto-price-summary article,html[data-theme="oscuro"] #root .inventory-moto-kpi-grid article,html[data-theme="oscuro"] #root .inventory-moto-list-price-form,html[data-theme="oscuro"] #root .inventory-moto-analysis-latest,html[data-theme="oscuro"] #root .inventory-moto-chart,html[data-theme="oscuro"] #root .inventory-moto-product-hero,html[data-theme="oscuro"] #root .inventory-moto-analysis-sections>section{border-color:var(--tema-borde);background:#172a3d}
+html[data-theme="oscuro"] #root .inventory-moto-price-summary article>strong,html[data-theme="oscuro"] #root .inventory-moto-kpi-grid article>strong,html[data-theme="oscuro"] #root .inventory-moto-analysis-sections dd,html[data-theme="oscuro"] #root .inventory-moto-product-hero h3{color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .inventory-moto-list-price-form input{border-color:var(--tema-borde);background:#102236;color:var(--tema-texto)}
+@media(max-width:780px){.inventory-moto-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-moto-analysis-sections{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.inventory-moto-analysis-head{padding:15px}.inventory-moto-analysis-brand img{width:46px;height:46px}.inventory-moto-analysis-brand h2{font-size:18px}.inventory-moto-analysis-content{padding:14px}.inventory-moto-price-summary,.inventory-moto-analysis-charts{grid-template-columns:minmax(0,1fr)}.inventory-moto-list-price-form{grid-template-columns:minmax(0,1fr)}.inventory-moto-list-price-form button{width:100%}.inventory-moto-analysis-sections dl{grid-template-columns:minmax(0,1fr)}.inventory-moto-product-hero>img{width:68px;height:64px}}
 .inventory-moto-table .inventory-moto-model-status{white-space:nowrap}
 html[data-theme="oscuro"] #root .inventory-moto-page{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .inventory-moto-modal{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
@@ -57,3 +132,70 @@ html[data-theme="oscuro"] #root .inventory-moto-table-model small{color:var(--te
 html[data-theme="oscuro"] #root .inventory-moto-table-icon{border-color:var(--tema-borde);background:#1a3045;color:#a8cee6}
 @media(max-width:760px){.inventory-moto-page{padding:10px 14px 16px}.inventory-moto-filterbar{align-items:stretch;padding:13px}.inventory-moto-alert,.inventory-moto-success{margin-right:0;margin-left:0}}
 @media(max-width:560px){.inventory-moto-filterbar{position:static;flex-direction:column;align-items:stretch}.inventory-moto-empty{padding:20px}.inventory-moto-form-grid{grid-template-columns:minmax(0,1fr);padding:12px}.inventory-moto-wide{grid-column:auto}.inventory-moto-modal-backdrop{padding:9px}.inventory-moto-modal{max-height:94dvh}}
+
+/* Ficha técnica de modelo */
+.inventory-moto-modal-redesign{width:min(1320px,calc(100vw - 32px));max-height:min(92dvh,900px);border:1px solid #dbe5ed;border-radius:20px;box-shadow:0 30px 90px #0c213747}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:112px;padding:20px 26px;overflow:hidden;background:linear-gradient(120deg,#071f3b 0%,#0d3b65 58%,#155b92 100%);border-bottom:4px solid #e22c32}
+.inventory-moto-brand-lockup{display:flex;min-width:0;align-items:center;gap:16px}
+.inventory-moto-brand-lockup>img{width:84px;height:84px;flex:0 0 84px;box-sizing:border-box;padding:4px;border:1px solid #dbe5ed;border-radius:14px;background:#fff;object-fit:contain}
+.inventory-moto-brand-lockup>div{min-width:0}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head span,.inventory-moto-image-copy>span{color:#64819a;font-size:10px;font-weight:800;letter-spacing:.12em}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head span{display:inline-flex;padding:5px 9px;border-left:3px solid #ef343b;border-radius:4px;background:#ffffff18;color:#d9ebf8}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head h2{margin:7px 0 4px;color:#fff;font-size:25px;letter-spacing:-.035em}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head p{margin:0;color:#d1e2f1;font-size:13px}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head button{z-index:1;width:42px;height:42px;border:1px solid #ffffff55;border-radius:12px;background:#ffffff14;color:#fff;font-size:23px;cursor:pointer}
+.inventory-moto-modal-redesign .inventory-moto-dialog-head button:hover{background:#ffffff28}
+.inventory-moto-dialog-content{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:20px;min-height:0;padding:20px 24px;overflow:auto;background:#f8fafc}
+.inventory-moto-technical-fields{display:grid;align-content:start;gap:14px;min-width:0}
+.inventory-moto-field-group{padding:17px 18px 18px;border:1px solid #e1e9ef;border-radius:15px;background:#fff;box-shadow:0 2px 8px #24445c08}
+.inventory-moto-field-group>header{display:flex;align-items:center;gap:11px;margin:0 0 14px}
+.inventory-moto-field-group>header>span{display:grid;width:30px;height:30px;place-items:center;border-radius:9px;background:#eaf2f8;color:#285e84;font-size:10px;font-weight:800}
+.inventory-moto-field-group>header h3,.inventory-moto-image-copy h3{margin:0;color:#1a3e5d;font-size:14px;font-weight:750}
+.inventory-moto-field-group>header p,.inventory-moto-image-copy p{margin:3px 0 0;color:#788b9d;font-size:11px;line-height:1.45}
+.inventory-moto-modal-redesign .inventory-moto-form-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px;padding:0;overflow:visible}
+.inventory-moto-modal-redesign .inventory-moto-form-grid label{gap:6px;color:#4d6579;font-size:11px;font-weight:700}
+.inventory-moto-modal-redesign .inventory-moto-form-grid label small{margin-left:3px;color:#94a2af;font-size:10px;font-weight:500}
+.inventory-moto-modal-redesign .inventory-moto-form-grid input,.inventory-moto-modal-redesign .inventory-moto-form-grid select,.inventory-moto-modal-redesign .inventory-moto-form-grid textarea{height:40px;padding:0 11px;border-color:#d8e2e9;border-radius:9px;background:#fff;color:#183a59;font-size:13px;transition:border-color .15s,box-shadow .15s}
+.inventory-moto-modal-redesign .inventory-moto-form-grid textarea{height:auto;min-height:68px;padding:10px;resize:vertical}
+.inventory-moto-modal-redesign .inventory-moto-input-unit{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;overflow:hidden;border:1px solid #d8e2e9;border-radius:9px;background:#fff}
+.inventory-moto-modal-redesign .inventory-moto-input-unit:focus-within{border-color:#6b9ab9;box-shadow:0 0 0 3px #3a7ba41a}
+.inventory-moto-modal-redesign .inventory-moto-input-unit input{border:0;border-radius:0;box-shadow:none!important}
+.inventory-moto-modal-redesign .inventory-moto-input-unit span{padding:0 12px;color:#8293a2;font-size:12px;font-weight:600}
+.inventory-moto-modal-redesign .inventory-moto-form-grid :is(input,select,textarea):focus{border-color:#6b9ab9;outline:0;box-shadow:0 0 0 3px #3a7ba41a}
+.inventory-moto-color-grid{display:flex;flex-wrap:wrap;gap:8px}
+.inventory-moto-color-option{display:inline-flex;min-height:36px;align-items:center;gap:8px;padding:0 11px;border:1px solid #d9e3eb;border-radius:999px;background:#fff;color:#35546e;font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.inventory-moto-color-option:hover{border-color:#7da6c3;background:#f5f9fc}
+.inventory-moto-color-option.is-selected{border-color:#155b92;background:#eaf3fa;color:#114b79;box-shadow:inset 0 0 0 1px #155b92}.inventory-moto-color-option.is-selected::after{content:"\2713";display:grid;width:16px;height:16px;place-items:center;border-radius:50%;background:#155b92;color:#fff;font-size:10px}.inventory-moto-color-option:disabled{opacity:.5;cursor:not-allowed}.inventory-moto-color-option:disabled:hover{border-color:#d9e3eb;background:#fff}
+.inventory-moto-color-dot{width:14px;height:14px;flex:0 0 14px;border:1px solid #c5d0da;border-radius:50%;background:#929eaa}
+.inventory-moto-color-more{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:3px 0;border:0;background:transparent;color:#155b92;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.inventory-moto-color-more:hover{text-decoration:underline}
+.inventory-moto-color-more:focus-visible{outline:2px solid #347caf;outline-offset:3px;border-radius:3px}
+.inventory-moto-colors-group>small{display:block;margin-top:10px;color:#71849a;font-size:11px;font-weight:500}.inventory-moto-colors-group>small.inventory-moto-color-limit{color:#a35c19;font-weight:700}
+.inventory-moto-image-card{display:flex;align-self:start;flex-direction:column;gap:14px;padding:17px;border:1px solid #e1e9ef;border-radius:15px;background:#fff}
+.inventory-moto-image-preview{display:grid;min-height:210px;place-items:center;overflow:hidden;border:1px dashed #cbd9e3;border-radius:12px;background:linear-gradient(145deg,#f3f7fa,#f9fbfc)}
+.inventory-moto-image-preview img{width:100%;height:230px;object-fit:contain}
+.inventory-moto-image-placeholder{display:grid;justify-items:center;gap:8px;color:#91a2b1;font-size:11px}
+.inventory-moto-image-placeholder svg{width:40px;height:40px;fill:none;stroke:#8ca2b3;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.inventory-moto-image-button{display:flex;min-height:42px;align-items:center;justify-content:center;border:1px solid #cbdbe7;border-radius:10px;background:#f5f9fc;color:#24577e;font-size:12px;font-weight:750;cursor:pointer}
+.inventory-moto-image-button:hover{border-color:#9db8cc;background:#edf5fa}
+.inventory-moto-image-button input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;clip-path:inset(50%)}
+.inventory-moto-image-button:focus-within{outline:3px solid #347caf25}
+.inventory-moto-image-hint{color:#8999a7;font-size:10px;text-align:center}
+.inventory-moto-modal-redesign>.inventory-moto-alert{margin:12px 24px 0}
+.inventory-moto-modal-redesign .inventory-moto-dialog-actions{padding:14px 24px;background:#fff}
+.inventory-moto-modal-redesign .inventory-moto-dialog-actions button{min-height:42px;padding:0 17px;border-radius:10px;font-size:12px}
+html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-dialog-head{border-color:#e22c32}
+html[data-theme="oscuro"] #root .inventory-moto-dialog-content{border-color:var(--tema-borde);background:var(--tema-superficie)}
+html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-dialog-head span{background:#ffffff16;color:#d9ebf8}
+html[data-theme="oscuro"] #root .inventory-moto-field-group,html[data-theme="oscuro"] #root .inventory-moto-image-card{border-color:var(--tema-borde);background:#172a3d}
+html[data-theme="oscuro"] #root .inventory-moto-field-group>header h3,html[data-theme="oscuro"] #root .inventory-moto-image-copy h3,html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-dialog-head h2{color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-form-grid input,html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-form-grid select,html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-form-grid textarea{border-color:var(--tema-borde);background:#102236;color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-input-unit{border-color:var(--tema-borde);background:#102236}
+html[data-theme="oscuro"] #root .inventory-moto-modal-redesign .inventory-moto-input-unit span{color:#a2b1bf}
+html[data-theme="oscuro"] #root .inventory-moto-color-option{border-color:var(--tema-borde);background:#102236;color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .inventory-moto-color-option.is-selected{border-color:#66a4d5;background:#193b58;color:#d7ebf7}html[data-theme="oscuro"] #root .inventory-moto-color-option.is-selected::after{background:#66a4d5;color:#102236}html[data-theme="oscuro"] #root .inventory-moto-colors-group>small{color:#a2b1bf}html[data-theme="oscuro"] #root .inventory-moto-colors-group>small.inventory-moto-color-limit{color:#efbd76}
+html[data-theme="oscuro"] #root .inventory-moto-color-more{color:#8ac5eb}
+html[data-theme="oscuro"] #root .inventory-moto-image-preview{border-color:#40566b;background:#102236}
+@media(max-width:900px){.inventory-moto-modal-redesign .inventory-moto-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.inventory-moto-dialog-content{grid-template-columns:minmax(0,1fr);padding:14px}.inventory-moto-image-card{grid-row:1}.inventory-moto-image-preview{min-height:160px}.inventory-moto-image-preview img{height:190px}.inventory-moto-modal-redesign .inventory-moto-dialog-head{padding:16px}.inventory-moto-brand-lockup{gap:12px}.inventory-moto-brand-lockup>img{width:62px;height:62px;flex-basis:62px}.inventory-moto-modal-redesign .inventory-moto-dialog-head h2{font-size:21px}}
+@media(max-width:520px){.inventory-moto-modal-redesign .inventory-moto-form-grid{grid-template-columns:minmax(0,1fr)}.inventory-moto-modal-redesign .inventory-moto-dialog-head h2{font-size:20px}.inventory-moto-field-group{padding:14px}.inventory-moto-modal-redesign .inventory-moto-dialog-actions{padding:12px 14px}}

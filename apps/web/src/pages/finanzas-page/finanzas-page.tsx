@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioFinanzas, type CuentaFinanciera, type DatosCuentaFinanciera, type MovimientosCuentas, type PeriodoMovimientosCuenta, type TipoCuentaFinanciera } from "../../services/finanzas.service";
-import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,7 @@ const etiquetaTipo = (tipo: TipoCuentaFinanciera) => tipos.find((item) => item.v
 const inicial = (): DatosCuentaFinanciera => ({ tipo: "EFECTIVO", nombre: "", entidad: "", titular: "", moneda: "PEN", numeroCuenta: "", cci: "", numeroTarjeta: "", telefono: "", observacion: "" });
 
 export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }) {
+  const alertas = useAlertas();
   const navegar = useNavigate();
   const [items, setItems] = useState<CuentaFinanciera[]>([]);
   const [periodoFlujo, setPeriodoFlujo] = useState<PeriodoMovimientosCuenta>("MES");
@@ -36,9 +37,7 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-  const [exito, setExito] = useState("");
-
-  const manejarError = useCallback((e: unknown) => { if (e instanceof ErrorApi && e.estado === 401) { navegar("/login", { replace: true }); return; } setError(e instanceof Error ? e.message : "No se pudo completar la solicitud."); }, [navegar]);
+  const manejarError = useCallback((e: unknown) => { if (e instanceof ErrorApi && e.estado === 401) { navegar("/login", { replace: true }); return; } const mensaje = e instanceof Error ? e.message : "No se pudo completar la solicitud."; setError(mensaje); alertas.error(mensaje); }, [alertas, navegar]);
   const cargar = useCallback(async () => {
     setCargando(true);
     try { const [resumen, catalogo] = await Promise.all([servicioFinanzas.resumen(), puedeAdministrar ? servicioFinanzas.listar() : Promise.resolve([])]); setItems(resumen.items.map((item) => ({ ...catalogo.find((cuenta) => cuenta.id === item.id), ...item }) as CuentaFinanciera)); setPeriodo(resumen.periodo); setError(""); }
@@ -66,23 +65,22 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
   }
 
   async function guardar(evento: FormEvent) {
-    evento.preventDefault(); setGuardando(true); setError("");
+    evento.preventDefault(); setGuardando(true);
     try {
       if (editando) await servicioFinanzas.actualizar(editando, formulario);
       else await servicioFinanzas.crear(formulario);
-      setExito(editando ? "Cuenta actualizada." : "Cuenta agregada."); setAbierto(false); setEditando(null); setFormulario(inicial()); await cargar();
+      alertas.exito(editando ? "Cuenta actualizada." : "Cuenta agregada."); setAbierto(false); setEditando(null); setFormulario(inicial()); await cargar();
     } catch (e) { manejarError(e); }
     finally { setGuardando(false); }
   }
 
   async function alternarEstado(cuenta: CuentaFinanciera) {
-    try { await servicioFinanzas.cambiarEstado(cuenta.id, !cuenta.activa); setExito(cuenta.activa ? "Cuenta desactivada. Su historial de movimientos se conserva." : "Cuenta activada."); await cargar(); }
+    try { await servicioFinanzas.cambiarEstado(cuenta.id, !cuenta.activa); alertas.exito(cuenta.activa ? "Cuenta desactivada. Su historial de movimientos se conserva." : "Cuenta activada."); await cargar(); }
     catch (e) { manejarError(e); }
   }
 
   return <section className="finanzas-page">
     <header className="finanzas-heading"><div><span className="finanzas-kicker">TESORERÍA</span><h1>Cuentas y medios de pago</h1><p>Registra dónde recibes y desde dónde pagas el dinero de la empresa.</p></div>{puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}</header>
-    {error && <NotificacionFlotante tipo="error" mensaje={error} duracionMs={0} onCerrar={() => setError("")} />}{exito && <NotificacionFlotante tipo="exito" mensaje={exito} duracionMs={4000} onCerrar={() => setExito("")} />}
     <section className="finanzas-summary"><div><span>Entradas registradas este mes</span><strong>{moneda(items.reduce((total, cuenta) => total + Number(cuenta.ingresosMes ?? 0), 0), "PEN")}</strong></div><div><span>Salidas registradas este mes</span><strong>{moneda(items.reduce((total, cuenta) => total + Number(cuenta.egresosMes ?? 0), 0), "PEN")}</strong></div><small>{periodo ? `Flujos vinculados a cuentas · ${periodo}` : "Resumen mensual"}</small></section>
     <section className="finanzas-flow-panel">
       <header className="finanzas-flow-heading"><div><span className="finanzas-kicker">MOVIMIENTO DE DINERO</span><h2>Flujo por cuenta</h2><p>Entradas y salidas registradas en las cuentas seleccionadas.</p></div><div className="finanzas-flow-filters" role="group" aria-label="Periodo de movimientos"><div className="finanzas-period-toggle">{([ ["DIA", "Día"], ["MES", "Mes"], ["ANIO", "Año"] ] as const).map(([valor, nombre]) => <button type="button" key={valor} className={periodoFlujo === valor ? "is-active" : ""} aria-pressed={periodoFlujo === valor} onClick={() => setPeriodoFlujo(valor)}>{nombre}</button>)}</div><input aria-label={periodoFlujo === "DIA" ? "Seleccionar día" : periodoFlujo === "MES" ? "Seleccionar mes" : "Seleccionar año"} type={periodoFlujo === "DIA" ? "date" : periodoFlujo === "MES" ? "month" : "number"} min={periodoFlujo === "ANIO" ? "1900" : undefined} max={periodoFlujo === "ANIO" ? String(new Date().getFullYear()) : undefined} value={periodoFlujo === "DIA" ? fechaFlujo : periodoFlujo === "MES" ? fechaFlujo.slice(0, 7) : fechaFlujo.slice(0, 4)} onChange={(evento) => { const valor = evento.target.value; if (!valor) return; setFechaFlujo(periodoFlujo === "DIA" ? valor : periodoFlujo === "MES" ? `${valor}-01` : `${valor}-01-01`); }} /></div></header>
@@ -100,8 +98,9 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
       {puedeAdministrar && <footer><AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} /><AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} /></footer>}
     </article>} />
     {items.some((cuenta) => Number(cuenta.ingresosMes) || Number(cuenta.egresosMes)) && <p className="finanzas-footnote">El resumen incluye pagos con cuenta asignada durante el mes. Los movimientos anteriores sin cuenta configurada no se pueden distribuir retroactivamente.</p>}
-    {abierto && createPortal(<div className="finanzas-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setAbierto(false); }}><form className="finanzas-form" onSubmit={(evento) => void guardar(evento)}>
-      <header><div><span className="finanzas-kicker">CONFIGURACIÓN DE TESORERÍA</span><h2>{editando ? "Editar cuenta" : "Agregar cuenta o medio"}</h2></div><button type="button" aria-label="Cerrar" onClick={() => setAbierto(false)}>×</button></header>
+    {abierto && createPortal(<div className="finanzas-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setAbierto(false); }}><form className="finanzas-form" role="dialog" aria-modal="true" aria-labelledby="finanzas-form-title" onSubmit={(evento) => void guardar(evento)}>
+      <header><div><span className="finanzas-kicker">CONFIGURACIÓN DE TESORERÍA</span><h2 id="finanzas-form-title">{editando ? "Editar cuenta" : "Agregar cuenta o medio"}</h2></div><button type="button" aria-label="Cerrar" onClick={() => setAbierto(false)}>×</button></header>
+      <div className="finanzas-form-fields">
       <label>Tipo de cuenta<select value={formulario.tipo} onChange={(evento) => setFormulario((actual) => ({ ...actual, tipo: evento.target.value as TipoCuentaFinanciera }))}>{tipos.map((tipo) => <option value={tipo.valor} key={tipo.valor}>{tipo.nombre}</option>)}</select></label>
       <label>Nombre para identificarla<input required maxLength={100} value={formulario.nombre} onChange={(evento) => setFormulario((actual) => ({ ...actual, nombre: evento.target.value }))} placeholder={formulario.tipo === "EFECTIVO" ? "Ej. Caja principal" : formulario.tipo === "BANCO" ? "Ej. Cuenta corriente del negocio" : formulario.tipo === "BILLETERA" ? "Ej. Yape del negocio" : "Ej. Visa para compras"} /></label>
       {formulario.tipo !== "EFECTIVO" && <label>{formulario.tipo === "BILLETERA" ? "Billetera digital" : formulario.tipo === "TARJETA" ? "Banco emisor" : "Banco"}<input required maxLength={100} value={formulario.entidad ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, entidad: evento.target.value }))} placeholder={formulario.tipo === "BILLETERA" ? "Yape, Plin u otro" : "Nombre de la entidad"} /></label>}
@@ -111,6 +110,7 @@ export function FinanzasPage({ puedeAdministrar }: { puedeAdministrar: boolean }
       {formulario.tipo === "TARJETA" && <label>Últimos cuatro dígitos<input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={formulario.numeroTarjeta ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, numeroTarjeta: evento.target.value.replace(/\D/g, "").slice(0, 4) }))} /></label>}
       <label>Moneda<select value={formulario.moneda} onChange={(evento) => setFormulario((actual) => ({ ...actual, moneda: evento.target.value as DatosCuentaFinanciera["moneda"] }))}><option value="PEN">Soles (PEN)</option></select><small>Los flujos actuales se registran en soles. Se habilitarán otras monedas cuando el sistema gestione tipo de cambio.</small></label>
       <label>Observación<textarea maxLength={1000} value={formulario.observacion ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, observacion: evento.target.value }))} /></label>
+      </div>
       <footer><button type="button" onClick={() => setAbierto(false)}>Cancelar</button><button className="finanzas-primary" disabled={guardando}>{guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar cuenta"}</button></footer>
     </form></div>, document.body)}
   </section>;

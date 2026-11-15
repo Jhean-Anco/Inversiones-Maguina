@@ -76,6 +76,7 @@ button {
   border-radius: 9px;
   background: #fff;
   color: #315a7a;
+  text-decoration: none;
   transition: color .15s ease, background-color .15s ease, border-color .15s ease, transform .15s ease;
 }
 .erp-icon-action:hover:not(:disabled) {
@@ -3046,13 +3047,15 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   size: A4 portrait;
   margin: 12mm;
 }
-@page boletaA5 {
-  size: A5 portrait;
-  margin: 8mm;
-}
 @page boletaTicket {
   size: 80mm 250mm;
   margin: 3mm;
+}
+.paper-a4 .boleta-paper {
+  page: boletaA4;
+}
+.paper-ticket .boleta-paper {
+  page: boletaTicket;
 }
 @media print {
   html,
@@ -3110,6 +3113,18 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
     color: #111 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+  .paper-ticket .boleta-paper,
+  .paper-ticket .boleta-paper * {
+    color: #000 !important;
+    background-color: #fff !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .paper-ticket .boleta-paper img {
+    filter: grayscale(1) !important;
   }
   .boleta-title,
   .boleta-total {
@@ -5948,3 +5963,8 @@ html[data-theme="oscuro"] #root .login-success-overlay { background: #07101dcc !
     padding: 2px 0 2px 14px;
   }
 }
+
+.clientes-row-account > td:last-child { text-align: center; }
+@media (max-width: 650px) { .clientes-form-grid { grid-template-columns: minmax(0, 1fr); } .clientes-form-grid .clientes-form-wide { grid-column: auto; } }
+
+.clientes-edit-documento { margin: 4px 0 0; color: #536b7c; font-size: 13px; font-weight: 650; }

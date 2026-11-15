@@ -6,7 +6,7 @@
 
 El [catálogo de datos generado](catalogo-de-datos.md) enumera tablas, columnas, constructor Drizzle, nulabilidad, presencia de defaults, referencias `references()` y nombres de índices/checks declarados en los builders. No expande longitudes/precisiones ni miembros de índices compuestos; esa revisión debe hacerse en el esquema fuente y las migraciones.
 
-Grupos observados: personas y roles/permisos; catálogo, marcas, unidades, precios y códigos; entradas y movimientos de stock; ingresos, detalle, pagos, documentos relacionados y notas; egresos/documentos recibidos/pagos; mototaxis, compras, unidades, movimientos y garantías; cuentas financieras; archivos locales e imágenes; órdenes de servicio, cotizaciones, guías y series/correlativos.
+Grupos observados: personas y roles/permisos; catálogo, marcas, unidades, precios y códigos; entradas y movimientos de stock; ingresos, detalle, pagos, documentos relacionados y notas; egresos y pagos; mototaxis, compras, unidades, movimientos y garantías; cuentas financieras; archivos locales e imágenes; órdenes de servicio, cotizaciones, guías y series/correlativos. El esquema aún conserva la tabla histórica `documentos_recibidos` y sus referencias; no implica que exista un flujo activo de consulta o asociación.
 
 ```mermaid
 erDiagram

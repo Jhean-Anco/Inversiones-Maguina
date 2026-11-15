@@ -18,7 +18,6 @@
 | `NUBEFACT_TIMEOUT_MS` | API | no | 20000 | servidor | interna |
 | `REGIMEN_TRIBUTARIO` | API | no | código: NRUS si vacío; ejemplo/Compose: RER | servidor | configuración; discrepancia por validar |
 | `DESCUENTO_MAXIMO_PORCENTAJE` | API | no | 0 | servidor | configuración |
-| `SUNAT_SIRE_RUC`, `SUNAT_SIRE_USUARIO_SOL`, `SUNAT_SIRE_CLAVE_SOL`, `SUNAT_SIRE_CLIENT_ID`, `SUNAT_SIRE_CLIENT_SECRET` | API | para usar SIRE | ninguno | servidor | confidencial/secretos |
 | `APIS_PERU_TOKEN` | API | no | vacío | servidor | secreto |
 | `UPLOADS_DIR` | API | no | `storage` | servidor | ruta interna |
 | `IMAGEN_MAXIMO_BYTES` | API | no | 5242880 | servidor | interna |

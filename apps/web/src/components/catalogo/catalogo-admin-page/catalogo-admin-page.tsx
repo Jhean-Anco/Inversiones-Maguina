@@ -1,11 +1,12 @@
 import "./catalogo-admin-page.css";
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useCatalogo } from "../../../hooks/use-catalogo";
 import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 import { srcImagen } from "../../../services/api-cliente";
 import { AccionIcono } from "../../ui/accion-icono";
+import { ImageUploadCard } from "../../ui/image-upload-card/image-upload-card";
 import type { RegistroCatalogo, ServicioCatalogo, UsoMarca } from "../../../services/inventario/catalogos.service";
 
 type FiltroEstado = "TODOS" | "ACTIVOS" | "INACTIVOS";
@@ -37,7 +38,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const singular = esMarca ? "marca" : "categoría";
   const plural = esMarca ? "Marcas" : "Categorías";
   const imagenLabel = esMarca ? "Logotipo" : "Imagen";
-  const idArchivo = `catalogo-${tipo}-imagen`;
   const { registros, cargando, guardando, error, setError, guardar, cambiarEstado } = useCatalogo(servicio, mensajeCarga);
   const [busqueda, setBusqueda] = useState("");
   const [nombre, setNombre] = useState("");
@@ -52,7 +52,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const [confirmandoEstado, setConfirmandoEstado] = useState(false);
   const dialogoRef = useRef<HTMLElement>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [arrastrando, setArrastrando] = useState(false);
   const [anchoViewport, setAnchoViewport] = useState(() => typeof window === "undefined" ? 1280 : window.innerWidth);
 
   const filtrados = useMemo(() => registros.filter((registro) => {
@@ -81,7 +80,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   }, [imagen, rutaImagen]);
 
   function limpiarFormulario() {
-    setNombre(""); setRutaImagen(""); setImagen(null); setRegistroEditado(null); setUsoMarca(""); setArrastrando(false);
+    setNombre(""); setRutaImagen(""); setImagen(null); setRegistroEditado(null); setUsoMarca("");
   }
   function cerrarModal() { if (guardando) return; setModalAbierto(false); limpiarFormulario(); }
   function cerrarConfirmacionEstado() { if (confirmandoEstado) return; setConfirmacionEstado(null); }
@@ -95,9 +94,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
       setError("Elige una imagen JPG, PNG o WebP de hasta 5 MB."); return;
     }
     setError(""); setImagen(archivo);
-  }
-  function manejarDrop(evento: DragEvent<HTMLLabelElement>) {
-    evento.preventDefault(); setArrastrando(false); seleccionarImagen(evento.dataTransfer.files[0]);
   }
   function guardarRegistro(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setError("");
@@ -162,13 +158,10 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
         <header className="catalog-manager-dialog-head"><div className={`catalog-manager-dialog-symbol${esMarca ? " is-brand" : ""}`}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre o la imagen." : `Agrega una ${singular} al catálogo.`}</p></div><button type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
         {error && <div className="catalog-manager-dialog-error" role="alert">{error}</div>}
         <form className="catalog-manager-form" onSubmit={guardarRegistro}>
-          <label className="catalog-manager-name-field"><span>Nombre<b>*</b></span><input autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
-          {esMarca && <label className="catalog-manager-name-field"><span>Se usa en<b>*</b></span><select value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
-          <div className="catalog-manager-image-field"><div className="catalog-manager-image-label"><span>{imagenLabel}<b>*</b></span><small>JPG, PNG o WebP · hasta 5 MB</small></div>
-            <label className={`catalog-manager-dropzone${arrastrando ? " is-dragging" : ""}${vistaPrevia ? " has-preview" : ""}`} htmlFor={idArchivo} onDragOver={(evento) => { evento.preventDefault(); setArrastrando(true); }} onDragLeave={() => setArrastrando(false)} onDrop={manejarDrop}>
-              <input id={idArchivo} type="file" accept="image/jpeg,image/png,image/webp" onChange={(evento) => { seleccionarImagen(evento.target.files?.[0]); evento.currentTarget.value = ""; }} />
-              {vistaPrevia ? <><span className={`catalog-manager-preview${esMarca ? " is-logo" : ""}`}><img src={vistaPrevia} alt={`Vista previa: ${imagenLabel.toLocaleLowerCase("es-PE")}`} /></span><span className="catalog-manager-drop-copy"><strong>{imagen?.name ?? (esMarca ? "Logotipo actual" : "Imagen actual")}</strong><small>Haz clic para reemplazar la imagen</small></span><span className="catalog-manager-upload-action">Cambiar</span></> : <><span className="catalog-manager-upload-icon"><Icono nombre="subir"/></span><span className="catalog-manager-drop-copy"><strong>Selecciona una imagen</strong><small>También puedes arrastrarla aquí</small></span><span className="catalog-manager-upload-action">Elegir archivo</span></>}
-            </label>
+          <div className="catalog-manager-form-body">
+            <label className="catalog-manager-name-field"><span>Nombre<b>*</b></span><input autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
+            {esMarca && <label className="catalog-manager-name-field"><span>Se usa en<b>*</b></span><select value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
+            <ImageUploadCard title={imagenLabel} description={esMarca ? "La imagen identificará esta marca en el catálogo." : "La imagen ayudará a reconocer esta categoría."} hint={imagen?.name ?? "JPG, PNG o WebP · hasta 5 MB"} previews={vistaPrevia ? [{ key: "catalog", src: vistaPrevia, alt: imagenLabel }] : []} buttonLabel={imagen || rutaImagen ? "Cambiar imagen" : "Seleccionar imagen"} disabled={guardando} uploadStatus={guardando && imagen ? "uploading" : "ready"} uploadMessage="Guardando imagen…" onSelect={(files) => seleccionarImagen(files[0])} />
           </div>
           <footer className="catalog-manager-form-actions"><button type="button" className="catalog-manager-cancel" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" className="catalog-manager-save" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button></footer>
         </form>

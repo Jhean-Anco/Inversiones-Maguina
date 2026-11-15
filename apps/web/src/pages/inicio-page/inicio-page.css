@@ -634,19 +634,27 @@ html[data-theme="oscuro"] #root .erp-page-title > strong { color: var(--tema-tex
   .erp-page-title > strong{font-size:clamp(22px,1.75vw,29px);letter-spacing:-.04em}
   .erp-topbar .erp-topbar-actions{grid-column:3;justify-self:end}
   .erp-page-title::before{display:none}
-  .erp-topbar::after{position:absolute;right:0;bottom:-1px;left:0;width:68px;height:3px;margin:auto;border-radius:99px;background:linear-gradient(90deg,#bd1d31,#ef3445,#bd1d31);box-shadow:0 2px 7px #d52a3d36;content:""}
 }
 @media (max-width: 960px) {
   .erp-topbar{border-bottom:1px solid #e4eaf0}
   .erp-page-title{flex-direction:row;align-items:center;gap:9px}
   .erp-page-title::before{width:4px;height:25px;flex:0 0 4px;border-radius:99px;background:linear-gradient(180deg,#bd1d31,#ef3445);box-shadow:0 2px 7px #d52a3d36}
-  .erp-topbar::after{position:absolute;right:0;bottom:-1px;left:0;width:48px;height:2px;margin:auto;border-radius:99px;background:linear-gradient(90deg,#bd1d31,#ef3445,#bd1d31);content:""}
 }
 @media (max-width: 600px) {
   .erp-page-title::before{width:3px;height:21px;flex-basis:3px}
-  .erp-topbar::after{width:38px}
 }
 html[data-theme="oscuro"] #root .erp-topbar{border-bottom-color:var(--tema-borde)}
+
+.erp-topbar-underline{--erp-line-segment:clamp(112px,22vw,384px);position:absolute;z-index:2;right:0;bottom:-1px;left:0;width:auto;height:3px;overflow:hidden;pointer-events:none}
+.erp-topbar-underline>span{position:absolute;top:0;width:var(--erp-line-segment);height:100%;border-radius:99px;box-shadow:0 1px 6px #d52a3d55}
+.erp-topbar-underline>span:first-child{left:0;background:linear-gradient(90deg,#9f1e31,#ed293a,#ff9aa4,#145b8b,#9f1e31);background-size:240% 100%;animation:erp-topbar-sweep-right 5s linear infinite,erp-topbar-color-flow 2.33s ease-in-out infinite alternate}
+.erp-topbar-underline>span:last-child{right:0;background:linear-gradient(270deg,#9f1e31,#ed293a,#ff9aa4,#145b8b,#9f1e31);background-size:240% 100%;animation:erp-topbar-sweep-left 5s linear infinite,erp-topbar-color-flow-reverse 2.33s ease-in-out infinite alternate}
+@keyframes erp-topbar-sweep-right{from{left:calc(0px - var(--erp-line-segment))}to{left:100%}}
+@keyframes erp-topbar-sweep-left{from{right:calc(0px - var(--erp-line-segment))}to{right:100%}}
+@keyframes erp-topbar-color-flow{from{background-position:0% 50%}to{background-position:100% 50%}}
+@keyframes erp-topbar-color-flow-reverse{from{background-position:100% 50%}to{background-position:0% 50%}}
+@media(max-width:960px){.erp-topbar-underline{--erp-line-segment:clamp(80px,28vw,240px);height:2px}.erp-topbar-underline>span:first-child{animation-duration:2.67s,1.67s}.erp-topbar-underline>span:last-child{animation-duration:2.67s,1.67s}}
+@media(max-width:600px){.erp-topbar-underline{--erp-line-segment:clamp(56px,36vw,144px)}.erp-topbar-underline>span:first-child{animation-duration:1.5s,1.2s}.erp-topbar-underline>span:last-child{animation-duration:1.5s,1.2s}}
 
 .topbar-stock-alert-tag.is-warning{background:#fff7e7;color:#9a6400}
 .topbar-stock-alert-tag.is-danger{background:#fff0f0;color:#bd2739}

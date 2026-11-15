@@ -9,7 +9,6 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioEgresos, type DatosEgreso, type Egreso, type TipoEgreso } from "../../services/egresos.service";
 import { servicioIdentidad } from "../../services/identidad.service";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
-import { SelectorComprobanteProveedor } from "../../components/egresos/selector-comprobante-proveedor/selector-comprobante-proveedor";
 
 const fechaHoy = () => {
   const fecha = new Date();
@@ -46,7 +45,6 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
   const [beneficiario, setBeneficiario] = useState("");
   const [documentoTipo, setDocumentoTipo] = useState("");
   const [documentoNumero, setDocumentoNumero] = useState("");
-  const [documentoRecibidoId, setDocumentoRecibidoId] = useState("");
   const [proveedorRuc, setProveedorRuc] = useState("");
   const [buscandoIdentidadProveedor, setBuscandoIdentidadProveedor] = useState(false);
   const [medioPago, setMedioPago] = useState("EFECTIVO");
@@ -85,18 +83,10 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
 
   useEffect(() => { const timer = window.setTimeout(() => { void cargar(); }, busqueda ? 200 : 0); return () => window.clearTimeout(timer); }, [cargar, busqueda]);
 
-  function seleccionarComprobante(documento: { id: string; fechaEmision: string | null; emisorNombre: string | null; emisorRuc: string; tipoDocumento: string; serie: string; correlativo: string; total: string | null }) {
-    setFecha(documento.fechaEmision ?? fechaHoy()); setBeneficiario(documento.emisorNombre ?? ""); setProveedorRuc(documento.emisorRuc);
-    setDocumentoTipo(documento.tipoDocumento === "01" ? "FACTURA" : documento.tipoDocumento === "03" ? "BOLETA" : "NOTA");
-    setDocumentoNumero(`${documento.serie}-${documento.correlativo}`); setMonto(documento.total ?? ""); setDocumentoRecibidoId(documento.id);
-    setConcepto(tipo === "ACTIVO_HERRAMIENTA" ? "Compra de activo o herramienta según comprobante" : "Gasto según comprobante");
-    if (tipo === "ACTIVO_HERRAMIENTA") setIdentificadorActivo("");
-    setRegistrarPagoInicial(false); setImporteInicial(""); setError("");
-  }
   function abrirFormulario() {
     setFecha(fechaHoy()); setCategoria(categoriasPorTipo[tipo][0]); setConcepto(""); setBeneficiario("");
     setDocumentoTipo(""); setDocumentoNumero(""); setProveedorRuc(""); setMedioPago("EFECTIVO"); setCuentaFinancieraId(""); setRegistrarPagoInicial(false);
-    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setDocumentoRecibidoId(""); setMototaxiMarca(""); setMototaxiModelo("");
+    setMonto(""); setImporteInicial(""); setIdentificadorActivo(""); setMototaxiMarca(""); setMototaxiModelo("");
     setMototaxiNumeroMotor(""); setMototaxiNumeroChasis(""); setObservacion(""); setError(""); setModal(true);
   }
 
@@ -119,7 +109,6 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       tipo, fecha, categoria, concepto: tipo === "MOTOTAXI" ? "Compra de mototaxi " + mototaxiMarca.trim() + " " + mototaxiModelo.trim() : concepto.trim(), beneficiario: beneficiario.trim() || null,
       documentoTipo: documentoTipo || null, documentoNumero: documentoNumero.trim() || null,
       proveedorRuc: proveedorRuc.trim() || null, moneda: "PEN", ...(registrarPagoInicial ? { medioPago, cuentaFinancieraId, importePagoInicial: inicial.toFixed(2) } : {}), monto: importe.toFixed(2),
-      ...(documentoRecibidoId ? { documentoRecibidoId } : {}),
       identificadorActivo: tipo === "ACTIVO_HERRAMIENTA" ? identificadorActivo.trim() || null : null,
       mototaxiMarca: tipo === "MOTOTAXI" ? mototaxiMarca.trim() : null,
       mototaxiModelo: tipo === "MOTOTAXI" ? mototaxiModelo.trim() : null,
@@ -185,7 +174,6 @@ export function EgresoRegistroPage({ tipo, contexto = "egresos" }: { tipo: TipoE
       <label className="egreso-full">Proveedor o beneficiario<input value={beneficiario} onChange={(evento) => setBeneficiario(evento.target.value)} maxLength={180} /></label>
       <label>Documento<select value={documentoTipo} onChange={(evento) => setDocumentoTipo(evento.target.value)}><option value="">Sin documento</option><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="NOTA">Nota</option><option value="OTRO">Otro</option></select></label>
       <label>Número de documento<input value={documentoNumero} onChange={(evento) => setDocumentoNumero(evento.target.value)} maxLength={60} /></label>
-      <SelectorComprobanteProveedor destino={tipo === "MOTOTAXI" ? "MOTOTAXI" : tipo} bloqueado={guardando} alSeleccionar={seleccionarComprobante} />
       {documentoTipo === "FACTURA" && <label>RUC del proveedor<span className="egreso-ruc-search"><input required disabled={buscandoIdentidadProveedor} inputMode="numeric" pattern="[0-9]{11}" maxLength={11} value={proveedorRuc} onChange={(evento) => setProveedorRuc(evento.target.value.replace(/\D/g, "").slice(0, 11))} /><button type="button" disabled={buscandoIdentidadProveedor || proveedorRuc.length !== 11} onClick={() => void buscarIdentidadProveedor()}>{buscandoIdentidadProveedor ? "Consultando…" : "Buscar"}</button></span></label>}
       {tipo === "ACTIVO_HERRAMIENTA" && <label className="egreso-full">Modelo o identificación<input required maxLength={100} value={identificadorActivo} onChange={(evento) => setIdentificadorActivo(evento.target.value)} /></label>}
       <label>Importe total (S/)<input required type="number" min="0.01" step="0.01" value={monto} onChange={(evento) => setMonto(evento.target.value)} /></label>

@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from "react";
-import { Pencil, Power, PowerOff, Trash2, type LucideIcon } from "lucide-react";
+import { FileCheck2, Pencil, Power, PowerOff, Trash2, type LucideIcon } from "lucide-react";
 
-type Accion = "editar" | "activar" | "desactivar" | "eliminar";
+type Accion = "editar" | "activar" | "desactivar" | "eliminar" | "emitir";
 
 type Propiedades = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "title"> & {
   accion: Accion;
@@ -13,6 +13,7 @@ const iconos = {
   activar: Power,
   desactivar: PowerOff,
   eliminar: Trash2,
+  emitir: FileCheck2,
 } satisfies Record<Accion, LucideIcon>;
 
 export function AccionIcono({ accion, etiqueta, className = "", ...propiedades }: Propiedades) {

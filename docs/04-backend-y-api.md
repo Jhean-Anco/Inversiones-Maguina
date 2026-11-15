@@ -13,7 +13,7 @@ El inventario de endpoints se genera directamente desde decoradores `@Controller
 | Ingresos | `/ingresos` |
 | Egresos y compras de mototaxi | `/egresos`, `/inventario/mototaxis` |
 | Finanzas | `/finanzas/cuentas` |
-| Inventario | `/inventario/productos`, `/categorias`, `/marcas`, `/imagenes`, `/movimientos-stock`, `/entradas-stock`, `/sunat-sire` |
+| Inventario | `/inventario/productos`, `/categorias`, `/marcas`, `/imagenes`, `/movimientos-stock`, `/entradas-stock` |
 | Personas | `/personas/conductores`, `/personas/consulta-identidad`, `/personas/proveedores` |
 | Reportes | `/reportes` |
 | Archivos | `/archivos` |

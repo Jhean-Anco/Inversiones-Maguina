@@ -4,7 +4,7 @@ import type { FastifyRequest } from "fastify";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { and, asc, count, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
-import { db, documentosRecibidos, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
+import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
@@ -13,7 +13,7 @@ import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service
 
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
-type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; totalDocumento?: unknown; documentoRecibidoId?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
+type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
 const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO", "OTRO"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
@@ -213,7 +213,6 @@ export class ServicioEntradasStock {
     if (proveedorTipoPersona === "JURIDICA" && !["RUC", "EXT"].includes(proveedorTipoDocumento ?? "")) throw new BadRequestException("Un proveedor jurídico debe identificarse con RUC o documento extranjero.");
     if (tipoDocumento !== "SIN_DOCUMENTO" && (!proveedor || !proveedorTipoPersona || !proveedorTipoDocumento || !proveedorNumeroDocumento)) throw new BadRequestException("Completa el nombre o razón social, tipo de persona y documento del proveedor tal como aparecen en el comprobante.");
     const observacion = texto(datos.observacion, "La observación", 2000, true);
-    const documentoRecibidoId = datos.documentoRecibidoId === undefined || datos.documentoRecibidoId === null || datos.documentoRecibidoId === "" ? null : uuid(datos.documentoRecibidoId, "El documento recibido");
     if (!Array.isArray(datos.detalles) || datos.detalles.length > 100 || (!datos.detalles.length && !detallesDocumento.length)) throw new BadRequestException("Agrega lineas del documento o productos recibidos para registrar la compra.");
     const detalles = datos.detalles.map((valor, indice) => {
       if (typeof valor !== "object" || valor === null || Array.isArray(valor)) throw new BadRequestException(`El producto ${indice + 1} no es válido.`);
@@ -227,13 +226,6 @@ export class ServicioEntradasStock {
 
     try {
       const id = await db.transaction(async (tx) => {
-        if (documentoRecibidoId) {
-          const [documento] = await tx.select({ id: documentosRecibidos.id, emisorRuc: documentosRecibidos.emisorRuc, tipoDocumento: documentosRecibidos.tipoDocumento, serie: documentosRecibidos.serie, correlativo: documentosRecibidos.correlativo, destino: documentosRecibidos.destino, estado: documentosRecibidos.estado })
-            .from(documentosRecibidos).where(eq(documentosRecibidos.id, documentoRecibidoId)).for("update").limit(1);
-          const tipoEsperado = documento?.tipoDocumento === "01" ? "FACTURA" : documento?.tipoDocumento === "03" ? "BOLETA" : documento?.tipoDocumento === "07" || documento?.tipoDocumento === "08" ? "NOTA" : "";
-          if (!documento || documento.estado !== "PENDIENTE_RECEPCION" || documento.destino !== "REPUESTOS") throw new ConflictException("El comprobante ya no está pendiente de recepción de repuestos.");
-          if (documento.emisorRuc !== proveedorNumeroDocumento || proveedorTipoDocumento !== "RUC" || tipoDocumento !== tipoEsperado || numeroDocumento !== `${documento.serie}-${documento.correlativo}`) throw new BadRequestException("Los datos del proveedor o comprobante no coinciden con el documento recibido seleccionado.");
-        }
         if (["FACTURA", "BOLETA"].includes(tipoDocumento) && proveedorTipoDocumento === "RUC" && proveedorNumeroDocumento && numeroDocumento) {
           const claveDocumento = `COMPROBANTE_COMPRA:${proveedorNumeroDocumento}:${tipoDocumento}:${numeroDocumento}`;
           await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${claveDocumento}, 0))`);
@@ -299,12 +291,6 @@ export class ServicioEntradasStock {
             origenId: nuevaEntrada.id, origenDetalleId: linea.id, cantidadBase: detalle.cantidadBase.toFixed(6),
             costoUnitarioBase: detalle.costoBase.toFixed(6), usuarioId,
           });
-        }
-        if (documentoRecibidoId) {
-          const [enlace] = await tx.update(documentosRecibidos).set({ entradaStockId: nuevaEntrada.id, estado: "REGISTRADO" })
-            .where(and(eq(documentosRecibidos.id, documentoRecibidoId), eq(documentosRecibidos.estado, "PENDIENTE_RECEPCION"), eq(documentosRecibidos.destino, "REPUESTOS")))
-            .returning({ id: documentosRecibidos.id });
-          if (!enlace) throw new ConflictException("El comprobante fue procesado en otra operación; no se registró la recepción.");
         }
         return nuevaEntrada.id;
       });

@@ -1191,6 +1191,69 @@
       "when": 1794425017186,
       "tag": "0169_facturacion_anular_documentos",
       "breakpoints": true
+    },
+    {
+      "idx": 170,
+      "version": "7",
+      "when": 1794551100659,
+      "tag": "0170_remove_service_order_vehicle_vin",
+      "breakpoints": true
+    },
+    {
+      "idx": 171,
+      "version": "7",
+      "when": 1794551409103,
+      "tag": "0171_remove_service_order_vehicle_make",
+      "breakpoints": true
+    },
+    {
+      "idx": 172,
+      "version": "7",
+      "when": 1794551549855,
+      "tag": "0172_remove_service_order_vehicle_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 173,
+      "version": "7",
+      "when": 1794557007625,
+      "tag": "0173_clear_talkback",
+      "breakpoints": true
+    },
+    {
+      "idx": 174,
+      "version": "7",
+      "when": 1794600099353,
+      "tag": "0174_white_silvermane",
+      "breakpoints": true
+    },
+    {
+      "idx": 175,
+      "version": "7",
+      "when": 1794600941646,
+      "tag": "0175_breezy_tombstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 176,
+      "version": "7",
+      "when": 1794658444773,
+      "tag": "0176_add_cotizacion_series",
+      "breakpoints": true
+    },
+    {
+      "idx": 177,
+      "version": "7",
+      "when": 1794663075822,
+      "tag": "0177_ordenes_servicio_adelanto",
+      "breakpoints": true
+    },
+    {
+      "idx": 178,
+      "version": "7",
+      "when": 1794700000000,
+      "tag": "0178_add_fecha_acabado_orden_servicio",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,14 @@
-import "./ventas-page.css";
+﻿import "./ventas-page.css";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { Ban, FileCheck, FileCode, MessageCircle, Printer } from "lucide-react";
+import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { ErrorApi, urlApi } from "../../services/api-cliente";
 import { servicioIngresos, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
+import { imprimirDocumento } from "../../services/impresion-documentos";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
 const soles = (valor: string) => "S/ " + Number(valor).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -30,8 +32,8 @@ const etiquetasEstado: Record<string, string> = {
 const estado = (valor: string, estadoProveedor?: string) => etiquetasEstado[estadoProveedor ?? ""] ?? etiquetasEstado[valor] ?? valor.replaceAll("_", " ").toLocaleLowerCase("es-PE");
 const medioPago = (valor: string) => valor.replaceAll("_", " ").toLocaleLowerCase("es-PE").replace(/^\p{L}/u, (letra) => letra.toLocaleUpperCase("es-PE"));
 const enlaceDocumento = (ruta: string) => ruta.startsWith("/") ? urlApi(ruta) : ruta;
-const enlaces = (pdf: string | null, xml: string | null, cdr: string | null, codigo: string, whatsapp = true) => <span className="ventas-actions">
-  {pdf && <a href={enlaceDocumento(pdf)} target="_blank" rel="noreferrer" title={`Abrir o imprimir documento ${codigo}`} aria-label={`Abrir o imprimir documento ${codigo}`}><Printer aria-hidden="true" size={16}/></a>}
+const enlaces = (pdf: string | null, xml: string | null, cdr: string | null, codigo: string, whatsapp = true, pdfComoDocumento = true) => <span className="ventas-actions">
+  {pdf && <a href={enlaceDocumento(pdf)} target="_blank" rel="noreferrer" title={pdfComoDocumento ? `Abrir o imprimir documento ${codigo}` : `Abrir PDF fiscal ${codigo}`} aria-label={pdfComoDocumento ? `Abrir o imprimir documento ${codigo}` : `Abrir PDF fiscal ${codigo}`}>{pdfComoDocumento ? <Printer aria-hidden="true" size={16}/> : <FileCheck aria-hidden="true" size={16}/>}</a>}
   {xml && <a href={enlaceDocumento(xml)} target="_blank" rel="noreferrer" title={`Descargar XML ${codigo}`} aria-label={`Descargar XML ${codigo}`}><FileCode aria-hidden="true" size={16}/></a>}
   {cdr && <a href={enlaceDocumento(cdr)} target="_blank" rel="noreferrer" title={`Ver CDR de SUNAT ${codigo}`} aria-label={`Ver constancia de recepción SUNAT ${codigo}`}><FileCheck aria-hidden="true" size={16}/></a>}
   {pdf && whatsapp && !pdf.startsWith("/") && <a href={`https://wa.me/?text=${encodeURIComponent(`Te comparto el comprobante ${codigo}: ${enlaceDocumento(pdf)}`)}`} target="_blank" rel="noreferrer" title={`Compartir ${codigo} por WhatsApp`} aria-label={`Compartir ${codigo} por WhatsApp`}><MessageCircle aria-hidden="true" size={16}/></a>}
@@ -96,6 +98,11 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   }, [ventaSeleccionada]);
 
   const totalAjuste = Object.entries(lineasSeleccionadas).reduce((total, [id, seleccionada]) => total + (seleccionada ? Number(ajustesNota[id] ?? 0) || 0 : 0), 0);
+
+  const imprimirNota = (nota: NotaRelacionada, formato: "A4" | "TICKET") => {
+    if (!ventaSeleccionada) return;
+    imprimirDocumento({ tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "NOTA DE CRÉDITO" : "NOTA DE DÉBITO", codigo: nota.codigoComprobante, fecha: fecha(nota.fecha), cliente: ventaSeleccionada.clienteNombre, documentoCliente: ventaSeleccionada.clienteNumeroDocumento, referencia: ventaSeleccionada.codigoComprobante, motivo: nota.motivo, estado: estado(nota.estado), total: soles(nota.total) }, formato);
+  };
 
   const abrirNota = (venta: VentaListado, tipo: "NOTA_CREDITO" | "NOTA_DEBITO") => {
     setVentaSeleccionada(venta); setTipoNota(tipo); setFuenteNota(null); setLineasSeleccionadas({}); setAjustesNota({}); setErrorNota(""); setNotas([]); setObservacionNota("");
@@ -174,7 +181,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
             <div className="ventas-note-selection-summary"><span>{Object.values(lineasSeleccionadas).filter(Boolean).length} producto(s) seleccionado(s)</span><strong>Total del ajuste: {soles(String(totalAjuste))}</strong></div>
           </> : <p className="ventas-notes-empty">{errorNota || "No se pudo cargar el detalle del comprobante."}</p>}
           <h3>Notas vinculadas</h3>
-          {notas.length ? <ul className="ventas-notes-list">{notas.map((nota) => <li key={nota.id}><div><strong>{nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito"} - {nota.codigoComprobante}</strong><span>{nota.motivo} - {soles(nota.total)}</span><small>{nota.estadoAnulacion === "ANULADO" ? "Anulada por SUNAT" : nota.estadoAnulacion === "PENDIENTE" ? "Baja pendiente de SUNAT" : nota.estadoAnulacion === "RECHAZADO" ? "Baja rechazada; el documento sigue vigente" : estado(nota.estado)}</small>{nota.motivoAnulacion && <small>Motivo de baja: {nota.motivoAnulacion}</small>}</div><span className="ventas-row-actions">{enlaces(nota.enlacePdf, nota.enlaceXml, nota.enlaceCdr, nota.codigoComprobante)}{puedeAnular && (nota.estado === "ANULACION_PENDIENTE" ? <button type="button" title="Consultar estado de la baja" aria-label={`Consultar baja de ${nota.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: ventaSeleccionada.id, documentoId: nota.id, codigo: nota.codigoComprobante, tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito", esNota: true, pendiente: true })}><Ban aria-hidden="true" size={16}/></button> : nota.estado === "EMITIDO" && <button type="button" className="ventas-cancel-action" title="Comunicar baja a SUNAT" aria-label={`Anular ${nota.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: ventaSeleccionada.id, documentoId: nota.id, codigo: nota.codigoComprobante, tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito", esNota: true, pendiente: false })}><Ban aria-hidden="true" size={16}/></button>)}</span></li>)}</ul> : <p className="ventas-notes-empty">Aun no hay notas vinculadas.</p>}
+          {notas.length ? <ul className="ventas-notes-list">{notas.map((nota) => <li key={nota.id}><div><strong>{nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito"} - {nota.codigoComprobante}</strong><span>{nota.motivo} - {soles(nota.total)}</span><small>{nota.estadoAnulacion === "ANULADO" ? "Anulada por SUNAT" : nota.estadoAnulacion === "PENDIENTE" ? "Baja pendiente de SUNAT" : nota.estadoAnulacion === "RECHAZADO" ? "Baja rechazada; el documento sigue vigente" : estado(nota.estado)}</small>{nota.motivoAnulacion && <small>Motivo de baja: {nota.motivoAnulacion}</small>}</div><span className="ventas-row-actions">{enlaces(nota.enlacePdf, nota.enlaceXml, nota.enlaceCdr, nota.codigoComprobante, false, false)}<BotonImprimir etiqueta={`Imprimir nota ${nota.codigoComprobante}`} alImprimirA4={() => imprimirNota(nota, "A4")} alImprimirTicket={() => imprimirNota(nota, "TICKET")} />{puedeAnular && (nota.estado === "ANULACION_PENDIENTE" ? <button type="button" title="Consultar estado de la baja" aria-label={`Consultar baja de ${nota.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: ventaSeleccionada.id, documentoId: nota.id, codigo: nota.codigoComprobante, tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito", esNota: true, pendiente: true })}><Ban aria-hidden="true" size={16}/></button> : nota.estado === "EMITIDO" && <button type="button" className="ventas-cancel-action" title="Comunicar baja a SUNAT" aria-label={`Anular ${nota.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: ventaSeleccionada.id, documentoId: nota.id, codigo: nota.codigoComprobante, tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "Nota de credito" : "Nota de debito", esNota: true, pendiente: false })}><Ban aria-hidden="true" size={16}/></button>)}</span></li>)}</ul> : <p className="ventas-notes-empty">Aun no hay notas vinculadas.</p>}
           <form onSubmit={emitirNota}>
             <h3>{tipoNota === "NOTA_CREDITO" ? "Emitir nota de crédito" : "Emitir nota de débito"}</h3>
             <label>Observación (opcional)<input maxLength={240} value={observacionNota} onChange={(evento) => setObservacionNota(evento.target.value)} placeholder="Motivo o detalle del ajuste" /></label>

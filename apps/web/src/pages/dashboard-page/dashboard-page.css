@@ -156,7 +156,7 @@ html[data-theme="oscuro"] #root .inicio-dashboard .inicio-chart-grid>.inicio-pay
   .inicio-dashboard .inicio-chart-grid>.inicio-payment-panel,.inicio-dashboard .inicio-chart-grid>.inicio-mototaxi-panel{grid-column:1/-1;grid-row:auto}
 }
 
-/* La gr?fica de ventas conserva de forma permanente el primer plano. */
+/* La gráfica de ventas conserva de forma permanente el primer plano. */
 .inicio-dashboard .inicio-chart-grid>.inicio-sales-chart .inicio-recharts-line{height:350px}
 @media(max-width:760px){.inicio-dashboard .inicio-chart-grid>.inicio-sales-chart .inicio-recharts-line{height:245px}}
 .inicio-dashboard .inicio-chart-grid .inicio-chart-legend{position:relative;z-index:1;display:flex;min-height:34px;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px 18px;margin-top:5px;padding:8px 2px 0;border-top:1px solid #e6edf2}

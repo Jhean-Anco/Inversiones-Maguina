@@ -1,12 +1,14 @@
 import "./nuevo-ingreso-page.css";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo, type MedioPagoDisponible } from "../../services/ingresos.service";
 import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
 import { servicioProductos, type CatalogosProducto, type DatosProducto } from "../../services/inventario/productos.service";
 import { useNuevoIngreso, type TipoVenta } from "../../hooks/use-nuevo-ingreso";
 import { srcImagen, urlApi } from "../../services/api-cliente";
 import { PagoIngresoDialog } from "../../components/ingresos/pago-ingreso-dialog/pago-ingreso-dialog";
+import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 
 const soles = (monto: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(monto);
@@ -23,9 +25,19 @@ const fechaHoyPeru = () => {
 };
 
 export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { tipoVenta?: TipoVenta; permisos?: string[] }) {
+  const ubicacion = useLocation();
   const venta = useNuevoIngreso(tipoVenta);
+  const transferenciaOS = (ubicacion.state as { ordenServicio?: { id: string; codigo: string; clienteId: string; clienteNombre: string; motivo: string; adelanto: string; adelantoMedioPago: string | null; adelantoCuentaFinancieraId: string | null; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; detalles: Record<string, unknown>[] } } | null)?.ordenServicio ?? null;
+  const [cuentaSaldoOS, setCuentaSaldoOS] = useState("");
+  const [medioSaldoOS, setMedioSaldoOS] = useState("EFECTIVO");
+  const [cuentaPagoId, setCuentaPagoId] = useState("");
+  const [cargandoOS, setCargandoOS] = useState(false);
+  const [vinculandoOS, setVinculandoOS] = useState(false);
+  const [ordenVinculadaOS, setOrdenVinculadaOS] = useState(false);
+  const cargaOSRef = useRef<string | null>(null);
+  const vinculoOSRef = useRef<string | null>(null);
   const [paso, setPaso] = useState<"datos" | "previa">("datos");
-  const [tamano, setTamano] = useState<"A4" | "A5" | "TICKET">("A4");
+  const [tamano, setTamano] = useState<"A4" | "TICKET">("A4");
   const [mostrarRegistroCliente, setMostrarRegistroCliente] = useState(false);
   const [intentoIdentificacionComprobante, setIntentoIdentificacionComprobante] = useState(false);
   const [clienteEnDetalle, setClienteEnDetalle] = useState<ClienteRegistrado | null>(null);
@@ -42,7 +54,6 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const [mediosPagoDisponibles, setMediosPagoDisponibles] = useState<MedioPagoDisponible[]>([]);
   const [cargandoMediosPago, setCargandoMediosPago] = useState(true);
   const [errorMediosPago, setErrorMediosPago] = useState("");
-  const [mostrarCamara, setMostrarCamara] = useState(false);
   const [mostrarCobranza, setMostrarCobranza] = useState(false);
   const [cobranzaContadoRegistradaId, setCobranzaContadoRegistradaId] = useState<string | null>(null);
   const codigoLector = useRef("");
@@ -73,12 +84,30 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const cantidadTotal = venta.lineas.reduce((suma, linea) => suma + (Number(linea.cantidad) || 0), 0);
   const lineasOrdenadas = [...venta.lineas].sort((a, b) => Number(a.tipo === "SERVICIO") - Number(b.tipo === "SERVICIO"));
   const saldoCreditoProgramado = redondearCentimos(Math.max(0, venta.totales.total - Number(venta.importePagoInicial || 0)));
+  const saldoOrdenServicio = Math.max(0, redondearCentimos(venta.totales.total - Number(transferenciaOS?.adelanto || 0)));
+  const medioAdelantoOrden = mediosPagoDisponibles.find((medio) => medio.codigo === transferenciaOS?.adelantoMedioPago)?.nombre ?? transferenciaOS?.adelantoMedioPago?.toLocaleLowerCase("es-PE").replaceAll("_", " ") ?? "Sin adelanto registrado";
   const numeracionActual = esNotaVenta ? venta.exito?.codigo ?? numeraciones?.NOTA_VENTA.codigo : venta.exito?.nubefact?.codigo ?? numeraciones?.[esFactura ? "FACTURA" : "BOLETA"].codigo;
   const cpeEmitido = venta.exito?.nubefact?.estado === "EMITIDO";
   const enlaceNotaVenta = venta.exito?.archivos?.guardados.find((archivo) => archivo.tipo === "HTML")?.ruta;
   const contadoEmitido = Boolean(venta.exito && cpeEmitido && venta.exito.condicionPago === "CONTADO");
   const pagoInicialCreditoPendiente = Boolean(venta.exito && venta.exito.condicionPago === "CREDITO" && Number(venta.exito.importePagoInicial) > 0);
-  const cobranzaContadoPendiente = Boolean(cpeEmitido && venta.exito && (contadoEmitido || pagoInicialCreditoPendiente) && cobranzaContadoRegistradaId !== venta.exito.id);
+  const cobranzaContadoPendiente = Boolean(!transferenciaOS && cpeEmitido && venta.exito && (contadoEmitido || pagoInicialCreditoPendiente) && cobranzaContadoRegistradaId !== venta.exito.id);
+  useEffect(() => {
+    if (!transferenciaOS || cargaOSRef.current === transferenciaOS.id) return;
+    cargaOSRef.current = transferenciaOS.id;
+    setCargandoOS(true); setCuentaSaldoOS(""); setMedioSaldoOS(transferenciaOS.adelantoMedioPago ?? "EFECTIVO"); setOrdenVinculadaOS(false);
+    if (transferenciaOS.tipoComprobante === "FACTURA") setTipoDocumentoBusqueda("06");
+    void venta.cargarOrdenServicio(transferenciaOS).catch((problema) => { venta.setError(problema instanceof Error ? problema.message : "No se pudo cargar la orden en el formulario de venta."); cargaOSRef.current = null; }).finally(() => setCargandoOS(false));
+  }, [transferenciaOS, tipoVenta]);
+  useEffect(() => {
+    if (!transferenciaOS || !venta.exito || !venta.exito.id || vinculoOSRef.current === venta.exito.id) return;
+    if (venta.exito.tipoComprobante !== "NOTA_VENTA" && venta.exito.nubefact?.estado !== "EMITIDO") return;
+    vinculoOSRef.current = venta.exito.id; setVinculandoOS(true);
+    void servicioIngresos.emitirOrdenServicio(transferenciaOS.id, { tipoComprobante: venta.exito.tipoComprobante ?? venta.tipoComprobante, medioPago: medioSaldoOS, ingresoId: venta.exito.id, saldoCuentaFinancieraId: cuentaSaldoOS })
+      .then(() => setOrdenVinculadaOS(true))
+      .catch((problema) => { vinculoOSRef.current = null; venta.setError(problema instanceof Error ? `El documento se emitió, pero no se pudo cerrar la orden: ${problema.message}` : "El documento se emitió, pero no se pudo vincular la orden."); })
+      .finally(() => setVinculandoOS(false));
+  }, [transferenciaOS, venta.exito, medioSaldoOS, cuentaSaldoOS]);
   const consultaCatalogo = venta.busqueda.trim();
   const buscandoEnCatalogo = consultaCatalogo.length >= 4;
   const productosResultados = venta.resultados.slice(0, 8);
@@ -155,8 +184,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     }
   }
 
-  async function agregarCodigoLeido(codigo: string) {
-    setMostrarCamara(false);
+  async function buscarCodigoEscaneado(codigo: string) {
     try {
       const coincidencias = await servicioIngresos.buscarProductos(codigo, false, true);
       const producto = coincidencias.length === 1 ? coincidencias[0] : null;
@@ -190,7 +218,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     }
   }
 
-  buscarCodigoLectorRef.current = agregarCodigoLeido;
+  buscarCodigoLectorRef.current = buscarCodigoEscaneado;
   useEffect(() => {
     const capturarLector = (evento: globalThis.KeyboardEvent) => {
       if (evento.key === "Enter" || evento.key === "Tab") {
@@ -232,6 +260,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     venta.setFecha(fechaNueva);
     venta.actualizarCampoNubefact("fecha_de_emision", fechaNueva);
     venta.setMedioPago("EFECTIVO");
+    setCuentaPagoId("");
     venta.setTipoComprobante("BOLETA");
     venta.reiniciarIdempotencia();
     cargarNumeraciones();
@@ -248,6 +277,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       if (!venta.lineas.length) { venta.setError(tipoVenta === "MOTOTAXIS" ? "Agrega al menos una mototaxi para continuar." : "Agrega al menos un repuesto o servicio para continuar."); return; }
       if (cargandoMediosPago) { venta.setError('Espera a que se carguen las cuentas de pago de Tesorería.'); return; }
       if (errorMediosPago || mediosPagoDisponibles.length === 0) { venta.setError(errorMediosPago || 'No hay cuentas activas en soles. Configura una caja o cuenta en Tesorería para registrar la venta.'); return; }
+      if (!transferenciaOS && venta.condicionPago === "CREDITO" && Number(venta.importePagoInicial) > 0 && !cuentaPagoId) { venta.setError("Selecciona la cuenta donde recibir?s el adelanto."); return; }
       if (venta.tipoComprobante === "NOTA_VENTA" && !venta.clienteSeleccionado) { venta.setError("Selecciona al cliente que recibe los artículos para registrar la nota interna."); return; }
       if (identificacionComprobantePendiente) { setIntentoIdentificacionComprobante(true); return; }
       setIntentoIdentificacionComprobante(false);
@@ -260,13 +290,14 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   }
 
   return <div className={`venta-page ${paso === "datos" ? "is-data-step" : "is-preview-step"}`}>
-    <header className="venta-heading"><div><h1>{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Venta de mototaxis" : "Venta de repuestos" : esFactura ? "Emitir factura" : "Vista previa e impresión"}</h1><p className="page-subtitle">{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Elige unidades identificadas por VIN y acuerda el precio de venta con el cliente." : "Completa los datos y agrega los repuestos que se venderán." : esFactura ? "Revisa los datos y emite la factura en NubeFact." : esBoleta ? "Revisa la boleta antes de enviarla a NubeFact." : "Revisa la nota interna de salida de inventario."}</p></div><span className="venta-status"><i /> {paso === "datos" ? esBoleta ? "BOLETA" : esFactura ? "FACTURA" : "NOTA DE VENTA" : esFactura ? "FACTURA" : "VISTA PREVIA"}</span><div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esBoleta ? "N° DE BOLETA" : esFactura ? "N° DE FACTURA" : "N° DE NOTA · INTERNO"}</span><strong>{numeracionActual || (numeraciones ? "Serie sin configurar" : "Cargando correlativo…")}</strong></div></header>
+    <header className="venta-heading"><div><h1>{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Venta de mototaxis" : "Venta de repuestos" : esFactura ? "Emitir factura" : "Vista previa e impresión"}</h1><p className="page-subtitle">{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Elige unidades identificadas por VIN y acuerda el precio de venta con el cliente." : "Completa los datos y agrega los repuestos que se venderán." : esFactura ? "Revisa los datos y emite la factura en NubeFact." : esBoleta ? "Revisa la boleta antes de enviarla a NubeFact." : "Revisa la nota interna de salida de inventario."}</p></div><span className="venta-status"><i /> {paso === "datos" ? esBoleta ? "BOLETA" : esFactura ? "FACTURA" : "NOTA DE VENTA" : esFactura ? "FACTURA" : "VISTA PREVIA"}</span><div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esBoleta ? "N° DE BOLETA" : esFactura ? "N° DE FACTURA" : "N° DE NOTA · INTERNO"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div></header>
     {venta.error && <div className="venta-alert" role="alert">{venta.error}<button type="button" aria-label="Cerrar alerta" onClick={() => venta.setError("")}>×</button></div>}
     {busquedaSinResultados && mostrarNotificacionSinCliente && <NotificacionFlotante tipo="error" titulo="Cliente no encontrado" mensaje={`No se encontró un cliente con ${tipoDocumentoBusqueda === "01" ? "DNI" : "RUC"} ${venta.busquedaCliente.trim()}. Puedes registrarlo para usarlo en esta venta.`} duracionMs={0} accion={{ etiqueta: "Crear cliente", ejecutar: abrirRegistroCliente }} onCerrar={() => setMostrarNotificacionSinCliente(false)} />}
     {venta.exito && <div className={`venta-alert ${cpeEmitido ? "venta-alert-ok" : ""}`} role="status">
       <strong>{venta.exito.tipoComprobante === "NOTA_VENTA" ? "Nota interna registrada" : "Venta registrada"}: {venta.exito.codigo}</strong><span>{venta.exito.tipoComprobante === "NOTA_VENTA" ? "Valor referencial" : "Total"} {soles(Number(venta.exito.total))}</span>
       {venta.exito.tipoComprobante === "NOTA_VENTA" ? <span>Salida de inventario registrada. {enlaceNotaVenta ? <a href={urlApi(enlaceNotaVenta)} target="_blank" rel="noreferrer">Abrir e imprimir nota</a> : venta.exito.archivos?.errores.length ? `No se pudo archivar la nota: ${venta.exito.archivos.errores[0].mensaje}` : "La nota se archivó para su consulta e impresión."}</span> : cpeEmitido ? <span>Comprobante emitido: {venta.exito.nubefact?.codigo}{venta.exito.nubefact?.enlacePdf ? <>  · <a href={venta.exito.nubefact.enlacePdf.startsWith("/") ? urlApi(venta.exito.nubefact.enlacePdf) : venta.exito.nubefact.enlacePdf} target="_blank" rel="noreferrer">Abrir documento</a></> : venta.exito.nubefact?.enlace ? <>  · <a href={venta.exito.nubefact.enlace} target="_blank" rel="noreferrer">Ver comprobante</a></> : null}</span> : <span>La venta quedó registrada, pero NubeFact no confirmó la emisión: {venta.exito.nubefact?.mensaje || "revisa la configuración y el estado del comprobante antes de volver a intentarlo."}</span>}
       {cobranzaContadoPendiente && <strong role="alert">Pendiente: registra en cobranza {contadoEmitido ? "el pago completo al contado" : `la inicial de ${soles(Number(venta.exito.importePagoInicial))}`}.</strong>}
+      {transferenciaOS && ordenVinculadaOS && <span>Orden de servicio {transferenciaOS.codigo} vinculada. Adelanto y saldo quedaron registrados con sus cuentas.</span>}
       {cpeEmitido && <button type="button" onClick={() => setMostrarCobranza(true)}>{cobranzaContadoPendiente ? "Completar conciliación del pago" : "Registrar / ver pagos"}</button>}
       <button type="button" disabled={cobranzaContadoPendiente} title={cobranzaContadoPendiente ? "Completa la conciliación del pago al contado para cerrar este aviso." : undefined} onClick={() => venta.setExito(null)}>Cerrar</button>
     </div>}
@@ -303,19 +334,20 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
 
           </> : <>
           <header><div><span>CATÁLOGO</span><h2>Mototaxis disponibles</h2><p>Selecciona unidades por VIN, número de motor o código.</p></div></header>
-          <label className="venta-catalog-search"><span aria-hidden="true">&#x2315;</span><input value={venta.busquedaMototaxi} onChange={(evento) => venta.setBusquedaMototaxi(evento.target.value)} onKeyDown={(evento) => { if (evento.key === "Enter") evento.preventDefault(); }} placeholder="Buscar por modelo, VIN o código?" aria-label="Buscar mototaxis disponibles" autoComplete="off" /></label>
-          <div className={tipoVenta === "MOTOTAXIS" ? "venta-catalog-results is-moto-results" : "venta-catalog-results"} aria-live="polite">{venta.buscandoMototaxis ? <p className="venta-catalog-status">Buscando unidades disponibles…</p> : venta.busquedaMototaxi.trim().length < 2 ? <div className="venta-catalog-empty is-hint"><span>Escribe al menos dos caracteres para buscar en inventario.</span></div> : venta.resultadosMototaxi.length ? venta.resultadosMototaxi.map((mototaxi) => <article className="venta-catalog-product" key={mototaxi.mototaxiUnidadId}><div className="venta-catalog-product-image"><span aria-hidden="true">🏍️</span></div><div className="venta-catalog-product-title"><strong>{mototaxi.marca} {mototaxi.modelo}{mototaxi.version ? " " + mototaxi.version : ""}</strong><span>{mototaxi.codigo} · VIN {mototaxi.vin}</span></div><div className="venta-catalog-product-meta"><span>Motor <b>{mototaxi.numeroMotor}</b></span><span>{mototaxi.color || "Color sin registrar"}</span><strong>{mototaxi.precioVenta ? soles(Number(mototaxi.precioVenta)) : "Precio pendiente"}</strong></div><button type="button" onClick={() => venta.agregarMototaxi(mototaxi)}>Agregar a la venta</button></article>) : <div className="venta-catalog-empty"><strong>No hay mototaxis disponibles</strong><span>Prueba con otro modelo, VIN, número de motor o código.</span></div>}</div>
+          <label className="venta-catalog-search"><span aria-hidden="true">&#x2315;</span><input value={venta.busquedaMototaxi} onChange={(evento) => venta.setBusquedaMototaxi(evento.target.value)} onKeyDown={(evento) => { if (evento.key === "Enter") evento.preventDefault(); }} placeholder="Buscar por modelo, VIN o código…" aria-label="Buscar mototaxis disponibles" autoComplete="off" /></label>
+          <div className={tipoVenta === "MOTOTAXIS" ? "venta-catalog-results is-moto-results" : "venta-catalog-results"} aria-live="polite">{venta.buscandoMototaxis ? <p className="venta-catalog-status">Buscando unidades disponibles…</p> : venta.busquedaMototaxi.trim().length < 2 ? <div className="venta-catalog-empty is-hint"><span>Escribe al menos dos caracteres para buscar modelos y unidades disponibles.</span></div> : venta.resultadosMototaxi.length ? venta.resultadosMototaxi.slice(0, 10).map((mototaxi) => <article className="venta-catalog-product" key={mototaxi.mototaxiUnidadId}><div className="venta-catalog-product-image"><span aria-hidden="true">🏍️</span></div><div className="venta-catalog-product-title"><strong>{mototaxi.marca} {mototaxi.modelo}{mototaxi.version ? " " + mototaxi.version : ""}</strong><span>{mototaxi.codigo} · VIN {mototaxi.vin}</span></div><div className="venta-catalog-product-meta"><span>Motor <b>{mototaxi.numeroMotor}</b></span><span>{mototaxi.color || "Color sin registrar"}</span><strong>{mototaxi.precioVenta ? soles(Number(mototaxi.precioVenta)) : "Precio pendiente"}</strong></div><button type="button" onClick={() => venta.agregarMototaxi(mototaxi)}>Agregar a la venta</button></article>) : <div className="venta-catalog-empty"><strong>No hay mototaxis disponibles</strong><span>Prueba con otro modelo, VIN, número de motor o código.</span></div>}</div>
           </>}
         </aside>
         <article className={`venta-form-paper ${presentacionComprobante.clase}`}>
-          <header className="venta-form-heading"><div><p>{esBoleta || esFactura ? "COMPROBANTE DE VENTA" : "DOCUMENTO INTERNO DE INVENTARIO"}</p><h2>{presentacionComprobante.titulo}</h2></div>{paso === "datos" && <div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}</span><strong>{numeracionActual || (numeraciones ? "Serie sin configurar" : "Cargando correlativo…")}</strong></div>}</header>
+          <header className="venta-form-heading"><div><p>{esBoleta || esFactura ? "COMPROBANTE DE VENTA" : "DOCUMENTO INTERNO DE INVENTARIO"}</p><h2>{presentacionComprobante.titulo}</h2></div>{paso === "datos" && <div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div>}</header>
           <div className="venta-form-header-fields">
           <div className="venta-fields venta-document-fields">
             <label className="venta-field-primary">Tipo de comprobante<select value={venta.tipoComprobante} onChange={(e) => { const tipo = e.target.value as "BOLETA" | "FACTURA" | "NOTA_VENTA"; setIntentoIdentificacionComprobante(false); venta.setTipoComprobante(tipo); if (tipo === "FACTURA") { setTipoDocumentoBusqueda("06"); if (String(venta.camposNubefact.cliente_tipo_de_documento ?? "") !== "6") venta.quitarCliente(); } else if (tipo === "BOLETA") setTipoDocumentoBusqueda("01"); venta.reiniciarIdempotencia(); venta.setExito(null); }}><option value="BOLETA">Boleta de venta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
             <label>{esNotaVenta ? "Fecha de salida" : "Fecha de emisión"}<input type="date" min={esNotaVenta ? undefined : venta.fechaMinimaComprobante} max={esNotaVenta ? undefined : fechaHoyPeru()} value={String(venta.camposNubefact.fecha_de_emision ?? venta.fecha)} onChange={(e) => { actualizar("fecha_de_emision", e.target.value); venta.setFecha(e.target.value); }} required /></label>
-            <label>Condición de pago<select value={venta.condicionPago} onChange={(evento) => venta.setCondicionPago(evento.target.value as "CONTADO" | "CREDITO")}><option value="CONTADO">Contado</option><option value="CREDITO">Crédito (pago único o en cuotas)</option></select></label>
-            {venta.condicionPago === "CREDITO" ? <fieldset className="venta-credit-schedule"><legend>Fechas de vencimiento y cuotas</legend><label>Pago inicial (S/)<input type="number" min="0" max={Math.max(0, venta.totales.total - 0.01).toFixed(2)} step="0.01" value={venta.importePagoInicial} onChange={(evento) => venta.setImportePagoInicial(evento.target.value)} placeholder="0.00" /></label>{Number(venta.importePagoInicial) > 0 && <label>Medio de pago de la cuota inicial<select disabled={cargandoMediosPago || mediosPagoDisponibles.length === 0 || Boolean(errorMediosPago)} value={mediosPagoDisponibles.some((medio) => medio.codigo === venta.medioPago) ? venta.medioPago : ""} onChange={(evento) => venta.setMedioPago(evento.target.value)}>{cargandoMediosPago ? <option value="">Cargando medios de pago…</option> : mediosPagoDisponibles.map((medio) => <option key={medio.codigo} value={medio.codigo}>{medio.nombre}</option>)}</select></label>}{venta.cuotasNubefact.map((cuota, indice) => <div className="venta-credit-installment" key={indice}><label>Cuota {indice + 1}<input type="date" min={sumarDiasFecha(indice && venta.cuotasNubefact[indice - 1].fecha_de_pago ? venta.cuotasNubefact[indice - 1].fecha_de_pago : venta.fecha, 1)} value={cuota.fecha_de_pago} onChange={(evento) => venta.actualizarCuotaCredito(indice, "fecha_de_pago", evento.target.value)} required /></label><label>Importe (S/)<input type="number" min="0.01" step="0.01" value={cuota.importe || (venta.cuotasNubefact.length === 1 ? saldoCreditoProgramado.toFixed(2) : "")} onChange={(evento) => venta.actualizarCuotaCredito(indice, "importe", evento.target.value)} required /></label>{venta.cuotasNubefact.length > 1 && <button type="button" aria-label={`Quitar cuota ${indice + 1}`} onClick={() => venta.quitarCuotaCredito(indice)}>Quitar</button>}</div>)}<button type="button" className="venta-credit-add" disabled={venta.cuotasNubefact.length >= 24} onClick={() => venta.agregarCuotaCredito(saldoCreditoProgramado)}>＋ Agregar cuota</button></fieldset> : <label>Medio de pago<select disabled={cargandoMediosPago || mediosPagoDisponibles.length === 0 || Boolean(errorMediosPago)} value={mediosPagoDisponibles.some((medio) => medio.codigo === venta.medioPago) ? venta.medioPago : ""} onChange={(evento) => venta.setMedioPago(evento.target.value)}>{cargandoMediosPago ? <option value="">Cargando medios de pago…</option> : mediosPagoDisponibles.map((medio) => <option key={medio.codigo} value={medio.codigo}>{medio.nombre}</option>)}</select></label>}
+            <label>Condición de pago<select disabled={Boolean(transferenciaOS)} value={venta.condicionPago} onChange={(evento) => venta.setCondicionPago(evento.target.value as "CONTADO" | "CREDITO")}><option value="CONTADO">Contado</option><option value="CREDITO">Crédito (pago único o en cuotas)</option></select></label>
+            {!transferenciaOS && venta.condicionPago === "CREDITO" && <fieldset className="venta-credit-schedule"><legend>Fechas de vencimiento y cuotas</legend><label>Pago inicial (S/)<input type="number" min="0" max={Math.max(0, venta.totales.total - 0.01).toFixed(2)} step="0.01" value={venta.importePagoInicial} onChange={(evento) => venta.setImportePagoInicial(evento.target.value)} placeholder="0.00" /></label>{Number(venta.importePagoInicial) > 0 && <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el adelanto" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} />}{venta.cuotasNubefact.map((cuota, indice) => <div className="venta-credit-installment" key={indice}><label>Cuota {indice + 1}<input type="date" min={sumarDiasFecha(indice && venta.cuotasNubefact[indice - 1].fecha_de_pago ? venta.cuotasNubefact[indice - 1].fecha_de_pago : venta.fecha, 1)} value={cuota.fecha_de_pago} onChange={(evento) => venta.actualizarCuotaCredito(indice, "fecha_de_pago", evento.target.value)} required /></label><label>Importe (S/)<input type="number" min="0.01" step="0.01" value={cuota.importe || (venta.cuotasNubefact.length === 1 ? saldoCreditoProgramado.toFixed(2) : "")} onChange={(evento) => venta.actualizarCuotaCredito(indice, "importe", evento.target.value)} required /></label>{venta.cuotasNubefact.length > 1 && <button type="button" aria-label={`Quitar cuota ${indice + 1}`} onClick={() => venta.quitarCuotaCredito(indice)}>Quitar</button>}</div>)}<button type="button" className="venta-credit-add" disabled={venta.cuotasNubefact.length >= 24} onClick={() => venta.agregarCuotaCredito(saldoCreditoProgramado)}>+ Agregar cuota</button></fieldset>}
           </div>
+          {transferenciaOS && <div className="venta-order-service-payment"><div><span>Adelanto pagado</span><strong>{soles(Number(transferenciaOS.adelanto || 0))}</strong><small>Medio de pago: {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto registrado"}</small></div></div>}
           {(errorMediosPago || (!cargandoMediosPago && mediosPagoDisponibles.length === 0)) && <p className="venta-client-hint" role="alert">{errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta bancaria en Tesorería."}</p>}
           <section className="venta-customer-section" aria-labelledby="venta-customer-title">
             <div className="venta-section-heading"><h3 id="venta-customer-title">Cliente</h3><div className="venta-customer-modes" role="group" aria-label="Tipo de cliente">
@@ -351,7 +383,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
           </div>
         <div className="venta-form-scroll">
         <section className="venta-form-body">
-          <div className="venta-form-body-heading"><h3>{tipoVenta === "MOTOTAXIS" ? "Mototaxis de esta venta" : "Repuestos y servicios de esta venta"}</h3><div className="venta-product-tools"><span>{venta.lineas.length} líneas</span><button type="button" onClick={() => setMostrarCamara(true)}>Leer con cámara</button>{permisos.includes("INGRESOS.SERVICIO_PRECIO_MANUAL") && <button type="button" onClick={venta.agregarServicio}>+ Agregar servicio</button>}</div></div>
+          <div className="venta-form-body-heading"><h3>{tipoVenta === "MOTOTAXIS" ? "Mototaxis de esta venta" : "Repuestos y servicios de esta venta"}</h3><div className="venta-product-tools"><span>{venta.lineas.length} líneas</span>{permisos.includes("INGRESOS.SERVICIO_PRECIO_MANUAL") && <button type="button" onClick={venta.agregarServicio}>+ Agregar servicio</button>}</div></div>
           <div className="venta-inline-product-search">
             <label className="venta-inline-product-input"><span aria-hidden="true">⌕</span><input value={venta.busqueda} onChange={(evento) => venta.setBusqueda(evento.target.value)} onKeyDown={buscarProductoConEnter} placeholder="Buscar producto por nombre o código…" aria-label="Buscar productos para la venta" autoComplete="off" /></label>
             <div className="venta-inline-product-list" aria-live="polite">
@@ -376,7 +408,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
         </section>
         <div className="venta-data-footer">
           <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones" value={venta.observacion} onChange={(e) => venta.setObservacion(e.target.value)} maxLength={1000} rows={3} placeholder="Añade una nota" /></label>
-          <div className="venta-checkout-actions"><div className="venta-checkout-total"><span>Total a pagar</span><strong>{soles(venta.totales.total)}</strong></div><div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={limpiarVenta}>Limpiar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div></div>
+          <div className="venta-checkout-actions"><div className="venta-checkout-total"><div className="venta-checkout-amount"><span>{transferenciaOS ? "Saldo a pagar" : "Monto a pagar"}</span><strong>{soles(transferenciaOS ? saldoOrdenServicio : venta.totales.total)}</strong></div>{transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : venta.condicionPago === "CONTADO" ? <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} /> : null}</div><div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={limpiarVenta}>Limpiar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div></div>
         </div>
         </div>
         </article>
@@ -384,7 +416,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       </>}
 
       {paso === "previa" && <section className={`venta-preview-stage paper-${tamano.toLowerCase()}`}>
-        <div className="venta-preview-toolbar"><button type="button" className="venta-back" onClick={() => setPaso("datos")}>← Volver a editar</button><fieldset className="venta-size-picker"><legend>Tamaño de impresión</legend>{(["A4", "A5", "TICKET"] as const).map((opcion) => <button key={opcion} type="button" className={tamano === opcion ? "is-selected" : ""} aria-pressed={tamano === opcion} onClick={() => setTamano(opcion)}>{opcion === "TICKET" ? "Ticket 80 mm" : opcion}</button>)}</fieldset><button type="button" className="venta-print" onClick={() => window.print()}>Imprimir <span aria-hidden="true">⎙</span></button></div>
+        <div className="venta-preview-toolbar"><button type="button" className="venta-back" onClick={() => setPaso("datos")}>← Volver a editar</button><fieldset className="venta-size-picker"><legend>Tamaño de impresión</legend>{(["A4", "TICKET"] as const).map((opcion) => <button key={opcion} type="button" className={tamano === opcion ? "is-selected" : ""} aria-pressed={tamano === opcion} onClick={() => setTamano(opcion)}>{opcion === "TICKET" ? "Ticket 80 mm" : opcion}</button>)}</fieldset><button type="button" className="venta-print" onClick={() => window.print()}>Imprimir <span aria-hidden="true">⎙</span></button></div>
       <aside className="boleta-preview" aria-label="Documento para impresión">
         <article className="boleta-paper">
           <div className="boleta-title"><strong>{presentacionComprobante.titulo}</strong>{esNotaVenta && venta.exito?.codigo && <span>{venta.exito.codigo}</span>}</div>
@@ -395,70 +427,14 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
           <div className="boleta-payment-terms"><div><span>Condición de pago</span><strong>{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</strong></div>{venta.condicionPago === "CREDITO" && <><div><span>Pago inicial</span><strong>{soles(Number(venta.importePagoInicial || 0))}{Number(venta.importePagoInicial) > 0 ? ` · ${venta.medioPago.toLocaleLowerCase("es-PE").replaceAll("_", " ")}` : ""}</strong></div>{venta.cuotasNubefact.map((cuota, indice) => <div key={indice}><span>Cuota {indice + 1} · {cuota.fecha_de_pago || "Fecha pendiente"}</span><strong>{soles(Number(cuota.importe || (venta.cuotasNubefact.length === 1 ? saldoCreditoProgramado : 0)))}</strong></div>)}</>}</div>
           <div className="boleta-foot"><span>Unidades: {cantidadTotal.toLocaleString("es-PE")}</span>{venta.condicionPago === "CONTADO" && <span>Medio de pago: {venta.medioPago.toLocaleLowerCase("es-PE").replaceAll("_", " ")}</span>}</div>
         </article>
-        <div className="boleta-actions"><button className="venta-submit" type="submit" disabled={venta.guardando || !venta.lineas.length || Boolean(venta.exito) || (esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada)} title={esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada ? "Configura la conexión de NubeFact y la serie de facturas en el servidor." : undefined}>{venta.exito ? venta.tipoComprobante === "NOTA_VENTA" ? "Nota interna guardada" : venta.exito.nubefact?.estado === "EMITIDO" ? "Emitido en NubeFact" : "Emisión no confirmada" : venta.guardando ? esFactura ? "Enviando factura…" : venta.tipoComprobante === "BOLETA" ? "Enviando boleta…" : "Registrando nota interna…" : esFactura ? "Emitir factura" : venta.tipoComprobante === "BOLETA" ? "Emitir boleta" : "Registrar nota de venta"}<span aria-hidden="true">→</span></button></div>
+        <div className="boleta-actions"><button className="venta-submit" type="submit" disabled={venta.guardando || cargandoOS || vinculandoOS || !venta.lineas.length || Boolean(venta.exito) || Boolean(transferenciaOS && venta.totales.total > Number(transferenciaOS.adelanto || 0) && !cuentaSaldoOS) || (esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada)} title={esFactura && !venta.estadoNubefact?.emisionFacturaHabilitada ? "Configura la conexión de NubeFact y la serie de facturas en el servidor." : undefined}>{venta.exito ? venta.tipoComprobante === "NOTA_VENTA" ? "Nota interna guardada" : venta.exito.nubefact?.estado === "EMITIDO" ? "Emitido en NubeFact" : "Emisión no confirmada" : venta.guardando ? esFactura ? "Enviando factura…" : venta.tipoComprobante === "BOLETA" ? "Enviando boleta…" : "Registrando nota interna…" : esFactura ? "Emitir factura" : venta.tipoComprobante === "BOLETA" ? "Emitir boleta" : "Registrar nota de venta"}<span aria-hidden="true">→</span></button></div>
       </aside>
       </section>}
     </form>
     {clienteEnDetalle && <ClienteDetalleDialog cliente={clienteEnDetalle} editable={permisos.includes("PERSONAS.EDITAR")} onClose={() => setClienteEnDetalle(null)} onSave={async (datos) => { const clienteActualizado = await servicioIngresos.actualizarCliente(clienteEnDetalle.id, datos); venta.actualizarClienteEnResultados(clienteActualizado); setClienteEnDetalle(clienteActualizado); }} />}
-    {mostrarCamara && <LectorCamaraDialog onClose={() => setMostrarCamara(false)} onCode={(codigo) => void agregarCodigoLeido(codigo)} />}{mostrarCobranza && venta.exito?.nubefact && venta.exito.tipoComprobante  && createPortal(<PagoIngresoDialog ingresoId={venta.exito.id} total={venta.exito.total} contadoPendiente={contadoEmitido && cobranzaContadoPendiente} importeInicialObligatorio={pagoInicialCreditoPendiente && cobranzaContadoPendiente} fechaPagoInicial={venta.fecha} importeInicial={contadoEmitido ? venta.exito.total : venta.exito.importePagoInicial} medioPagoInicial={venta.exito.medioPago} onPaymentRecorded={() => { if (cobranzaContadoPendiente) setCobranzaContadoRegistradaId(venta.exito?.id ?? null); }} onClose={() => setMostrarCobranza(false)} />, document.body)}
+    {mostrarCobranza && venta.exito?.nubefact && venta.exito.tipoComprobante  && createPortal(<PagoIngresoDialog cuentaFinancieraInicialId={cuentaPagoId} ingresoId={venta.exito.id} total={venta.exito.total} contadoPendiente={contadoEmitido && cobranzaContadoPendiente} importeInicialObligatorio={pagoInicialCreditoPendiente && cobranzaContadoPendiente} fechaPagoInicial={venta.fecha} importeInicial={contadoEmitido ? venta.exito.total : venta.exito.importePagoInicial} medioPagoInicial={venta.exito.medioPago} onPaymentRecorded={() => { if (cobranzaContadoPendiente) setCobranzaContadoRegistradaId(venta.exito?.id ?? null); }} onClose={() => setMostrarCobranza(false)} />, document.body)}
     {mostrarAltaProducto && createPortal(cargandoAltaProducto ? <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-label="Preparando el registro del repuesto"><p>Cargando formulario de repuesto…</p></section></div> : catalogosAltaProducto ? <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={async (nombre, imagen) => { const resultado = await servicioProductos.crearMarca(nombre, imagen); return { ...resultado.marca, advertencia: resultado.advertencia }; }} alCrearCategoria={async (nombre, imagen) => { const resultado = await servicioProductos.crearCategoria(nombre, imagen); return { ...resultado.categoria, advertencia: resultado.advertencia }; }} /> : <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-labelledby="venta-alta-producto-error"><button className="catalog-modal-close" type="button" aria-label="Cerrar" onClick={() => setMostrarAltaProducto(false)}>×</button><h2 id="venta-alta-producto-error">No se pudo abrir el registro</h2><p>{errorAltaProducto}</p><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button><button className="catalog-submit" type="button" onClick={() => void abrirAltaProducto()}>Reintentar</button></div></section></div>, document.getElementById("root") ?? document.body)}
   </div>;
-}
-
-function LectorCamaraDialog({ onClose, onCode }: { onClose: () => void; onCode: (codigo: string) => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [estado, setEstado] = useState("Solicitando acceso a la cámara…");
-  const [error, setError] = useState("");
-  const onCodeRef = useRef(onCode);
-  onCodeRef.current = onCode;
-  useEffect(() => {
-    let vigente = true;
-    let frame = 0;
-    let leyendo = false;
-    let stream: MediaStream | null = null;
-    const Detector = (window as Window & { BarcodeDetector?: new (options?: { formats?: string[] }) => { detect: (video: HTMLVideoElement) => Promise<{ rawValue: string }[]>; }; }).BarcodeDetector;
-    if (!window.isSecureContext) {
-      setError("La cámara requiere abrir el sistema por HTTPS o desde localhost. El lector conectado y la búsqueda manual siguen disponibles.");
-      return () => { vigente = false; };
-    }
-    if (!Detector || !navigator.mediaDevices?.getUserMedia) {
-      setError("Este navegador no ofrece lectura de códigos por cámara. Usa el campo de búsqueda manual o un lector conectado.");
-      return () => { vigente = false; };
-    }
-    void (async () => {
-      try {
-        const formatosDisponibles = await (Detector as unknown as { getSupportedFormats?: () => Promise<string[]> }).getSupportedFormats?.();
-        const preferidos = ["qr_code", "ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "itf", "codabar", "data_matrix", "pdf417", "aztec"];
-        const formatos = formatosDisponibles?.filter((formato) => preferidos.includes(formato));
-        const detector = new Detector(formatosDisponibles === undefined || formatos?.length ? { formats: formatos } : undefined);
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
-        if (!vigente || !videoRef.current) { stream.getTracks().forEach((track) => track.stop()); return; }
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setEstado("Apunta la cámara al código QR o de barras.");
-        const revisar = async () => {
-          if (!vigente || !videoRef.current || leyendo) { if (vigente) frame = requestAnimationFrame(revisar); return; }
-          leyendo = true;
-          try {
-            const encontrados = await detector.detect(videoRef.current);
-            if (encontrados[0]?.rawValue) {
-              vigente = false;
-              stream?.getTracks().forEach((track) => track.stop());
-              onCodeRef.current(encontrados[0].rawValue);
-              return;
-            }
-          } catch { /* Continúa intentando mientras la cámara esté abierta. */ }
-          finally { leyendo = false; }
-          if (vigente) window.setTimeout(() => { frame = requestAnimationFrame(revisar); }, 160);
-        };
-        frame = requestAnimationFrame(revisar);
-      } catch (problema) {
-        if (vigente) setError(problema instanceof Error && problema.name === "NotAllowedError" ? "No se autorizó el acceso a la cámara. Permite el acceso o usa la búsqueda manual." : "No se pudo iniciar la cámara en este dispositivo. Puedes usar la búsqueda manual.");
-      }
-    })();
-    return () => { vigente = false; cancelAnimationFrame(frame); stream?.getTracks().forEach((track) => track.stop()); };
-  }, []);
-  return <div className="venta-camera-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onClose(); }}><section className="venta-camera-dialog" role="dialog" aria-modal="true" aria-labelledby="venta-camera-title"><header><div><span>LECTOR DE CÓDIGOS</span><h2 id="venta-camera-title">Leer con cámara</h2></div><button type="button" aria-label="Cerrar lector" onClick={onClose}>×</button></header>{error ? <div className="venta-camera-error" role="status">{error}</div> : <><video ref={videoRef} muted playsInline aria-label="Vista de la cámara" /><p>{estado}</p></>}</section></div>;
 }
 
 type DatosEdicionCliente = Pick<DatosClienteNuevo, "nombreComercial" | "contactoNombre" | "correo" | "telefono" | "direccion" | "direccionEntrega" | "observacion">;

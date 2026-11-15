@@ -1,0 +1,1 @@
+ALTER TABLE "modelos_mototaxis" ADD COLUMN "ruta_imagen" text;

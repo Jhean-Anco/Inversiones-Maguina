@@ -4,8 +4,8 @@
 
 | Área | Evidencia en código | Estado y límite |
 |---|---|---|
-| Catálogo e inventario | productos, entradas, movimientos, categorías, marcas y SIRE | IMPLEMENTADO SIN PRUEBA COMPLETA; verificar cantidades/costos y recepción |
-| Compras y egresos | controladores y servicios de egresos, entradas de stock, documentos recibidos | IMPLEMENTACIÓN PARCIAL como proceso integral; recepción y pago son acciones separadas a verificar |
+| Catálogo e inventario | productos, entradas, movimientos, categorías y marcas | IMPLEMENTADO SIN PRUEBA COMPLETA; verificar cantidades/costos y recepción |
+| Compras y egresos | controladores y servicios de egresos y entradas de stock | IMPLEMENTACIÓN PARCIAL como proceso integral; recepción y pago son acciones separadas a verificar |
 | Ventas e ingresos | ingreso, detalle, pagos, búsqueda de productos/clientes | IMPLEMENTADO SIN PRUEBA COMPLETA; validar reglas de precio/crédito |
 | Créditos y pagos | pagos asociados a ingresos y tablas relacionadas | REQUIERE VALIDACIÓN FUNCIONAL de saldo, mora y contabilización |
 | Facturación | NubeFact, series, notas, anulaciones y consultas | BLOQUEADO POR SERVICIO EXTERNO sin credenciales/respuesta real; no equivale a emisión probada |

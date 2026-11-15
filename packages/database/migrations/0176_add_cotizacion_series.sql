@@ -1,0 +1,2 @@
+ALTER TABLE "series_comprobantes" DROP CONSTRAINT "series_comprobantes_tipo_ck";--> statement-breakpoint
+ALTER TABLE "series_comprobantes" ADD CONSTRAINT "series_comprobantes_tipo_ck" CHECK ("series_comprobantes"."tipo_comprobante" IN ('BOLETA', 'FACTURA', 'NOTA_CREDITO_FACTURA', 'NOTA_DEBITO_FACTURA', 'NOTA_CREDITO_BOLETA', 'NOTA_DEBITO_BOLETA', 'GUIA_REMITENTE', 'GUIA_TRANSPORTISTA', 'NOTA_VENTA', 'ORDEN_SERVICIO', 'COTIZACION'));

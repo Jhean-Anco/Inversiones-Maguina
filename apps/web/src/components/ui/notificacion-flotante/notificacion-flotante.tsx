@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import "./notificacion-flotante.css";
 
 export type TipoNotificacionFlotante = "exito" | "advertencia" | "error" | "informacion";
@@ -14,6 +14,37 @@ type PropsNotificacionFlotante = {
   onCerrar: () => void;
 };
 
+type DatosNotificacion = Omit<PropsNotificacionFlotante, "onCerrar"> & { id: number; alCerrar?: () => void };
+type EntradaAlerta = Omit<PropsNotificacionFlotante, "onCerrar"> & { alCerrar?: () => void };
+type ContextoAlertas = { mostrar: (alerta: EntradaAlerta) => void; exito: (mensaje: string) => void; error: (mensaje: string) => void; advertencia: (mensaje: string) => void; informacion: (mensaje: string) => void };
+const AlertasContext = createContext<ContextoAlertas | null>(null);
+
+export function AlertasProvider({ children }: { children: ReactNode }) {
+  const [alertas, setAlertas] = useState<DatosNotificacion[]>([]);
+  const cerrar = useCallback((id: number) => setAlertas((actuales) => actuales.filter((alerta) => alerta.id !== id)), []);
+  const mostrar = useCallback((alerta: EntradaAlerta) => {
+    const id = Date.now() + Math.random();
+    setAlertas((actuales) => [...actuales.slice(-3), { ...alerta, id }]);
+  }, []);
+  const api = useMemo<ContextoAlertas>(() => ({
+    mostrar,
+    exito: (mensaje) => mostrar({ tipo: "exito", mensaje }),
+    error: (mensaje) => mostrar({ tipo: "error", mensaje, duracionMs: 0 }),
+    advertencia: (mensaje) => mostrar({ tipo: "advertencia", mensaje }),
+    informacion: (mensaje) => mostrar({ tipo: "informacion", mensaje }),
+  }), [mostrar]);
+
+  return <AlertasContext.Provider value={api}>{children}<div className="alertas-globales" role="region" aria-label="Alertas del sistema">
+    {alertas.map(({ id, alCerrar, ...alerta }) => <TarjetaNotificacion key={id} {...alerta} onCerrar={() => { cerrar(id); alCerrar?.(); }} />)}
+  </div></AlertasContext.Provider>;
+}
+
+export function useAlertas() {
+  const contexto = useContext(AlertasContext);
+  if (!contexto) throw new Error("useAlertas debe usarse dentro de AlertasProvider.");
+  return contexto;
+}
+
 const titulosPorTipo: Record<TipoNotificacionFlotante, string> = {
   exito: "Operación completada",
   advertencia: "Atención",
@@ -21,7 +52,7 @@ const titulosPorTipo: Record<TipoNotificacionFlotante, string> = {
   informacion: "Información",
 };
 
-export function NotificacionFlotante({ tipo, mensaje, titulo, duracionMs = 5000, accion, onCerrar }: PropsNotificacionFlotante) {
+function TarjetaNotificacion({ tipo, mensaje, titulo, duracionMs = 5000, accion, onCerrar }: PropsNotificacionFlotante) {
   useEffect(() => {
     if (duracionMs <= 0) return;
     const temporizador = window.setTimeout(onCerrar, duracionMs);
@@ -33,4 +64,18 @@ export function NotificacionFlotante({ tipo, mensaje, titulo, duracionMs = 5000,
     <div className="notificacion-flotante-contenido"><strong>{titulo ?? titulosPorTipo[tipo]}</strong><p>{mensaje}</p>{accion && <button className="notificacion-flotante-accion" type="button" onClick={() => { accion.ejecutar(); onCerrar(); }}>{accion.etiqueta}</button>}</div>
     <button className="notificacion-flotante-cerrar" type="button" aria-label="Cerrar notificación" onClick={onCerrar}>×</button>
   </div>;
+}
+
+// Compatibilidad para los emisores existentes: la notificación siempre se monta
+// en el contenedor raíz, aunque el componente se invoque desde una pantalla.
+export function NotificacionFlotante({ tipo, mensaje, titulo, duracionMs, accion, onCerrar }: PropsNotificacionFlotante) {
+  const alertas = useAlertas();
+  const ultimaPublicacion = useRef("");
+  useEffect(() => {
+    const huella = `${tipo}|${titulo ?? ""}|${mensaje}|${duracionMs ?? ""}|${accion?.etiqueta ?? ""}`;
+    if (ultimaPublicacion.current === huella) return;
+    ultimaPublicacion.current = huella;
+    alertas.mostrar({ tipo, mensaje, titulo, duracionMs, accion, alCerrar: onCerrar });
+  }, [alertas, tipo, mensaje, titulo, duracionMs, accion, onCerrar]);
+  return null;
 }

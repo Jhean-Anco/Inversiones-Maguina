@@ -39,7 +39,7 @@ export function EntradaStockDetalle({ entrada, alCerrar }: { entrada: EntradaSto
         </div>
         {entrada.evidenciaNombre && <a className="stock-evidence-name stock-detail-evidence" href={srcImagen(`/inventario/entradas-stock/${entrada.id}/evidencia`)} target="_blank" rel="noreferrer">Ver evidencia: {entrada.evidenciaNombre}</a>}
         {entrada.observacion && <p className="stock-detail-note">{entrada.observacion}</p>}
-        <div className="stock-detail-lines-heading"><div><span>DETALLE</span><h3 className="stock-detail-lines-title">Productos de la compra</h3></div><strong>{entrada.detalles?.length ?? 0} {(entrada.detalles?.length ?? 0) === 1 ? "artículo" : "artículos"}</strong></div>
+        <div className="stock-detail-lines-heading"><div><span>DETALLE</span><h3 className="stock-detail-lines-title">Repuestos de la compra</h3></div><strong>{entrada.detalles?.length ?? 0} {(entrada.detalles?.length ?? 0) === 1 ? "artículo" : "artículos"}</strong></div>
         <div className="stock-detail-lines">{entrada.detalles?.map((detalle) => <article className="stock-detail-line" key={detalle.id}>
           <span className="stock-detail-line-mark" aria-hidden="true">{detalle.nombreProducto.slice(0, 1).toUpperCase()}</span>
           <div className="stock-detail-line-product"><strong>{detalle.nombreProducto}</strong><small>{detalle.codigoProducto} <span>·</span> {detalle.presentacion} ({detalle.unidadMedidaCodigo})</small><small>{detalle.cantidad} × S/ {Number(detalle.costoUnitario).toFixed(4)} <span>·</span> {Number(detalle.cantidadBase).toFixed(3)} unidades base</small></div>

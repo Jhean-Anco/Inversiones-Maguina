@@ -1,5 +1,4 @@
 import "./login-page.css";
-import logoTransparente from "./logo-transparente.png";
 import { useState, type FormEvent } from "react";
 import { useInicioSesion } from "../../hooks/use-inicio-sesion";
 import { SparklesCore } from "../../components/ui/sparkles";
@@ -35,7 +34,7 @@ export function LoginPage() {
         <SparklesCore />
       </div>
       <section className="login-panel" aria-labelledby="login-title">
-        <img className="login-mobile-logo" src={logoTransparente} alt="Logo de Inversiones Maguiña" />
+        <img className="login-mobile-logo" src="/logo.png" alt="Logo de Inversiones Maguiña" />
         <div className="login-content">
           <h1 id="login-title">Bienvenido</h1>
           <p className="login-intro">Ingresa con tu usuario o correo electrónico.</p>
