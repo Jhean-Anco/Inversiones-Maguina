@@ -2,6 +2,7 @@ import "./catalogo-admin-page.css";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useCatalogo } from "../../../hooks/use-catalogo";
 import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
+import { getResponsiveProfile } from "../../../utilidades/responsive-profile";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 import { srcImagen } from "../../../services/api-cliente";
@@ -52,7 +53,8 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const [confirmandoEstado, setConfirmandoEstado] = useState(false);
   const dialogoRef = useRef<HTMLElement>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [anchoViewport, setAnchoViewport] = useState(() => typeof window === "undefined" ? 1280 : window.innerWidth);
+  const [anchoViewport, setAnchoViewport] = useState(() => typeof window === "undefined" ? 1366 : window.innerWidth);
+  const [altoViewport, setAltoViewport] = useState(() => typeof window === "undefined" ? 768 : window.innerHeight);
 
   const filtrados = useMemo(() => registros.filter((registro) => {
     const coincideTexto = !busqueda || normalizar(registro.nombre).includes(normalizar(busqueda));
@@ -64,10 +66,11 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     return coincideTexto && coincideEstado && coincideTipo;
   }), [registros, busqueda, filtroEstado, filtroTipo, esMarca]);
   const [versionListado, setVersionListado] = useState(0);
-  const columnas = anchoViewport >= 1200 ? 4 : anchoViewport >= 900 ? 3 : anchoViewport >= 600 ? 2 : 1;
+  const perfilResponsive = getResponsiveProfile(anchoViewport, altoViewport);
+  const columnas = perfilResponsive === "laptop" ? 4 : perfilResponsive === "tablet-landscape" ? 3 : perfilResponsive === "tablet-portrait" || perfilResponsive === "mobile-landscape" ? 2 : 1;
 
   useEffect(() => {
-    const actualizarAncho = () => setAnchoViewport(window.innerWidth);
+    const actualizarAncho = () => { setAnchoViewport(window.innerWidth); setAltoViewport(window.innerHeight); };
     window.addEventListener("resize", actualizarAncho);
     return () => window.removeEventListener("resize", actualizarAncho);
   }, []);

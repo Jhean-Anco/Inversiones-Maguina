@@ -21,6 +21,5 @@ html[data-theme="oscuro"] .notificacion-flotante-error .notificacion-flotante-ic
 html[data-theme="oscuro"] .notificacion-flotante-advertencia .notificacion-flotante-icono{background:#554321;color:#ffda87}
 html[data-theme="oscuro"] .notificacion-flotante-exito .notificacion-flotante-icono{background:#214b39;color:#9be5bd}
 html[data-theme="oscuro"] .notificacion-flotante-informacion .notificacion-flotante-icono{background:#203f5c;color:#a5d4ff}
-@keyframes notificacion-flotante-entrada{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:560px){.alertas-globales{top:10px;right:10px;width:calc(100vw - 20px)}.notificacion-flotante{grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}}
+@keyframes notificacion-flotante-entrada{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}:where(html[data-responsive-profile="mobile-portrait"]) .alertas-globales{top:10px;right:10px;width:calc(100vw - 20px)}:where(html[data-responsive-profile="mobile-portrait"]) .notificacion-flotante{grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}
 @media(prefers-reduced-motion:reduce){.notificacion-flotante{animation:none}}

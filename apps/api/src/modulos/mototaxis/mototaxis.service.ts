@@ -450,6 +450,23 @@ export class ServicioMototaxis {
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos del reconteo no son válidos.");
     const d = valor as Record<string, unknown>;
     if (!uuidValido(d.modeloId)) throw new BadRequestException("Selecciona un modelo de mototaxi válido.");
+    if (d.cantidadContada !== undefined) {
+      const cantidadContada = Number(d.cantidadContada);
+      if (!Number.isInteger(cantidadContada) || cantidadContada < 0) throw new BadRequestException("La cantidad contada debe ser un número entero igual o mayor que cero.");
+      const motivo = texto(d.motivo, "El motivo del ajuste", 120, true)!;
+      if (motivo.trim().length < 2) throw new BadRequestException("El motivo debe tener al menos dos caracteres.");
+      const observacion = texto(d.observacion, "La observación", 2000);
+      const codigo = `AI-${fechaActualPeru().replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
+      return db.transaction(async (tx) => {
+        const [modelo] = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(eq(modelosMototaxis.id, d.modeloId as string)).for("update").limit(1);
+        if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+        const unidadesModelo = await tx.select({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado })
+          .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modelo.id), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).for("update");
+        const cantidadSistema = unidadesModelo.filter((unidad) => unidad.estado !== "FALTANTE").length;
+        const [ajuste] = await tx.insert(ajustesInventarioMototaxis).values({ codigo, modeloId: modelo.id, cantidadSistema, cantidadContada, motivo, observacion, usuarioId }).returning();
+        return { id: ajuste.id, codigo, cantidadSistema, cantidadContada, nuevas: 0, faltantes: 0, recuperadas: 0 };
+      });
+    }
     if (!Array.isArray(d.unidadesSistemaIds) || !Array.isArray(d.unidadesEncontradas) || !Array.isArray(d.unidadesNuevas)) throw new BadRequestException("Registra las unidades del sistema, las encontradas y los VIN nuevos del reconteo.");
     if (d.unidadesNuevas.length > 50) throw new BadRequestException("Un ajuste permite incorporar hasta 50 VIN nuevos.");
     const motivo = texto(d.motivo, "El motivo del ajuste", 120, true)!;

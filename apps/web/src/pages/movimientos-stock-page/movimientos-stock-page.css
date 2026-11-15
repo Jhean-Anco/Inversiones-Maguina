@@ -51,36 +51,48 @@ html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajust
   background-color: var(--tema-superficie);
   color: var(--tema-texto);
 }
-
-@media (max-width: 1000px) {
-  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+  :where(html[data-responsive-profile="tablet-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
     align-items: flex-start;
   }
 
-  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+  :where(html[data-responsive-profile="tablet-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
     width: 100%;
     flex: 1 1 auto;
     grid-template-columns: minmax(190px, .8fr) minmax(240px, 1.2fr);
   }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+    align-items: flex-start;
+  }
 
-@media (max-width: 700px) {
-  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+    width: 100%;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(190px, .8fr) minmax(240px, 1.2fr);
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
+    align-items: flex-start;
+  }
+
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+    width: 100%;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(190px, .8fr) minmax(240px, 1.2fr);
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
     gap: 14px;
     padding: 15px;
   }
 
 
-  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles {
     grid-template-columns: minmax(0, 1fr);
     gap: 9px;
   }
 
-  .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-paginacion {
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-paginacion {
     justify-content: space-between;
     flex-wrap: wrap;
   }
-}
 
 /* Filas del historial de inventario. */
 .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-wrap {

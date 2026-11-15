@@ -484,54 +484,48 @@ html[data-theme="oscuro"] .cotizacion-client-feedback { border-color: var(--tema
 html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta { border-color: #5a3039; background: #291e29; color: #ff8790; }
 html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta :is(.cotizacion-preview-label, .cotizacion-preview-status) { color: #d1a8ad; }
 html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta strong { color: #ff8993; }
-
-@media (max-height: 760px) and (min-width: 761px) {
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper > .orden-document-header { min-height: 83px; padding: 10px 14px; }
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper > .orden-document-header h2 { margin: 3px 0; font-size: 17px; }
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper .orden-document-meta { min-height: 60px; padding: 6px 10px; }
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper .orden-document-meta > strong { font-size: 13px; }
-}
-
-@media (max-width: 900px) {
-  .gestion-cotizacion-workspace { grid-template-columns: minmax(0, 1fr); }
-  .gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: static; min-height: 0; }
-  .gestion-cotizacion-workspace .orden-catalog-results { max-height: 220px; }
-}
-
-@media (max-width: 600px) {
-  .gestion-ingresos-page.is-cotizaciones .gestion-editor { max-height: calc(100dvh - 122px); padding: 10px; }
-  .gestion-cotizacion-paper > .orden-document-header { align-items: flex-start; flex-direction: column; gap: 10px; }
-  .gestion-cotizacion-paper .orden-document-meta { box-sizing: border-box; width: 100%; min-width: 0; min-height: 0; }
-  .gestion-cotizacion-fields { grid-template-columns: minmax(0, 1fr); }
-  .gestion-cotizacion-fields .gestion-cotizacion-client { grid-column: 1 / -1; }
-  .cotizacion-client-picker { grid-template-columns: 62px minmax(0, 1fr) 42px 42px; gap: 5px; }
-  .cotizacion-client-picker > .cotizacion-client-search { width: 42px; padding: 0; }
-  .cotizacion-client-picker > .cotizacion-client-search > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
-  .cotizacion-client-picker > .cotizacion-client-add { width: 42px; }
-  .gestion-cotizacion-lines-heading { flex-wrap: wrap; }
-  .gestion-cotizacion-lines-heading h3 { flex-basis: 100%; }
-  .gestion-cotizacion-notes { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
-  .gestion-cotizacion-notes .orden-document-total { padding: 6px 0; }
-  .gestion-cotizacion-notes .orden-document-total > div { justify-items: start; }
-  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { padding: 0; }
-}
-
-@media (max-width: 390px) {
-}
-
-@media (max-width: 760px) {
-  .gestion-ingresos-page.is-cotizaciones { padding: 15px 12px 42px; }
-  .gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera { align-items: stretch; flex-direction: column; gap: 9px; padding: 12px; }
-  .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading { align-items: stretch; flex-direction: column; }
-  .gestion-ingresos-page.is-cotizaciones .gestion-comprobante { width: 100%; flex: 1 1 auto; }
-  .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input { min-width: 0; flex-basis: auto; }
-  .gestion-ingresos-page.is-cotizaciones .listado-maestro-resumen { align-self: flex-end; }
-}
-
-@media (max-width: 480px) {
-  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { align-items: stretch; flex-direction: column-reverse; }
-  .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer button { width: 100%; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper > .orden-document-header { min-height: 83px; padding: 10px 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper > .orden-document-header h2 { margin: 3px 0; font-size: 17px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper .orden-document-meta { min-height: 60px; padding: 6px 10px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper .orden-document-meta > strong { font-size: 13px; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-cotizacion-workspace { grid-template-columns: minmax(0, 1fr); }
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: static; min-height: 0; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-cotizacion-workspace .orden-catalog-results { max-height: 220px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-workspace { grid-template-columns: minmax(0, 1fr); }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: static; min-height: 0; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-workspace .orden-catalog-results { max-height: 220px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-workspace { grid-template-columns: minmax(0, 1fr); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-cotizacion-workspace .orden-catalog-panel { position: static; min-height: 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-workspace .orden-catalog-results { max-height: 220px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-editor { max-height: calc(100dvh - 122px); padding: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper > .orden-document-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-document-meta { box-sizing: border-box; width: 100%; min-width: 0; min-height: 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-fields { grid-template-columns: minmax(0, 1fr); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-fields .gestion-cotizacion-client { grid-column: 1 / -1; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .cotizacion-client-picker { grid-template-columns: 62px minmax(0, 1fr) 42px 42px; gap: 5px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .cotizacion-client-picker > .cotizacion-client-search { width: 42px; padding: 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .cotizacion-client-picker > .cotizacion-client-search > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .cotizacion-client-picker > .cotizacion-client-add { width: 42px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-lines-heading { flex-wrap: wrap; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-lines-heading h3 { flex-basis: 100%; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-notes { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-notes .orden-document-total { padding: 6px 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-notes .orden-document-total > div { justify-items: start; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { padding: 0; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones { padding: 15px 12px 42px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera { align-items: stretch; flex-direction: column; gap: 9px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading { align-items: stretch; flex-direction: column; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .gestion-comprobante { width: 100%; flex: 1 1 auto; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input { min-width: 0; flex-basis: auto; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .listado-maestro-resumen { align-self: flex-end; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones { padding: 15px 12px 42px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .listado-maestro-cabecera { align-items: stretch; flex-direction: column; gap: 9px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading { align-items: stretch; flex-direction: column; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-comprobante { width: 100%; flex: 1 1 auto; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-ingresos-heading > input { min-width: 0; flex-basis: auto; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .listado-maestro-resumen { align-self: flex-end; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer { align-items: stretch; flex-direction: column-reverse; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .gestion-editor > footer button { width: 100%; }
 
 .gestion-cotizacion-paper .orden-invoice-columns,
 .gestion-cotizacion-paper .orden-invoice-line { grid-template-columns: minmax(0, 1fr) 58px 96px 112px 32px; }
@@ -539,16 +533,12 @@ html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta strong 
 .gestion-cotizacion-paper .orden-invoice-line .cotizacion-service-description { min-height: 34px !important; padding: 6px 8px !important; text-align: left !important; font-weight: 650 !important; }
 .gestion-cotizacion-paper .orden-invoice-line .cotizacion-service-price { text-align: right; }
 .gestion-cotizacion-paper .cotizacion-line-price { color: #47647e; font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-
-@media (max-width: 600px) {
-  .gestion-cotizacion-paper .orden-invoice-columns,
-  .gestion-cotizacion-paper .orden-invoice-line { grid-template-columns: minmax(0, 1fr) 46px 70px 78px 28px; gap: 5px; }
-  .gestion-cotizacion-paper .orden-invoice-columns { padding-inline: 9px; font-size: 8px; }
-  .gestion-cotizacion-paper .orden-invoice-lines { padding-inline: 9px; }
-  .gestion-cotizacion-paper .orden-invoice-line .orden-line-description strong { font-size: 10px; }
-  .gestion-cotizacion-paper .orden-invoice-line .orden-line-description small { font-size: 9px; }
-  .gestion-cotizacion-paper .orden-invoice-line > button { width: 26px; }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-columns, :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-line { grid-template-columns: minmax(0, 1fr) 46px 70px 78px 28px; gap: 5px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-columns { padding-inline: 9px; font-size: 8px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-lines { padding-inline: 9px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-line .orden-line-description strong { font-size: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-line .orden-line-description small { font-size: 9px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-cotizacion-paper .orden-invoice-line > button { width: 26px; }
 
 /* Lista de cotizaciones: columnas centradas, filtros visibles y acciones compactas. */
 .gestion-ingresos-page.is-cotizaciones .cotizaciones-tabla th,
@@ -570,7 +560,5 @@ html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta strong 
 .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(140px, .45fr)); align-items: end; gap: 10px; width: 100%; }
 .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > label { display: grid; gap: 5px; color: #365b7c; font-size: 11px; font-weight: 750; }
 .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > label select,
-.gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > label input { box-sizing: border-box; width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid #cbd9e6; border-radius: 8px; background: #fff; color: #244562; font: inherit; font-size: 12px; }
-@media (max-width: 760px) { .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > input { grid-column: 1 / -1; } }
-@media (max-width: 460px) { .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { grid-template-columns: minmax(0, 1fr); } .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > input { grid-column: 1; } }
+.gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > label input { box-sizing: border-box; width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid #cbd9e6; border-radius: 8px; background: #fff; color: #244562; font: inherit; font-size: 12px; } :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > input { grid-column: 1 / -1; } :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > input { grid-column: 1 / -1; } :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters { grid-template-columns: minmax(0, 1fr); } :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones .cotizaciones-list-filters > input { grid-column: 1; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-emision-pendiente { color: #9a5b00; font-size: 11px; font-weight: 700; }

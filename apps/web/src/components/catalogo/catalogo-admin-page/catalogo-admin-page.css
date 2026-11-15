@@ -141,34 +141,37 @@ html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .ca
 html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-row-actions button,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-cancel { border-color: var(--tema-borde); background: #182639; color: #c1cedb; }
 html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-thumbnail { border-color: var(--tema-borde); background: #1c2a3b; }
 html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-usage span { border-color: var(--tema-borde); background: #1c2a3b; color: #c1cedb; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding: 12px 14px 16px; }
 
-@media (max-width: 760px) {
-  .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding: 12px 14px 16px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-search { width: 100%; min-width: 0; flex: 1 1 100%; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-status-filter { margin-left: auto; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr)); gap: 10px; padding: 12px; }
 
-  .catalog-manager-search { width: 100%; min-width: 0; flex: 1 1 100%; }
-  .catalog-manager-status-filter { margin-left: auto; }
-  .catalog-manager-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr)); gap: 10px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-card { min-height: 146px; grid-template-columns: 68px minmax(0,1fr) auto; grid-template-rows: minmax(60px, auto) auto; gap: 7px 10px; padding: 11px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-thumbnail { width: 64px; height: 64px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding: 12px 14px 16px; }
 
-  .catalog-manager-card { min-height: 146px; grid-template-columns: 68px minmax(0,1fr) auto; grid-template-rows: minmax(60px, auto) auto; gap: 7px 10px; padding: 11px; }
-  .catalog-manager-thumbnail { width: 64px; height: 64px; }
-}
-@media (max-width: 430px) {
-  .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding-inline: 10px; }
-  .catalog-manager-status-filter { width: 100%; justify-content: space-between; margin: 0; }
-  .catalog-manager-status-filter select { flex: 1; max-width: 180px; }
-  .catalog-manager-grid { grid-template-columns: minmax(0,1fr); padding: 7px; }
-  .catalog-manager-card { min-height: 118px; grid-template-columns: 56px minmax(0,1fr) auto; gap: 6px 9px; }
-  .catalog-manager-thumbnail { width: 52px; height: 52px; }
-  .catalog-manager-name { font-size: 14px; }
-  .catalog-manager-usage span { padding: 3px 6px; }
-  .catalog-manager-dialog-head { grid-template-columns: 36px minmax(0,1fr) 30px; gap: 8px; padding: 14px 13px 12px; }
-  .catalog-manager-dialog-symbol { width: 35px; height: 35px; }
-  .catalog-manager-form { gap: 14px; padding: 14px 13px; }
-  .catalog-manager-dropzone { min-height: 84px; gap: 8px; padding: 8px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-search { width: 100%; min-width: 0; flex: 1 1 100%; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-status-filter { margin-left: auto; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr)); gap: 10px; padding: 12px; }
 
-  .catalog-manager-preview { width: 58px; height: 56px; }
-  .catalog-manager-upload-icon { width: 32px; height: 32px; }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-card { min-height: 146px; grid-template-columns: 68px minmax(0,1fr) auto; grid-template-rows: minmax(60px, auto) auto; gap: 7px 10px; padding: 11px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-thumbnail { width: 64px; height: 64px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding-inline: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-status-filter { width: 100%; justify-content: space-between; margin: 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-status-filter select { flex: 1; max-width: 180px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-grid { grid-template-columns: minmax(0,1fr); padding: 7px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-card { min-height: 118px; grid-template-columns: 56px minmax(0,1fr) auto; gap: 6px 9px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-thumbnail { width: 52px; height: 52px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-name { font-size: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-usage span { padding: 3px 6px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog-head { grid-template-columns: 36px minmax(0,1fr) 30px; gap: 8px; padding: 14px 13px 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog-symbol { width: 35px; height: 35px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-form { gap: 14px; padding: 14px 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dropzone { min-height: 84px; gap: 8px; padding: 8px; }
+
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-preview { width: 58px; height: 56px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-upload-icon { width: 32px; height: 32px; }
 @media (prefers-reduced-motion: reduce) {
 }
 
@@ -183,9 +186,21 @@ html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .ca
 .catalog-manager-row-actions { gap: 4px; }
 .catalog-manager-row-actions button { width: 32px; height: 32px; }
 .catalog-manager-usage span { padding: 3px 7px; font-size: 10px; }
-@container (max-width: 1100px) { .catalog-manager-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }.catalog-manager-card { min-height: 104px; grid-template-columns: 50px minmax(0,1fr) auto; grid-template-rows: minmax(44px,auto) auto; gap: 4px 8px; padding: 8px 9px; }.catalog-manager-thumbnail { width: 48px; height: 48px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 29px; height: 29px; } }
-@container (max-width: 760px) { .catalog-manager-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 10px; }.catalog-manager-card { min-height: 108px; grid-template-columns: 52px minmax(0,1fr) auto; grid-template-rows: minmax(46px,auto) auto; gap: 5px 8px; padding: 9px; }.catalog-manager-thumbnail { width: 50px; height: 50px; }.catalog-manager-name { font-size: 14px; }.catalog-manager-row-actions button { width: 30px; height: 30px; } }
-@container (max-width: 480px) { .catalog-manager-grid { grid-template-columns: minmax(0,1fr); gap: 7px; padding: 8px; }.catalog-manager-card { min-height: 96px; grid-template-columns: 48px minmax(0,1fr) auto; grid-template-rows: minmax(42px,auto) auto; gap: 4px 8px; padding: 8px; }.catalog-manager-thumbnail { width: 46px; height: 46px; }.catalog-manager-name { font-size: 13px; }.catalog-manager-status { font-size: 10px; }.catalog-manager-row-actions button { width: 28px; height: 28px; } }
+:where(html[data-responsive-profile="tablet-landscape"], html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+:where(html[data-responsive-profile="tablet-landscape"], html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-card { min-height: 104px; grid-template-columns: 50px minmax(0,1fr) auto; grid-template-rows: minmax(44px,auto) auto; gap: 4px 8px; padding: 8px 9px; }
+:where(html[data-responsive-profile="tablet-landscape"], html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-thumbnail { width: 48px; height: 48px; }
+:where(html[data-responsive-profile="tablet-landscape"], html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-name { font-size: 14px; }
+:where(html[data-responsive-profile="tablet-landscape"], html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-row-actions button { width: 29px; height: 29px; }
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 10px; }
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-card { min-height: 108px; grid-template-columns: 52px minmax(0,1fr) auto; grid-template-rows: minmax(46px,auto) auto; gap: 5px 8px; padding: 9px; }
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-thumbnail { width: 50px; height: 50px; }
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) .catalog-manager-row-actions button { width: 30px; height: 30px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-grid { grid-template-columns: minmax(0,1fr); gap: 7px; padding: 8px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-card { min-height: 96px; grid-template-columns: 48px minmax(0,1fr) auto; grid-template-rows: minmax(42px,auto) auto; gap: 4px 8px; padding: 8px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-thumbnail { width: 46px; height: 46px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-name { font-size: 13px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-status { font-size: 10px; }
+:where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-row-actions button { width: 28px; height: 28px; }
 
 /* Toolbar de filtros: una fila clara y alineada sobre el catálogo. */
 .catalog-manager .listado-maestro-cabecera {
@@ -224,14 +239,12 @@ html[data-theme="oscuro"] .catalog-manager .listado-maestro-cabecera {
   background: linear-gradient(115deg, #111d2c 0%, #151f2e 58%, #101a28 100%);
 }
 html[data-theme="oscuro"] .catalog-manager .catalog-manager-status-filter { color: var(--tema-texto-secundario); }
-@media (max-width: 760px) {
-  .catalog-manager .listado-maestro-cabecera { padding: 15px 16px; }
-  .catalog-manager .listado-maestro-controles { width: 100%; max-width: none; flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 170px; }
-  .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 150px 150px; }
-}
-@media (max-width: 560px) {
-  .catalog-manager .listado-maestro-controles,
-  .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr); gap: 10px; }
-  .catalog-manager .catalog-manager-search { grid-column: 1 / -1; }
-  .catalog-manager.is-category-manager .catalog-manager-status-filter { grid-column: 1 / -1; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager .listado-maestro-cabecera { padding: 15px 16px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager .listado-maestro-controles { width: 100%; max-width: none; flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 170px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 150px 150px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager .listado-maestro-cabecera { padding: 15px 16px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager .listado-maestro-controles { width: 100%; max-width: none; flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 170px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 150px 150px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager .listado-maestro-controles, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr); gap: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager .catalog-manager-search { grid-column: 1 / -1; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager.is-category-manager .catalog-manager-status-filter { grid-column: 1 / -1; }

@@ -239,15 +239,28 @@ test("el shell autenticado no se desborda en anchos móviles, tablet y escritori
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/inicio$/);
 
-  for (const width of [320, 360, 390, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: width < 500 ? 800 : 900 });
+  const perfiles = [
+    { nombre: "mobile-portrait", width: 390, height: 844 },
+    { nombre: "mobile-landscape", width: 740, height: 390 },
+    { nombre: "tablet-portrait", width: 768, height: 1024 },
+    { nombre: "tablet-landscape", width: 1024, height: 768 },
+    { nombre: "laptop", width: 1366, height: 768 },
+  ];
+  for (const perfil of perfiles) {
+    await page.setViewportSize({ width: perfil.width, height: perfil.height });
+    await expect(page.locator("html")).toHaveAttribute("data-responsive-profile", perfil.nombre);
     await expect(page.getByRole("main")).toBeVisible();
     const dimensiones = await page.evaluate(() => ({
       documento: document.documentElement.scrollWidth,
       ventana: document.documentElement.clientWidth,
     }));
-    expect(dimensiones.documento, `Desbordamiento horizontal con viewport de ${width}px.`).toBeLessThanOrEqual(dimensiones.ventana);
+    expect(dimensiones.documento, `Desbordamiento horizontal en ${perfil.nombre} (${perfil.width}x${perfil.height}).`).toBeLessThanOrEqual(dimensiones.ventana);
   }
+
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.getByRole("link", { name: "Resumen" }).click();
+  await expect(page.locator(".erp-layout")).toHaveClass(/is-collapsed/);
+  await expect.poll(() => page.locator(".erp-sidebar").evaluate((elemento) => elemento.getBoundingClientRect().width)).toBeLessThanOrEqual(100);
 });
 
 test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async ({ request }) => {
@@ -283,7 +296,7 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     .where(eq(roles.codigo, "ALMACENERO"))
     .limit(1);
   assert.ok(rolAlmacenero, "Las migraciones deben crear el rol ALMACENERO.");
-  await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
+  await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id }).onConflictDoNothing();
 
   try {
     await page.goto("/login");
@@ -413,7 +426,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
       .values({ tipo: "EFECTIVO", nombre: `Caja E2E ${sufijo}`, moneda: "PEN", usuarioId })
       .returning({ id: cuentasFinancieras.id });
     cuentaFinancieraId = cuenta.id;
-    await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id });
+    await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAlmacenero.id }).onConflictDoNothing();
     rolAsignado = true;
 
     await page.goto("/login");
@@ -498,5 +511,83 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     if (rolAsignado && usuarioId) {
       await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAlmacenero.id)));
     }
+  }
+});
+
+test("Ventas muestra el motivo del rechazo y ofrece un reintento accesible", async ({ page }) => {
+  assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar Ventas.");
+  const [rolAdministrador] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.codigo, "ADMINISTRADOR"))
+    .limit(1);
+  assert.ok(rolAdministrador, "Las migraciones deben crear el rol ADMINISTRADOR.");
+  await db.insert(usuariosRoles).values({ usuarioId, rolId: rolAdministrador.id });
+
+  const ingresoId = randomUUID();
+  const ventaRechazada = {
+    id: ingresoId,
+    codigoVenta: "VTA-QA-RECHAZADA",
+    codigoComprobante: "BBB1-000001",
+    fecha: new Date().toISOString().slice(0, 10),
+    tipoComprobante: "BOLETA",
+    clienteNombre: "Cliente de prueba",
+    clienteNumeroDocumento: "12345678",
+    medioPago: "EFECTIVO",
+    condicionPago: "CONTADO",
+    total: "10.00",
+    estado: "ERROR_NUBEFACT",
+    estadoProveedor: "RECHAZADO_SUNAT",
+    detalleProveedor: "El documento del cliente no coincide · Código de respuesta SUNAT: 2335",
+    estadoAnulacion: null,
+    motivoAnulacion: null,
+    enlacePdf: null,
+    enlaceXml: null,
+    enlaceCdr: null,
+  };
+  let reintentoAceptado = false;
+
+  await page.route((url) => {
+    const destino = new URL(url);
+    return destino.pathname === "/ingresos" && destino.searchParams.get("tipoVenta") === "REPUESTOS";
+  }, async (route) => {
+    const item = reintentoAceptado
+      ? { ...ventaRechazada, codigoComprobante: "BBB1-000002", estado: "EMITIDO", estadoProveedor: "ACEPTADO_SUNAT", detalleProveedor: "Aceptada en la simulación" }
+      : ventaRechazada;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [item], pagina: 1, porPagina: 10, total: 1, totalPaginas: 1 }),
+    });
+  });
+  await page.route((url) => new URL(url).pathname === `/ingresos/${ingresoId}/reintentar-emision`, async (route) => {
+    reintentoAceptado = true;
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ estado: "EMITIDO", serie: "BBB1", numero: 2, codigo: "BBB1-000002" }),
+    });
+  });
+
+  try {
+    await page.goto("/login");
+    await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
+    await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/inicio$/);
+    await page.goto("/ingresos/ventas/repuestos");
+
+    await expect(page.getByRole("button", { name: "Ver motivo y opciones" })).toBeVisible();
+    await page.getByRole("button", { name: "Ver motivo y opciones" }).click();
+    const dialogo = page.getByRole("dialog", { name: "BBB1-000001" });
+    await expect(dialogo.getByText(/El documento del cliente no coincide/)).toBeVisible();
+    await expect(dialogo.getByText(/2335/)).toBeVisible();
+    await expect(dialogo.getByRole("button", { name: "Reintentar emisión" })).toBeVisible();
+
+    await dialogo.getByRole("button", { name: "Reintentar emisión" }).click();
+    await expect(page.getByText("El nuevo comprobante BBB1-000002 fue aceptado por SUNAT.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ver motivo y opciones" })).toHaveCount(0);
+  } finally {
+    await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAdministrador.id)));
   }
 });

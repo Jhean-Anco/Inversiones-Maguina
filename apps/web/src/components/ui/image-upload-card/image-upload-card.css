@@ -30,5 +30,4 @@ html[data-theme="oscuro"] #root .upload-file-icon.is-pdf .upload-file-icon-detai
 html[data-theme="oscuro"] #root .image-upload-card{border-color:var(--tema-borde);background:#172a3d;color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .image-upload-card-copy h3{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .image-upload-card-preview{border-color:#40566b;background:#102236}
-html[data-theme="oscuro"] #root .image-upload-card-button{border-color:#40566b;background:#1b3349;color:#d8e7f2}
-@media(max-width:760px){.image-upload-card-preview{min-height:190px}.image-upload-card.is-multiple .image-upload-card-preview{min-height:120px}}
+html[data-theme="oscuro"] #root .image-upload-card-button{border-color:#40566b;background:#1b3349;color:#d8e7f2}:where(html[data-responsive-profile="mobile-landscape"]) .image-upload-card-preview{min-height:190px}:where(html[data-responsive-profile="mobile-landscape"]) .image-upload-card.is-multiple .image-upload-card-preview{min-height:120px}:where(html[data-responsive-profile="mobile-portrait"]) .image-upload-card-preview{min-height:190px}:where(html[data-responsive-profile="mobile-portrait"]) .image-upload-card.is-multiple .image-upload-card-preview{min-height:120px}

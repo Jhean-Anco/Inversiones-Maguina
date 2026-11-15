@@ -67,10 +67,7 @@
 
 .erp-accion-principal:focus-visible { outline: 3px solid var(--action-primary-focus); outline-offset: 4px; }
 .erp-accion-principal:disabled { opacity: .58; cursor: not-allowed; box-shadow: 0 4px 12px #8c1a2b20; }
-
-@media (max-width: 700px) {
-  .erp-accion-principal.is-floating { right: 18px; bottom: 18px; }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-accion-principal.is-floating { right: 18px; bottom: 18px; }
 
 @media (prefers-reduced-motion: reduce) {
   .erp-accion-principal.is-floating,
@@ -79,4 +76,3 @@
     transition-duration: 1s !important;
   }
 }
-

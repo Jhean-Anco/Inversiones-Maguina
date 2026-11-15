@@ -22,5 +22,4 @@ html[data-theme="oscuro"] .egresos-table th{background:#17283b;color:#a9bbce;bor
 html[data-theme="oscuro"] .egresos-table td{border-color:#26394d}
 html[data-theme="oscuro"] .egresos-table tbody tr:hover{background:#192b3f}
 html[data-theme="oscuro"] .egresos-row-button{background:#17283b;color:#cfe2f7;border-color:#405770}
-html[data-theme="oscuro"] .egresos-row-button.is-primary{background:var(--action-primary-surface);color:var(--action-primary);border-color:var(--action-primary-border)}
-@media(max-width:700px){.egresos-table{min-width:840px}.egresos-table th,.egresos-table td{padding:10px 11px}}
+html[data-theme="oscuro"] .egresos-row-button.is-primary{background:var(--action-primary-surface);color:var(--action-primary);border-color:var(--action-primary-border)}:where(html[data-responsive-profile="mobile-portrait"]) .egresos-table{min-width:840px}:where(html[data-responsive-profile="mobile-portrait"]) .egresos-table th, :where(html[data-responsive-profile="mobile-portrait"]) .egresos-table td{padding:10px 11px}

@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ConflictException } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioIngresos } from "./modulos/ingresos/ingresos.service";
 import { ServicioEntradasStock } from "./modulos/inventario/entradas-stock.service";
+import { ServicioMototaxis } from "./modulos/mototaxis/mototaxis.service";
 
 function validarBaseDePruebas() {
   assert.equal(process.env.NODE_ENV, "test", "La integración exige NODE_ENV=test.");
@@ -29,6 +30,7 @@ let esquema: PaqueteBaseDatos;
 let servicio: ServicioIngresos;
 let servicioEgresos: ServicioEgresos;
 let servicioEntradasStock: ServicioEntradasStock;
+let servicioMototaxis: ServicioMototaxis;
 let usuarioId: string;
 let clienteId: string;
 let clienteDni: string;
@@ -43,6 +45,8 @@ const cuentaFinancieraIds: string[] = [];
 const presentacionPorProducto = new Map<string, string>();
 const clavesVenta: string[] = [];
 const seriesFiscalesPrueba: string[] = [];
+const marcasMototaxisPrueba: string[] = [];
+const modelosMototaxisPrueba: string[] = [];
 
 function fechaHoyPeru() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
@@ -55,6 +59,7 @@ before(async () => {
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
   servicioEntradasStock = new ServicioEntradasStock(new ServicioAlmacenamiento());
+  servicioMototaxis = new ServicioMototaxis(new ServicioAlmacenamiento());
   const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
   seriesFiscalesPrueba.push(serieBoleta);
   await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });
@@ -280,15 +285,21 @@ test("dos solicitudes concurrentes con la misma clave de idempotencia solo descu
   assert.equal(movimientos.length, 1);
 });
 
-test("emisión de boleta usa el NubeFact simulado y persiste el rechazo junto con la solicitud", async () => {
+test("una boleta rechazada muestra la respuesta SUNAT y puede reintentarse sin repetir la venta", async () => {
   const originalFetch = globalThis.fetch;
   let solicitudCapturada: Record<string, unknown> | undefined;
+  let solicitudReintento: Record<string, unknown> | undefined;
   let autorizacionCapturada = "";
   globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
     solicitudCapturada = JSON.parse(String(init?.body)) as Record<string, unknown>;
     autorizacionCapturada = new Headers(init?.headers).get("Authorization") ?? "";
-    return new Response(JSON.stringify({ errors: "Rechazo sintético del proveedor" }), {
-      status: 422,
+    return new Response(JSON.stringify({
+      aceptada_por_sunat: false,
+      sunat_description: "El documento del cliente no coincide.",
+      sunat_note: "Revise el tipo de documento.",
+      sunat_responsecode: 2335,
+    }), {
+      status: 200,
       headers: { "content-type": "application/json" },
     });
   }) as typeof fetch;
@@ -301,10 +312,74 @@ test("emisión de boleta usa el NubeFact simulado y persiste el rechazo junto co
 
     assert.equal(resultado.estado, "ERROR");
     assert.equal(venta.estado, "ERROR_NUBEFACT");
-    assert.deepEqual((venta.datosNubefact as { respuesta: unknown }).respuesta, { errors: "Rechazo sintético del proveedor" });
+    assert.deepEqual((venta.datosNubefact as { respuesta: unknown }).respuesta, {
+      aceptada_por_sunat: false,
+      sunat_description: "El documento del cliente no coincide.",
+      sunat_note: "Revise el tipo de documento.",
+      sunat_responsecode: 2335,
+    });
     assert.equal(solicitudCapturada?.operacion, "generar_comprobante");
     assert.equal(solicitudCapturada?.tipo_de_comprobante, 2);
     assert.equal(autorizacionCapturada, "ci-only-fake-token");
+
+    const listado = await servicio.listarVentas({ tipoVenta: "REPUESTOS" });
+    const filaRechazada = listado.items.find((item) => item.id === venta.id);
+    assert.equal(filaRechazada?.estadoProveedor, "RECHAZADO_SUNAT");
+    assert.match(filaRechazada?.detalleProveedor ?? "", /2335/);
+    assert.match(filaRechazada?.detalleProveedor ?? "", /El documento del cliente no coincide/);
+
+    const movimientosAntes = await db.select({ id: esquema.movimientosStock.id }).from(esquema.movimientosStock)
+      .where(and(eq(esquema.movimientosStock.origenId, venta.id), eq(esquema.movimientosStock.origenTipo, "INGRESO")));
+    const pagosAntes = await db.select({ id: esquema.ingresosPagos.id }).from(esquema.ingresosPagos)
+      .where(eq(esquema.ingresosPagos.ingresoId, venta.id));
+    assert.equal(movimientosAntes.length, 1);
+
+    let emitirRespuesta: ((respuesta: Response) => void) | undefined;
+    let indicarSolicitudEnCurso: (() => void) | undefined;
+    const proveedorRecibioReintento = new Promise<void>((resolve) => { indicarSolicitudEnCurso = resolve; });
+    let llamadasReintento = 0;
+    globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+      llamadasReintento += 1;
+      solicitudReintento = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      indicarSolicitudEnCurso?.();
+      return new Promise<Response>((resolve) => {
+        emitirRespuesta = resolve;
+      });
+    }) as typeof fetch;
+
+    const reintentoEnCurso = servicio.reintentarEmision(venta.id);
+    await proveedorRecibioReintento;
+    await assert.rejects(
+      () => servicio.reintentarEmision(venta.id),
+      (error) => error instanceof ConflictException,
+    );
+    emitirRespuesta?.(new Response(JSON.stringify({ aceptada_por_sunat: true, sunat_description: "Aceptada en prueba" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+    const resultadoReintento = await reintentoEnCurso;
+    const [ventaReintentada] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, venta.id));
+    const solicitudInicial = (venta.datosNubefact as { solicitud: Record<string, unknown> }).solicitud;
+    const datosActuales = ventaReintentada.datosNubefact as { historialEmisiones: { respuesta: unknown; detalleProveedor: string }[]; solicitud: Record<string, unknown> };
+    const movimientosDespues = await db.select({ id: esquema.movimientosStock.id }).from(esquema.movimientosStock)
+      .where(and(eq(esquema.movimientosStock.origenId, venta.id), eq(esquema.movimientosStock.origenTipo, "INGRESO")));
+    const pagosDespues = await db.select({ id: esquema.ingresosPagos.id }).from(esquema.ingresosPagos)
+      .where(eq(esquema.ingresosPagos.ingresoId, venta.id));
+
+    assert.equal(resultadoReintento.estado, "EMITIDO");
+    assert.equal(ventaReintentada.estado, "EMITIDO");
+    assert.notEqual(solicitudReintento?.codigo_unico, solicitudInicial.codigo_unico);
+    assert.ok(Number(datosActuales.solicitud.numero) > Number(solicitudInicial.numero));
+    assert.equal(datosActuales.historialEmisiones.length, 1);
+    assert.match(datosActuales.historialEmisiones[0].detalleProveedor, /2335/);
+    assert.deepEqual(movimientosDespues, movimientosAntes);
+    assert.deepEqual(pagosDespues, pagosAntes);
+    assert.equal(llamadasReintento, 1);
+
+    await assert.rejects(
+      () => servicio.reintentarEmision(venta.id),
+      (error) => error instanceof ConflictException,
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -406,8 +481,85 @@ test("dos pagos concurrentes con la misma clave idempotente crean un solo abono"
   assert.equal(Number(pagos[0].importePagado), 60);
 });
 
+test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica unidades", async () => {
+  const sufijo = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
+  const marca = await servicioMototaxis.crearMarca({ nombre: `QA Moto ${sufijo}` });
+  marcasMototaxisPrueba.push(marca.id);
+  const modeloCreado = await servicioMototaxis.crearModelo({ marcaId: marca.id, nombre: `Modelo QA ${sufijo}`, version: "V1" });
+  const modeloActualizado = await servicioMototaxis.actualizarModelo(modeloCreado.id, {
+    marcaId: marca.id,
+    nombre: `Modelo QA ${sufijo}`,
+    version: "V2",
+    categoriaVehicular: "L5",
+    tipoMototaxi: "PASAJERO",
+    tipoMotor: "4_TIEMPOS",
+    tipoRefrigeracion: "AIRE",
+    coloresDisponibles: ["Rojo", "rojo", "Azul"],
+    cilindradaCc: 200,
+    capacidadAsientos: 3,
+    capacidadCargaKg: 250.5,
+    precioVenta: 150,
+    fabricante: "Fabricante QA",
+    paisFabricacion: "Perú",
+    marcaMotor: "Motor QA",
+    modeloMotor: "M200",
+    combustible: "Gasolina",
+    transmision: "Manual",
+    carroceria: "Metálica",
+    especificacionesAdicionales: "Ficha sintética",
+  });
+  const modelo = { id: modeloActualizado.id };
+  modelosMototaxisPrueba.push(modelo.id);
+  assert.equal(modeloActualizado.version, "V2");
+  assert.equal(modeloActualizado.coloresDisponibles.length, 2);
+  assert.equal((await servicioMototaxis.actualizarPrecioVentaModelo(modelo.id, { precioVenta: 175 })).precioVenta, "175.00");
+  const [disponible] = await db.insert(esquema.unidadesMototaxis).values({ codigo: `QA-MT-${sufijo}-1`, modeloId: modelo.id, vin: `VIN-QA-${sufijo}-1`, numeroMotor: `MOTOR-QA-${sufijo}-1`, costoAdquisicion: "100.00", estado: "DISPONIBLE" }).returning({ id: esquema.unidadesMototaxis.id });
+  await db.insert(esquema.unidadesMototaxis).values([
+    { codigo: `QA-MT-${sufijo}-2`, modeloId: modelo.id, vin: `VIN-QA-${sufijo}-2`, numeroMotor: `MOTOR-QA-${sufijo}-2`, costoAdquisicion: "100.00", estado: "FALTANTE" },
+    { codigo: `QA-MT-${sufijo}-3`, modeloId: modelo.id, vin: `VIN-QA-${sufijo}-3`, numeroMotor: `MOTOR-QA-${sufijo}-3`, costoAdquisicion: "100.00", estado: "VENDIDA" },
+  ]);
+
+  assert.ok((await servicioMototaxis.listarMarcas()).some((fila) => fila.id === marca.id));
+  assert.ok((await servicioMototaxis.listarModelos(sufijo)).some((fila) => fila.id === modelo.id));
+  assert.equal((await servicioMototaxis.listarProveedores()).length, 0);
+  assert.equal((await servicioMototaxis.listarDirectorioProveedores()).total, 0);
+  const analisis = await servicioMototaxis.obtenerAnalisisModelo(modelo.id);
+  assert.equal(analisis.existencias.disponibles, 1);
+  assert.equal(analisis.compras.unidades, 0);
+  assert.equal(analisis.ventas.unidades, 0);
+  const reconteo = await servicioMototaxis.obtenerReconteoModelo(modelo.id);
+  assert.equal(reconteo.cantidadSistema, 1);
+  assert.equal(reconteo.unidades.length, 2);
+  assert.deepEqual(await servicioMototaxis.listarAjustesInventario(), []);
+
+  const resultado = await servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: 1, motivo: "Conteo físico" }, usuarioId);
+  assert.equal(resultado.cantidadSistema, 1);
+  assert.equal(resultado.cantidadContada, 1);
+  assert.equal(resultado.nuevas, 0);
+  const [ajuste] = await db.select().from(esquema.ajustesInventarioMototaxis).where(eq(esquema.ajustesInventarioMototaxis.id, resultado.id));
+  assert.equal(ajuste.cantidadContada, 1);
+  const detalles = await db.select().from(esquema.ajustesInventarioMototaxisDetalle).where(eq(esquema.ajustesInventarioMototaxisDetalle.ajusteId, resultado.id));
+  assert.equal(detalles.length, 0);
+  const [unidad] = await db.select({ estado: esquema.unidadesMototaxis.estado }).from(esquema.unidadesMototaxis).where(eq(esquema.unidadesMototaxis.id, disponible.id));
+  assert.equal(unidad.estado, "DISPONIBLE");
+  const ajustesListados = await servicioMototaxis.listarAjustesInventario();
+  assert.ok(ajustesListados.some((ajusteListado) => ajusteListado.id === resultado.id && ajusteListado.diferencias.length === 0));
+  assert.deepEqual(await servicioMototaxis.listarMovimientos(disponible.id), []);
+
+  await assert.rejects(servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: -1, motivo: "Conteo inválido" }, usuarioId), BadRequestException);
+  await assert.rejects(servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: 1.5, motivo: "Conteo inválido" }, usuarioId), BadRequestException);
+  const ajustes = await db.select().from(esquema.ajustesInventarioMototaxis).where(eq(esquema.ajustesInventarioMototaxis.modeloId, modelo.id));
+  assert.equal(ajustes.length, 1);
+});
+
 after(async () => {
   if (db && esquema) {
+    if (modelosMototaxisPrueba.length) {
+      await db.delete(esquema.ajustesInventarioMototaxis).where(inArray(esquema.ajustesInventarioMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.unidadesMototaxis).where(inArray(esquema.unidadesMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.modelosMototaxis).where(inArray(esquema.modelosMototaxis.id, modelosMototaxisPrueba));
+    }
+    if (marcasMototaxisPrueba.length) await db.delete(esquema.marcasProductos).where(inArray(esquema.marcasProductos.id, marcasMototaxisPrueba));
     if (entradaStockIds.length) {
       await db.delete(esquema.movimientosStock).where(inArray(esquema.movimientosStock.origenId, entradaStockIds));
       await db.delete(esquema.entradasStock).where(inArray(esquema.entradasStock.id, entradaStockIds));

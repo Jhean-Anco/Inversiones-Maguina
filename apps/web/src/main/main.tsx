@@ -9,6 +9,10 @@ import { AlertasProvider } from "../components/ui/notificacion-flotante/notifica
 import "./tema-oscuro.css";
 import "./erp-design-system.css";
 import "./formularios-flotantes.css";
+import "./responsive-profiles.css";
+import { iniciarPerfilResponsive } from "./responsive-profile";
+
+iniciarPerfilResponsive();
 
 function App() {
   return (
