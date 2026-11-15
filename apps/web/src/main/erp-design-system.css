@@ -223,46 +223,49 @@ html:not([data-theme="oscuro"]) #root .gestion-cotizacion-paper .orden-document-
   background: #103f72;
   box-shadow: 0 5px 14px rgb(16 63 114 / 18%);
 }
-
-@media (max-width: 960px) {
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-  .erp-content:has(.guide-form-pane) { padding: 18px 16px 14px; }
-}
-@media (max-width: 900px) {
-  .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > .gestion-cotizacion-workspace {
+  :where(html[data-responsive-profile="tablet-portrait"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="tablet-portrait"]) .erp-content:has(.guide-form-pane) { padding: 18px 16px 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.guide-form-pane) { padding: 18px 16px 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="mobile-portrait"]) .erp-content:has(.guide-form-pane) { padding: 18px 16px 14px; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > .gestion-cotizacion-workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     overflow: auto;
   }
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-workspace > .orden-catalog-panel { height: auto; }
-  .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper { height: auto; overflow: visible; }
-}
-@media (max-width: 760px) {
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-  .erp-content:has(.guide-form-pane) { padding: 14px 0 12px; }
-  .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > footer { padding: 0 12px 4px; }
-  .guide-page:has(.guide-form-pane) .guide-form-heading { padding: 14px 16px; }
-  .guide-page:has(.guide-form-pane) .guide-form-pane > form { padding: 14px 16px 0; }
-}
-
-@media (max-height: 760px) and (min-width: 761px) {
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-  .erp-content:has(.guide-form-pane) { padding-top: 16px; }
-  .gestion-cotizacion-paper > .orden-document-header,
-  .guide-page:has(.guide-form-pane) .guide-form-pane > .guide-form-heading {
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-workspace > .orden-catalog-panel { height: auto; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper { height: auto; overflow: visible; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > .gestion-cotizacion-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: auto;
+  }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-workspace > .orden-catalog-panel { height: auto; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper { height: auto; overflow: visible; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > .gestion-cotizacion-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: auto;
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-workspace > .orden-catalog-panel { height: auto; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper { height: auto; overflow: visible; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.guide-form-pane) { padding: 14px 0 12px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > footer { padding: 0 12px 4px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-form-heading { padding: 14px 16px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-form-pane > form { padding: 14px 16px 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="mobile-portrait"]) .erp-content:has(.guide-form-pane) { padding: 14px 0 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > footer { padding: 0 12px 4px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .guide-page:has(.guide-form-pane) .guide-form-heading { padding: 14px 16px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .guide-page:has(.guide-form-pane) .guide-form-pane > form { padding: 14px 16px 0; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing), :where(html[data-responsive-profile="mobile-landscape"]) .erp-content:has(.guide-form-pane) { padding-top: 16px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-paper > .orden-document-header, :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-form-pane > .guide-form-heading {
     min-height: 83px;
     padding: 10px 14px;
   }
-  .gestion-cotizacion-paper > .orden-document-header h2,
-  .guide-page:has(.guide-form-pane) .guide-form-heading h2 { margin: 3px 0; font-size: 17px; }
-  .gestion-cotizacion-paper > .orden-document-header .orden-document-meta,
-  .guide-page:has(.guide-form-pane) .guide-number-preview {
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-paper > .orden-document-header h2, :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-form-heading h2 { margin: 3px 0; font-size: 17px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-paper > .orden-document-header .orden-document-meta, :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-number-preview {
     min-height: 60px;
     padding: 6px 10px;
   }
-  .gestion-cotizacion-paper .orden-document-meta > strong,
-  .guide-page:has(.guide-form-pane) .guide-number-preview > strong { font-size: 13px; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .gestion-cotizacion-paper .orden-document-meta > strong, :where(html[data-responsive-profile="mobile-landscape"]) .guide-page:has(.guide-form-pane) .guide-number-preview > strong { font-size: 13px; }
 
 html, body { min-height: 100%; }
 body { font-family: var(--erp-font-body); color: var(--erp-ink); background: var(--erp-canvas); }
@@ -333,21 +336,24 @@ button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { -webkit-tap
   line-height: 1.5;
   text-align: center;
 }
-
-@media (max-width: 960px) {
-  .erp-content { padding-right: clamp(14px, 3.5vw, 28px); padding-left: clamp(14px, 3.5vw, 28px); }
-  .erp-topbar { gap: 10px; }
-  .erp-page-title { min-width: 0; }
-  .erp-page-title > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-}
-@media (max-width: 600px) {
-  .erp-topbar { min-height: 64px; height: auto; padding: 10px 12px; }
-  .erp-topbar-actions { flex: 0 0 auto; gap: 6px; }
-  .erp-page-title > strong { font-size: clamp(16px, 4.5vw, 20px); }
-  .erp-content { padding-top: 18px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-  .listado-maestro { border-radius: var(--erp-radius-md) !important; }
-  .listado-maestro-tabla { min-width: 640px; }
-}
+  :where(html[data-responsive-profile="tablet-portrait"]) .erp-content { padding-right: clamp(14px, 3.5vw, 28px); padding-left: clamp(14px, 3.5vw, 28px); }
+  :where(html[data-responsive-profile="tablet-portrait"]) .erp-topbar { gap: 10px; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .erp-page-title { min-width: 0; }
+  :where(html[data-responsive-profile="tablet-portrait"]) .erp-page-title > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-content { padding-right: clamp(14px, 3.5vw, 28px); padding-left: clamp(14px, 3.5vw, 28px); }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-topbar { gap: 10px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-page-title { min-width: 0; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .erp-page-title > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content { padding-right: clamp(14px, 3.5vw, 28px); padding-left: clamp(14px, 3.5vw, 28px); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-topbar { gap: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-page-title { min-width: 0; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-page-title > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-topbar { min-height: 64px; height: auto; padding: 10px 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-topbar-actions { flex: 0 0 auto; gap: 6px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-page-title > strong { font-size: clamp(16px, 4.5vw, 20px); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .erp-content { padding-top: 18px; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro { border-radius: var(--erp-radius-md) !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla { min-width: 640px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

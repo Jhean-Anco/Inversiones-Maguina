@@ -1,0 +1,170 @@
+/* Perfil unico de viewport para la estructura global del ERP.
+   La clasificacion se mantiene en html[data-responsive-profile]. */
+html[data-responsive-profile="laptop"] #root .erp-layout {
+  grid-template-columns: minmax(228px, clamp(228px, 19vw, 276px)) minmax(0, 1fr);
+}
+
+html[data-responsive-profile="tablet-landscape"] #root .erp-layout,
+html[data-responsive-profile="tablet-landscape"] #root .erp-layout.is-collapsed {
+  grid-template-columns: 238px minmax(0, 1fr);
+}
+html[data-responsive-profile="tablet-landscape"] #root .erp-sidebar { padding-right: 12px; padding-left: 12px; }
+html[data-responsive-profile="tablet-landscape"] #root .erp-content { margin: 17px; padding: 26px 23px 18px; }
+html[data-responsive-profile="tablet-landscape"] #root .erp-topbar { gap: 14px; padding-right: 18px; padding-left: 18px; }
+html[data-responsive-profile="tablet-landscape"] #root .topbar-user { max-width: 140px; }
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout,
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 68px minmax(0, 1fr);
+}
+html[data-responsive-profile="tablet-portrait"] #root .erp-sidebar,
+html[data-responsive-profile="mobile-landscape"] #root .erp-sidebar,
+html[data-responsive-profile="mobile-portrait"] #root .erp-sidebar {
+  position: fixed;
+  z-index: 31;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: min(276px, 86vw);
+  height: 100vh;
+  height: 100svh;
+  padding: 25px 16px 16px;
+  transform: translateX(-102%);
+  transition: transform 0.24s ease;
+}
+html[data-responsive-profile="tablet-portrait"] #root .menu-open .erp-sidebar,
+html[data-responsive-profile="mobile-landscape"] #root .menu-open .erp-sidebar,
+html[data-responsive-profile="mobile-portrait"] #root .menu-open .erp-sidebar { transform: translateX(0); }
+html[data-responsive-profile="tablet-portrait"] #root .erp-main,
+html[data-responsive-profile="mobile-landscape"] #root .erp-main,
+html[data-responsive-profile="mobile-portrait"] #root .erp-main {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  grid-template-rows: 68px minmax(0, 1fr);
+}
+html[data-responsive-profile="tablet-portrait"] #root .erp-menu-toggle,
+html[data-responsive-profile="mobile-landscape"] #root .erp-menu-toggle,
+html[data-responsive-profile="mobile-portrait"] #root .erp-menu-toggle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+html[data-responsive-profile="tablet-portrait"] #root .erp-menu-scrim,
+html[data-responsive-profile="mobile-landscape"] #root .erp-menu-scrim,
+html[data-responsive-profile="mobile-portrait"] #root .erp-menu-scrim {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: block;
+  border: 0;
+  background: #061a2d80;
+}
+html[data-responsive-profile="tablet-portrait"] #root .erp-topbar,
+html[data-responsive-profile="mobile-landscape"] #root .erp-topbar,
+html[data-responsive-profile="mobile-portrait"] #root .erp-topbar {
+  grid-row: 1;
+  gap: 12px;
+  padding: 0 16px;
+}
+html[data-responsive-profile="tablet-portrait"] #root .topbar-user,
+html[data-responsive-profile="mobile-landscape"] #root .topbar-user,
+html[data-responsive-profile="mobile-portrait"] #root .topbar-user { display: none; }
+html[data-responsive-profile="tablet-portrait"] #root .erp-content,
+html[data-responsive-profile="mobile-landscape"] #root .erp-content,
+html[data-responsive-profile="mobile-portrait"] #root .erp-content {
+  grid-row: 2;
+  margin: 12px;
+  padding: 24px 22px 18px;
+}
+html[data-responsive-profile="tablet-portrait"] #root .is-collapsed .erp-sidebar { padding: 25px 16px 16px; }
+html[data-responsive-profile="tablet-portrait"] #root .is-collapsed .erp-brand { justify-content: flex-start; padding-right: 3px; padding-left: 3px; }
+html[data-responsive-profile="tablet-portrait"] #root .is-collapsed .erp-nav-link { justify-content: flex-start; padding: 0 12px; }
+
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout,
+html[data-responsive-profile="mobile-landscape"] #root .erp-main { grid-template-rows: 56px minmax(0, 1fr); }
+html[data-responsive-profile="mobile-landscape"] #root .erp-topbar { gap: 8px; padding: 0 12px; }
+html[data-responsive-profile="mobile-landscape"] #root .erp-content { margin: 8px; padding: 12px 14px; }
+html[data-responsive-profile="mobile-landscape"] #root .erp-brand img { width: 42px; height: 40px; }
+html[data-responsive-profile="mobile-landscape"] #root .erp-brand strong { font-size: 13px; }
+html[data-responsive-profile="mobile-landscape"] #root .erp-brand div span { font-size: 7px; }
+
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout,
+html[data-responsive-profile="mobile-portrait"] #root .erp-main { grid-template-rows: 60px minmax(0, 1fr); }
+html[data-responsive-profile="mobile-portrait"] #root .erp-topbar { gap: 9px; padding: 0 11px; }
+html[data-responsive-profile="mobile-portrait"] #root .topbar-avatar { width: 32px; height: 32px; }
+html[data-responsive-profile="mobile-portrait"] #root .erp-content { margin: 9px; padding: 20px 15px 16px; }
+html[data-responsive-profile="mobile-portrait"] #root .page-subtitle { font-size: 11px; }
+
+/* El aside contraido conserva solo la barra de iconos en cualquier perfil. */
+html[data-responsive-profile="laptop"] #root .erp-layout.is-collapsed,
+html[data-responsive-profile="tablet-landscape"] #root .erp-layout.is-collapsed {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open),
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open),
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) {
+  grid-template-columns: 84px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-sidebar,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-sidebar,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-sidebar {
+  position: relative;
+  inset: auto;
+  grid-column: 1;
+  grid-row: 1;
+  width: 84px;
+  height: 100%;
+  padding: 18px 8px 12px;
+  transform: none;
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-main,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-main,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-main {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand {
+  justify-content: center;
+  gap: 0;
+  padding: 0 0 12px;
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand div,
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link span,
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link i,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand div,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link span,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link i,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand div,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link span,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link i {
+  display: none;
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand img,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand img,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-brand img {
+  width: 48px;
+  height: 46px;
+}
+
+html[data-responsive-profile="tablet-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link,
+html[data-responsive-profile="mobile-landscape"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link,
+html[data-responsive-profile="mobile-portrait"] #root .erp-layout.is-collapsed:not(.menu-open) .erp-nav-link {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}

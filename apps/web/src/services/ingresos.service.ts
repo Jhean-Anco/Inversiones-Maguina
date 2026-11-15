@@ -69,6 +69,9 @@ export const servicioIngresos = {
     const consulta = new URLSearchParams({ tipoVenta, pagina: String(pagina), porPagina: String(porPagina), busqueda });
     return solicitarApi<PaginaVentas>(`/ingresos?${consulta}`);
   },
+  reintentarEmision(ingresoId: string) {
+    return solicitarApi<{ estado: "EMITIDO" | "ERROR" | "PENDIENTE"; serie?: string; numero?: number; codigo?: string; mensaje?: string }>(`/ingresos/${encodeURIComponent(ingresoId)}/reintentar-emision`, { method: "POST" });
+  },
   listarNotas(ingresoId: string) { return solicitarApi<NotaRelacionada[]>(`/ingresos/${encodeURIComponent(ingresoId)}/notas`); },
   anularIngreso(ingresoId: string, motivo: string, confirmoNoEntregado: boolean) { return solicitarApi<ResultadoAnulacion>(`/ingresos/${encodeURIComponent(ingresoId)}/anulacion`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ motivo, confirmoNoEntregado }) }); },
   consultarAnulacionIngreso(ingresoId: string) { return solicitarApi<ResultadoAnulacion>(`/ingresos/${encodeURIComponent(ingresoId)}/anulacion/consultar`, { method: "POST" }); },

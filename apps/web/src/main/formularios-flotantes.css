@@ -155,39 +155,30 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-
-@media (max-width: 760px) {
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > header,
-  .catalog-modal > form > .stock-entry-form-head,
-  .catalog-modal .catalog-form-title,
-  .catalog-modal .egreso-form-scroll > .catalog-form-title,
-  .moto-purchase-dialog > .moto-modal-title,
-  .catalog-manager-dialog .catalog-manager-dialog-head {
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal > form > .stock-entry-form-head, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .egreso-form-scroll > .catalog-form-title, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > .moto-modal-title, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-dialog .catalog-manager-dialog-head {
     min-height: 92px !important;
     padding: 14px 16px 14px 112px !important;
   }
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > header::before,
-  .catalog-modal > form > .stock-entry-form-head::before,
-  .catalog-modal .catalog-form-title::before,
-  .catalog-modal .egreso-form-scroll > .catalog-form-title::before,
-  .moto-purchase-dialog > .moto-modal-title::before,
-  .catalog-manager-dialog .catalog-manager-dialog-head::before {
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal > form > .stock-entry-form-head::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .egreso-form-scroll > .catalog-form-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > .moto-modal-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-dialog .catalog-manager-dialog-head::before {
     left: 14px;
     width: 78px;
     height: 78px;
     border-radius: 13px;
   }
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header h2,
-  .catalog-modal .catalog-form-title h2,
-  .moto-purchase-dialog > .moto-modal-title h2 { font-size: 20px !important; }
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > footer,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > footer,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > .catalog-form-actions,
-  .catalog-modal .catalog-form-actions,
-  .moto-purchase-dialog > footer { padding: 12px 14px !important; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header h2, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-title h2, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > .moto-modal-title h2 { font-size: 20px !important; }
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > footer, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > footer, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > .catalog-form-actions, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-actions, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > footer { padding: 12px 14px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal > form > .stock-entry-form-head, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll > .catalog-form-title, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > .moto-modal-title, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog .catalog-manager-dialog-head {
+    min-height: 92px !important;
+    padding: 14px 16px 14px 112px !important;
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal > form > .stock-entry-form-head::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll > .catalog-form-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > .moto-modal-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog .catalog-manager-dialog-head::before {
+    left: 14px;
+    width: 78px;
+    height: 78px;
+    border-radius: 13px;
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header h2, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-title h2, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > .moto-modal-title h2 { font-size: 20px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > footer, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > footer, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > .catalog-form-actions, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-actions, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > footer { padding: 12px 14px !important; }
 
 /* Variantes cuyo encabezado o pie usa contenedores propios. */
 .venta-new-client > .venta-new-client-heading,
@@ -227,14 +218,14 @@
 .catalog-manager-dialog > form { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; overflow: auto; }
 .catalog-manager-dialog > form > footer { position: sticky; bottom: 0; z-index: 3; margin-top: auto; padding: 16px 24px; border-top: 1px solid #e2eaf1; background: #fff; }
 .producto-brand-modal .catalog-form-actions { position: sticky; bottom: 0; z-index: 3; margin-top: auto; padding: 16px 24px; border-top: 1px solid #e2eaf1; background: #fff; }
-@media (max-width: 760px) {
-  .venta-new-client > .venta-new-client-heading,
-  .producto-brand-modal .catalog-form-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
-  .venta-new-client > .venta-new-client-heading::before,
-  .producto-brand-modal .catalog-form-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
-  .venta-new-client > .venta-new-client-fields { padding: 14px; }
-  .venta-new-client > .venta-save-client { width: calc(100% - 28px); margin-right: 14px; margin-left: 14px; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-new-client-heading, :where(html[data-responsive-profile="mobile-landscape"]) .producto-brand-modal .catalog-form-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-new-client-heading::before, :where(html[data-responsive-profile="mobile-landscape"]) .producto-brand-modal .catalog-form-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-new-client-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-save-client { width: calc(100% - 28px); margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-new-client-heading, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal .catalog-form-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-new-client-heading::before, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal .catalog-form-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-new-client-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-save-client { width: calc(100% - 28px); margin-right: 14px; margin-left: 14px; }
 html[data-theme="oscuro"] :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form)) { border-color: var(--tema-borde) !important; background: var(--tema-superficie) !important; }
 html[data-theme="oscuro"] :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form)) > footer,
 html[data-theme="oscuro"] .catalog-manager-dialog > form > footer,
@@ -284,21 +275,27 @@ html[data-theme="oscuro"] .pago-dialog > footer .pago-submit { border-color: var
 html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-submit,
 html[data-theme="oscuro"] .moto-stocktake-modal > footer,
 html[data-theme="oscuro"] .moto-adjust-modal > footer,
-html[data-theme="oscuro"] .moto-adjust-modal > .moto-modal-title,
-html[data-theme="oscuro"] .moto-stocktake-modal > .moto-modal-title { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
-@media (max-width: 760px) {
-  .catalog-manager-form-body { padding: 14px 14px 18px; }
-  .catalog-manager-dialog > form > footer { padding: 12px 14px; }
-  .finanzas-form-fields { padding: 14px; }
-  .pago-dialog-body > form { padding: 12px 16px; }
-  .moto-modal[role="dialog"] > .moto-fields { padding: 14px; }
-  .moto-modal[role="dialog"] > .moto-payment-history { margin-right: 14px; margin-left: 14px; }
-  .moto-modal[role="dialog"] > .image-upload-card { margin: 14px; }
-  .moto-stocktake-modal > :not(.moto-modal-title):not(footer) { margin-right: 14px; margin-left: 14px; }
-  .moto-adjust-modal > label,
-  .moto-adjust-modal > .catalog-alert { margin-right: 14px; margin-left: 14px; }
-  .moto-purchase-dialog .moto-purchase-submit { padding: 12px 14px; }
-}
+html[data-theme="oscuro"] .moto-adjust-modal > .moto-modal-title { border-color: var(--tema-borde); background: var(--tema-superficie); color: var(--tema-texto); }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-form-body { padding: 14px 14px 18px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-dialog > form > footer { padding: 12px 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .finanzas-form-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .pago-dialog-body > form { padding: 12px 16px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-payment-history { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .image-upload-card { margin: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-stocktake-modal > :not(.moto-modal-title):not(footer) { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-adjust-modal > label, :where(html[data-responsive-profile="mobile-landscape"]) .moto-adjust-modal > .catalog-alert { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog .moto-purchase-submit { padding: 12px 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-form-body { padding: 14px 14px 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog > form > footer { padding: 12px 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .finanzas-form-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .pago-dialog-body > form { padding: 12px 16px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-fields { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-payment-history { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .image-upload-card { margin: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-stocktake-modal > :not(.moto-modal-title):not(footer) { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-adjust-modal > label, :where(html[data-responsive-profile="mobile-portrait"]) .moto-adjust-modal > .catalog-alert { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog .moto-purchase-submit { padding: 12px 14px; }
 
 .ordenes-emit-dialog,
 .moto-modal[role="dialog"] {
@@ -352,14 +349,12 @@ html[data-theme="oscuro"] .moto-stocktake-modal > .moto-modal-title { border-col
 .ordenes-emit-dialog > label { margin: 20px 24px; }
 .ordenes-emit-dialog::before,
 .moto-modal[role="dialog"]::before { display: none !important; }
-@media (max-width: 760px) {
-  .ordenes-emit-dialog > header,
-  .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
-  .ordenes-emit-dialog > header::before,
-  .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
-  .ordenes-emit-dialog > footer,
-  .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-emit-dialog > header, :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-emit-dialog > header::before, :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-emit-dialog > footer, :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-emit-dialog > header, :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-emit-dialog > header::before, :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-emit-dialog > footer, :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
 html[data-theme="oscuro"] :is(.ordenes-emit-dialog, .moto-modal[role="dialog"]) { border-color: var(--tema-borde) !important; background: var(--tema-superficie) !important; }
 html[data-theme="oscuro"] :is(.ordenes-emit-dialog, .moto-modal[role="dialog"]) > footer { border-color: var(--tema-borde); background: var(--tema-superficie); }
 
@@ -407,27 +402,12 @@ html[data-theme="oscuro"] :is(.ordenes-emit-dialog, .moto-modal[role="dialog"]) 
 .producto-brand-modal > form > .catalog-form-title { position: sticky !important; top: 0; flex: 0 0 auto; }
 .catalog-modal .catalog-form-actions,
 .catalog-manager-dialog > form > footer { flex: 0 0 auto; }
-@media (max-width: 650px) {
-  .clientes-modal > .clientes-form-grid,
-  .proveedores-form > .proveedores-fields,
-  .conductores-form > .conductores-fields,
-  .pago-dialog > .pago-history,
-  .pago-dialog > form { padding-right: 14px; padding-left: 14px; }
-  .proveedores-form > .proveedores-alert,
-  .conductores-form > .conductores-alert { margin-right: 14px; margin-left: 14px; }
-  .finanzas-form > label,
-  .finanzas-form > .selector-cuenta-financiera,
-  .finanzas-form > p[role="alert"] { margin-right: 14px; margin-left: 14px; }
-  .catalog-modal .stock-entry-form-scroll,
-  .catalog-modal .stock-adjustment-scroll,
-  .catalog-modal .producto-form-scroll,
-  .catalog-modal .egreso-form-scroll,
-  .catalog-manager-dialog > form { padding-right: 14px; padding-left: 14px; }
-  .catalog-modal .egreso-form-scroll > .catalog-form-title { margin-right: -14px !important; margin-left: -14px !important; }
-  .producto-brand-modal > form > label,
-  .producto-brand-modal > form > .catalog-alert,
-  .producto-brand-modal > form > .image-upload-card { margin-right: 14px; margin-left: 14px; }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .clientes-modal > .clientes-form-grid, :where(html[data-responsive-profile="mobile-portrait"]) .proveedores-form > .proveedores-fields, :where(html[data-responsive-profile="mobile-portrait"]) .conductores-form > .conductores-fields, :where(html[data-responsive-profile="mobile-portrait"]) .pago-dialog > .pago-history, :where(html[data-responsive-profile="mobile-portrait"]) .pago-dialog > form { padding-right: 14px; padding-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .proveedores-form > .proveedores-alert, :where(html[data-responsive-profile="mobile-portrait"]) .conductores-form > .conductores-alert { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .finanzas-form > label, :where(html[data-responsive-profile="mobile-portrait"]) .finanzas-form > .selector-cuenta-financiera, :where(html[data-responsive-profile="mobile-portrait"]) .finanzas-form > p[role="alert"] { margin-right: 14px; margin-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .stock-entry-form-scroll, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .stock-adjustment-scroll, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .producto-form-scroll, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog > form { padding-right: 14px; padding-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll > .catalog-form-title { margin-right: -14px !important; margin-left: -14px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal > form > label, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal > form > .catalog-alert, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal > form > .image-upload-card { margin-right: 14px; margin-left: 14px; }
 
 /* Escala compartida de cabecera para que cada formulario use el marco de la compra. */
 :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) {
@@ -464,28 +444,9 @@ html[data-theme="oscuro"] :is(.ordenes-emit-dialog, .moto-modal[role="dialog"]) 
   border-radius: 20px;
 }
 .catalog-modal.stock-entry-modal { width: min(1224px, calc(100vw - 32px)) !important; }
-@media (max-width: 760px) {
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > header,
-  .catalog-modal > form > .stock-entry-form-head,
-  .catalog-modal .catalog-form-title,
-  .catalog-modal .egreso-form-scroll > .catalog-form-title,
-  .moto-purchase-dialog > .moto-modal-title,
-  .catalog-manager-dialog .catalog-manager-dialog-head,
-  .venta-new-client > .venta-new-client-heading,
-  .producto-brand-modal .catalog-form-title,
-  .ordenes-emit-dialog > header,
-  .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
-  :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before,
-  :is(.catalog-modal, .catalog-manager-dialog) > form > header::before,
-  .catalog-modal > form > .stock-entry-form-head::before,
-  .catalog-modal .catalog-form-title::before,
-  .catalog-modal .egreso-form-scroll > .catalog-form-title::before,
-  .moto-purchase-dialog > .moto-modal-title::before,
-  .catalog-manager-dialog .catalog-manager-dialog-head::before,
-  .venta-new-client > .venta-new-client-heading::before,
-  .producto-brand-modal .catalog-form-title::before,
-  .ordenes-emit-dialog > header::before,
-  .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
-  .catalog-modal.stock-entry-modal { width: calc(100vw - 20px) !important; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal > form > .stock-entry-form-head, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .egreso-form-scroll > .catalog-form-title, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > .moto-modal-title, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-dialog .catalog-manager-dialog-head, :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-new-client-heading, :where(html[data-responsive-profile="mobile-landscape"]) .producto-brand-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-emit-dialog > header, :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-landscape"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before, :where(html[data-responsive-profile="mobile-landscape"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal > form > .stock-entry-form-head::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal .egreso-form-scroll > .catalog-form-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .moto-purchase-dialog > .moto-modal-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-dialog .catalog-manager-dialog-head::before, :where(html[data-responsive-profile="mobile-landscape"]) .venta-new-client > .venta-new-client-heading::before, :where(html[data-responsive-profile="mobile-landscape"]) .producto-brand-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-emit-dialog > header::before, :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal.stock-entry-modal { width: calc(100vw - 20px) !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal > form > .stock-entry-form-head, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll > .catalog-form-title, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > .moto-modal-title, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog .catalog-manager-dialog-head, :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-new-client-heading, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal .catalog-form-title, :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-emit-dialog > header, :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-modal-title { min-height: 92px !important; padding: 14px 16px 14px 112px !important; }
+  :where(html[data-responsive-profile="mobile-portrait"]) :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header::before, :where(html[data-responsive-profile="mobile-portrait"]) :is(.catalog-modal, .catalog-manager-dialog) > form > header::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal > form > .stock-entry-form-head::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .egreso-form-scroll > .catalog-form-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .moto-purchase-dialog > .moto-modal-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-manager-dialog .catalog-manager-dialog-head::before, :where(html[data-responsive-profile="mobile-portrait"]) .venta-new-client > .venta-new-client-heading::before, :where(html[data-responsive-profile="mobile-portrait"]) .producto-brand-modal .catalog-form-title::before, :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-emit-dialog > header::before, :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > .moto-modal-title::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal.stock-entry-modal { width: calc(100vw - 20px) !important; }

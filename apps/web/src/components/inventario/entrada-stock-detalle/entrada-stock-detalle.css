@@ -133,24 +133,18 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-footer { borde
 .stock-detail-modal .stock-detail-line { border: 1px solid #e0e9f1; border-radius: 12px; background: #fff; box-shadow: 0 5px 16px #17354b09; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-lines { background: transparent; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-color: #30465c; background: #152537; }
-
-@media (max-width: 700px) {
-  .catalog-modal.stock-detail-modal { max-height: calc(100dvh - 20px); border-radius: 16px; }
-  .stock-detail-modal .stock-detail-heading { min-height: 88px; gap: 12px; padding: 16px; }
-  .stock-detail-modal .stock-entry-icon { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; }
-  .stock-detail-modal .stock-detail-content { padding: 17px 16px 18px; }
-  .stock-detail-modal .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .stock-detail-modal .stock-detail-summary > div { min-height: 78px; padding: 10px; }
-  .stock-detail-modal .stock-detail-footer { align-items: flex-start; flex-direction: column; }
-  .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
-}
-
-@media (max-width: 430px) {
-  .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); gap: 9px; padding: 11px; }
-  .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
-  .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
-  .stock-detail-modal .stock-detail-lines { max-height: 34dvh; }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal.stock-detail-modal { max-height: calc(100dvh - 20px); border-radius: 16px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading { min-height: 88px; gap: 12px; padding: 16px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-entry-icon { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-content { padding: 17px 16px 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary > div { min-height: 78px; padding: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer { align-items: flex-start; flex-direction: column; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); gap: 9px; padding: 11px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-lines { max-height: 34dvh; }
 
 /* Detalle de compra con la misma escala visual del formulario flotante. */
 .catalog-modal.stock-detail-modal {
@@ -204,35 +198,48 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-content,
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-footer { background: var(--tema-superficie); }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-color: #30465c; background: #152537; box-shadow: none; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { border-color: #354d64; background: #203449; color: #bdd5e8; }
-@media (max-width: 760px) {
-  .catalog-modal.stock-detail-modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 18px; }
-  .stock-detail-modal .stock-detail-heading { min-height: 112px; gap: 13px; padding: 18px; }
-  .stock-detail-modal .stock-entry-icon { width: 48px; height: 48px; flex-basis: 48px; border-radius: 14px; font-size: 23px; }
-  .stock-detail-modal .stock-detail-heading h2 { font-size: clamp(21px, 5vw, 27px); overflow-wrap: anywhere; }
-  .stock-detail-modal .stock-detail-heading .catalog-modal-close { width: 38px; height: 38px; }
-  .stock-detail-modal .stock-detail-content { padding: 18px; }
-  .stock-detail-modal .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 22px; }
-  .stock-detail-modal .stock-detail-summary > div { min-height: 96px; padding: 12px; }
-  .stock-detail-modal .stock-detail-summary span { font-size: 11px; }
-  .stock-detail-modal .stock-detail-summary strong { font-size: 13px; }
-  .stock-detail-modal .stock-detail-summary small { font-size: 10px; }
-  .stock-detail-modal .stock-detail-summary-total strong { font-size: 17px; }
-  .stock-detail-modal .stock-detail-line { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 12px; }
-  .stock-detail-modal .stock-detail-line-mark { width: 36px; height: 36px; }
-  .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
-  .stock-detail-modal .stock-detail-footer { bottom: -18px; align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: -18px; padding: 14px 0 18px; }
-  .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
-}
-@media (max-width: 420px) {
-  .catalog-modal.stock-detail-modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
-  .stock-detail-modal .stock-detail-heading { gap: 10px; padding: 14px; }
-  .stock-detail-modal .stock-entry-icon { width: 42px; height: 42px; flex-basis: 42px; }
-  .stock-detail-modal .stock-detail-content { padding: 14px; }
-  .stock-detail-modal .stock-detail-summary > div { min-height: 88px; padding: 10px; }
-  .stock-detail-modal .stock-detail-summary strong { white-space: normal; }
-  .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); }
-  .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal.stock-detail-modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 18px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading { min-height: 112px; gap: 13px; padding: 18px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-entry-icon { width: 48px; height: 48px; flex-basis: 48px; border-radius: 14px; font-size: 23px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading h2 { font-size: clamp(21px, 5vw, 27px); overflow-wrap: anywhere; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading .catalog-modal-close { width: 38px; height: 38px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-content { padding: 18px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 22px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary > div { min-height: 96px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary span { font-size: 11px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary strong { font-size: 13px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary small { font-size: 10px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary-total strong { font-size: 17px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line-mark { width: 36px; height: 36px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-footer { bottom: -18px; align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: -18px; padding: 14px 0 18px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal.stock-detail-modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading { min-height: 112px; gap: 13px; padding: 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-entry-icon { width: 48px; height: 48px; flex-basis: 48px; border-radius: 14px; font-size: 23px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading h2 { font-size: clamp(21px, 5vw, 27px); overflow-wrap: anywhere; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading .catalog-modal-close { width: 38px; height: 38px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-content { padding: 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 22px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary > div { min-height: 96px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary span { font-size: 11px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary strong { font-size: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary small { font-size: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary-total strong { font-size: 17px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 12px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 36px; height: 36px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer { bottom: -18px; align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: -18px; padding: 14px 0 18px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal.stock-detail-modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading { gap: 10px; padding: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-entry-icon { width: 42px; height: 42px; flex-basis: 42px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-content { padding: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary > div { min-height: 88px; padding: 10px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary strong { white-space: normal; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
 
 /* El detalle reutiliza la cabecera y el marco del formulario flotante compartido. */
 .stock-detail-modal .stock-detail-heading {
@@ -283,12 +290,9 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-heading {
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-heading h2 { color: #fff; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-heading p { color: #d2e2f0; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-content { background: var(--tema-superficie); }
-
-@media (max-width: 760px) {
-  .stock-detail-modal .stock-detail-heading { min-height: 112px; padding: 14px 16px 14px 112px; }
-  .stock-detail-modal .stock-detail-heading::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
-}
-@media (max-width: 420px) {
-  .stock-detail-modal .stock-detail-heading { padding-right: 14px; padding-left: 96px; }
-  .stock-detail-modal .stock-detail-heading::before { left: 12px; width: 70px; height: 70px; }
-}
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading { min-height: 112px; padding: 14px 16px 14px 112px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading { min-height: 112px; padding: 14px 16px 14px 112px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading::before { left: 14px; width: 78px; height: 78px; border-radius: 13px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading { padding-right: 14px; padding-left: 96px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-heading::before { left: 12px; width: 70px; height: 70px; }

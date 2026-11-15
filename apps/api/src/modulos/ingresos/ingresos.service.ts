@@ -8,6 +8,7 @@ import { consultarIdentidadPeru } from "../../utilidades/consulta-identidad-peru
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { contieneSinTildes, normalizarTextoBusqueda } from "../../utilidades/busqueda-texto";
+import { analizarEstadoComprobante, validarElegibilidadReintento } from "./comprobante-emision.util";
 import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
@@ -16,27 +17,6 @@ type DatosIngreso = { idempotencyKey?: unknown; fecha?: unknown; tipoComprobante
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const mediosPagoPorCuenta = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" } as const;
 const nombreMedioPago = { EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as const;
-function analizarEstadoComprobante(estado: string, datos: Record<string, unknown>, respuesta: Record<string, unknown>) {
-  const errores = respuesta.errors ?? respuesta.error ?? respuesta.mensaje ?? datos.mensaje;
-  const errorTexto = typeof errores === "string" ? errores.trim()
-    : Array.isArray(errores) ? errores.filter((valor): valor is string => typeof valor === "string").join(" ").trim()
-      : errores && typeof errores === "object" ? JSON.stringify(errores) : "";
-  const errorSunat = typeof respuesta.sunat_soap_error === "string" ? respuesta.sunat_soap_error.trim() : "";
-  const descripcionSunat = typeof respuesta.sunat_description === "string" ? respuesta.sunat_description.trim()
-    : typeof respuesta.sunat_note === "string" ? respuesta.sunat_note.trim() : "";
-  const ticket = respuesta.sunat_ticket_numero;
-  if (errorSunat) return { estadoProveedor: "ERROR_SUNAT", detalleProveedor: errorSunat };
-  if (estado === "NUBEFACT_PENDIENTE") return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: errorTexto || descripcionSunat || null };
-  if (errorTexto) return { estadoProveedor: "ERROR_NUBEFACT", detalleProveedor: errorTexto };
-  if (respuesta.aceptada_por_sunat === true) return { estadoProveedor: "ACEPTADO_SUNAT", detalleProveedor: descripcionSunat || null };
-  const estadoRemoto = [respuesta.estado, respuesta.status, respuesta.estado_comprobante].find((valor): valor is string => typeof valor === "string")?.trim().toLocaleLowerCase("es-PE") ?? "";
-  if (ticket !== undefined && ticket !== null && String(ticket).trim()) return { estadoProveedor: "EN_PROCESO", detalleProveedor: descripcionSunat || "Ticket SUNAT " + String(ticket) };
-  if (["en cola", "queued", "queue", "en proceso", "processing", "procesando", "pendiente"].some((texto) => estadoRemoto.includes(texto))) return { estadoProveedor: "EN_PROCESO", detalleProveedor: descripcionSunat || estadoRemoto };
-  if (respuesta.aceptada_por_sunat === false) return { estadoProveedor: "RECHAZADO_SUNAT", detalleProveedor: descripcionSunat || null };
-  if (estado.startsWith("ERROR")) return { estadoProveedor: "ERROR_EMISION", detalleProveedor: descripcionSunat || null };
-  return { estadoProveedor: "EMITIDO", detalleProveedor: descripcionSunat || null };
-}
-
 function enlaceArchivoLocal(datos: Record<string, unknown>, tipo: string) {
   const archivos = datos.archivos && typeof datos.archivos === "object" ? datos.archivos as Record<string, unknown> : {};
   const guardados = Array.isArray(archivos.guardados) ? archivos.guardados as Record<string, unknown>[] : [];
@@ -625,6 +605,32 @@ export class ServicioIngresos {
     catch (causa) { return { guardados: [], errores: [{ tipo: "GENERAL", mensaje: causa instanceof Error ? causa.message : "No se pudieron archivar los documentos de NubeFact." }] }; }
   }
 
+  async reintentarEmision(ingresoIdEntrada: string) {
+    if (!uuidValido(ingresoIdEntrada)) throw new BadRequestException("El comprobante no es válido.");
+    const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, ingresoIdEntrada)).limit(1);
+    if (!venta) throw new NotFoundException("No se encontró la venta.");
+    const datosAnteriores = venta.datosNubefact && typeof venta.datosNubefact === "object" ? venta.datosNubefact as Record<string, unknown> : {};
+    const respuestaAnterior = datosAnteriores.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {};
+    validarElegibilidadReintento({ tipoComprobante: venta.tipoComprobante, fecha: venta.fecha, estado: venta.estado, datos: datosAnteriores, respuesta: respuestaAnterior, fechaHoy: fechaActualPeru() });
+    const [reclamo] = await db.update(ingresos).set({ estado: "NUBEFACT_PENDIENTE" })
+      .where(and(eq(ingresos.id, venta.id), eq(ingresos.estado, venta.estado))).returning({ id: ingresos.id });
+    if (!reclamo) throw new ConflictException("La venta cambió de estado. Actualiza el listado antes de volver a intentar.");
+    try {
+      const detalles = await db.select().from(ingresosDetalle).where(eq(ingresosDetalle.ingresoId, venta.id));
+      const comprobante = { ...venta, tipoComprobante: venta.tipoComprobante as "BOLETA" | "FACTURA", condicionPago: venta.condicionPago as "CONTADO" | "CREDITO" };
+      return await this.emitirComprobante(comprobante, detalles, {
+        datosAnteriores,
+        codigoUnico: randomUUID().replaceAll("-", "").slice(0, 20),
+      });
+    } catch (problema) {
+      if (problema instanceof BadRequestException || problema instanceof NotFoundException) {
+        await db.update(ingresos).set({ estado: venta.estado, datosNubefact: datosAnteriores })
+          .where(and(eq(ingresos.id, venta.id), eq(ingresos.estado, "NUBEFACT_PENDIENTE")));
+      }
+      throw problema;
+    }
+  }
+
   async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string }) {
     const tipoVenta = filtros.tipoVenta === "MOTOTAXIS" ? "MOTOTAXIS" : filtros.tipoVenta === "REPUESTOS" ? "REPUESTOS" : null;
     if (!tipoVenta) throw new BadRequestException("Selecciona si deseas consultar ventas de repuestos o de mototaxis.");
@@ -925,7 +931,7 @@ export class ServicioIngresos {
     return { ...venta, detalles, nubefact };
   }
 
-  private async emitirComprobante(venta: { id: string; tipoComprobante: "BOLETA" | "FACTURA"; fecha: string; clienteTipoDocumento: string | null; clienteNumeroDocumento: string | null; clienteNombre: string | null; clienteDireccion: string | null; clienteCorreo?: string | null; medioPago: string; condicionPago: "CONTADO" | "CREDITO"; fechaVencimientoPago: string | null; cuotasPago: { cuota: number; fechaDePago: string; importe: string }[]; observacion: string | null; total: string; igv: string; tasaIgv: string }, detalles: (typeof ingresosDetalle.$inferSelect)[]) {
+  private async emitirComprobante(venta: { id: string; tipoComprobante: "BOLETA" | "FACTURA"; fecha: string; clienteTipoDocumento: string | null; clienteNumeroDocumento: string | null; clienteNombre: string | null; clienteDireccion: string | null; clienteCorreo?: string | null; medioPago: string; condicionPago: "CONTADO" | "CREDITO"; fechaVencimientoPago: string | null; cuotasPago: { cuota: number; fechaDePago: string; importe: string }[]; observacion: string | null; total: string; igv: string; tasaIgv: string }, detalles: (typeof ingresosDetalle.$inferSelect)[], reintento?: { datosAnteriores: Record<string, unknown>; codigoUnico: string }) {
     const estado = await this.estadoNubefact();
     const esFactura = venta.tipoComprobante === "FACTURA";
     const regimenTributario = estado.regimenTributario;
@@ -972,7 +978,7 @@ export class ServicioIngresos {
       descuento_global: "", total_descuento: totalDescuento || "", total_anticipo: "", total_gravada: totalGravada || "",
       total_inafecta: totalInafecta || "", total_exonerada: totalExonerada || "", total_igv: totalIgv, total_gratuita: "", total_otros_cargos: "",
       
-      observaciones: venta.observacion ?? "", codigo_unico: venta.id.replaceAll("-", "").slice(0, 20),
+      observaciones: venta.observacion ?? "", codigo_unico: reintento?.codigoUnico ?? venta.id.replaceAll("-", "").slice(0, 20),
       enviar_automaticamente_a_la_sunat: true, enviar_automaticamente_al_cliente: false,
       ...(esFactura && venta.clienteCorreo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venta.clienteCorreo) ? { cliente_email: venta.clienteCorreo } : {}),
       condiciones_de_pago: venta.condicionPago === "CREDITO" ? `CRÉDITO CON VENCIMIENTO ${fechaVencimiento}` : "", medio_de_pago: venta.condicionPago === "CREDITO" ? "" : ({ EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia bancaria", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as Record<string, string>)[venta.medioPago] ?? venta.medioPago,
@@ -981,12 +987,27 @@ export class ServicioIngresos {
     };
     const total = Number(venta.total);
     const solicitud = { ...trama, total };
-    await db.update(ingresos).set({ estado: "NUBEFACT_PENDIENTE", datosNubefact: { serie, numero: correlativo.numero, solicitud } }).where(eq(ingresos.id, venta.id));
+    const datosAnteriores = reintento?.datosAnteriores;
+    const historialExistente = Array.isArray(datosAnteriores?.historialEmisiones) ? datosAnteriores.historialEmisiones : [];
+    const solicitudAnterior = datosAnteriores?.solicitud && typeof datosAnteriores.solicitud === "object" ? datosAnteriores.solicitud as Record<string, unknown> : null;
+    const respuestaAnterior = datosAnteriores?.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {};
+    const estadoAnterior = datosAnteriores ? analizarEstadoComprobante("ERROR_NUBEFACT", datosAnteriores, respuestaAnterior) : null;
+    const historialEmisiones = reintento && solicitudAnterior ? [...historialExistente, {
+      codigoComprobante: `${String(solicitudAnterior.serie ?? "")}-${String(solicitudAnterior.numero ?? "")}`,
+      estadoProveedor: estadoAnterior?.estadoProveedor ?? "RECHAZADO_SUNAT",
+      detalleProveedor: estadoAnterior?.detalleProveedor ?? null,
+      respuestaHttp: datosAnteriores?.respuestaHttp ?? null,
+      solicitud: solicitudAnterior,
+      respuesta: respuestaAnterior,
+      reintentadoEn: new Date().toISOString(),
+    }] : historialExistente;
+    const metadatosHistorial = historialEmisiones.length ? { historialEmisiones } : {};
+    await db.update(ingresos).set({ estado: "NUBEFACT_PENDIENTE", datosNubefact: { ...metadatosHistorial, serie, numero: correlativo.numero, solicitud } }).where(eq(ingresos.id, venta.id));
     let respuesta: Response;
     try {
       respuesta = await fetch(ruta, { method: "POST", headers: { Authorization: token, "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(solicitud), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) });
     } catch {
-      const resultado = { estado: "ERROR", serie, numero: correlativo.numero, solicitud, mensaje: "No hubo respuesta del proveedor. Verifica el estado del comprobante en NubeFact antes de volver a emitir." };
+      const resultado = { ...metadatosHistorial, estado: "ERROR", serie, numero: correlativo.numero, solicitud, mensaje: "No hubo respuesta del proveedor. Verifica el estado del comprobante en NubeFact antes de volver a emitir." };
       await db.update(ingresos).set({ estado: "NUBEFACT_PENDIENTE", datosNubefact: resultado }).where(eq(ingresos.id, venta.id));
       return { ...resultado, estado: "PENDIENTE" };
     }
@@ -999,16 +1020,17 @@ export class ServicioIngresos {
         : typeof errores === "object" && errores !== null ? Object.keys(errores).length > 0
           : Boolean(errores);
     const tienePdf = typeof cuerpo.enlace_del_pdf === "string" && cuerpo.enlace_del_pdf.length > 0;
-    const rechazado = !respuesta.ok || hayErrores || (cuerpo.aceptada_por_sunat !== true && !tienePdf);
-    const datosNubefact = { solicitud, respuesta: cuerpo };
+    const rechazado = cuerpo.aceptada_por_sunat === false || (cuerpo.aceptada_por_sunat !== true && (!respuesta.ok || hayErrores || !tienePdf));
+    const datosNubefact = { ...metadatosHistorial, solicitud, respuesta: cuerpo, respuestaHttp: respuesta.status };
     await db.update(ingresos).set({ estado: rechazado ? "ERROR_NUBEFACT" : "EMITIDO", datosNubefact }).where(eq(ingresos.id, venta.id));
     const archivos = rechazado ? null : await this.archivarNubeFact("INGRESO", venta.id, venta.tipoComprobante, `${serie}-${String(correlativo.numero).padStart(6, "0")}`, cuerpo);
     if (archivos) await db.update(ingresos).set({ datosNubefact: { ...datosNubefact, archivos } }).where(eq(ingresos.id, venta.id));
-    const mensajeProveedor = [cuerpo.errors, cuerpo.error, cuerpo.mensaje, cuerpo.message]
+    const mensajeProveedor = [cuerpo.sunat_description, cuerpo.sunat_note, cuerpo.sunat_responsecode, cuerpo.sunat_soap_error, cuerpo.errors, cuerpo.error, cuerpo.mensaje, cuerpo.message]
       .flatMap((valor) => typeof valor === "string" ? [valor.trim()] : Array.isArray(valor) ? valor.filter((item): item is string => typeof item === "string") : [])
       .filter(Boolean).join(" ");
+    const detalleProveedor = analizarEstadoComprobante(rechazado ? "ERROR_NUBEFACT" : "EMITIDO", datosNubefact, cuerpo).detalleProveedor;
     const enlacePdf = archivos?.guardados.find((archivo) => archivo.tipo === "PDF")?.ruta ?? cuerpo.enlace_del_pdf;
-    return { estado: rechazado ? "ERROR" : "EMITIDO", serie, numero: correlativo.numero, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, ...(rechazado ? { mensaje: mensajeProveedor || (!respuesta.ok ? `NubeFact respondió con estado HTTP ${respuesta.status}.` : "NubeFact no confirmó la emisión del comprobante.") } : { enlace: cuerpo.enlace, enlacePdf, archivos }) };
+    return { estado: rechazado ? "ERROR" : "EMITIDO", serie, numero: correlativo.numero, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, ...(rechazado ? { mensaje: detalleProveedor || mensajeProveedor || (!respuesta.ok ? `NubeFact respondió con estado HTTP ${respuesta.status}.` : "NubeFact no confirmó la emisión del comprobante.") } : { enlace: cuerpo.enlace, enlacePdf, archivos }) };
   }
 
   async listarPagos(ingresoIdEntrada: string) {

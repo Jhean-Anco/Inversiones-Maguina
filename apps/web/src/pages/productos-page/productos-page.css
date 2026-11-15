@@ -60,10 +60,11 @@
 html[data-theme="oscuro"] #root .repuestos-module {
   color: var(--tema-texto);
 }
-
-@media (max-width: 760px) {
-  .repuestos-module .precios-productos-page.is-integrated {
+  :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated {
     min-height: 0;
     padding: 0 14px;
   }
-}
+  :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated {
+    min-height: 0;
+    padding: 0 14px;
+  }

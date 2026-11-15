@@ -230,7 +230,7 @@ Restricciones e indices declarados:
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
 | `codigo` | `varchar` | NOT NULL | UNIQUE | - | - |
-| `cliente_id` | `uuid` | NOT NULL | FK | - | clientes.personaId |
+| `cliente_id` | `uuid` | NULL | FK | - | clientes.personaId |
 | `detalles` | `jsonb` | NOT NULL | - | yes | - |
 | `observacion` | `text` | NULL | - | - | - |
 | `estado` | `varchar` | NOT NULL | - | yes | - |
@@ -497,6 +497,7 @@ Restricciones e indices declarados:
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
+| `ingreso_id` | `uuid` | NULL | FK | - | ingresos.id |
 | `tipo` | `varchar` | NOT NULL | - | - | - |
 | `fecha` | `date` | NOT NULL | - | - | - |
 | `serie` | `varchar` | NOT NULL | - | - | - |
@@ -508,6 +509,7 @@ Restricciones e indices declarados:
 Restricciones e indices declarados:
 
 - INDEX `guias_remision_fecha_idx`
+- INDEX `guias_remision_ingreso_idx`
 - INDEX `guias_remision_tipo_estado_idx`
 - UNIQUE INDEX `guias_remision_correlativo_unico`
 - CHECK `guias_remision_tipo_ck`
@@ -673,6 +675,10 @@ Restricciones e indices declarados:
 | `pais_fabricacion` | `varchar` | NULL | - | - | - |
 | `marca_motor` | `varchar` | NULL | - | - | - |
 | `modelo_motor` | `varchar` | NULL | - | - | - |
+| `tipo_mototaxi` | `varchar` | NULL | - | - | - |
+| `tipo_motor` | `varchar` | NULL | - | - | - |
+| `tipo_refrigeracion` | `varchar` | NULL | - | - | - |
+| `colores_disponibles` | `varchar` | NOT NULL | - | yes | - |
 | `cilindrada_cc` | `integer` | NULL | - | - | - |
 | `combustible` | `varchar` | NULL | - | - | - |
 | `transmision` | `varchar` | NULL | - | - | - |
@@ -680,6 +686,7 @@ Restricciones e indices declarados:
 | `capacidad_asientos` | `integer` | NULL | - | - | - |
 | `capacidad_carga_kg` | `numeric` | NULL | - | - | - |
 | `especificaciones_adicionales` | `text` | NULL | - | - | - |
+| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -768,17 +775,18 @@ Restricciones e indices declarados:
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
 | `codigo` | `varchar` | NOT NULL | UNIQUE | - | - |
-| `cliente_id` | `uuid` | NOT NULL | FK | - | clientes.personaId |
+| `cliente_id` | `uuid` | NULL | FK | - | clientes.personaId |
 | `vehiculo_placa` | `varchar` | NOT NULL | - | - | - |
-| `vehiculo_vin` | `varchar` | NULL | - | - | - |
-| `vehiculo_marca` | `varchar` | NULL | - | - | - |
-| `vehiculo_modelo` | `varchar` | NULL | - | - | - |
 | `motivo` | `text` | NOT NULL | - | - | - |
+| `adelanto` | `numeric` | NOT NULL | - | yes | - |
+| `adelanto_medio_pago` | `varchar` | NULL | - | - | - |
+| `adelanto_cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `diagnostico` | `text` | NULL | - | - | - |
 | `notas_trabajo` | `jsonb` | NOT NULL | - | yes | - |
 | `detalles` | `jsonb` | NOT NULL | - | yes | - |
 | `estado` | `varchar` | NOT NULL | - | yes | - |
 | `fecha_recepcion` | `date` | NOT NULL | - | - | - |
+| `fecha_acabado` | `date` | NULL | - | - | - |
 | `fecha_cierre` | `date` | NULL | - | - | - |
 | `ingreso_id` | `uuid` | NULL | FK | - | ingresos.id |
 | `clave_emision` | `varchar` | NOT NULL | UNIQUE | - | - |
@@ -1159,6 +1167,33 @@ Restricciones e indices declarados:
 Restricciones e indices declarados:
 
 - CHECK `trabajadores_fechas_ck`
+
+
+### `transportistas`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `persona_id` | `uuid` | NULL | PK, FK | - | personas.id |
+| `activo` | `boolean` | NOT NULL | - | yes | - |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+| `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- INDEX `transportistas_activo_idx`
+
+
+### `ubigeos_peru`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `codigo` | `varchar` | NULL | PK | - | - |
+| `departamento` | `varchar` | NOT NULL | - | - | - |
+| `provincia` | `varchar` | NOT NULL | - | - | - |
+| `distrito` | `varchar` | NOT NULL | - | - | - |
+Restricciones e indices declarados:
+
+- INDEX `ubigeos_peru_departamento_provincia_idx`
+- INDEX `ubigeos_peru_nombre_idx`
 
 
 ### `unidades_medida`

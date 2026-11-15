@@ -1,6 +1,7 @@
 import "./inicio-page.css";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getResponsiveProfile } from "../../utilidades/responsive-profile";
 const CategoriasPage = lazy(() => import("../categorias-page/categorias-page").then((modulo) => ({ default: modulo.CategoriasPage })));
 const MarcasPage = lazy(() => import("../marcas-page/marcas-page").then((modulo) => ({ default: modulo.MarcasPage })));
 const ProductosPage = lazy(() => import("../productos-page/productos-page").then((modulo) => ({ default: modulo.ProductosPage })));
@@ -216,7 +217,7 @@ export function InicioPage() {
   useEffect(() => {
     if (asideContraido) return;
     const contraerAlPulsarFuera = (evento: PointerEvent) => {
-      if (!window.matchMedia("(min-width: 961px)").matches) return;
+      if (!esPerfilAmplio()) return;
       if (!asideRef.current?.contains(evento.target as Node)) setAsideContraido(true);
     };
     document.addEventListener("pointerdown", contraerAlPulsarFuera);
@@ -246,6 +247,10 @@ export function InicioPage() {
   const iniciales = perfil?.nombreCompleto.split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("") ?? "IM";
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
   const cantidadNotificaciones = alertasStockBajo.length + seriesFaltantes.length;
+  const esPerfilAmplio = () => {
+    const perfilResponsive = getResponsiveProfile(window.innerWidth, window.innerHeight);
+    return perfilResponsive === "laptop" || perfilResponsive === "tablet-landscape";
+  };
 
   return (
     <main className={`erp-layout${asideContraido ? " is-collapsed" : ""}${dashboardActivo || colapsoDashboard ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
@@ -258,7 +263,7 @@ export function InicioPage() {
 
         <nav className="erp-navigation" aria-label="Navegación principal">
           {navegacionVisible.map((elemento) => elemento.ruta ? (
-              <Link className={`erp-nav-link erp-nav-direct${dashboardActivo ? " is-active" : ""}`} key={elemento.nombre} to={elemento.ruta} aria-current={dashboardActivo ? "page" : undefined} onClick={() => { setColapsoDashboard(true); setMenuAbierto(false); if (window.matchMedia("(min-width: 961px)").matches) setAsideContraido(true); }}>
+              <Link className={`erp-nav-link erp-nav-direct${dashboardActivo ? " is-active" : ""}`} key={elemento.nombre} to={elemento.ruta} aria-current={dashboardActivo ? "page" : undefined} onClick={() => { setColapsoDashboard(true); setMenuAbierto(false); if (esPerfilAmplio()) setAsideContraido(true); }}>
                 <Icono nombre={elemento.icono} /><span>{elemento.nombre}</span>
               </Link>
           ) : (
@@ -268,7 +273,7 @@ export function InicioPage() {
                 type="button"
                 aria-expanded={seccionAbierta === elemento.nombre}
                 onClick={() => {
-                  if (asideContraido && window.matchMedia("(min-width: 961px)").matches) {
+                  if (asideContraido && esPerfilAmplio()) {
                     setAsideContraido(false);
                     setSeccionAbierta(elemento.nombre);
                   } else setSeccionAbierta((abierta) => abierta === elemento.nombre ? null : elemento.nombre);
@@ -280,7 +285,7 @@ export function InicioPage() {
                 <div className="erp-subnav-inner">
                   {elemento.hijos.map((hijo) => (
                     <button className={`erp-subnav-link${submoduloActivo === hijo ? " is-current" : ""}`} type="button" key={hijo.ruta} aria-current={submoduloActivo === hijo ? "page" : undefined} title={`Abrir ${hijo.nombre.toLocaleLowerCase("es-PE")}`} onClick={() => {
-                      const escritorio = window.matchMedia("(min-width: 961px)").matches;
+                      const escritorio = esPerfilAmplio();
                       navegar(hijo.ruta);
                       setMenuAbierto(false);
                       if (escritorio) setAsideContraido(true);

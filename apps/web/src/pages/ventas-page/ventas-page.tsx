@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
-import { Ban, FileCheck, FileCode, MessageCircle, Printer } from "lucide-react";
+import { Ban, FileCheck, FileCode, MessageCircle, Printer, RotateCcw } from "lucide-react";
 import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { ErrorApi, urlApi } from "../../services/api-cliente";
 import { servicioIngresos, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
@@ -67,6 +67,10 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   const [confirmoNoEntregado, setConfirmoNoEntregado] = useState(false);
   const [errorAnulacion, setErrorAnulacion] = useState("");
   const [guardandoAnulacion, setGuardandoAnulacion] = useState(false);
+  const [ventaRechazada, setVentaRechazada] = useState<VentaListado | null>(null);
+  const [guardandoReintento, setGuardandoReintento] = useState(false);
+  const [errorReintento, setErrorReintento] = useState("");
+  const [mensajeReintento, setMensajeReintento] = useState("");
 
   useEffect(() => {
     let vigente = true;
@@ -109,6 +113,29 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   };
 
   const abrirAnulacion = (documento: DocumentoAnulacion) => { setDocumentoAnulacion(documento); setMotivoAnulacion(""); setConfirmoNoEntregado(false); setErrorAnulacion(""); };
+  const abrirRechazo = (venta: VentaListado) => { setVentaRechazada(venta); setErrorReintento(""); setMensajeReintento(""); };
+  const procesarReintento = async () => {
+    if (!ventaRechazada) return;
+    setGuardandoReintento(true); setErrorReintento("");
+    try {
+      const resultado = await servicioIngresos.reintentarEmision(ventaRechazada.id);
+      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
+      const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
+      if (ventaActualizada?.estadoProveedor === "RECHAZADO_SUNAT") {
+        setVentaRechazada(ventaActualizada);
+        setErrorReintento(ventaActualizada.detalleProveedor || resultado.mensaje || "SUNAT volvió a rechazar el comprobante. Revisa el motivo antes de otro intento.");
+      } else if (resultado.estado === "PENDIENTE") {
+        setVentaRechazada(null);
+        setMensajeReintento(`La emisión de ${ventaRechazada.codigoComprobante} quedó pendiente de confirmación. Consulta el estado en el listado antes de volver a enviar.`);
+      } else {
+        setVentaRechazada(null);
+        setMensajeReintento(resultado.estado === "EMITIDO" ? `El nuevo comprobante ${resultado.codigo ?? ""} fue aceptado por SUNAT.` : resultado.mensaje || "La emisión no se confirmó. Revisa el estado y el motivo en el listado.");
+      }
+    } catch (problema) {
+      setErrorReintento(problema instanceof Error ? problema.message : "No se pudo reintentar la emisión.");
+    } finally { setGuardandoReintento(false); }
+  };
   const procesarAnulacion = async (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     if (!documentoAnulacion) return;
@@ -141,10 +168,11 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     finally { setGuardandoNota(false); }
   };
 
-  const renderizarVenta = (venta: VentaListado) => <tr key={venta.id}><td className="ventas-date">{fecha(venta.fecha)}</td><td>{comprobante(venta.tipoComprobante)}</td><td><strong className="ventas-document-code" title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td><td><strong className="ventas-client-name">{venta.clienteNombre || "Cliente no especificado"}</strong>{venta.clienteNumeroDocumento && <small className="ventas-client-document">{venta.clienteNumeroDocumento}</small>}</td><td><span>{medioPago(venta.medioPago)}</span><small className="ventas-payment-condition">{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</small></td><td className="ventas-number ventas-total">{soles(venta.total)}</td><td><span className={"ventas-state" + (["ERROR_SUNAT", "RECHAZADO_SUNAT", "BAJA_RECHAZADA", "ERROR_NUBEFACT", "ERROR_EMISION"].includes(venta.estadoProveedor) || venta.estado.startsWith("ERROR") ? " is-error" : ["ACEPTADO_SUNAT", "EMITIDO", "ANULADO"].includes(venta.estadoProveedor) || venta.estado.startsWith("EMITIDO") ? " is-success" : "")}>{estado(venta.estado, venta.estadoProveedor)}</span>{venta.detalleProveedor && <small className="ventas-status-detail" title={venta.detalleProveedor}>{venta.detalleProveedor}</small>}</td><td><div className="ventas-row-actions">{enlaces(venta.enlacePdf, venta.enlaceXml, venta.enlaceCdr, venta.codigoComprobante)}{puedeEmitirNotas && venta.estado === "EMITIDO" && venta.tipoComprobante !== "NOTA_VENTA" && <><button type="button" className="ventas-note-action is-credit" title="Emitir nota de crédito" aria-label={`Emitir nota de crédito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_CREDITO")}><span aria-hidden="true">NC</span></button><button type="button" className="ventas-note-action is-debit" title="Emitir nota de débito" aria-label={`Emitir nota de débito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_DEBITO")}><span aria-hidden="true">ND</span></button></>}{puedeAnular && venta.tipoComprobante !== "NOTA_VENTA" && (venta.estado === "ANULACION_PENDIENTE" ? <button type="button" title="Consultar estado de la baja" aria-label={`Consultar baja de ${venta.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: true })}><Ban aria-hidden="true" size={16}/></button> : venta.estado === "EMITIDO" && venta.estadoProveedor === "ACEPTADO_SUNAT" && <button type="button" className="ventas-cancel-action" title="Comunicar baja a SUNAT" aria-label={`Anular ${venta.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: false })}><Ban aria-hidden="true" size={16}/></button>)}</div></td></tr>;
+  const renderizarVenta = (venta: VentaListado) => <tr key={venta.id}><td className="ventas-date">{fecha(venta.fecha)}</td><td>{comprobante(venta.tipoComprobante)}</td><td><strong className="ventas-document-code" title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td><td><strong className="ventas-client-name">{venta.clienteNombre || "Cliente no especificado"}</strong>{venta.clienteNumeroDocumento && <small className="ventas-client-document">{venta.clienteNumeroDocumento}</small>}</td><td><span>{medioPago(venta.medioPago)}</span><small className="ventas-payment-condition">{venta.condicionPago === "CREDITO" ? "Crédito" : "Contado"}</small></td><td className="ventas-number ventas-total">{soles(venta.total)}</td><td><span className={"ventas-state" + (["ERROR_SUNAT", "RECHAZADO_SUNAT", "BAJA_RECHAZADA", "ERROR_NUBEFACT", "ERROR_EMISION"].includes(venta.estadoProveedor) || venta.estado.startsWith("ERROR") ? " is-error" : ["ACEPTADO_SUNAT", "EMITIDO", "ANULADO"].includes(venta.estadoProveedor) || venta.estado.startsWith("EMITIDO") ? " is-success" : "")}>{estado(venta.estado, venta.estadoProveedor)}</span>{venta.detalleProveedor && <small className={`ventas-status-detail${venta.estadoProveedor === "RECHAZADO_SUNAT" ? " is-rejection" : ""}`} title={venta.detalleProveedor}>{venta.detalleProveedor}</small>}{venta.estadoProveedor === "RECHAZADO_SUNAT" && <button type="button" className="ventas-reason-action" onClick={() => abrirRechazo(venta)}>Ver motivo y opciones</button>}</td><td><div className="ventas-row-actions">{enlaces(venta.enlacePdf, venta.enlaceXml, venta.enlaceCdr, venta.codigoComprobante)}{puedeEmitirNotas && venta.estado === "EMITIDO" && venta.tipoComprobante !== "NOTA_VENTA" && <><button type="button" className="ventas-note-action is-credit" title="Emitir nota de crédito" aria-label={`Emitir nota de crédito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_CREDITO")}><span aria-hidden="true">NC</span></button><button type="button" className="ventas-note-action is-debit" title="Emitir nota de débito" aria-label={`Emitir nota de débito para ${venta.codigoComprobante}`} onClick={() => abrirNota(venta, "NOTA_DEBITO")}><span aria-hidden="true">ND</span></button></>}{puedeAnular && venta.tipoComprobante !== "NOTA_VENTA" && (venta.estado === "ANULACION_PENDIENTE" ? <button type="button" title="Consultar estado de la baja" aria-label={`Consultar baja de ${venta.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: true })}><Ban aria-hidden="true" size={16}/></button> : venta.estado === "EMITIDO" && venta.estadoProveedor === "ACEPTADO_SUNAT" && <button type="button" className="ventas-cancel-action" title="Comunicar baja a SUNAT" aria-label={`Anular ${venta.codigoComprobante}`} onClick={() => abrirAnulacion({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: false })}><Ban aria-hidden="true" size={16}/></button>)}</div></td></tr>;
 
   return <section className="ventas-page">
     {puedeCrear && <RegistrarAccionPrincipal etiqueta={esMoto ? "Crear venta de mototaxi" : "Crear venta de repuestos"} onClick={() => navegar(esMoto ? "/ingresos/nuevo/mototaxis" : "/ingresos/nuevo/repuestos")} />}
+    {mensajeReintento && <p className="ventas-message is-success" role="status">{mensajeReintento}</p>}
     <ListadoMaestro
       variante="tabla"
       titulo={`Historial de ventas de ${esMoto ? "mototaxis" : "repuestos"}`}
@@ -159,6 +187,18 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       claseTabla="ventas-table"
       claseContenedor="ventas-table-scroll"
     />
+    {ventaRechazada && <div className="ventas-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardandoReintento) setVentaRechazada(null); }}>
+      <section className="ventas-notes-modal ventas-rejection-modal" role="dialog" aria-modal="true" aria-labelledby="ventas-rejection-title">
+        <header><div><span>RESPUESTA DE SUNAT</span><h2 id="ventas-rejection-title">{ventaRechazada.codigoComprobante}</h2></div><button type="button" aria-label="Cerrar motivo del rechazo" disabled={guardandoReintento} onClick={() => setVentaRechazada(null)}>×</button></header>
+        <div className="ventas-notes-body">
+          <p className="ventas-rejection-lead"><strong>La boleta fue rechazada y no tiene validez tributaria.</strong> Revisa el motivo informado por NubeFact/SUNAT. El reintento no permite corregir los datos de la venta; si la causa requiere cambios, corrígelos primero por el flujo correspondiente para evitar otro rechazo.</p>
+          <section className="ventas-rejection-reason" aria-label="Motivo del rechazo"><span>Motivo devuelto por el proveedor</span><p>{ventaRechazada.detalleProveedor || "NubeFact no guardó una descripción del rechazo. Consulta el CDR o el detalle de este comprobante en NubeFact antes de emitir nuevamente."}</p></section>
+          <p className="ventas-rejection-retry-note">El reintento usará los datos guardados en esta venta y el siguiente correlativo electrónico. No volverá a descontar inventario ni a registrar otro cobro.</p>
+          {errorReintento && <p className="ventas-message is-error" role="alert">{errorReintento}</p>}
+          <div className="ventas-rejection-actions"><button type="button" className="ventas-new-button" disabled={guardandoReintento} onClick={() => setVentaRechazada(null)}>Cerrar</button>{puedeCrear && <button type="button" className="ventas-new-button is-retry" disabled={guardandoReintento} onClick={() => void procesarReintento()}><RotateCcw aria-hidden="true" size={15}/>{guardandoReintento ? "Reintentando emisión…" : "Reintentar emisión"}</button>}</div>
+        </div>
+      </section>
+    </div>}
     {ventaSeleccionada && <div className="ventas-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setVentaSeleccionada(null); }}>
       <section className="ventas-notes-modal" role="dialog" aria-modal="true" aria-labelledby="ventas-notes-title">
         <header><div><span>COMPROBANTE ORIGINAL · {ventaSeleccionada.tipoComprobante === "BOLETA" ? "BOLETA" : "FACTURA"}</span><h2 id="ventas-notes-title">{ventaSeleccionada.codigoComprobante}</h2></div><button type="button" aria-label="Cerrar" onClick={() => setVentaSeleccionada(null)}>×</button></header>

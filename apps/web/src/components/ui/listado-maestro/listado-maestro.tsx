@@ -26,14 +26,11 @@ type Props<T> = Tabla<T> | Tarjetas<T>;
 
 export function ListadoMaestro<T>(props: Props<T>) {
   const [paginaLocal, setPaginaLocal] = useState(1);
-  const [anchoViewport, setAnchoViewport] = useState(() => typeof window === "undefined" ? 1280 : window.innerWidth);
-  const tamanioAdaptativo = tamanioListadoSegunPantalla(anchoViewport, props.variante);
+  const [viewport, setViewport] = useState(() => ({ ancho: typeof window === "undefined" ? 1366 : window.innerWidth, alto: typeof window === "undefined" ? 768 : window.innerHeight }));
+  const tamanioAdaptativo = tamanioListadoSegunPantalla(viewport.ancho, props.variante, viewport.alto);
   const [tamanioLocal, setTamanioLocal] = useState(tamanioAdaptativo);
   useEffect(() => {
-    const actualizar = () => setAnchoViewport((anterior) => {
-      const siguiente = window.innerWidth;
-      return tamanioListadoSegunPantalla(anterior, props.variante) === tamanioListadoSegunPantalla(siguiente, props.variante) ? anterior : siguiente;
-    });
+    const actualizar = () => setViewport({ ancho: window.innerWidth, alto: window.innerHeight });
     window.addEventListener("resize", actualizar, { passive: true });
     return () => window.removeEventListener("resize", actualizar);
   }, [props.variante]);

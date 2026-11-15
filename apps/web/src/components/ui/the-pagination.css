@@ -128,10 +128,7 @@ html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagi
   background: #172333;
   color: #8597ab;
 }
-
-@media (max-width: 700px) {
-  .the-pagination .pagination__link--nav { min-width: 36px; padding-inline: 8px; }
-  .the-pagination .pagination__link--nav span {
+  :where(html[data-responsive-profile="mobile-portrait"]) .the-pagination .pagination__link--nav { min-width: 36px; padding-inline: 8px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .the-pagination .pagination__link--nav span {
     display: none;
   }
-}
