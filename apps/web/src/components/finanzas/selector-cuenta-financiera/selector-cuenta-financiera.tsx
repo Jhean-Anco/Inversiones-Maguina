@@ -4,7 +4,7 @@ import { servicioFinanzas, type CuentaFinanciera } from "../../../services/finan
 
 const medioPorTipo: Record<CuentaFinanciera["tipo"], string> = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" };
 
-export function SelectorCuentaFinanciera({ value, medioActual, onChange, required = true }: { value: string; medioActual: string; onChange: (cuentaId: string, medioPago: string) => void; required?: boolean }) {
+export function SelectorCuentaFinanciera({ value, medioActual, onChange, required = true, etiqueta = "Cuenta / medio de pago" }: { value: string; medioActual: string; onChange: (cuentaId: string, medioPago: string) => void; required?: boolean; etiqueta?: string }) {
   const [cuentas, setCuentas] = useState<CuentaFinanciera[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -20,9 +20,9 @@ export function SelectorCuentaFinanciera({ value, medioActual, onChange, require
     if (!value && compatibles.length === 1) onChange(compatibles[0].id, medioPorTipo[compatibles[0].tipo]);
   }, [compatibles, onChange, value]);
   const mostrar = error || !cargando && cuentas.length === 0;
-  return <label className="selector-cuenta-financiera">Cuenta / medio de pago
+  return <label className="selector-cuenta-financiera">{etiqueta}
     {cargando ? <span className="selector-cuenta-hint">Cargando tus cuentas…</span> : error ? <span className="selector-cuenta-error">{error}</span> : cuentas.length === 0 ? <span className="selector-cuenta-error">Configura primero la caja, cuenta bancaria o billetera. <Link to="/finanzas/cuentas">Abrir Cuentas y medios</Link></span> : <select required={required} value={value} onChange={(evento) => { const cuenta = cuentas.find((item) => item.id === evento.target.value); onChange(cuenta?.id ?? "", cuenta ? medioPorTipo[cuenta.tipo] : ""); }}>
-      <option value="">Selecciona la cuenta</option>
+      <option value="">Selecciona una cuenta</option>
       {cuentas.map((cuenta) => <option value={cuenta.id} key={cuenta.id}>{cuenta.nombre}{cuenta.entidad ? ` · ${cuenta.entidad}` : ""}{cuenta.numeroTarjeta ? ` ·••${cuenta.numeroTarjeta}` : ""}</option>)}
     </select>}
     {!mostrar && !cargando && compatibles.length === 0 && <span className="selector-cuenta-hint">Al elegir la cuenta se definirá el medio correspondiente: efectivo, transferencia, billetera o tarjeta.</span>}

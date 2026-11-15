@@ -19,11 +19,13 @@ const InventarioMototaxisPage = lazy(() => import("../inventario-mototaxis-page/
 const VentasPage = lazy(() => import("../ventas-page/ventas-page").then((modulo) => ({ default: modulo.VentasPage })));
 const GuiasRemisionPage = lazy(() => import("../guias-remision-page/guias-remision-page").then((modulo) => ({ default: modulo.GuiasRemisionPage })));
 const OrdenesCotizacionesPage = lazy(() => import("../ordenes-cotizaciones-page/ordenes-cotizaciones-page").then((modulo) => ({ default: modulo.OrdenesCotizacionesPage })));
+const OrdenesServicioPage = lazy(() => import("../ordenes-servicio-page/ordenes-servicio-page").then((modulo) => ({ default: modulo.OrdenesServicioPage })));
 const FinanzasPage = lazy(() => import("../finanzas-page/finanzas-page").then((modulo) => ({ default: modulo.FinanzasPage })));
 const ConfiguracionSeriesPage = lazy(() => import("../configuracion-series-page/configuracion-series-page").then((modulo) => ({ default: modulo.ConfiguracionSeriesPage })));
 import { useSesion } from "../../hooks/use-sesion";
 import { useTema } from "../../components/tema-contexto/tema-contexto";
 import { servicioProductos, type AlertaStockBajo } from "../../services/inventario/productos.service";
+import { servicioIngresos } from "../../services/ingresos.service";
 import { useBorradoresDialogos } from "../../hooks/use-borradores-dialogos";
 import { AccionPrincipalProvider } from "../../components/ui/accion-principal/accion-principal";
 type PermisoNavegacion = "INGRESOS.CREAR" | "INGRESOS.LEER" | "EGRESOS.LEER" | "INVENTARIO.LEER" | "MOTOTAXIS.LEER" | "PERSONAS.LEER" | "FINANZAS.LEER" | "FINANZAS.ADMINISTRAR";
@@ -110,6 +112,7 @@ export function InicioPage() {
   const [seccionAbierta, setSeccionAbierta] = useState<string | null>(null);
   const [menuCabecera, setMenuCabecera] = useState<"notificaciones" | null>(null);
   const [alertasStockBajo, setAlertasStockBajo] = useState<AlertaStockBajo[]>([]);
+  const [seriesFaltantes, setSeriesFaltantes] = useState<{ tipo: string; nombre: string; icono: string }[]>([]);
   const [cargandoAlertasStock, setCargandoAlertasStock] = useState(true);
   const [errorAlertasStock, setErrorAlertasStock] = useState("");
   const cabeceraRef = useRef<HTMLElement>(null);
@@ -157,24 +160,38 @@ export function InicioPage() {
   }, [moduloActivo?.nombre]);
   const dashboardActivo = ubicacion.pathname === "/inicio" || ubicacion.pathname === "/";
   const puedeLeerInventario = perfil?.permisos.includes("INVENTARIO.LEER") ?? false;
+  const puedeVerAlertasIngresos = perfil?.permisos.includes("INGRESOS.LEER") || perfil?.permisos.includes("INGRESOS.CREAR") || perfil?.permisos.includes("FINANZAS.ADMINISTRAR") || false;
+  const puedeAdministrarSeries = perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false;
 
   const cargarAlertasStock = useCallback(async () => {
-    if (!puedeLeerInventario) {
+    if (!puedeLeerInventario && !puedeVerAlertasIngresos) {
       setAlertasStockBajo([]);
+      setSeriesFaltantes([]);
       setCargandoAlertasStock(false);
       return;
     }
     setCargandoAlertasStock(true);
-    try {
-      const alertas = await servicioProductos.alertasStockBajo();
-      setAlertasStockBajo(alertas);
-      setErrorAlertasStock("");
-    } catch {
-      setErrorAlertasStock("No se pudieron cargar las alertas de inventario.");
-    } finally {
-      setCargandoAlertasStock(false);
-    }
-  }, [puedeLeerInventario]);
+    const [resultadoStock, resultadoSeries] = await Promise.allSettled([
+      puedeLeerInventario ? servicioProductos.alertasStockBajo() : Promise.resolve([] as AlertaStockBajo[]),
+      puedeVerAlertasIngresos ? servicioIngresos.numeraciones() : Promise.resolve(null),
+    ]);
+    if (resultadoStock.status === "fulfilled") { setAlertasStockBajo(resultadoStock.value); setErrorAlertasStock(""); }
+    else setErrorAlertasStock("No se pudieron cargar las alertas de inventario.");
+    if (resultadoSeries.status === "fulfilled" && resultadoSeries.value) {
+      const numeraciones = resultadoSeries.value;
+      const seriesDocumento = [
+        { tipo: "BOLETA", nombre: "boletas de venta", icono: "B" },
+        { tipo: "FACTURA", nombre: "facturas de venta", icono: "F" },
+        { tipo: "NOTA_VENTA", nombre: "notas de venta", icono: "NV" },
+        { tipo: "ORDEN_SERVICIO", nombre: "órdenes de servicio", icono: "OS" },
+        { tipo: "COTIZACION", nombre: "cotizaciones", icono: "COT" },
+        { tipo: "GUIA_REMITENTE", nombre: "guías de remisión de remitente", icono: "GR" },
+        { tipo: "GUIA_TRANSPORTISTA", nombre: "guías de transportista", icono: "GT" },
+      ];
+      setSeriesFaltantes(seriesDocumento.filter((documento) => !numeraciones[documento.tipo as keyof typeof numeraciones].codigo));
+    } else if (!puedeVerAlertasIngresos || resultadoSeries.status === "rejected") setSeriesFaltantes([]);
+    setCargandoAlertasStock(false);
+  }, [puedeLeerInventario, puedeVerAlertasIngresos]);
 
   useEffect(() => {
     void cargarAlertasStock();
@@ -234,7 +251,7 @@ export function InicioPage() {
 
   const iniciales = perfil?.nombreCompleto.split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("") ?? "IM";
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
-  const cantidadNotificaciones = alertasStockBajo.length;
+  const cantidadNotificaciones = alertasStockBajo.length + seriesFaltantes.length;
 
   return (
     <main className={`erp-layout${asideContraido ? " is-collapsed" : ""}${dashboardActivo || colapsoDashboard ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
@@ -301,6 +318,13 @@ export function InicioPage() {
               {menuCabecera === "notificaciones" && <section className="topbar-popover topbar-notification-panel" aria-label="Notificaciones">
                 <div className="topbar-notification-heading"><strong>Notificaciones</strong><span>{cargandoAlertasStock ? "Actualizando…" : `${cantidadNotificaciones} activas`}</span></div>
                 {errorAlertasStock && <div className="topbar-notification-error" role="alert">{errorAlertasStock}<button type="button" onClick={() => void cargarAlertasStock()}>Reintentar</button></div>}
+                {seriesFaltantes.length > 0 && <div className="topbar-stock-alert-list">
+                  {seriesFaltantes.map((documento) => puedeAdministrarSeries ? <button className="topbar-stock-alert" type="button" key={documento.tipo} onClick={() => { setMenuCabecera(null); navegar("/configuracion/series"); }}>
+                    <span className="topbar-stock-alert-icon is-sales" aria-hidden="true">{documento.icono}</span><span className="topbar-stock-alert-copy"><strong>FALTA CONFIGURAR SERIE</strong><small>Configura la serie de {documento.nombre}.</small></span><span className="topbar-stock-alert-tag is-warning">Configurar</span>
+                  </button> : <div className="topbar-stock-alert" role="status" key={documento.tipo}>
+                    <span className="topbar-stock-alert-icon is-sales" aria-hidden="true">{documento.icono}</span><span className="topbar-stock-alert-copy"><strong>FALTA CONFIGURAR SERIE</strong><small>Solicita a un administrador la serie de {documento.nombre}.</small></span>
+                  </div>)}
+                </div>}
                 {alertasStockBajo.length > 0 && <div className="topbar-stock-alert-list">
                   {alertasStockBajo.map((alerta) => {
                     const sinStock = Number(alerta.stockActual) <= 0;
@@ -309,7 +333,7 @@ export function InicioPage() {
                     </button>;
                   })}
                 </div>}
-                {cantidadNotificaciones === 0 && !cargandoAlertasStock && !errorAlertasStock && <div className="topbar-empty-notifications"><span aria-hidden="true"><Icono nombre="notificaciones" /></span><strong>{puedeLeerInventario ? "Sin alertas activas" : "No tienes notificaciones disponibles"}</strong><small>{puedeLeerInventario ? "Te avisaremos si un producto se agota o llega a su nivel mínimo." : "Solicita acceso a inventario para consultar alertas."}</small></div>}
+                {cantidadNotificaciones === 0 && !cargandoAlertasStock && !errorAlertasStock && <div className="topbar-empty-notifications"><span aria-hidden="true"><Icono nombre="notificaciones" /></span><strong>{puedeLeerInventario || puedeVerAlertasIngresos ? "Sin alertas activas" : "No tienes notificaciones disponibles"}</strong><small>{puedeLeerInventario || puedeVerAlertasIngresos ? "Te avisaremos si el inventario requiere atención o falta configurar una serie." : "Solicita acceso a inventario o ingresos para consultar alertas."}</small></div>}
               </section>}
             </div>
             <button className="topbar-theme-button" type="button" onClick={alternarTema} aria-label={`Activar modo ${tema === "claro" ? "oscuro" : "claro"}`} title={`Modo ${tema === "claro" ? "oscuro" : "claro"}`}><Icono nombre={tema === "claro" ? "luna" : "sol"} /><span>{tema === "claro" ? "Modo oscuro" : "Modo claro"}</span></button>
@@ -321,9 +345,10 @@ export function InicioPage() {
             </div>
             <button className="topbar-logout-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" onClick={() => setConfirmarCierreSesion(true)}><Icono nombre="salir" /><span>Cerrar sesión</span></button>
           </div>
+          <span className="erp-topbar-underline" aria-hidden="true"><span /><span /></span>
         </header>
 
-        <div ref={contenidoRef} className={`erp-content${vistaInventario || vistaEgresos || vistaMototaxis || vistaAdminCatalogo ? " is-catalog-view" : ""}${vistaAdminCatalogo ? " is-catalog-admin-view" : ""}${vistaSubmoduloInventario ? " is-inventory-submodule-view" : ""}${ubicacion.pathname.startsWith("/ingresos/nuevo") ? " is-new-sale-view" : ""}`} aria-live="polite">
+        <div ref={contenidoRef} className={`erp-content${vistaInventario || vistaEgresos || vistaMototaxis || vistaAdminCatalogo ? " is-catalog-view" : ""}${vistaAdminCatalogo ? " is-catalog-admin-view" : ""}${vistaSubmoduloInventario ? " is-inventory-submodule-view" : ""}${ubicacion.pathname.startsWith("/ingresos/nuevo") || ubicacion.pathname === "/ingresos/ordenes-servicio" ? " is-new-sale-view" : ""}`} aria-live="polite">
           <AccionPrincipalProvider key={ubicacion.pathname}>
           <div key={ubicacion.pathname} className="modulo-route-transition">
           <Suspense fallback={(
@@ -336,7 +361,7 @@ export function InicioPage() {
               <div className="module-loading-panel" aria-hidden="true"><i /><i /><i /><i /><i /></div>
             </div>
           )}>
-          {ubicacion.pathname === "/configuracion/series" ? <ConfiguracionSeriesPage /> : ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ordenes-servicio" ? <OrdenesCotizacionesPage modo="ORDENES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/cotizaciones" ? <OrdenesCotizacionesPage modo="COTIZACIONES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} puedeAnular={perfil?.permisos.includes("FACTURACION.ANULAR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} permisos={perfil?.permisos ?? []} />}
+          {ubicacion.pathname === "/configuracion/series" ? <ConfiguracionSeriesPage /> : ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "resumen" | "unidades" | "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname === "/inventario/mototaxis/unidades" ? <MototaxisPage seccion="unidades" puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/mi-perfil" ? <PerfilPage perfil={perfil} /> : ubicacion.pathname === "/finanzas/cuentas" ? <FinanzasPage puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage puedeEditar={perfil?.permisos.includes("PERSONAS.EDITAR") ?? false} /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ordenes-servicio" ? <OrdenesServicioPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/cotizaciones" ? <OrdenesCotizacionesPage modo="COTIZACIONES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} puedeAnular={perfil?.permisos.includes("FACTURACION.ANULAR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage tipo="inventario" /> : ubicacion.pathname === "/reportes/ingresos" ? <ReportePage tipo="ingresos" /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/egresos/gastos-operativos" ? <EgresoRegistroPage tipo="GASTO_OPERATIVO" /> : ubicacion.pathname === "/egresos/activos-herramientas" ? <EgresoRegistroPage tipo="ACTIVO_HERRAMIENTA" /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} permisos={perfil?.permisos ?? []} />}
           </Suspense>
 
           </div>

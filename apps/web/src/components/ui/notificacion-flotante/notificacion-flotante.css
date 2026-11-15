@@ -1,4 +1,6 @@
 .notificacion-flotante{position:fixed;z-index:12500;top:18px;right:18px;display:grid;grid-template-columns:30px minmax(0,1fr) 28px;align-items:start;gap:10px;width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:13px 14px;border:1px solid;border-radius:12px;background:#fff;box-shadow:0 14px 40px #14283b30;color:#26384a;animation:notificacion-flotante-entrada .18s ease-out}
+.alertas-globales{position:fixed;z-index:12500;top:18px;right:18px;display:grid;gap:10px;width:min(420px,calc(100vw - 32px));pointer-events:none}
+.alertas-globales>.notificacion-flotante{position:relative;top:auto;right:auto;width:100%;pointer-events:auto}
 .notificacion-flotante-icono{display:grid;width:28px;height:28px;place-items:center;border-radius:50%;font-size:17px;font-weight:800;line-height:1}
 .notificacion-flotante-contenido{display:grid;gap:4px;min-width:0;padding-top:1px}
 .notificacion-flotante-contenido>strong{font-size:12px;font-weight:800;line-height:1.3}
@@ -20,5 +22,5 @@ html[data-theme="oscuro"] .notificacion-flotante-advertencia .notificacion-flota
 html[data-theme="oscuro"] .notificacion-flotante-exito .notificacion-flotante-icono{background:#214b39;color:#9be5bd}
 html[data-theme="oscuro"] .notificacion-flotante-informacion .notificacion-flotante-icono{background:#203f5c;color:#a5d4ff}
 @keyframes notificacion-flotante-entrada{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:560px){.notificacion-flotante{top:10px;right:10px;width:calc(100vw - 20px);grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}}
+@media(max-width:560px){.alertas-globales{top:10px;right:10px;width:calc(100vw - 20px)}.notificacion-flotante{grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}}
 @media(prefers-reduced-motion:reduce){.notificacion-flotante{animation:none}}

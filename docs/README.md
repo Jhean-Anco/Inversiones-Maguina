@@ -13,7 +13,7 @@ Propósito: índice para desarrolladores basado en el código y la configuració
 | [Catálogo de datos](catalogo-de-datos.md) | Columnas y relaciones generadas de Drizzle |
 | [07 Módulos y reglas de negocio](07-modulos-y-reglas-de-negocio.md) | Flujos documentados y vacíos |
 | [08 Autenticación y permisos](08-autenticacion-y-permisos.md) | Cookies, guards y permisos |
-| [09 Integraciones externas](09-integraciones-externas.md) | NubeFact, SIRE y API Perú |
+| [09 Integraciones externas](09-integraciones-externas.md) | NubeFact y API Perú |
 | [10 Variables de entorno](10-variables-de-entorno.md) | Inventario y sensibilidad |
 | [11 Docker y contenedores](11-docker-y-contenedores.md) | Compose, imágenes y volúmenes |
 | [12 Pruebas y calidad](12-pruebas-y-calidad.md) | Suites y comandos disponibles |

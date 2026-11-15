@@ -377,7 +377,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const dialogo = page.getByRole("dialog", { name: "Nueva compra de productos" });
+    const dialogo = page.getByRole("dialog", { name: "Nueva compra de repuestos" });
     await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
     await dialogo.getByRole("textbox", { name: "Buscar producto por nombre o código" }).fill(nombreProducto);
     const resultadoProducto = dialogo.getByRole("option", { name: new RegExp(nombreProducto) });

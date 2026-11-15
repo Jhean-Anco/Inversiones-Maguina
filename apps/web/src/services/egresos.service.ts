@@ -14,7 +14,6 @@ export type PaginaEgresos = { items: Egreso[]; total: number; pagina: number; po
 export type DatosEgreso = {
   tipo: TipoEgreso; fecha: string; categoria: string; concepto: string; beneficiario: string | null;
   proveedorRuc: string | null; documentoTipo: string | null; documentoNumero: string | null;
-  documentoRecibidoId?: string;
   moneda: "PEN"; medioPago?: string; cuentaFinancieraId?: string; monto: string; importePagoInicial?: string;
   identificadorActivo: string | null; mototaxiMarca: string | null; mototaxiModelo: string | null;
   mototaxiNumeroMotor: string | null; mototaxiNumeroChasis: string | null; observacion: string | null;

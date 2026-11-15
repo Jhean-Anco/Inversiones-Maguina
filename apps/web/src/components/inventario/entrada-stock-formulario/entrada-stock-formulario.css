@@ -242,6 +242,44 @@ html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-upload input { bord
 html[data-theme="oscuro"] .stock-entry-modal .stock-evidence-name { border-color: #3b586e; background: #1b3044; color: #b5d6eb; }
 html[data-theme="oscuro"] .stock-entry-modal .catalog-form-actions { border-color: #30465c; background: #152537; }
 
+/* Distribución del documento y edición de repuestos en tarjetas de formulario. */
+.stock-entry-modal .stock-entry-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.catalog-modal.stock-entry-modal .stock-provider-identity { grid-column: 1 / -1; grid-template-columns: minmax(150px, 1.05fr) minmax(140px, 1fr) auto minmax(165px, 1.15fr); align-items: end; }
+.stock-entry-modal .stock-provider-identity > .stock-provider-message,
+.stock-entry-modal .stock-provider-identity > .stock-provider-add,
+.stock-entry-modal .stock-provider-identity > .stock-provider-results { grid-column: 1 / -1; }
+.stock-entry-modal .stock-entry-lines-wrap { display: grid; gap: 9px; overflow: visible; border: 0; }
+.stock-entry-modal .stock-entry-line-card { display: grid; grid-template-columns: minmax(190px, 1.5fr) minmax(120px, .8fr) minmax(130px, .85fr) minmax(115px, .75fr) 34px; align-items: center; gap: 12px; border: 1px solid #dce6ee; border-radius: 12px; padding: 13px; background: #fff; box-shadow: 0 5px 15px #17354b0a; }
+.stock-entry-modal .stock-entry-line-card > label { display: grid; min-width: 0; gap: 5px; color: #36536d; font-size: 10px; font-weight: 750; }
+.stock-entry-modal .stock-entry-line-card input { box-sizing: border-box; width: 100%; min-height: 40px; min-width: 0; border: 1px solid #d7e2eb; border-radius: 9px; padding: 0 10px; background: #fbfdff; color: #213f59; font: inherit; font-size: 12px; }
+.stock-entry-modal .stock-entry-line-card input:focus { border-color: #5e9bc8; outline: 0; box-shadow: 0 0 0 3px #5e9bc81a; }
+.stock-entry-line-product { display: grid; min-width: 0; gap: 3px; }
+.stock-entry-line-product > span,.stock-entry-line-product > small,.stock-entry-line-card label > small { color: #8293a3; font-size: 9px; }
+.stock-entry-line-product > strong { color: #20445f; font-size: 12px; overflow-wrap: anywhere; }
+.stock-entry-line-subtotal { display: grid; gap: 4px; }
+.stock-entry-line-subtotal > span { color: #8293a3; font-size: 9px; font-weight: 700; }
+.stock-entry-line-subtotal > strong { color: #174f79; font-size: 14px; font-variant-numeric: tabular-nums; }
+.stock-entry-line-card > .producto-remove-row { justify-self: end; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-line-card { border-color: #344b61; background: #192b3e; box-shadow: none; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-line-card > label { color: #cad9e7; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-line-card input { border-color: #3b5268; background: #142235; color: #e1edf7; }
+html[data-theme="oscuro"] .stock-entry-line-product > strong,html[data-theme="oscuro"] .stock-entry-line-subtotal > strong { color: #b7dcf5; }
+@media (max-width: 760px) {
+  .catalog-modal.stock-entry-modal .stock-provider-identity { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .catalog-modal.stock-entry-modal .stock-provider-identity > button { width: 100%; }
+  .stock-entry-modal .stock-entry-line-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px; }
+  .stock-entry-line-product { grid-column: 1 / -1; }
+  .stock-entry-line-subtotal { grid-column: 1 / 3; }
+}
+@media (max-width: 480px) {
+  .stock-entry-modal .stock-entry-fields { grid-template-columns: minmax(0, 1fr); }
+  .catalog-modal.stock-entry-modal .stock-provider-identity { grid-template-columns: minmax(0, 1fr); }
+  .catalog-modal.stock-entry-modal .stock-provider-identity > label,.catalog-modal.stock-entry-modal .stock-provider-identity > button { grid-column: auto; }
+  .stock-entry-modal .stock-entry-line-card { grid-template-columns: minmax(0, 1fr) 34px; }
+  .stock-entry-line-product,.stock-entry-line-card > label,.stock-entry-line-subtotal { grid-column: 1 / -1; }
+  .stock-entry-line-card > .producto-remove-row { grid-column: 2; }
+}
+
 @media (max-width: 700px) {
   .catalog-modal.stock-entry-modal { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); border-radius: 16px; }
   .stock-entry-modal .stock-entry-form-head { min-height: 82px; gap: 11px; padding: 13px 15px; }
@@ -278,3 +316,9 @@ html[data-theme="oscuro"] .stock-entry-modal .catalog-form-actions { border-colo
   .catalog-modal.stock-entry-modal .catalog-form-actions { justify-content: stretch; gap: 8px; }
   .stock-entry-modal .catalog-form-actions > button { flex: 1 1 0; padding-inline: 8px; font-size: 11px; }
 }
+
+.stock-entry-modal .stock-entry-empty-lines { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-content: center; align-items: center; gap: 3px 10px; padding: 14px; text-align: left; }
+.stock-entry-modal .stock-entry-empty-lines > span { grid-row: 1 / span 2; color: #6486a1; font-size: 20px; }
+.stock-entry-modal .stock-entry-empty-lines > strong { color: #294d69; font-size: 12px; }
+.stock-entry-modal .stock-entry-empty-lines > small { color: #7e91a2; font-size: 10px; line-height: 1.4; }
+html[data-theme="oscuro"] .stock-entry-modal .stock-entry-empty-lines > strong { color: #d9e7f3; }

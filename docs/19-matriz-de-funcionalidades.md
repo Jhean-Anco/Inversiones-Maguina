@@ -11,7 +11,6 @@
 | Ventas | registro y consulta de ingresos | `/ingresos/*` | ingresos, detalle y pagos | `INGRESOS.*` | IMPLEMENTADO SIN PRUEBA COMPLETA | servicio y pruebas existentes |
 | Crédito/pagos | pagos vinculados a venta | `/ingresos/:id/pagos` | ingresos_pagos | `INGRESOS.CREAR` | REQUIERE VALIDACIÓN FUNCIONAL | reglas/saldo requieren contrastar |
 | Facturación | emisión, nota, anulación | ingresos/NubeFact | ingresos y documentos | permisos fiscales | BLOQUEADO POR SERVICIO EXTERNO | solicitudes presentes, proveedor real no comprobado |
-| SIRE | consulta/importación documentos | `/inventario/sunat-sire`, documentos recibidos | tablas documentos | guardas de inventario/egreso | BLOQUEADO POR SERVICIO EXTERNO | servicio y credenciales requeridas |
 | Mototaxis | compras, unidades, movimientos, garantías | `/mototaxis`, rutas de egreso | tablas mototaxis | por endpoint | IMPLEMENTADO SIN PRUEBA COMPLETA | módulos, esquema, migraciones |
 | Finanzas | cuentas y movimientos | `/finanzas/cuentas/*` | cuentas financieras | incluye administración | IMPLEMENTADO SIN PRUEBA COMPLETA | controlador y esquema |
 | Cotizaciones/servicios | CRUD y emisión desde ingresos | `/ingresos/cotizaciones`, `/ordenes-servicio` | cotizaciones/órdenes | `INGRESOS.*` | REQUIERE VALIDACIÓN FUNCIONAL | métodos controladores presentes |

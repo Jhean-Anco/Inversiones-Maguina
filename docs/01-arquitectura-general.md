@@ -11,7 +11,6 @@ flowchart LR
   A -->|Drizzle| P[(PostgreSQL)]
   A -->|archivos locales| V[(uploads-data)]
   A --> N[NubeFact]
-  A --> S[SUNAT SIRE]
   A --> I[API Perú]
   D[GitHub Actions] --> G[GHCR: web, api, ops por SHA]
   G --> K[Dokploy, si se habilita]

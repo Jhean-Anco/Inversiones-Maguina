@@ -1,5 +1,6 @@
 import "./producto-categoria-modal.css";
 import type { FormEvent } from "react";
+import { ImageUploadCard } from "../../ui/image-upload-card/image-upload-card";
 
 type PropiedadesProductoCategoriaModal = {
   nombre: string;
@@ -27,15 +28,7 @@ export function ProductoCategoriaModal({ nombre, imagen, vistaPrevia, guardando,
           <div className="catalog-form-title"><span aria-hidden="true">▦</span><div><h2 id="categoria-rapida-titulo">Agregar categoría</h2><p>Define el grupo y una imagen para identificarlo en el catálogo.</p></div></div>
           {error && <div className="catalog-alert" role="alert">{error}</div>}
           <label>Nombre de la categoría<input autoFocus value={nombre} onChange={(evento) => alCambiarNombre(evento.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Frenos" /></label>
-          <div className="catalog-upload-field">
-            <div className="catalog-upload-heading"><strong>Imagen de la categoría</strong><small>JPG, PNG o WebP · máximo 5 MB</small></div>
-            <label className={`catalog-upload-zone${vistaPrevia ? " has-preview" : ""}`} htmlFor="producto-categoria-imagen">
-              <input className="catalog-upload-input" id="producto-categoria-imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={(evento) => alSeleccionarImagen(evento.target.files?.[0])} />
-              {vistaPrevia
-                ? <><img className="catalog-upload-preview" src={vistaPrevia} alt="Vista previa de la categoría" /><span className="catalog-upload-copy"><strong>{imagen?.name}</strong><small>Haz clic para reemplazarla</small></span><span className="catalog-upload-action">Cambiar</span></>
-                : <><span className="catalog-upload-symbol" aria-hidden="true">↑</span><span className="catalog-upload-copy"><strong>Selecciona una imagen</strong><small>La imagen representativa aparecerá en Categorías.</small></span><span className="catalog-upload-action">Elegir imagen</span></>}
-            </label>
-          </div>
+          <ImageUploadCard title="Imagen de la categoría" description="La imagen representativa aparecerá en Categorías." hint={imagen?.name ?? "JPG, PNG o WebP · máximo 5 MB"} previews={vistaPrevia ? [{ key: "category", src: vistaPrevia, alt: "Vista previa de la categoría" }] : []} disabled={guardando} onSelect={(files) => alSeleccionarImagen(files[0])} />
           <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={alCerrar}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || !imagen}>{guardando ? "Guardando…" : "Guardar categoría"}</button></div>
         </form>
       </section>

@@ -21,6 +21,24 @@ export async function solicitarApi<T>(ruta: string, opciones: RequestInit = {}):
   return contenido as T;
 }
 
+export function subirApiConProgreso<T>(ruta: string, datos: FormData, alProgresar?: (porcentaje: number) => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const solicitud = new XMLHttpRequest();
+    solicitud.open("POST", urlApi(ruta));
+    solicitud.withCredentials = true;
+    solicitud.upload.addEventListener("progress", (evento) => {
+      if (evento.lengthComputable) alProgresar?.(Math.round((evento.loaded / evento.total) * 100));
+    });
+    solicitud.addEventListener("error", () => reject(new ErrorApi("No se pudo conectar con la API. Verifica que el servidor esté activo.", 0)));
+    solicitud.addEventListener("load", () => {
+      const contenido = (() => { try { return JSON.parse(solicitud.responseText) as { message?: string }; } catch { return {}; } })();
+      if (solicitud.status < 200 || solicitud.status >= 300) { reject(new ErrorApi(contenido.message ?? `La solicitud falló (${solicitud.status}).`, solicitud.status)); return; }
+      resolve(contenido as T);
+    });
+    solicitud.send(datos);
+  });
+}
+
 export function srcImagen(ruta: string | null): string {
   if (!ruta) return "";
   if (ruta.startsWith("/catalogo/")) return ruta;

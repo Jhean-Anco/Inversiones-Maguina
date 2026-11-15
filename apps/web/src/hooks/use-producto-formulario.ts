@@ -114,7 +114,7 @@ export function useProductoFormulario({ producto, catalogos, alGuardar, alCrearM
     setPrecios((actual) => [...actual, { clave: claveLocal(), presentacionClave: "base", tipoListaPrecioId: generalId, precio: "", cantidadMinima: "1" }]);
   }
 
-  function seleccionarImagenes(archivos?: FileList | null) {
+  function seleccionarImagenes(archivos?: FileList | File[] | null) {
     if (!archivos?.length) return;
     const nuevas = Array.from(archivos);
     const actuales = (producto?.imagenes?.length ?? 0) - imagenesEliminadas.length + imagenesNuevas.length;

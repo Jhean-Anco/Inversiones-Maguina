@@ -16,7 +16,7 @@ type Comun<T> = {
 };
 type Tabla<T> = Comun<T> & {
   variante: "tabla"; encabezadoTabla: ReactNode; renderizarFila: (registro: T) => ReactNode;
-  claseTabla?: string; claseContenedor?: string;
+  claseTabla?: string; claseContenedor?: string; centrarCeldas?: boolean;
 };
 type Tarjetas<T> = Comun<T> & {
   variante: "tarjetas"; renderizarTarjeta: (registro: T) => ReactNode; columnas: number;
@@ -69,7 +69,7 @@ export function ListadoMaestro<T>(props: Props<T>) {
     </header>
     <div className="listado-maestro-contenido" aria-live="polite">
       {props.cargando ? <div className="listado-maestro-estado" role="status">Cargando…</div> : total === 0 ? <div className="listado-maestro-vacio">{props.vacio}</div> : props.variante === "tabla" ? (
-        <div className={`listado-maestro-tabla-scroll ${props.claseContenedor ?? ""}`}><table className={`listado-maestro-tabla ${props.claseTabla ?? ""}`}><thead>{props.encabezadoTabla}</thead><tbody>{visibles.map(props.renderizarFila)}</tbody></table></div>
+        <div className={`listado-maestro-tabla-scroll ${props.claseContenedor ?? ""}`}><table className={`listado-maestro-tabla ${props.centrarCeldas !== false ? "is-centered-cells" : ""} ${props.claseTabla ?? ""}`}><thead>{props.encabezadoTabla}</thead><tbody>{visibles.map(props.renderizarFila)}</tbody></table></div>
       ) : <div className={`listado-maestro-tarjetas ${props.claseTarjeta ?? ""}`} style={{ "--listado-columnas": Math.max(1, props.columnas) } as React.CSSProperties}>{visibles.map(props.renderizarTarjeta)}</div>}
     </div>
     {contenedorFooter && createPortal(<footer className="listado-maestro-footer">

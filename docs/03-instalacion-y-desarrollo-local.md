@@ -14,7 +14,7 @@ corepack pnpm --filter @magina/database db:migrate
 corepack pnpm dev
 ```
 
-Complete `.env` con valores de desarrollo propios. `apps/api/src/configuracion-entorno.ts` exige URL PostgreSQL, origen frontend, secreto de al menos 32 caracteres y URL/token de NubeFact HTTPS. Las credenciales SIRE y API Perú son condicionales a esas integraciones. `POSTGRES_PORT` en `.env.example` es 5433, enlazado a loopback por el Compose raíz. La API usa puerto 3000; Vite usa 5173 y la URL local `VITE_API_URL` del ejemplo.
+Complete `.env` con valores de desarrollo propios. `apps/api/src/configuracion-entorno.ts` exige URL PostgreSQL, origen frontend, secreto de al menos 32 caracteres y URL/token de NubeFact HTTPS. El token de API Perú solo es necesario para consultar identidad/RUC. `POSTGRES_PORT` en `.env.example` es 5433, enlazado a loopback por el Compose raíz. La API usa puerto 3000; Vite usa 5173 y la URL local `VITE_API_URL` del ejemplo.
 
 Para desarrollo por separado: `corepack pnpm --filter @magina/api dev` o `corepack pnpm --filter @magina/web dev`; el script API compila primero el paquete de base de datos. No ejecutar migraciones contra datos productivos desde un entorno local.
 

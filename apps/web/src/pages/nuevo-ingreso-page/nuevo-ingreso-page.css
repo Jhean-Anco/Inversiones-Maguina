@@ -94,10 +94,9 @@ html[data-theme="oscuro"] #root .venta-document-blocker span:not(.venta-document
 .venta-observation-card>span{display:inline;color:#70839a;font-size:11px;font-weight:500}
 .venta-observation-card textarea{box-sizing:border-box;width:100%;min-height:76px;resize:vertical;padding:10px 12px;border:1px solid #d8e2ee;border-radius:8px;background:#fff;color:#172f4d;font:inherit;font-weight:400}
 .venta-checkout-actions{display:grid;gap:10px;align-content:start}
-.venta-credit-schedule{grid-column:1/-1;display:grid;gap:9px;min-width:0;margin:0;padding:10px 12px;border:1px solid #d7e3ef;border-radius:10px;background:#f7fafd}.venta-credit-schedule legend{padding:0 6px;color:#244c78;font-size:12px;font-weight:750}.venta-credit-installment{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,.55fr) auto;align-items:end;gap:9px;padding-bottom:8px;border-bottom:1px solid #e2eaf3}.venta-credit-installment label{display:grid;gap:4px;color:#536c89;font-size:11px;font-weight:700}.venta-credit-installment input{box-sizing:border-box;width:100%;min-width:0;height:36px;padding:0 9px;border:1px solid #d5e0ec;border-radius:7px;background:#fff;color:#173c67;font:inherit;font-size:12px}.venta-credit-installment button,.venta-credit-add{min-height:34px;padding:0 10px;border:1px solid #d7e3ef;border-radius:7px;background:#fff;color:#174b80;font:inherit;font-size:11px;font-weight:700;cursor:pointer}.venta-credit-schedule>small{color:#637b96;font-size:11px;font-weight:500}@media(max-width:600px){.venta-credit-installment{grid-template-columns:minmax(0,1fr) minmax(100px,.75fr) auto;gap:6px}.venta-credit-installment button{padding:0 6px}}
+.venta-credit-schedule{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;min-width:0;margin:0;padding:10px 12px;border:1px solid #d7e3ef;border-radius:10px;background:#f7fafd}.venta-credit-schedule legend{grid-column:1/-1;padding:0 6px;color:#244c78;font-size:12px;font-weight:750}.venta-credit-schedule>label{display:grid;gap:4px;color:#536c89;font-size:11px;font-weight:700}.venta-credit-schedule>label input,.venta-credit-schedule>label select{box-sizing:border-box;width:100%;min-width:0;height:36px;padding:0 9px;border:1px solid #d5e0ec;border-radius:7px;background:#fff;color:#173c67;font:inherit;font-size:12px}.venta-credit-installment,.venta-credit-add{grid-column:1/-1}.venta-credit-installment{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,.55fr) auto;align-items:end;gap:9px;padding-bottom:8px;border-bottom:1px solid #e2eaf3}.venta-credit-installment label{display:grid;gap:4px;color:#536c89;font-size:11px;font-weight:700}.venta-credit-installment input{box-sizing:border-box;width:100%;min-width:0;height:36px;padding:0 9px;border:1px solid #d5e0ec;border-radius:7px;background:#fff;color:#173c67;font:inherit;font-size:12px}.venta-credit-installment button,.venta-credit-add{min-height:34px;padding:0 10px;border:1px solid #d7e3ef;border-radius:7px;background:#fff;color:#174b80;font:inherit;font-size:11px;font-weight:700;cursor:pointer}.venta-credit-schedule>small{color:#637b96;font-size:11px;font-weight:500}@media(max-width:600px){.venta-credit-installment{grid-template-columns:minmax(0,1fr) minmax(100px,.75fr) auto;gap:6px}.venta-credit-installment button{padding:0 6px}}
 .venta-credit-add:disabled{cursor:not-allowed;opacity:.5}
-.venta-checkout-total strong{font-size:21px}
-.venta-checkout-total{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.venta-checkout-total>span{min-width:0}.venta-checkout-total>strong{white-space:nowrap}
+.venta-checkout-total{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(140px,1.2fr);align-items:end;gap:10px}.venta-checkout-amount{display:grid;gap:3px;align-self:center}.venta-checkout-amount>span{color:#617b97;font-size:11px;font-weight:700}.venta-checkout-amount>strong{color:#0f3b68;font-size:21px;white-space:nowrap}.venta-quick-payment-method,.venta-checkout-total .selector-cuenta-financiera{display:grid;gap:5px;min-width:0;color:#355372;font-size:11px;font-weight:700}.venta-quick-payment-method select,.venta-checkout-total .selector-cuenta-financiera select{box-sizing:border-box;width:100%;min-height:38px;padding:0 9px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:12px}
 .venta-checkout-buttons{display:flex;justify-content:flex-end;gap:9px}
 .venta-checkout-buttons .venta-clear{min-width:86px;min-height:42px;padding:0 14px;border:1px solid #d9e3ed;border-radius:9px;background:#fff;color:#425c7a;font:inherit;font-weight:650;cursor:pointer}
 .venta-checkout-buttons .venta-submit{min-height:44px}
@@ -118,10 +117,10 @@ html[data-theme="oscuro"] #root .venta-product-tools>span,html[data-theme="oscur
 .venta-editor.is-catalog-open .venta-form-body .venta-lines{max-height:35vh;overflow:auto}
 .venta-catalog-sidebar{display:flex;min-width:0;max-height:min(76vh,820px);flex-direction:column;overflow:hidden;border:1px solid #dce6ef;border-radius:14px;background:#fff;box-shadow:0 10px 28px #183b5d0b}
 .venta-catalog-sidebar>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 14px;border-bottom:1px solid #e5ebf2}
-.venta-catalog-sidebar>header span,.venta-camera-dialog>header span{color:#71849b;font-size:9px;font-weight:800;letter-spacing:.12em}
-.venta-catalog-sidebar>header h2,.venta-camera-dialog>header h2{margin:4px 0 3px;color:#173b65;font-size:19px}
+.venta-catalog-sidebar>header span{color:#71849b;font-size:9px;font-weight:800;letter-spacing:.12em}
+.venta-catalog-sidebar>header h2{margin:4px 0 3px;color:#173b65;font-size:19px}
 .venta-catalog-sidebar>header p{margin:0;color:#71849b;font-size:12px}
-.venta-catalog-sidebar>header>button,.venta-camera-dialog>header>button{width:34px;height:34px;border:1px solid #e0e7ef;border-radius:9px;background:#fff;color:#526982;font-size:20px;cursor:pointer}
+.venta-catalog-sidebar>header>button{width:34px;height:34px;border:1px solid #e0e7ef;border-radius:9px;background:#fff;color:#526982;font-size:20px;cursor:pointer}
 .venta-catalog-search{display:flex;align-items:center;gap:9px;margin:14px 14px 8px;padding:0 12px;border:1px solid #d6e1ed;border-radius:10px;background:#fff;color:#486a91}
 .venta-catalog-search input{width:100%;height:42px;border:0;outline:0;background:transparent;color:#183a60;font:inherit;font-size:13px}
 .venta-catalog-results{display:grid;gap:9px;min-height:0;padding:6px 14px 14px;overflow:auto;overscroll-behavior:contain}
@@ -152,13 +151,6 @@ html[data-theme="oscuro"] #root .venta-product-tools>span,html[data-theme="oscur
 .venta-register-product-button:hover:not(:disabled){transform:translateY(-1px);border-color:var(--action-primary-border)!important;background:var(--action-primary-hover-surface)!important;color:var(--action-primary-hover)!important;box-shadow:0 5px 12px #a51f3218}
 .venta-register-product-button:focus-visible{outline:3px solid var(--action-primary-focus);outline-offset:2px}
 .venta-register-product-button>span{display:grid;width:20px;height:20px;place-items:center;border-radius:50%;background:#c91f3212;color:inherit!important;font-size:18px!important;font-weight:500;line-height:1}
-.venta-camera-backdrop{position:fixed;z-index:10000;inset:0;display:grid;place-items:center;padding:20px;background:#08172bcc;backdrop-filter:blur(5px)}
-.venta-camera-dialog{display:grid;width:min(100%,580px);gap:12px;padding:18px;border:1px solid #dce5ef;border-radius:16px;background:#fff;box-shadow:0 24px 80px #07152855}
-.venta-camera-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.venta-camera-dialog>header h2{margin:4px 0 0}
-.venta-camera-dialog video{width:100%;max-height:62vh;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#101923}
-.venta-camera-dialog>p{margin:0;color:#536a83;font-size:13px}
-.venta-camera-error{padding:14px;border:1px solid #ead8bf;border-radius:10px;background:#fff8eb;color:#77521e;font-size:13px;line-height:1.5}
 .venta-inline-product-search{display:none}
 @media(max-width:760px){
   .venta-page.is-data-step .venta-catalog-sidebar{display:none!important}
@@ -193,11 +185,11 @@ html[data-theme="oscuro"] #root .venta-number-card{border-color:#5a3039;backgrou
 html[data-theme="oscuro"] #root .venta-number-card span{color:#e3a1a7}
 html[data-theme="oscuro"] #root .venta-number-card strong{color:#ff8993}
 html[data-theme="oscuro"] #root .venta-register-product-button{border-color:var(--action-primary-border)!important;background:var(--action-primary-surface)!important;color:var(--action-primary)!important}
-html[data-theme="oscuro"] #root .venta-catalog-sidebar,html[data-theme="oscuro"] #root .venta-catalog-product,html[data-theme="oscuro"] #root .venta-camera-dialog{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .venta-catalog-sidebar,html[data-theme="oscuro"] #root .venta-catalog-product{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-catalog-sidebar>header{border-color:var(--tema-borde)}
-html[data-theme="oscuro"] #root .venta-catalog-sidebar>header h2,html[data-theme="oscuro"] #root .venta-catalog-product-title strong,html[data-theme="oscuro"] #root .venta-catalog-product-meta>strong,html[data-theme="oscuro"] #root .venta-camera-dialog>header h2{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .venta-catalog-sidebar>header p,html[data-theme="oscuro"] #root .venta-catalog-product-title span,html[data-theme="oscuro"] #root .venta-catalog-product-meta>span,html[data-theme="oscuro"] #root .venta-camera-dialog>p{color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .venta-catalog-search,html[data-theme="oscuro"] #root .venta-catalog-sidebar>header>button,html[data-theme="oscuro"] #root .venta-camera-dialog>header>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .venta-catalog-sidebar>header h2,html[data-theme="oscuro"] #root .venta-catalog-product-title strong,html[data-theme="oscuro"] #root .venta-catalog-product-meta>strong{color:var(--tema-texto)}
+html[data-theme="oscuro"] #root .venta-catalog-sidebar>header p,html[data-theme="oscuro"] #root .venta-catalog-product-title span,html[data-theme="oscuro"] #root .venta-catalog-product-meta>span{color:var(--tema-texto-secundario)}
+html[data-theme="oscuro"] #root .venta-catalog-search,html[data-theme="oscuro"] #root .venta-catalog-sidebar>header>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-catalog-search input{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-catalog-product-meta{border-color:var(--tema-borde)}
 html[data-theme="oscuro"] #root .venta-catalog-product-image{background:linear-gradient(145deg,#1d2d42,#24384f);color:#7187a2}
@@ -317,7 +309,7 @@ html[data-theme="oscuro"] #root .venta-client-search-document{border-color:var(-
 
 .venta-catalog-results.is-moto-results{grid-template-columns:1fr}
 
-/* Lista de agregados guardados, visualmente separada del resultado de b?squeda. */
+/* Lista de agregados guardados, visualmente separada del resultado de búsqueda. */
 .venta-recent-products{display:grid;gap:7px;margin:10px 12px 12px;padding:12px;border:1px solid #e5ebf2;border-radius:11px;background:#f8fafc;overflow:auto;max-height:32vh}
 .venta-recent-products h3{margin:0 0 3px;color:#173b65;font-size:13px}
 .venta-recent-products>button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px;border:1px solid #e5ebf2;border-radius:8px;background:#fff;text-align:left;cursor:pointer}
@@ -479,11 +471,21 @@ html[data-theme="oscuro"] #root .venta-page.is-data-step .venta-line input{borde
 }
 
 @media(max-width:600px){
-  .venta-page.is-data-step .venta-data-footer .venta-checkout-actions{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:5px;min-width:0}
-  .venta-page.is-data-step .venta-data-footer .venta-checkout-total{justify-content:flex-start!important;gap:4px!important;min-width:0;white-space:nowrap;font-size:10px}
-  .venta-page.is-data-step .venta-data-footer .venta-checkout-total strong{font-size:14px}
-  .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons{display:contents}
+  .venta-page.is-data-step .venta-data-footer .venta-checkout-actions{display:grid!important;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:8px;min-width:0}
+  .venta-page.is-data-step .venta-data-footer .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);justify-content:stretch!important;gap:8px!important;min-width:0;white-space:normal;font-size:10px}
+  .venta-page.is-data-step .venta-data-footer .venta-checkout-amount>strong{font-size:16px}
+  .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons{display:grid!important;grid-template-columns:1fr 2fr;gap:6px}
   .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-clear{min-width:0;min-height:40px;padding:0 6px;font-size:11px}
   .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-submit{width:auto!important;min-width:0!important;min-height:40px;height:40px;padding:0 8px;font-size:11px;gap:5px}
   .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-submit span{font-size:15px}
 }
+.venta-order-service-payment{display:block;margin:12px 22px;padding:14px 16px;border:1px solid #d5e2ef;border-left:3px solid #e4263f;border-radius:10px;background:#f6f9fc;color:#183f67}
+.venta-order-service-payment>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:5px 12px}
+.venta-order-service-payment>div>span{color:#71869b;font-size:11px;font-weight:750}
+.venta-order-service-payment>div>strong{font-size:16px;white-space:nowrap}
+.venta-order-service-payment>div>small{grid-column:1/-1;color:#647b91;font-size:12px}
+.venta-order-service-payment small{color:#647b91;font-size:11px}
+@media(max-width:700px){.venta-order-service-payment{margin:10px 12px;padding:12px}}
+
+.venta-page .selector-cuenta-financiera{display:grid;gap:5px;min-width:0;color:#355372;font-size:11px;font-weight:700}.venta-page .selector-cuenta-financiera .selector-cuenta-hint,.venta-page .selector-cuenta-financiera .selector-cuenta-error{font-size:10px;line-height:1.4}.venta-page .selector-cuenta-financiera .selector-cuenta-error{color:#b42335}.venta-page .selector-cuenta-financiera select{box-sizing:border-box;width:100%;min-height:38px;padding:0 9px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:12px}
+html[data-theme="oscuro"] #root .venta-page .selector-cuenta-financiera{color:var(--tema-texto-secundario)}html[data-theme="oscuro"] #root .venta-page .selector-cuenta-financiera select{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}

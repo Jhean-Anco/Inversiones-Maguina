@@ -57,9 +57,9 @@ export class ServicioAlmacenamiento {
     return true;
   }
 
-  async subirImagenCatalogo(tipo: "categorias" | "marcas" | "productos", id: string, nombre: string, mime: string, contenido: Buffer) {
-    const tipoArchivo = tipo === "productos" ? "FOTO_REPUESTO" : tipo === "categorias" ? "FOTO_CATEGORIA" : "FOTO_MARCA";
-    const entidadTipo = tipo === "productos" ? "PRODUCTO" : tipo === "categorias" ? "CATEGORIA" : "MARCA";
+  async subirImagenCatalogo(tipo: "categorias" | "marcas" | "productos" | "modelos-mototaxi", id: string, nombre: string, mime: string, contenido: Buffer) {
+    const tipoArchivo = tipo === "productos" ? "FOTO_REPUESTO" : tipo === "categorias" ? "FOTO_CATEGORIA" : tipo === "modelos-mototaxi" ? "FOTO_MOTOTAXI_MODELO" : "FOTO_MARCA";
+    const entidadTipo = tipo === "productos" ? "PRODUCTO" : tipo === "categorias" ? "CATEGORIA" : tipo === "modelos-mototaxi" ? "MODELO_MOTOTAXI" : "MARCA";
     const archivo = await this.guardarArchivo(tipoArchivo, tipoArchivo, entidadTipo, id, nombre, mime, contenido);
     return { ...archivo, rutaImagen: archivo.ruta };
   }

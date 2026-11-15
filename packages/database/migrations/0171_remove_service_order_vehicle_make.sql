@@ -1,0 +1,1 @@
+ALTER TABLE "ordenes_servicio" DROP COLUMN "vehiculo_marca";

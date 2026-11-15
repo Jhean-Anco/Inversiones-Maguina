@@ -16,6 +16,13 @@ export class ControladorImagenesCatalogo {
     return this.imagenes.guardar(tipo, id, solicitud);
   }
 
+  @Post("modelos-mototaxi/:id")
+  @UseGuards(GuardiaSesion, GuardiaPermiso)
+  @RequierePermiso("MOTOTAXIS.EDITAR")
+  subirImagenModeloMototaxi(@Param("id") id: string, @Req() solicitud: FastifyRequest) {
+    return this.imagenes.guardar("modelos-mototaxi", id, solicitud);
+  }
+
   @Delete("productos/:id/:idImagen")
   @UseGuards(GuardiaSesion, GuardiaPermiso)
   @RequierePermiso("INVENTARIO.EDITAR")

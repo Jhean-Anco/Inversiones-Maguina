@@ -42,6 +42,28 @@
 .moto-filters { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 10px; margin-bottom: 15px; }
 .moto-state { display: inline-flex; padding: 4px 8px; border-radius: 6px; background: #eaf6ef; color: #13734c; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
 .moto-state.state-vendida { background: #edf0f4; color: #536477; }.moto-state.state-garantia { background: #fff4df; color: #98640c; }.moto-state.state-reservada { background: #eaf2fc; color: #315d95; }.moto-state.state-baja,.moto-state.state-faltante { background: #ffeded; color: #a33f3f; }
+.moto-color-stock { display: grid; gap: 16px; padding: 19px 21px; border: 1px solid #dbe5ed; border-radius: 14px; background: linear-gradient(120deg,#f8fbfd,#fff 65%,#f8fbfd); box-shadow: 0 4px 18px #12304a0a; }
+.moto-color-stock-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.moto-color-stock-heading span { color: #1d5d8e; font-size: 10px; font-weight: 850; letter-spacing: .12em; }
+.moto-color-stock-heading h2 { margin: 5px 0 3px; color: #123b60; font-size: 18px; }
+.moto-color-stock-heading p { margin: 0; color: #708397; font-size: 12px; }
+.moto-color-stock-heading>strong { display: grid; min-width: 76px; min-height: 62px; place-content: center; border: 1px solid #cfe0ec; border-radius: 12px; background: #edf5fa; color: #174e79; font-size: 23px; text-align: center; }
+.moto-color-stock-heading>strong small { color: #6b8498; font-size: 10px; font-weight: 650; }
+.moto-color-stock-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 9px; }
+.moto-color-stock-grid article { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 10px; padding: 11px 13px; border: 1px solid #e0e8ef; border-radius: 10px; background: #fff; }
+.moto-color-stock-grid article span { grid-column: 1/-1; color: #75889a; font-size: 10px; }
+.moto-color-stock-grid article strong { display: flex; align-items: center; gap: 7px; align-self: center; color: #284a67; font-size: 12px; }
+.moto-color-stock-swatch { width: 12px; height: 12px; flex: 0 0 12px; border: 1px solid #aebdca; border-radius: 50%; }
+.moto-color-stock-grid article b { min-width: 34px; padding: 4px 7px; border-radius: 999px; background: #e8f2f8; color: #165485; font-size: 12px; text-align: center; }
+.moto-color-stock-empty { margin: 0; padding: 14px; border: 1px dashed #cfdae3; border-radius: 10px; color: var(--moto-muted); font-size: 12px; text-align: center; }
+html[data-theme="oscuro"] #root .moto-color-stock { border-color: #31485e; background: linear-gradient(120deg,#14283b,#182d42 65%,#14283b); }
+html[data-theme="oscuro"] #root .moto-color-stock-heading h2,html[data-theme="oscuro"] #root .moto-color-stock-grid article strong { color: #e0ebf5; }
+html[data-theme="oscuro"] #root .moto-color-stock-heading p,html[data-theme="oscuro"] #root .moto-color-stock-grid article span { color: #9cafc0; }
+html[data-theme="oscuro"] #root .moto-color-stock-heading>strong { border-color: #38536c; background: #1c3a55; color: #c7e4f7; }
+html[data-theme="oscuro"] #root .moto-color-stock-heading>strong small { color: #9cafc0; }
+html[data-theme="oscuro"] #root .moto-color-stock-grid article { border-color: #31485e; background: #172b3f; }
+html[data-theme="oscuro"] #root .moto-color-stock-grid article b { background: #1e405d; color: #c7e4f7; }
+html[data-theme="oscuro"] #root .moto-color-stock-empty { border-color: #40566b; color: #a4b4c4; }
 .moto-quiet-button { border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .moto-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .moto-fields label,
@@ -73,6 +95,10 @@
 .moto-primary:disabled{ opacity: .55; cursor: wait; }
 .moto-modal-backdrop { background: #071a2db8; overscroll-behavior: contain; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .moto-modal { gap: 18px; width: min(820px,100%); max-height: min(90dvh,900px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 24px; border: 1px solid var(--moto-border); border-radius: 14px; background: var(--moto-surface); box-shadow: 0 24px 80px #10284244; }
+.moto-model-dialog { width: min(1180px,calc(100vw - 48px)); }
+.moto-model-dialog .moto-fields { grid-template-columns: repeat(3,minmax(0,1fr)); }
+@media (max-width: 900px) { .moto-model-dialog .moto-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) { .moto-model-dialog { width: calc(100vw - 20px); padding: 18px; }.moto-model-dialog .moto-fields { grid-template-columns: minmax(0,1fr); } }
 .moto-modal :is(button,input,select,textarea):focus-visible { outline: 3px solid #3784bd66; outline-offset: 2px; }
 .moto-purchase-dialog { --moto-ink: #102b4d; --moto-muted: #71839a; --moto-border: #e2e8f0; --moto-surface: #fff; --moto-soft: #f7f9fc; --moto-primary: #15569a; width: min(920px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; color: var(--moto-ink); }
 html[data-theme="oscuro"] .moto-purchase-dialog { --moto-ink: #e6edf6; --moto-muted: #9aaabd; --moto-border: #2b3b50; --moto-surface: #142235; --moto-soft: #182a3f; --moto-primary: #5796d1; }
@@ -152,6 +178,7 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-panel-heading button,
 html[data-theme="oscuro"] #root .mototaxis-page .moto-modal footer button:not(.moto-primary){ border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-primary); }
 html[data-theme="oscuro"] #root .mototaxis-page .moto-primary { border-color: var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary); }
 @media (max-width: 1000px) { .moto-content-grid{ grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .moto-color-stock { padding: 15px; }.moto-color-stock-heading>strong { min-width: 62px; min-height: 54px; font-size: 19px; }.moto-color-stock-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .mototaxis-page { padding: 0 0 20px; }.moto-page-heading { align-items: flex-start; }.moto-heading-total { min-width: 105px; padding: 10px; }.moto-heading-total strong { font-size: 21px; }.moto-fields,.moto-filters,.moto-stocktake-new-fields { grid-template-columns: 1fr; }.moto-field-wide { grid-column: auto; }.moto-quiet-button { justify-self: end; }.moto-panel { padding: 17px; }.moto-panel-heading { align-items: flex-start; }.moto-staged-units article { grid-template-columns: auto 1fr; }.moto-staged-units article small { grid-column: 1/-1; }.moto-staged-units article button { grid-column: 2; grid-row: 1; justify-self: end; }.moto-stocktake-list article { grid-template-columns: 1fr; }.moto-stocktake-counts { justify-content: flex-start; }.moto-stocktake-counter { grid-template-columns: 1fr; } }
 @media (max-width: 750px) { }
 
@@ -208,7 +235,7 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-purchase-search { border-c
 html[data-theme="oscuro"] #root .mototaxis-page .moto-provider-control button { border-color: var(--moto-border); background: var(--moto-surface); color: var(--moto-primary); }
 @media(max-width:650px) { .moto-provider-control { align-items: stretch; flex-direction: column; } .moto-provider-control button { width: 100%; } .moto-purchase-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); } }
 
-/* B?squeda directa de proveedor y modelo dentro del registro de compra */
+/* Búsqueda directa de proveedor y modelo dentro del registro de compra */
 .moto-search-select { position: relative; min-width: 0; }
 .moto-search-select > input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid var(--moto-border); border-radius: 8px; background: var(--moto-surface); color: var(--moto-ink); font: inherit; box-sizing: border-box; }
 .moto-search-results { position: absolute; z-index: 20; top: calc(100% + 5px); left: 0; right: 0; max-height: 260px; overflow: auto; border: 1px solid var(--moto-border); border-radius: 9px; background: var(--moto-surface); box-shadow: 0 12px 32px #10284226; }
@@ -243,7 +270,222 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-search-select > input,html
 .moto-unit-photo > button { position: absolute; top: 1px; right: 1px; display: grid; width: 17px; height: 17px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #17212bd9; color: #fff; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
 .moto-unit-photo > .erp-icon-action.moto-photo-delete { top: 4px; right: 4px; width: 26px; height: 26px; min-height: 26px; flex-basis: 26px; padding: 0; border: 1px solid #edbbc1; border-radius: 50%; background: #fff4f5; color: #c91f32; }
 .moto-unit-photo > .erp-icon-action.moto-photo-delete:hover:not(:disabled) { background: #ffe8ea; color: #a91b2b; }
-.moto-unit-photo-add { display: grid; width: 42px; height: 42px; place-items: center; border: 1px dashed var(--moto-border); border-radius: 7px; color: var(--moto-primary); font-size: 10px; font-weight: 750; cursor: pointer; }
+.moto-unit-photo-add { display: grid; width: 42px; height: 42px; place-items: center; padding: 0; border: 1px dashed var(--moto-border); border-radius: 7px; background: transparent; color: var(--moto-primary); font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
 .moto-unit-photo-add input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
-\r\n
+/* Alta de compra: distribución de documento con resumen persistente */
+.moto-purchase-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1160px, calc(100vw - 48px));
+  max-height: calc(100dvh - 40px);
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: var(--moto-surface);
+  box-shadow: 0 32px 100px #071a2d66;
+}
+.moto-purchase-dialog > .moto-modal-title {
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 24px 30px 22px;
+  border: 0;
+  background: linear-gradient(118deg, #102d4c 0%, #174c78 68%, #1b6390 100%);
+  color: #fff;
+}
+.moto-purchase-dialog .moto-modal-title > div { display: grid; gap: 7px; }
+.moto-purchase-dialog .moto-modal-title .moto-eyebrow { color: #a9d7ef; }
+.moto-purchase-dialog .moto-modal-title h2 { margin: 0; color: #fff; font-size: clamp(23px, 2.2vw, 30px); letter-spacing: -.035em; }
+.moto-purchase-dialog .moto-modal-title p { max-width: 670px; color: #d3e1ee; line-height: 1.5; }
+.moto-purchase-dialog .moto-modal-title > button { width: 40px; height: 40px; flex: 0 0 40px; border-color: #ffffff42; background: #ffffff12; color: #fff; font-size: 24px; }
+.moto-purchase-dialog .moto-modal-title > button:hover { background: #ffffff24; }
+.moto-purchase-dialog > .moto-modal-title { gap: 16px; }
+.moto-purchase-dialog > .moto-modal-title::before { content: ""; width: 54px; height: 54px; flex: 0 0 54px; border: 1px solid #ffffff55; border-radius: 12px; background: #fff url("/logo.png") center / contain no-repeat; }
+.moto-purchase-dialog .moto-modal-title > div { min-width: 0; flex: 1 1 auto; }
+.moto-purchase-dialog .moto-purchase-layout { min-height: 0; overflow: auto; padding: 22px 28px 28px; overscroll-behavior: contain; }
+.moto-purchase-dialog .moto-purchase-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr);
+  align-items: start;
+  gap: 16px;
+}
+.moto-purchase-dialog .moto-purchase-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--moto-border);
+  border-radius: 15px;
+  background: var(--moto-surface);
+  box-shadow: 0 4px 16px #0d2c4908;
+}
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(1) { grid-column: 1 / -1; }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(2) { grid-column: 1; grid-row: 2; }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(3) { grid-column: 2; grid-row: 2; }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(4) { grid-column: 2; grid-row: 3; }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(5) { grid-column: 1 / -1; }
+.moto-purchase-dialog .moto-purchase-section-title { align-items: center; gap: 12px; margin-bottom: 18px; }
+.moto-purchase-dialog .moto-purchase-section-title > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #d7e6f4;
+  border-radius: 10px;
+  background: #edf5fb;
+  color: #17578d;
+  font-size: 13px;
+}
+.moto-purchase-dialog .moto-purchase-section-title h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.01em; }
+.moto-purchase-dialog .moto-purchase-section-title p { font-size: 11px; line-height: 1.5; }
+.moto-purchase-dialog .moto-fields { gap: 14px 12px; }
+.moto-purchase-dialog .moto-fields label { gap: 7px; color: #344b61; font-size: 11px; font-weight: 750; }
+.moto-purchase-dialog .moto-fields :is(input, select, textarea),
+.moto-purchase-dialog .moto-search-select > input {
+  min-height: 43px;
+  padding: 0 12px;
+  border-color: #d8e1e9;
+  border-radius: 9px;
+  background: #fff;
+  color: #18324c;
+  font-size: 13px;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.moto-purchase-dialog .moto-fields :is(input, select, textarea):hover,
+.moto-purchase-dialog .moto-search-select > input:hover { border-color: #aabfd1; }
+.moto-purchase-dialog .moto-fields :is(input, select, textarea):focus,
+.moto-purchase-dialog .moto-search-select > input:focus { border-color: #2779ae; box-shadow: 0 0 0 3px #2779ae1c; outline: 0; }
+.moto-purchase-dialog .moto-provider-control.moto-search-select,
+.moto-purchase-dialog .moto-model-control { gap: 8px; }
+.moto-purchase-dialog .moto-provider-control > button,
+.moto-purchase-dialog .moto-model-control > button {
+  min-height: 43px;
+  padding: 0 12px;
+  border-color: #cbd9e6;
+  border-radius: 9px;
+  background: #f6f9fc;
+  color: #155888;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.moto-purchase-dialog .moto-provider-control > button:hover,
+.moto-purchase-dialog .moto-model-control > button:hover { border-color: #9bb6ce; background: #edf4fa; }
+.moto-purchase-dialog .moto-search-selection { color: #157047; font-size: 11px; font-weight: 650; }
+.moto-purchase-dialog .moto-no-document { min-height: 43px; padding: 8px 12px; border-color: #d8e1e9; border-radius: 9px; }
+.moto-purchase-dialog .moto-no-document strong { color: var(--moto-ink); font-size: 11px; }
+.moto-purchase-dialog .moto-no-document span { font-size: 11px; }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(3) .moto-fields,
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(4) .moto-fields { grid-template-columns: minmax(0, 1fr); }
+.moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(4) .moto-fields > .moto-field-wide { grid-column: auto; }
+.moto-purchase-dialog .moto-add-unit {
+  grid-column: 1;
+  min-height: 44px;
+  align-self: start;
+  border: 1px dashed #9cb6cb;
+  border-radius: 10px;
+  background: #f6f9fc;
+  color: #205a84;
+  font-size: 12px;
+}
+.moto-purchase-dialog .moto-add-unit:hover { border-color: #4e86ad; background: #eef5fa; }
+.moto-purchase-dialog .moto-purchase-summary {
+  position: sticky;
+  top: 0;
+  grid-column: 2;
+  align-self: start;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 5px 17px;
+  border-color: #d4e1eb;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f5f9fc, #edf4f9);
+}
+.moto-purchase-dialog .moto-purchase-summary > div { grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #dbe5ed; }
+.moto-purchase-dialog .moto-purchase-summary > div:last-of-type { border-bottom: 0; }
+.moto-purchase-dialog .moto-purchase-summary span { color: #587087; font-size: 11px; }
+.moto-purchase-dialog .moto-purchase-summary strong { color: #183a57; font-size: 16px; }
+.moto-purchase-dialog .moto-purchase-summary > div:last-of-type strong { color: #155b88; font-size: 20px; }
+.moto-purchase-dialog .moto-purchase-summary p { padding: 10px 0 5px; color: #ae3f42; font-size: 11px; }
+.moto-purchase-dialog .moto-staged-units article { border-color: var(--moto-border); border-radius: 10px; background: var(--moto-soft); }
+.moto-purchase-dialog .moto-purchase-submit {
+  position: sticky;
+  bottom: -28px;
+  z-index: 2;
+  grid-column: 1 / -1;
+  min-height: 52px;
+  margin: 0 -28px -28px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(90deg, #123a5d, #17648e);
+  color: #fff;
+  box-shadow: 0 -8px 24px #102b4d18;
+  font-size: 13px;
+}
+.moto-purchase-dialog .moto-purchase-submit:hover:not(:disabled) { background: linear-gradient(90deg, #0e304f, #12577d); color: #fff; }
+.moto-purchase-dialog .moto-purchase-submit:disabled { opacity: .5; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-section { background: #17283b; box-shadow: none; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-section-title > span { border-color: #35516d; background: #203c58; color: #a9d0f4; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-fields label { color: #ccd8e4; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-fields :is(input, select, textarea),
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-search-select > input { border-color: #3a5067; background: #102033; color: #e6edf6; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-provider-control > button,
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-model-control > button { border-color: #3a5067; background: #20354b; color: #b8d9f2; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-search-selection { color: #82d5a9; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-no-document { border-color: #3a5067; background: #102033; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-summary { border-color: #35516a; background: linear-gradient(145deg, #1a3147, #14283b); }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-summary > div { border-color: #344c64; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-summary span { color: #a8bdd0; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-summary strong,
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-summary > div:last-of-type strong { color: #dceaf5; }
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-add-unit { border-color: #45627f; background: #182b3e; color: #b8d9f2; }
+@media (max-width: 850px) {
+  .moto-purchase-dialog { width: min(760px, calc(100vw - 32px)); }
+  .moto-purchase-dialog .moto-purchase-form { grid-template-columns: minmax(0, 1fr); }
+  .moto-purchase-dialog .moto-purchase-form > .moto-purchase-section:nth-of-type(n) { grid-column: 1; grid-row: auto; }
+  .moto-purchase-dialog .moto-purchase-summary { position: static; grid-column: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .moto-purchase-dialog .moto-purchase-summary > div { grid-template-columns: 1fr; align-items: start; border-bottom: 0; }
+  .moto-purchase-dialog .moto-add-unit { grid-column: 1; }
+  .moto-purchase-dialog .moto-purchase-submit { grid-column: 1; }
+}
+@media (max-width: 560px) {
+  .moto-purchase-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 17px; }
+  .moto-purchase-dialog > .moto-modal-title { padding: 19px 18px 17px; }
+  .moto-purchase-dialog .moto-modal-title p { padding-right: 8px; font-size: 12px; }
+  .moto-purchase-dialog .moto-purchase-layout { padding: 14px 14px 20px; }
+  .moto-purchase-dialog .moto-purchase-form { gap: 12px; }
+  .moto-purchase-dialog .moto-purchase-section { padding: 16px 14px; border-radius: 12px; }
+  .moto-purchase-dialog .moto-purchase-section-title { align-items: flex-start; margin-bottom: 14px; }
+  .moto-purchase-dialog .moto-purchase-section-title > span { width: 30px; height: 30px; flex-basis: 30px; }
+  .moto-purchase-dialog .moto-fields { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .moto-purchase-dialog .moto-fields > .moto-field-wide { grid-column: auto; }
+  .moto-purchase-dialog .moto-provider-control.moto-search-select,
+  .moto-purchase-dialog .moto-model-control { grid-template-columns: minmax(0, 1fr); }
+  .moto-purchase-dialog .moto-provider-control .moto-search-results,
+  .moto-purchase-dialog .moto-model-control .moto-search-results { right: 0; }
+  .moto-purchase-dialog .moto-purchase-summary { grid-template-columns: 1fr; padding: 5px 14px; }
+  .moto-purchase-dialog .moto-purchase-summary > div { grid-template-columns: 1fr auto; border-bottom: 1px solid var(--moto-border); }
+  .moto-purchase-dialog .moto-purchase-submit { bottom: -20px; margin: 0 -14px -20px; padding: 0 14px; }
+}
+.moto-inventory-tabs{display:flex;gap:8px;margin:0 0 14px;padding:0;border-bottom:1px solid #dce5ed}.moto-inventory-tabs button{padding:10px 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:#60758a;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.moto-inventory-tabs button[aria-current="page"]{border-bottom-color:#1b5c91;color:#174d78}
+
+/* El formulario de compra conserva el encabezado y las acciones fuera del área desplazable. */
+.moto-purchase-dialog{height:min(900px,calc(100dvh - 40px))}
+.moto-purchase-dialog>.moto-purchase-form{display:flex;min-height:0;flex:1 1 auto;flex-direction:column;gap:0;overflow:hidden}
+.moto-purchase-dialog .moto-purchase-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.85fr);align-content:start;align-items:start;gap:16px;min-height:0;flex:1 1 auto;overflow:auto;padding:22px 28px 24px;overscroll-behavior:contain}
+.moto-purchase-dialog .moto-purchase-layout{width:100%;min-width:0;box-sizing:border-box;grid-template-columns:minmax(0,1fr)}
+.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(n){grid-column:1;grid-row:auto}
+.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(2) .moto-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(3) .moto-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(4) .moto-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-summary{grid-column:1;position:static;grid-template-columns:repeat(3,minmax(0,1fr))}
+.moto-purchase-dialog .moto-purchase-layout>.moto-add-unit{grid-column:1;align-self:start}
+.moto-purchase-dialog .moto-purchase-footer{display:flex;flex:0 0 auto;justify-content:flex-end;gap:10px;padding:14px 24px;border-top:1px solid var(--moto-border);background:var(--moto-surface)}
+.moto-purchase-dialog .moto-purchase-footer button{min-height:42px;padding:0 17px;border:1px solid var(--moto-border);border-radius:10px;background:var(--moto-surface);color:var(--moto-ink);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.moto-purchase-dialog .moto-purchase-footer .moto-purchase-submit{position:static;min-height:44px;margin:0;padding:0 20px;border:1px solid #174f7c;border-radius:10px;background:linear-gradient(100deg,#123a5d,#17648e);color:#fff;box-shadow:none}
+.moto-purchase-dialog .moto-purchase-footer .moto-purchase-submit:disabled{opacity:.55;cursor:not-allowed}
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-footer{border-color:var(--moto-border);background:var(--moto-surface)}
+html[data-theme="oscuro"] .moto-purchase-dialog .moto-purchase-footer button:not(.moto-purchase-submit){border-color:var(--moto-border);background:var(--moto-soft);color:var(--moto-ink)}
+@media(max-width:850px){.moto-purchase-dialog{height:min(900px,calc(100dvh - 32px))}.moto-purchase-dialog>.moto-purchase-form{gap:0}.moto-purchase-dialog .moto-purchase-layout{grid-template-columns:minmax(0,1fr);padding:18px 20px}.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-section:nth-of-type(2) .moto-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.moto-purchase-dialog .moto-purchase-layout>.moto-purchase-summary{position:static;grid-column:1;grid-template-columns:repeat(3,minmax(0,1fr))}.moto-purchase-dialog .moto-purchase-layout>.moto-add-unit{grid-column:1}}
+@media(max-width:560px){.moto-purchase-dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px)}.moto-purchase-dialog>.moto-purchase-form{gap:0}.moto-purchase-dialog .moto-purchase-layout{padding:14px}.moto-purchase-dialog .moto-purchase-summary{grid-template-columns:minmax(0,1fr)}.moto-purchase-dialog .moto-purchase-summary>div{grid-template-columns:1fr auto;border-bottom:1px solid var(--moto-border)}.moto-purchase-dialog .moto-purchase-footer{padding:11px 12px}.moto-purchase-dialog .moto-purchase-footer button{flex:1;padding:0 9px}}

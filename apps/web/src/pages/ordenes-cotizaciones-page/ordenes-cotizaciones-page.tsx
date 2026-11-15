@@ -1,10 +1,12 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioIngresos, type ClienteRegistrado, type Cotizacion, type DatosClienteNuevo, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
+import { imprimirDocumento } from "../../services/impresion-documentos";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import "./ordenes-cotizaciones-page.css";
 import "./cotizaciones-page.css";
@@ -12,10 +14,10 @@ import "./cotizaciones-page.css";
 type ModoGestion = "ORDENES" | "COTIZACIONES";
 type LineaGestion = Record<string, unknown> & { tipo: "PRODUCTO" | "SERVICIO"; nombreVisible: string; precioUnitario: string; cantidad: string; descuento: string; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO" };
 const hoy = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
+const sumarDias = (fecha: string, dias: number) => { const resultado = new Date(`${fecha}T00:00:00Z`); resultado.setUTCDate(resultado.getUTCDate() + dias); return resultado.toISOString().slice(0, 10); };
 const dinero = (valor: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(valor);
 const nombreCliente = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const totalLineas = (lineas: Record<string, unknown>[]) => lineas.reduce((suma, linea) => suma + Number(linea.cantidad ?? 1) * Number(linea.precioUnitario ?? 0) - Number(linea.descuento ?? 0), 0);
-const escaparHtml = (valor: unknown) => String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[caracter]!);
 
 export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestion; puedeCrear: boolean }) {
   const navegar = useNavigate();
@@ -26,10 +28,16 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [codigoCotizacionPrevisualizado, setCodigoCotizacionPrevisualizado] = useState<string | null>(null);
+  const [consultandoSerieCotizacion, setConsultandoSerieCotizacion] = useState(false);
+  const [errorConsultaSerieCotizacion, setErrorConsultaSerieCotizacion] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [confirmarDescarteCotizacion, setConfirmarDescarteCotizacion] = useState(false);
   const [ordenActiva, setOrdenActiva] = useState<OrdenServicio | null>(null);
   const [clienteBusqueda, setClienteBusqueda] = useState("");
   const [clienteBusquedaConsultada, setClienteBusquedaConsultada] = useState("");
+  const [tipoDocumentoBusqueda, setTipoDocumentoBusqueda] = useState<"DNI" | "RUC" | "NOMBRE">("DNI");
+  const [buscandoClientes, setBuscandoClientes] = useState(false);
   const [clientes, setClientes] = useState<ClienteRegistrado[]>([]);
   const [cliente, setCliente] = useState<ClienteRegistrado | null>(null);
   const [mostrarFormularioCliente, setMostrarFormularioCliente] = useState(false);
@@ -39,11 +47,14 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
   const [trabajo, setTrabajo] = useState("");
   const [precioTrabajo, setPrecioTrabajo] = useState("");
   const [cantidadTrabajo, setCantidadTrabajo] = useState("1");
-  const [vehiculo, setVehiculo] = useState({ placa: "", marca: "", modelo: "", motivo: "", diagnostico: "" });
+  const [vehiculo, setVehiculo] = useState({ placa: "", motivo: "", diagnostico: "" });
+  const [fechaRecepcionOrden, setFechaRecepcionOrden] = useState(hoy());
+  const [fechaAcabadoOrden, setFechaAcabadoOrden] = useState(hoy());
   const [estadoOrden, setEstadoOrden] = useState<OrdenServicio["estado"]>("ABIERTA");
   const [notaAvance, setNotaAvance] = useState("");
   const [observacion, setObservacion] = useState("");
-  const [vigenteHasta, setVigenteHasta] = useState("");
+  const [fechaEmisionCotizacion, setFechaEmisionCotizacion] = useState(hoy);
+  const [vigenteHasta, setVigenteHasta] = useState(() => sumarDias(hoy(), 15));
   const [tipoComprobante, setTipoComprobante] = useState<"BOLETA" | "FACTURA" | "NOTA_VENTA">("BOLETA");
 
   async function cargar() {
@@ -59,36 +70,77 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
   }
   useEffect(() => { const temporizador = window.setTimeout(() => void cargar(), busqueda ? 220 : 0); return () => window.clearTimeout(temporizador); }, [busqueda, esOrden]);
   useEffect(() => {
+    if (!esOrden) return;
     const texto = clienteBusqueda.trim();
     setClienteBusquedaConsultada("");
     if (texto.length < 2 || cliente) { setClientes([]); return; }
     let vigente = true;
     const temporizador = window.setTimeout(() => void servicioIngresos.buscarClientes(texto).then((resultados) => { if (vigente) { setClientes(resultados); setClienteBusquedaConsultada(texto); } }).catch(() => { if (vigente) setClientes([]); }), 220);
     return () => { vigente = false; window.clearTimeout(temporizador); };
-  }, [clienteBusqueda, cliente]);
+  }, [clienteBusqueda, cliente, esOrden]);
   useEffect(() => {
     const texto = busquedaProducto.trim();
     if (texto.length < 2) { setProductos([]); return; }
     const temporizador = window.setTimeout(() => void servicioIngresos.buscarProductos(texto).then(setProductos).catch(() => setProductos([])), 220);
     return () => window.clearTimeout(temporizador);
   }, [busquedaProducto]);
+  useEffect(() => {
+    if (esOrden || !mostrarFormulario) return;
+    let vigente = true;
+    setCodigoCotizacionPrevisualizado(null); setErrorConsultaSerieCotizacion(false); setConsultandoSerieCotizacion(true);
+    void servicioIngresos.numeraciones().then((numeraciones) => {
+      if (vigente) { setCodigoCotizacionPrevisualizado(numeraciones.COTIZACION.codigo); setErrorConsultaSerieCotizacion(false); }
+    }).catch(() => {
+      if (vigente) { setCodigoCotizacionPrevisualizado(null); setErrorConsultaSerieCotizacion(true); }
+    }).finally(() => { if (vigente) setConsultandoSerieCotizacion(false); });
+    return () => { vigente = false; };
+  }, [esOrden, mostrarFormulario]);
 
   const total = useMemo(() => totalLineas(lineas), [lineas]);
   function nuevaGestion() {
-    setOrdenActiva(null); setCliente(null); setClienteBusqueda(""); setClienteBusquedaConsultada(""); setLineas([]); setObservacion(""); setVigenteHasta(""); setTrabajo(""); setPrecioTrabajo(""); setBusquedaProducto("");
-    setVehiculo({ placa: "", marca: "", modelo: "", motivo: "", diagnostico: "" }); setEstadoOrden("ABIERTA"); setNotaAvance(""); setMostrarFormularioCliente(false); setMostrarFormulario(true); setError("");
+    const fechaCotizacion = hoy();
+    setFechaEmisionCotizacion(fechaCotizacion);
+    setOrdenActiva(null); setCliente(null); setClienteBusqueda(""); setClienteBusquedaConsultada(""); setTipoDocumentoBusqueda("DNI"); setClientes([]); setLineas([]); setObservacion(""); setVigenteHasta(sumarDias(fechaCotizacion, 15)); setTrabajo(""); setPrecioTrabajo(""); setBusquedaProducto("");
+    setVehiculo({ placa: "", motivo: "", diagnostico: "" }); setFechaRecepcionOrden(hoy()); setFechaAcabadoOrden(hoy()); setEstadoOrden("ABIERTA"); setNotaAvance(""); setMostrarFormularioCliente(false); setConfirmarDescarteCotizacion(false); setMostrarFormulario(true); setError("");
+  }
+  function cerrarFormularioGestion() {
+    if (!esOrden) { setConfirmarDescarteCotizacion(true); return; }
+    setMostrarFormulario(false);
+  }
+  function limpiarBorradorCotizacion() {
+    const fecha = hoy();
+    setFechaEmisionCotizacion(fecha); setVigenteHasta(sumarDias(fecha, 15));
+    setCliente(null); setClienteBusqueda(""); setClienteBusquedaConsultada(""); setTipoDocumentoBusqueda("DNI"); setClientes([]);
+    setLineas([]); setObservacion(""); setBusquedaProducto(""); setProductos([]); setError("");
+  }
+  function descartarCotizacion() {
+    setConfirmarDescarteCotizacion(false);
+    setMostrarFormulario(false);
+    limpiarBorradorCotizacion();
   }
   function abrirOrden(orden: OrdenServicio) {
     setOrdenActiva(orden); setCliente(null); setClienteBusqueda(orden.clienteNombre); setLineas(orden.detalles as LineaGestion[]); setEstadoOrden(orden.estado);
-    setVehiculo({ placa: orden.vehiculoPlaca, marca: orden.vehiculoMarca ?? "", modelo: orden.vehiculoModelo ?? "", motivo: orden.motivo, diagnostico: orden.diagnostico ?? "" });
+    setVehiculo({ placa: orden.vehiculoPlaca, motivo: orden.motivo, diagnostico: orden.diagnostico ?? "" });
+    setFechaRecepcionOrden(orden.fechaRecepcion); setFechaAcabadoOrden(orden.fechaAcabado ?? "");
     setNotaAvance(""); setMostrarFormulario(true); setError("");
+  }
+  async function ejecutarBusquedaCliente() {
+    const consulta = clienteBusqueda.trim();
+    if (buscandoClientes) return;
+    if (consulta.length < 2) { setError("Ingresa al menos dos caracteres para buscar al cliente."); return; }
+    setBuscandoClientes(true); setClientes([]); setClienteBusquedaConsultada(""); setError("");
+    try {
+      const resultados = await servicioIngresos.buscarClientes(consulta);
+      setClientes(resultados); setClienteBusquedaConsultada(consulta);
+    } catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo buscar el cliente."); }
+    finally { setBuscandoClientes(false); }
   }
   async function registrarYSeleccionarCliente(datos: DatosClienteNuevo): Promise<string | null> {
     try {
       const creado = await servicioIngresos.registrarCliente(datos);
       const coincidencias = await servicioIngresos.buscarClientes(datos.numeroDocumento);
       const nuevoCliente = coincidencias.find((item) => item.id === creado.id) ?? coincidencias.find((item) => item.numeroDocumento === datos.numeroDocumento);
-      if (!nuevoCliente) return "El cliente se registró, pero no se pudo cargar en la orden. Vuelve a buscarlo por su documento.";
+      if (!nuevoCliente) return esOrden ? "El cliente se registró, pero no se pudo cargar en la orden. Vuelve a buscarlo por su documento." : "El cliente se registró, pero no se pudo cargar en la cotización. Vuelve a buscarlo por su documento.";
       setCliente(nuevoCliente); setClienteBusqueda(nombreCliente(nuevoCliente)); setClientes([]); setMostrarFormularioCliente(false);
       return null;
     } catch (problema) { return problema instanceof Error ? problema.message : "No se pudo registrar el cliente."; }
@@ -102,19 +154,44 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
     setLineas((anteriores) => [...anteriores, { tipo: "SERVICIO", descripcion: trabajo.trim().toLocaleUpperCase("es-PE"), nombreVisible: trabajo.trim().toLocaleUpperCase("es-PE"), cantidad: cantidadTrabajo, precioUnitario: Number(precioTrabajo).toFixed(2), descuento: "0", afectacionIgv: "GRAVADO" }]);
     setTrabajo(""); setPrecioTrabajo(""); setCantidadTrabajo("1"); setError("");
   }
+  function agregarServicioCotizacion() {
+    const servicioIncompleto = lineas.find((linea) => linea.tipo === "SERVICIO" && (!String(linea.descripcion ?? linea.nombreVisible).trim() || !Number.isFinite(Number(linea.cantidad)) || Number(linea.cantidad) <= 0 || String(linea.precioUnitario).trim() === "" || !Number.isFinite(Number(linea.precioUnitario)) || Number(linea.precioUnitario) < 0));
+    if (servicioIncompleto) { setError("Completa la descripción, cantidad y precio del servicio antes de agregar otro."); return; }
+    const indice = lineas.length;
+    setLineas((actuales) => [...actuales, { tipo: "SERVICIO", descripcion: "", nombreVisible: "", cantidad: "1", precioUnitario: "", descuento: "0", afectacionIgv: "GRAVADO" }]);
+    setError("");
+    window.requestAnimationFrame(() => {
+      const campo = document.getElementById(`cotizacion-servicio-descripcion-${indice}`) as HTMLInputElement | null;
+      campo?.scrollIntoView({ behavior: "smooth", block: "center" });
+      campo?.focus({ preventScroll: true });
+    });
+  }
+  function actualizarLineaCotizacion(indice: number, cambios: Partial<LineaGestion>) {
+    setLineas((actuales) => actuales.map((linea, i) => i === indice ? { ...linea, ...cambios } : linea));
+    setError("");
+  }
   async function guardarGestion() {
     if (!cliente && !ordenActiva) { setError("Selecciona un cliente."); return; }
+    if (!esOrden && !codigoCotizacionPrevisualizado) { setError(errorConsultaSerieCotizacion ? "No se pudo consultar la serie de cotización." : "Falta configurar una serie para cotizaciones."); return; }
     if (esOrden && !vehiculo.placa.trim()) { setError("Ingresa la placa o el identificador del vehículo."); return; }
     if (esOrden && !vehiculo.motivo.trim()) { setError("Indica el motivo de ingreso del vehículo."); return; }
     if (!esOrden && !lineas.length) { setError("Agrega al menos un repuesto o un trabajo."); return; }
+    if (!esOrden && vigenteHasta < fechaEmisionCotizacion) { setError("La fecha de vigencia no puede ser anterior a la fecha de emisión."); return; }
+    if (!esOrden) {
+      const cantidadNoEntera = lineas.find((linea) => !Number.isInteger(Number(linea.cantidad)) || Number(linea.cantidad) < 1);
+      if (cantidadNoEntera) { setError("La cantidad de cada repuesto o servicio debe ser un entero mayor que cero."); return; }
+      const servicioIncompleto = lineas.find((linea) => linea.tipo === "SERVICIO" && (!String(linea.descripcion ?? linea.nombreVisible).trim() || !Number.isFinite(Number(linea.cantidad)) || Number(linea.cantidad) <= 0 || String(linea.precioUnitario).trim() === "" || !Number.isFinite(Number(linea.precioUnitario)) || Number(linea.precioUnitario) < 0));
+      if (servicioIncompleto) { setError("Completa la descripción, cantidad y precio de cada servicio antes de guardar la cotización."); return; }
+    }
     setGuardando(true); setError("");
     try {
       const detalles = lineas as Record<string, unknown>[];
       if (esOrden) {
-        if (ordenActiva) await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { diagnostico: vehiculo.diagnostico, motivo: vehiculo.motivo, detalles, estado: estadoOrden, notaAvance });
-        else await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, vehiculoPlaca: vehiculo.placa, vehiculoVin: null, vehiculoMarca: vehiculo.marca || null, vehiculoModelo: vehiculo.modelo || null, motivo: vehiculo.motivo, diagnostico: vehiculo.diagnostico || null, fechaRecepcion: hoy(), detalles });
+        if (ordenActiva) await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { diagnostico: vehiculo.diagnostico, motivo: vehiculo.motivo, detalles, estado: estadoOrden, notaAvance, fechaAcabado: fechaAcabadoOrden });
+        else await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, vehiculoPlaca: vehiculo.placa, motivo: vehiculo.motivo, diagnostico: vehiculo.diagnostico || null, fechaRecepcion: fechaRecepcionOrden, fechaAcabado: fechaAcabadoOrden, detalles });
       } else {
         await servicioIngresos.crearCotizacion({ clienteId: cliente!.id, detalles, observacion, vigenteHasta: vigenteHasta || null });
+        setConfirmarDescarteCotizacion(false); limpiarBorradorCotizacion();
       }
       setMostrarFormulario(false); setOrdenActiva(null); await cargar();
     } catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo guardar."); }
@@ -135,20 +212,16 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
     catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo actualizar el estado."); }
   }
   function imprimirCotizacion(cotizacion: Cotizacion) {
-    const filas = cotizacion.detalles.map((linea) => `<tr><td>${escaparHtml(linea.nombreVisible ?? linea.descripcion ?? "Repuesto")}</td><td>${escaparHtml(linea.cantidad ?? "1")}</td><td>${dinero(Number(linea.precioUnitario ?? 0))}</td><td>${dinero(Number(linea.cantidad ?? 1) * Number(linea.precioUnitario ?? 0) - Number(linea.descuento ?? 0))}</td></tr>`).join("");
-    const html = `<!doctype html><html lang="es"><meta charset="utf-8"><title>Cotización ${escaparHtml(cotizacion.codigo)}</title><style>body{font:14px Arial,sans-serif;max-width:780px;margin:40px auto;color:#26384a}header{display:flex;justify-content:space-between;border-bottom:2px solid #b92f49;padding-bottom:16px}h1{font-size:24px;margin:0}p{margin:6px 0}table{width:100%;border-collapse:collapse;margin-top:28px}th,td{padding:10px;border-bottom:1px solid #dce4ea;text-align:left}th{background:#f2f5f7}.num{text-align:right}.total{text-align:right;margin:22px 0;font-size:20px;font-weight:700}.nota{margin-top:30px;color:#64748b}@media print{body{margin:12mm auto}}</style><body><header><div><h1>COTIZACIÓN</h1><p>${escaparHtml(cotizacion.codigo)}</p></div><div><p>Fecha: ${escaparHtml(cotizacion.fecha)}</p><p>Vigente hasta: ${escaparHtml(cotizacion.vigenteHasta ?? "Sin fecha")}</p></div></header><p><strong>Cliente:</strong> ${escaparHtml(cotizacion.clienteNombre)}</p><table><thead><tr><th>Descripción</th><th>Cantidad</th><th>Precio unitario</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table><p class="total">Total: ${dinero(totalLineas(cotizacion.detalles))}</p>${cotizacion.observacion ? `<p class="nota">${escaparHtml(cotizacion.observacion)}</p>` : ""}<script>window.onload=()=>window.print()</script></body></html>`;
-    const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
-    window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return (formato: "A4" | "TICKET") => imprimirDocumento({ tipo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, cliente: cotizacion.clienteNombre, vigencia: cotizacion.vigenteHasta ?? undefined, estado: cotizacion.estado, lineas: cotizacion.detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad: String(cantidad), precio: dinero(precio), total: dinero(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: dinero(totalLineas(cotizacion.detalles)), observacion: cotizacion.observacion ?? undefined }, formato);
   }
   async function convertirCotizacion(cotizacion: Cotizacion) {
     setGuardando(true); setError("");
-    try { await servicioIngresos.convertirCotizacion(cotizacion.id, { tipoComprobante, medioPago: "EFECTIVO" }); await cargar(); }
+    try { await servicioIngresos.convertirCotizacion(cotizacion.id, { tipoComprobante: "BOLETA", medioPago: "EFECTIVO" }); await cargar(); }
     catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo convertir la cotización."); }
     finally { setGuardando(false); }
   }
 
-  const controlesListado = <div className="gestion-ingresos-heading">{!esOrden && <label className="gestion-comprobante">Comprobante al convertir<select value={tipoComprobante} onChange={(e) => setTipoComprobante(e.target.value as typeof tipoComprobante)}><option value="BOLETA">Boleta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta interna</option></select></label>}<input aria-label="Buscar" placeholder={esOrden ? "Buscar código, cliente o vehículo" : "Buscar código o cliente"} value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} /></div>;
+  const controlesListado = <div className="gestion-ingresos-heading"><input aria-label="Buscar" placeholder={esOrden ? "Buscar código, cliente o vehículo" : "Buscar código o cliente"} value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} /></div>;
 
   return <section className={`gestion-ingresos-page ${esOrden ? "is-ordenes" : "is-cotizaciones"}${mostrarFormulario ? " is-editing" : ""}`}>
     {error && <p className="gestion-ingresos-error" role="alert">{error}</p>}
@@ -166,7 +239,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
         claseTabla="ordenes-table"
         claseContenedor="ordenes-table-scroll"
         encabezadoTabla={<tr><th>Orden</th><th>Vehículo</th><th>Cliente</th><th>Fecha de ingreso</th><th>Estado</th><th>Total estimado</th><th>Acciones</th></tr>}
-        renderizarFila={(orden) => <tr key={orden.id}><td>{orden.codigo}</td><td>{[orden.vehiculoMarca, orden.vehiculoModelo, orden.vehiculoPlaca].filter(Boolean).join(" · ")}</td><td>{orden.clienteNombre}</td><td>{orden.fechaRecepcion}</td><td><span className={`gestion-status is-${orden.estado.toLowerCase()}`}>{orden.estado.replaceAll("_", " ")}</span></td><td>{dinero(totalLineas(orden.detalles))}</td><td>{orden.estado !== "FACTURADA" && orden.estado !== "ANULADA" && <button type="button" onClick={() => abrirOrden(orden)}>Abrir</button>}{orden.ingresoId && <span> Documento emitido</span>}</td></tr>}
+        renderizarFila={(orden) => <tr key={orden.id}><td>{orden.codigo}</td><td>{orden.vehiculoPlaca}</td><td>{orden.clienteNombre}</td><td>{orden.fechaRecepcion}</td><td><span className={`gestion-status is-${orden.estado.toLowerCase()}`}>{orden.estado.replaceAll("_", " ")}</span></td><td>{dinero(totalLineas(orden.detalles))}</td><td>{orden.estado !== "FACTURADA" && orden.estado !== "ANULADA" && <button type="button" onClick={() => abrirOrden(orden)}>Abrir</button>}{orden.ingresoId && <span> Documento emitido</span>}</td></tr>}
       />
     ) : (
       <ListadoMaestro
@@ -189,7 +262,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
           <td><span className={`gestion-status is-${cotizacion.estado.toLowerCase()}`}>{cotizacion.estado}</span></td>
           <td className="cotizacion-total">{dinero(totalLineas(cotizacion.detalles))}<details><summary>Ver detalle</summary>{cotizacion.detalles.map((linea, i) => <div key={i}>{String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto")} · {String(linea.cantidad ?? "1")} × {dinero(Number(linea.precioUnitario ?? 0))}</div>)}</details></td>
           <td><div className="cotizacion-actions">
-            <button type="button" className="is-secondary" onClick={() => imprimirCotizacion(cotizacion)}>Imprimir</button>
+            <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} alImprimirA4={() => imprimirCotizacion(cotizacion)("A4")} alImprimirTicket={() => imprimirCotizacion(cotizacion)("TICKET")} />
             {cotizacion.estado === "BORRADOR" && <button type="button" className="is-secondary" onClick={() => void cambiarEstadoCotizacion(cotizacion, "ENVIADA")}>Marcar como enviada</button>}
             {["BORRADOR", "ENVIADA"].includes(cotizacion.estado) && <button type="button" className="is-secondary" onClick={() => void cambiarEstadoCotizacion(cotizacion, "ACEPTADA")}>Marcar como aceptada</button>}
             {cotizacion.estado === "ACEPTADA" && <button type="button" className="is-primary" disabled={guardando} onClick={() => void convertirCotizacion(cotizacion)}>Convertir a venta</button>}
@@ -209,10 +282,10 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
           <header className="orden-document-header"><div><span>DOCUMENTO DE SERVICIO</span><h2>ORDEN DE SERVICIO</h2><p>Fecha de recepción: {ordenActiva?.fechaRecepcion ?? hoy()}</p></div><div className="orden-document-meta"><strong>{ordenActiva?.codigo ?? "NUEVA ORDEN"}</strong>{ordenActiva && <span className={`gestion-status is-${estadoOrden.toLowerCase()}`}>{estadoOrden.replaceAll("_", " ")}</span>}</div></header>
           <section className="orden-document-reception" aria-labelledby="orden-recepcion-title">
             <header><h3 id="orden-recepcion-title">Datos de recepción</h3>{ordenActiva && <label>Estado<select value={estadoOrden} onChange={(e) => setEstadoOrden(e.target.value as OrdenServicio["estado"])}><option value="ABIERTA">Abierta</option><option value="EN_PROCESO">En proceso</option><option value="ESPERANDO_REPUESTOS">Esperando repuestos</option><option value="COMPLETADA">Completada</option></select></label>}</header>
-            <div className="orden-reception-fields">
+            <div className="orden-reception-fields"><label>Fecha de recepción<input type="date" value={fechaRecepcionOrden} disabled={Boolean(ordenActiva)} onChange={(e) => { setFechaRecepcionOrden(e.target.value); if (fechaAcabadoOrden && fechaAcabadoOrden < e.target.value) setFechaAcabadoOrden(e.target.value); }} required /></label><label>Fecha estimada de acabado<input type="date" min={fechaRecepcionOrden} value={fechaAcabadoOrden} onChange={(e) => setFechaAcabadoOrden(e.target.value)} required /></label>
               {!ordenActiva && <div className="gestion-field orden-client-field"><label htmlFor="orden-cliente">Cliente</label>{cliente ? <div className="gestion-selected"><div><strong>{nombreCliente(cliente)}</strong><small>{cliente.numeroDocumento}</small></div><button type="button" onClick={() => { setCliente(null); setClienteBusqueda(""); }}>Cambiar</button></div> : <><input id="orden-cliente" autoComplete="off" value={clienteBusqueda} onChange={(e) => setClienteBusqueda(e.target.value)} placeholder="Buscar por nombre, DNI o RUC" />{clientes.length > 0 && <div className="gestion-results">{clientes.map((item) => <button type="button" key={item.id} onClick={() => { setCliente(item); setClienteBusqueda(nombreCliente(item)); setClientes([]); }}>{nombreCliente(item)} · {item.numeroDocumento}</button>)}</div>}{clienteBusquedaConsultada === clienteBusqueda.trim() && clienteBusqueda.trim().length >= 2 && clientes.length === 0 && <div className="orden-client-not-found"><span>No encontramos un cliente con esa búsqueda.</span><button type="button" onClick={() => setMostrarFormularioCliente(true)}>Crear cliente</button></div>}</>}</div>}
               {ordenActiva && <div className="orden-cliente-readonly"><span>CLIENTE</span><strong>{ordenActiva.clienteNombre}</strong></div>}
-              <div className="orden-vehicle-fields"><label>Placa o identificador *<input required value={vehiculo.placa} disabled={Boolean(ordenActiva)} onChange={(e) => setVehiculo({ ...vehiculo, placa: e.target.value.toUpperCase() })} placeholder="Ej. ABC-123" /></label><label>Marca (opcional)<input value={vehiculo.marca} disabled={Boolean(ordenActiva)} onChange={(e) => setVehiculo({ ...vehiculo, marca: e.target.value })} placeholder="Marca" /></label><label>Modelo (opcional)<input value={vehiculo.modelo} disabled={Boolean(ordenActiva)} onChange={(e) => setVehiculo({ ...vehiculo, modelo: e.target.value })} placeholder="Modelo" /></label></div>
+              <div className="orden-vehicle-fields"><label>Placa o identificador *<input required value={vehiculo.placa} disabled={Boolean(ordenActiva)} onChange={(e) => setVehiculo({ ...vehiculo, placa: e.target.value.toUpperCase() })} placeholder="Ej. ABC-123" /></label></div>
             </div>
           </section>
           <section className="orden-document-lines" aria-label="Repuestos y conceptos de la orden">
@@ -232,23 +305,47 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
           <div className="orden-catalog-results" aria-live="polite">{productos.length ? productos.map((producto) => <article className="orden-catalog-product" key={producto.presentacionId}><div><strong>{producto.nombre}</strong><small>{producto.codigo} · {producto.presentacion}</small><span>{dinero(Number(producto.precio))}</span></div><button type="button" onClick={() => agregarProducto(producto)}>Agregar</button></article>) : busquedaProducto.trim().length >= 2 ? <p className="orden-catalog-empty">No encontramos repuestos con esa búsqueda.</p> : <p className="orden-catalog-empty is-hint">Escribe al menos dos caracteres para buscar en inventario.</p>}</div>
         </aside>
         <article className="orden-invoice-paper gestion-cotizacion-paper" aria-label="Documento de cotización">
-          <header className="orden-document-header"><div><span>PROPUESTA COMERCIAL</span><h2>NUEVA COTIZACIÓN</h2><p>Fecha de emisión: {hoy()}</p></div><div className="orden-document-meta"><strong>BORRADOR</strong><span>Sin guardar</span></div></header>
+          <header className="orden-document-header"><div><span>PROPUESTA COMERCIAL</span><h2>NUEVA COTIZACIÓN</h2><p>Fecha de emisión: {fechaEmisionCotizacion}</p></div><div className="orden-document-meta"><span className="cotizacion-preview-label">N° DE COTIZACIÓN · PREVIA</span><strong>{consultandoSerieCotizacion ? "Consultando serie…" : errorConsultaSerieCotizacion ? "No se pudo consultar la serie" : codigoCotizacionPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong></div></header>
           <section className="orden-document-reception gestion-cotizacion-fields" aria-label="Datos de la cotización">
-            <div className="gestion-cotizacion-client"><label>Cliente</label>{cliente ? <div className="gestion-selected"><div><strong>{nombreCliente(cliente)}</strong><small>{cliente.numeroDocumento}</small></div><button type="button" onClick={() => { setCliente(null); setClienteBusqueda(""); }}>Cambiar</button></div> : <><input autoComplete="off" value={clienteBusqueda} onChange={(e) => setClienteBusqueda(e.target.value)} placeholder="Buscar por nombre, DNI o RUC" />{clientes.length > 0 && <div className="gestion-results">{clientes.map((item) => <button type="button" key={item.id} onClick={() => { setCliente(item); setClienteBusqueda(nombreCliente(item)); setClientes([]); }}>{nombreCliente(item)} · {item.numeroDocumento}</button>)}</div>}{clienteBusquedaConsultada === clienteBusqueda.trim() && clienteBusqueda.trim().length >= 2 && clientes.length === 0 && <div className="orden-client-not-found"><span>No encontramos un cliente con esa búsqueda.</span><button type="button" onClick={() => setMostrarFormularioCliente(true)}>Crear cliente</button></div>}</>}</div>
-            <label>Válida hasta (opcional)<input type="date" min={hoy()} value={vigenteHasta} onChange={(e) => setVigenteHasta(e.target.value)} /></label>
-            <label>Comprobante al convertir<select value={tipoComprobante} onChange={(e) => setTipoComprobante(e.target.value as typeof tipoComprobante)}><option value="BOLETA">Boleta de venta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta interna</option></select></label>
+            <div className="gestion-cotizacion-client">
+              <label htmlFor="cotizacion-cliente-busqueda">Cliente</label>
+              {cliente ? <div className="cotizacion-client-selected"><strong>{nombreCliente(cliente)}</strong><button type="button" aria-label="Cambiar cliente" title="Cambiar cliente" onClick={() => { setCliente(null); setClienteBusqueda(""); setClienteBusquedaConsultada(""); setClientes([]); }}>×</button></div> : <div className="cotizacion-client-picker">
+                <select aria-label="Tipo de documento para buscar" value={tipoDocumentoBusqueda} onChange={(e) => { setTipoDocumentoBusqueda(e.target.value as typeof tipoDocumentoBusqueda); setClienteBusqueda(""); setClienteBusquedaConsultada(""); setClientes([]); }}>
+                  <option value="DNI">DNI</option><option value="RUC">RUC</option><option value="NOMBRE">Nombre</option>
+                </select>
+                <input id="cotizacion-cliente-busqueda" autoComplete="off" inputMode={tipoDocumentoBusqueda === "NOMBRE" ? "text" : "numeric"} maxLength={tipoDocumentoBusqueda === "DNI" ? 8 : tipoDocumentoBusqueda === "RUC" ? 11 : 120} value={clienteBusqueda} onChange={(e) => { setClienteBusqueda(tipoDocumentoBusqueda === "NOMBRE" ? e.target.value : e.target.value.replace(/\D/g, "")); setClienteBusquedaConsultada(""); setClientes([]); }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void ejecutarBusquedaCliente(); } }} placeholder={tipoDocumentoBusqueda === "NOMBRE" ? "Buscar por nombre" : `Ingresa ${tipoDocumentoBusqueda}`} aria-label={tipoDocumentoBusqueda === "NOMBRE" ? "Nombre del cliente" : `Número de ${tipoDocumentoBusqueda}`} required />
+                <button type="button" className="cotizacion-client-search" onClick={() => void ejecutarBusquedaCliente()} disabled={buscandoClientes}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><span>{buscandoClientes ? "Buscando…" : "Buscar cliente"}</span></button>
+                <button type="button" className="cotizacion-client-add" aria-label="Agregar cliente" title="Agregar cliente" onClick={() => { setError(""); setMostrarFormularioCliente(true); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 20v-1.4a4.1 4.1 0 0 0-4.1-4.1H6.6a4.1 4.1 0 0 0-4.1 4.1V20M9 10.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2ZM19 8v7m-3.5-3.5h7"/></svg></button>
+                {clientes.length > 0 && <div className="cotizacion-client-results">{clientes.map((item) => <button type="button" key={item.id} onClick={() => { setCliente(item); setClienteBusqueda(nombreCliente(item)); setClienteBusquedaConsultada(""); setClientes([]); }}><strong>{nombreCliente(item)}</strong></button>)}</div>}
+                {clienteBusquedaConsultada === clienteBusqueda.trim() && clienteBusquedaConsultada.length >= 2 && clientes.length === 0 && <div className="cotizacion-client-feedback" role="status">No encontramos coincidencias. Puedes agregar el cliente con el botón de persona +.</div>}
+              </div>}
+            </div>
+            <label>Válida hasta<input type="date" min={fechaEmisionCotizacion} value={vigenteHasta} onChange={(e) => setVigenteHasta(e.target.value)} required /></label>
           </section>
           <section className="orden-document-lines" aria-label="Repuestos y servicios de la cotización">
-            <div className="gestion-cotizacion-lines-heading"><h3>Repuestos y servicios de esta cotización</h3><span>{lineas.length} líneas</span><button type="button" onClick={() => document.getElementById("cotizacion-trabajo")?.focus()}>+ Agregar servicio</button></div>
-            <div className="orden-invoice-columns"><span>Concepto</span><span>Cant.</span><span>Importe</span><span aria-label="Acciones" /></div>
-            <div className="orden-invoice-lines">{lineas.length ? lineas.map((linea, indice) => <div className="orden-invoice-line" key={`${String(linea.presentacionId ?? linea.descripcion)}-${indice}`}><span className="orden-line-description"><strong>{String(linea.nombreVisible ?? linea.descripcion)}</strong><small>{linea.tipo === "PRODUCTO" ? "Repuesto" : "Servicio"} · {dinero(Number(linea.precioUnitario))} por unidad</small></span><input aria-label={`Cantidad de ${String(linea.nombreVisible ?? linea.descripcion)}`} type="number" min="0.001" step="0.001" value={String(linea.cantidad)} onChange={(e) => setLineas((actuales) => actuales.map((fila, i) => i === indice ? { ...fila, cantidad: e.target.value } : fila))} /><strong>{dinero(Number(linea.cantidad) * Number(linea.precioUnitario) - Number(linea.descuento))}</strong><button type="button" aria-label={`Quitar ${String(linea.nombreVisible ?? linea.descripcion)}`} onClick={() => setLineas((actuales) => actuales.filter((_, i) => i !== indice))}>×</button></div>) : <div className="orden-invoice-empty"><strong>Agrega el primer repuesto</strong><p>Busca en el catálogo o añade un servicio para iniciar.</p></div>}</div>
+            <div className="gestion-cotizacion-lines-heading"><h3>Repuestos y servicios de esta cotización</h3><span>{lineas.length} líneas</span><button type="button" onClick={agregarServicioCotizacion}>+ Agregar servicio</button></div>
+            <div className="orden-invoice-columns"><span>Concepto</span><span>Cant.</span><span>Precio</span><span>Importe</span><span aria-label="Acciones" /></div>
+            <div className="orden-invoice-lines">{lineas.length ? lineas.map((linea, indice) => {
+              const nombre = String(linea.nombreVisible ?? linea.descripcion ?? "");
+              const cantidad = Number(linea.cantidad) || 0;
+              const precio = Number(linea.precioUnitario) || 0;
+              const importe = Math.max(0, cantidad * precio - Number(linea.descuento ?? 0));
+              return <div className="orden-invoice-line" key={`${String(linea.presentacionId ?? linea.descripcion)}-${indice}`}>
+                <span className="orden-line-description"><strong>{linea.tipo === "SERVICIO" ? <input id={`cotizacion-servicio-descripcion-${indice}`} className="cotizacion-service-description" aria-label="Descripción del servicio" placeholder="Descripción del servicio" maxLength={240} value={String(linea.descripcion ?? linea.nombreVisible ?? "").toLocaleUpperCase("es-PE")} onChange={(e) => actualizarLineaCotizacion(indice, { descripcion: e.target.value.toLocaleUpperCase("es-PE"), nombreVisible: e.target.value.toLocaleUpperCase("es-PE") })} /> : nombre}</strong><small>{linea.tipo === "PRODUCTO" ? "Repuesto" : "Servicio"}</small></span>
+                <input aria-label={`Cantidad de ${nombre || "servicio"}`} type="number" min="1" step="1" inputMode="numeric" value={String(linea.cantidad)} onChange={(e) => actualizarLineaCotizacion(indice, { cantidad: e.target.value === "" ? "" : String(Math.max(1, Math.floor(Number(e.target.value) || 1))) })} />
+                {linea.tipo === "SERVICIO" ? <input className="cotizacion-service-price" aria-label="Precio unitario del servicio" type="number" min="0" step="0.01" value={linea.precioUnitario} placeholder="0.00" onChange={(e) => actualizarLineaCotizacion(indice, { precioUnitario: e.target.value })} /> : <span className="cotizacion-line-price">{dinero(precio)}</span>}
+                <strong>{dinero(importe)}</strong><button type="button" aria-label={`Quitar ${nombre || "servicio"}`} onClick={() => setLineas((actuales) => actuales.filter((_, i) => i !== indice))}>×</button>
+              </div>;
+            }) : <div className="orden-invoice-empty"><strong>Agrega el primer repuesto o servicio</strong><p>Busca repuestos en el catálogo o agrega un servicio desde este detalle.</p></div>}</div>
           </section>
-          <section className="orden-document-labor gestion-cotizacion-service" aria-label="Agregar servicio"><div className="orden-labor-fields"><label>Trabajo / mano de obra<input id="cotizacion-trabajo" value={trabajo} onChange={(e) => setTrabajo(e.target.value)} placeholder="Ej. Cambio de frenos" /></label><div className="orden-labor-numbers"><label>Cantidad<input type="number" min="0.001" step="0.001" value={cantidadTrabajo} onChange={(e) => setCantidadTrabajo(e.target.value)} /></label><label>Precio unitario<input type="number" min="0" step="0.01" value={precioTrabajo} onChange={(e) => setPrecioTrabajo(e.target.value)} placeholder="0.00" /></label></div><button type="button" onClick={agregarTrabajo}>Agregar servicio</button></div></section>
+
           <section className="gestion-cotizacion-notes"><label>Observaciones<textarea value={observacion} onChange={(e) => setObservacion(e.target.value)} placeholder="Añade una nota para el cliente" /></label><div className="orden-document-total"><div><span>TOTAL COTIZADO</span><strong>{dinero(total)}</strong></div></div></section>
+          <footer className="gestion-cotizacion-actions"><button type="button" onClick={cerrarFormularioGestion}>Cerrar</button><button type="button" className="gestion-primary" disabled={guardando || !codigoCotizacionPrevisualizado || consultandoSerieCotizacion || Boolean(errorConsultaSerieCotizacion)} onClick={() => void guardarGestion()}>{guardando ? "Guardando…" : "Guardar cotización"}</button></footer>
         </article>
       </div>}
-      <footer><button type="button" onClick={() => setMostrarFormulario(false)}>{esOrden ? "Cancelar" : "Cerrar"}</button><button type="button" className="gestion-primary" disabled={guardando} onClick={() => void guardarGestion()}>{guardando ? "Guardando…" : esOrden ? "Guardar orden" : "Guardar cotización"}</button></footer>
+      {esOrden && <footer><button type="button" onClick={() => setMostrarFormulario(false)}>Cancelar</button><button type="button" className="gestion-primary" disabled={guardando} onClick={() => void guardarGestion()}>{guardando ? "Guardando…" : "Guardar orden"}</button></footer>}
     </section>}
+    {confirmarDescarteCotizacion && <div className="cotizacion-discard-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirmarDescarteCotizacion(false); }}><section className="cotizacion-discard-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cotizacion-discard-title" aria-describedby="cotizacion-discard-description"><span className="cotizacion-discard-icon" aria-hidden="true">!</span><div><h2 id="cotizacion-discard-title">¿Descartar esta cotización?</h2><p id="cotizacion-discard-description">Se perderán los datos y los repuestos o servicios que agregaste.</p></div><footer><button type="button" onClick={() => setConfirmarDescarteCotizacion(false)}>Seguir editando</button><button type="button" className="cotizacion-discard-confirm" onClick={descartarCotizacion}>Descartar cotización</button></footer></section></div>}
     {mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={registrarYSeleccionarCliente} onCancelar={() => setMostrarFormularioCliente(false)} />, document.body)}
   </section>;
 }

@@ -1,21 +1,39 @@
 .erp-content:has(.listado-maestro) { padding-bottom: 54px; }
 .erp-content:has(.listado-maestro) {
+  --listado-page-gutter: clamp(16px, 2.25vw, 34px);
+  padding-top: 24px !important;
+  padding-right: var(--listado-page-gutter) !important;
+  padding-left: var(--listado-page-gutter) !important;
+}
+.erp-content:has(.listado-maestro) {
   display: flex;
   min-height: 0;
   flex-direction: column;
 }
 .erp-content:has(.listado-maestro) > .modulo-route-transition {
+  width: 100%;
+  max-width: 1740px;
+  margin-right: auto;
+  margin-left: auto;
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
+}
+.erp-content:has(.listado-maestro) > .modulo-route-transition :is(div, main, section):has(.listado-maestro) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  row-gap: 18px;
+  box-sizing: border-box;
 }
 .erp-content:has(.listado-maestro) > .modulo-route-transition > :not(.finanzas-page):has(.listado-maestro) {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  padding-block-end: 12px;
+  padding-block-end: 24px;
 }
 .erp-content:has(.listado-maestro) .modulo-route-transition :not(.finanzas-page):has(> .listado-maestro) {
   display: flex;
@@ -26,6 +44,7 @@
 .erp-content:has(.listado-maestro) .listado-maestro {
   min-height: 0;
   flex: 1 1 auto;
+  margin-bottom: 24px;
 }
 .erp-content.is-catalog-view.is-catalog-admin-view:has(.listado-maestro) {
   display: flex;
@@ -42,11 +61,14 @@
 }
 .listado-maestro {
   display: flex;
-  width: 100%;
+  width: min(100%, 1740px);
+  max-width: 1740px;
   min-width: 0;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
+  margin-right: auto;
+  margin-left: auto;
   overflow: visible;
   border: 1px solid var(--border-color, #dce5ed);
   border-radius: 16px;
@@ -152,12 +174,27 @@
 }
 .listado-maestro-paginacion .the-pagination { margin-left: 0; }
 .listado-maestro-contenido {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
-  flex: 0 0 auto;
-  overflow: visible;
+  flex: 1 1 auto;
+  max-height: none;
+  overflow-x: visible;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
 }
-.listado-maestro-tabla-scroll { width: 100%; overflow-x: auto; overflow-y: visible; overscroll-behavior-x: contain; }
+.listado-maestro-contenido:has(> .listado-maestro-tabla-scroll) { overflow: visible; }
+.listado-maestro-tabla-scroll {
+  width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 .listado-maestro-tabla { width: 100%; border-collapse: collapse; }
 .listado-maestro-tabla th {
   position: sticky;
@@ -182,6 +219,9 @@
   vertical-align: middle;
 }
 .listado-maestro-tabla tbody tr:last-child td { border-bottom: 0; }
+.listado-maestro-tabla.is-centered-cells th,
+.listado-maestro-tabla.is-centered-cells td { text-align: center !important; }
+.listado-maestro-tabla.is-centered-cells td > div { justify-content: center; }
 .listado-maestro-tabla tbody tr:hover { background: var(--surface-hover, #f8fbfd); }
 .listado-maestro-estado,
 .listado-maestro-vacio {

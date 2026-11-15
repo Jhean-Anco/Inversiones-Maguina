@@ -6,6 +6,7 @@ import { useProductoFormulario } from "../../../hooks/use-producto-formulario";
 import { ProductoCategoriaModal } from "../producto-categoria-modal/producto-categoria-modal";
 import { srcImagen } from "../../../services/api-cliente";
 import { AccionIcono } from "../../ui/accion-icono";
+import { ImageUploadCard } from "../../ui/image-upload-card/image-upload-card";
 
 type PropiedadesProductoFormulario = {
   catalogos: CatalogosProducto;
@@ -49,8 +50,8 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
       <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario" onClick={alCerrar}>×</button>
       {(error || formulario.errorLocal) && <div className="catalog-alert catalog-modal-alert" role="alert">{formulario.errorLocal || error}</div>}
       <form className="catalog-form producto-form" onSubmit={manejarEnvio}>
-        <div className="producto-form-scroll" ref={desplazamientoFormulario}>
         <div className="catalog-form-title"><span>▧</span><div><h2 id="producto-form-title">{formulario.modoEdicion ? "Editar repuesto" : "Nuevo repuesto"}</h2><p>Registra los datos de catálogo, venta y presentaciones del repuesto.</p></div></div>
+        <div className="producto-form-scroll" ref={desplazamientoFormulario}>
         <nav className="producto-wizard" aria-label="Pasos del producto">
           {["Datos básicos", "Inventario y venta", "Detalles opcionales"].map((titulo, indice) => {
             const numero = indice + 1;
@@ -138,23 +139,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
           <fieldset className="producto-form-section">
             <legend>Imágenes y estado</legend>
             <div className="producto-images-heading"><strong>Imágenes del repuesto</strong><span>{cantidadImagenes} de 5</span></div>
-            {cantidadImagenes > 0 && <div className="producto-image-grid">
-              {imagenesExistentes.map((imagen, indice) => <figure className="producto-image-item" key={imagen.id}>
-                <img src={srcImagen(imagen.rutaImagen)} alt={`Imagen ${indice + 1} de ${producto?.nombre ?? "repuesto"}`} />
-                <button type="button" aria-label={`Quitar imagen ${indice + 1}`} onClick={() => formulario.quitarImagenExistente(imagen.id)}>Quitar</button>
-              </figure>)}
-              {formulario.imagenesNuevas.map((imagen, indice) => <figure className="producto-image-item" key={`${imagen.name}-${indice}`}>
-                <img src={formulario.vistasPreviasImagenes[indice]} alt={`Vista previa ${indice + 1} del producto`} />
-                <button type="button" aria-label={`Quitar imagen nueva ${indice + 1}`} onClick={() => formulario.quitarImagenNueva(indice)}>Quitar</button>
-              </figure>)}
-            </div>}
-            <div className="catalog-upload-field">
-              <div className="catalog-upload-heading"><strong>JPG, PNG o WebP</strong><small>Máximo 5 MB por imagen · hasta 5 imágenes</small></div>
-              {cantidadImagenes < 5 && <label className="catalog-upload-zone producto-images-upload" htmlFor="producto-imagenes">
-                <input className="catalog-upload-input" id="producto-imagenes" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => { formulario.seleccionarImagenes(event.currentTarget.files); event.currentTarget.value = ""; }} />
-                <span className="catalog-upload-symbol" aria-hidden="true">↑</span><span className="catalog-upload-copy"><strong>Añadir imágenes</strong><small>Selecciona hasta {5 - cantidadImagenes} imágenes más</small></span><span className="catalog-upload-action">Elegir archivos</span>
-              </label>}
-            </div>
+            <ImageUploadCard multiple disabled={formulario.guardando || cantidadImagenes >= 5} title="Imágenes del repuesto" description="Añade fotografías para reconocer el repuesto en el catálogo." hint={`${cantidadImagenes} de 5 · JPG, PNG o WebP · máximo 5 MB por imagen`} previews={[...imagenesExistentes.map((imagen, indice) => ({ key: imagen.id, src: srcImagen(imagen.rutaImagen), alt: `Imagen ${indice + 1} de ${producto?.nombre ?? "repuesto"}`, removeLabel: `Quitar imagen ${indice + 1}`, onRemove: () => formulario.quitarImagenExistente(imagen.id) })), ...formulario.imagenesNuevas.map((imagen, indice) => ({ key: `${imagen.name}-${indice}`, src: formulario.vistasPreviasImagenes[indice], alt: `Vista previa ${indice + 1} del producto`, removeLabel: `Quitar imagen nueva ${indice + 1}`, onRemove: () => formulario.quitarImagenNueva(indice) }))]} buttonLabel={cantidadImagenes >= 5 ? "Límite de imágenes alcanzado" : "Añadir imágenes"} uploadStatus={formulario.guardando && cantidadImagenes > 0 ? "uploading" : "ready"} uploadMessage="Guardando imágenes del repuesto…" onSelect={formulario.seleccionarImagenes} />
             {formulario.modoEdicion && <label className="producto-check-label"><input type="checkbox" checked={formulario.activo} onChange={(event) => formulario.setActivo(event.target.checked)} /> Producto activo</label>}
           </fieldset>
         </>}
@@ -171,13 +156,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             <div className="catalog-form-title"><span>✦</span><div><h2 id="marca-rapida-titulo">Agregar marca</h2><p>Guarda el nombre y una imagen para asociarla al producto.</p></div></div>
             {formulario.errorLocal && <div className="catalog-alert" role="alert">{formulario.errorLocal}</div>}
             <label>Nombre de la marca<input autoFocus value={formulario.marcaNueva} onChange={(event) => formulario.setMarcaNueva(event.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Honda" /></label>
-            <div className="catalog-upload-field">
-              <div className="catalog-upload-heading"><strong>Imagen de la marca</strong><small>JPG, PNG o WebP · máximo 5 MB</small></div>
-              <label className={`catalog-upload-zone${formulario.vistaPreviaMarca ? " has-preview" : ""}`} htmlFor="producto-marca-imagen">
-                <input className="catalog-upload-input" id="producto-marca-imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const archivo = event.target.files?.[0]; if (!archivo) return; if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) { formulario.setErrorLocal("Usa una imagen JPG, PNG o WebP de máximo 5 MB."); event.currentTarget.value = ""; return; } formulario.setErrorLocal(""); formulario.setMarcaNuevaImagen(archivo); }} />
-                {formulario.vistaPreviaMarca ? <><img className="catalog-upload-preview" src={formulario.vistaPreviaMarca} alt="Vista previa de la marca" /><span className="catalog-upload-copy"><strong>{formulario.marcaNuevaImagen?.name}</strong><small>Haz clic para reemplazarla</small></span><span className="catalog-upload-action">Cambiar</span></> : <><span className="catalog-upload-symbol" aria-hidden="true">↑</span><span className="catalog-upload-copy"><strong>Selecciona una imagen</strong><small>La imagen identificará la marca en el catálogo.</small></span><span className="catalog-upload-action">Elegir imagen</span></>}
-              </label>
-            </div>
+            <ImageUploadCard title="Imagen de la marca" description="La imagen identificará la marca en el catálogo." hint={formulario.marcaNuevaImagen?.name ?? "JPG, PNG o WebP · máximo 5 MB"} previews={formulario.vistaPreviaMarca ? [{ key: "brand", src: formulario.vistaPreviaMarca, alt: "Vista previa de la marca" }] : []} disabled={formulario.creandoMarca} uploadStatus={formulario.creandoMarca && formulario.marcaNuevaImagen ? "uploading" : "ready"} uploadMessage="Guardando imagen de la marca…" onSelect={(files) => { const archivo = files[0]; if (!archivo) return; if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) { formulario.setErrorLocal("Usa una imagen JPG, PNG o WebP de máximo 5 MB."); return; } formulario.setErrorLocal(""); formulario.setMarcaNuevaImagen(archivo); }} />
             <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={formulario.creandoMarca} onClick={() => formulario.setMarcaModalAbierto(false)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={formulario.creandoMarca || !formulario.marcaNuevaImagen}>{formulario.creandoMarca ? "Guardando…" : "Guardar marca"}</button></div>
           </form>
         </section>

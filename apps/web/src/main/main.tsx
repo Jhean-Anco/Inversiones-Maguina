@@ -5,11 +5,15 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "../pages/login-page/login-page";
 import { InicioPage } from "../pages/inicio-page/inicio-page";
 import { TemaProvider } from "../components/tema-contexto/tema-contexto";
+import { AlertasProvider } from "../components/ui/notificacion-flotante/notificacion-flotante";
 import "./tema-oscuro.css";
+import "./erp-design-system.css";
+import "./formularios-flotantes.css";
 
 function App() {
   return (
     <TemaProvider>
+      <AlertasProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -51,6 +55,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
+      </AlertasProvider>
     </TemaProvider>
   );
 }

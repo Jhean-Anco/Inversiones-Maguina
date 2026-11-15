@@ -1,19 +1,50 @@
-import { solicitarApi } from "./api-cliente";
+import { solicitarApi, subirApiConProgreso } from "./api-cliente";
 
 export type MarcaMototaxi = { id: string; nombre: string; activo: boolean };
 export type ModeloMototaxi = {
   id: string; codigo: string; marcaId: string; marca: string; nombre: string; version: string | null; precioVenta: string | null; categoriaVehicular: string;
-  fabricante: string | null; paisFabricacion: string | null; marcaMotor: string | null; modeloMotor: string | null; cilindradaCc: number | null;
+  fabricante: string | null; paisFabricacion: string | null; marcaMotor: string | null; modeloMotor: string | null; tipoMototaxi: string | null; tipoMotor: string | null; tipoRefrigeracion: string | null; coloresDisponibles: string[]; cilindradaCc: number | null;
   combustible: string | null; transmision: string | null; carroceria: string | null; capacidadAsientos: number | null; capacidadCargaKg: string | null;
-  especificacionesAdicionales: string | null; activo: boolean;
+  especificacionesAdicionales: string | null; rutaImagen: string | null; activo: boolean;
 };
+export type AnalisisModeloMototaxi = {
+  modelo: ModeloMototaxi;
+  existencias: { total: number; disponibles: number; reservadas: number; vendidas: number; garantia: number; usoInterno: number; baja: number; faltantes: number };
+  compras: { unidades: number; operaciones: number; ultimoPrecio: string | null; promedioPonderado: string | null; ultima: { precio: string; cantidad: number; fecha: string; codigo: string; documentoTipo: string; documentoNumero: string | null; proveedor: string } | null; historialMensual: Array<{ mes: string; promedio: string; cantidad: string }> };
+  ventas: { unidades: number; operaciones: number; ultimoPrecio: string | null; promedioPonderado: string | null; ultima: { precio: string; fecha: string; codigo: string; tipoComprobante: string; cliente: string | null } | null; historialMensual: Array<{ mes: string; promedio: string; cantidad: string }> };
+};
+
+const HEX_COLOR_MOTOTAXI = /\s+\((#[\da-f]{6})\)$/i;
+export const COLORES_RAPIDOS_MOTOTAXI = ["Negro", "Blanco", "Rojo", "Azul", "Verde", "Amarillo", "Gris", "Plata", "Celeste", "Naranja"];
+export const COLORES_ADICIONALES_MOTOTAXI = ["Guinda", "Marrón", "Azul marino", "Azul noche", "Celeste claro", "Turquesa", "Verde oscuro", "Verde olivo", "Rojo vino", "Granate", "Naranja claro", "Amarillo dorado", "Beige", "Crema"];
+export const COLORES_SUGERIDOS_MOTOTAXI = [...COLORES_RAPIDOS_MOTOTAXI, ...COLORES_ADICIONALES_MOTOTAXI];
+const COLORES_BASE_MOTOTAXI: Record<string, string> = {
+  negro: "#252b31", blanco: "#ffffff", rojo: "#d62828", azul: "#2563eb", verde: "#27834a",
+  amarillo: "#f2c331", gris: "#75808b", plata: "#c2c9d0", celeste: "#59aeca", guinda: "#7b2638",
+  naranja: "#e87924", marrón: "#805a3b", "azul marino": "#15395b", "azul noche": "#182848",
+  "celeste claro": "#8ed2e3", turquesa: "#36b4a5", "verde oscuro": "#1f5e3b", "verde olivo": "#78833a",
+  "rojo vino": "#722f37", granate: "#800020", "naranja claro": "#f39a3d", "amarillo dorado": "#d9a629",
+  beige: "#d7c3a1", crema: "#f4e9ca",
+};
+
+export function etiquetaColorMototaxi(color: string | null | undefined) {
+  return (color ?? "").replace(HEX_COLOR_MOTOTAXI, "").trim();
+}
+
+export function hexColorMototaxi(color: string | null | undefined) {
+  const valor = color ?? "";
+  const hexadecimal = valor.match(HEX_COLOR_MOTOTAXI)?.[1];
+  if (hexadecimal) return hexadecimal.toUpperCase();
+  return COLORES_BASE_MOTOTAXI[etiquetaColorMototaxi(valor).toLocaleLowerCase("es-PE")] ?? "#8794a0";
+}
+
 export type ProveedorMototaxi = { id: string; nombre: string; razonSocial: string | null; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; tipoDocumento: string; numeroDocumento: string };
 export type UnidadMototaxi = {
   id: string; codigo: string; modeloId: string; marca: string; modelo: string; version: string | null; precioVenta: string | null; vin: string; numeroMotor: string;
   numeroChasis: string | null; anioModelo: number | null; color: string | null; placa: string | null; estado: string; costoAdquisicion: string; compraDetalleId: string | null;
   imagenes?: { id: string; archivoId: string; ruta: string; orden: number }[];
 };
-export type PaginaUnidadesMototaxi = { items: UnidadMototaxi[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
+export type PaginaUnidadesMototaxi = { items: UnidadMototaxi[]; total: number; pagina: number; porPagina: number; totalPaginas: number; disponiblesPorColor: Array<{ modeloId: string; marca: string; modelo: string; color: string | null; cantidad: number }> };
 export type GarantiaMototaxi = { id: string; unidadId: string; codigo: string; vin: string | null; marca: string; modelo: string; proveedor: string; porcentajeProveedor: string; mesesVigencia: number; iniciaEn: string; terminaEn: string; alcance: string | null; exclusiones: string | null };
 export type ReclamoGarantia = { id: string; garantiaId: string; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
 export type CompraMototaxi = { id: string; codigo: string; fecha: string; documentoTipo: string; documentoNumero: string | null; moneda: string; total: string; proveedor: string; unidades: number; pagado: string; saldo: string; observacion: string | null };
@@ -27,6 +58,9 @@ export const servicioMototaxis = {
   modelos: (busqueda = "", incluirInactivos = false) => solicitarApi<ModeloMototaxi[]>(`/mototaxis/modelos?busqueda=${encodeURIComponent(busqueda)}&incluirInactivos=${incluirInactivos}`),
   crearModelo: (datos: Record<string, unknown>) => solicitarApi<ModeloMototaxi>("/mototaxis/modelos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   actualizarModelo: (id: string, datos: Record<string, unknown>) => solicitarApi<ModeloMototaxi>(`/mototaxis/modelos/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  actualizarPrecioVentaModelo: (id: string, precioVenta: string | null) => solicitarApi<ModeloMototaxi>(`/mototaxis/modelos/${id}/precio-venta`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ precioVenta }) }),
+  analisisModelo: (id: string) => solicitarApi<AnalisisModeloMototaxi>(`/mototaxis/modelos/${id}/analisis`),
+  subirImagenModelo: (id: string, archivo: File, alProgresar?: (porcentaje: number) => void) => { const formulario = new FormData(); formulario.append("imagen", archivo, archivo.name); return subirApiConProgreso<{ rutaImagen: string }>(`/inventario/imagenes/modelos-mototaxi/${id}`, formulario, alProgresar); },
   proveedores: (busqueda = "") => solicitarApi<ProveedorMototaxi[]>(`/mototaxis/proveedores?busqueda=${encodeURIComponent(busqueda)}`),
   crearProveedor: (datos: Record<string, unknown>) => solicitarApi<ProveedorMototaxi>("/mototaxis/proveedores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   unidades: (filtros: { busqueda?: string; estado?: string; pagina?: number; porPagina?: number } = {}) => {
@@ -41,7 +75,7 @@ export const servicioMototaxis = {
   ajustesInventario: () => solicitarApi<AjusteInventarioMototaxi[]>("/mototaxis/ajustes-inventario"),
   reconteoModelo: (modeloId: string) => solicitarApi<ReconteoModeloMototaxi>(`/mototaxis/ajustes-inventario/${encodeURIComponent(modeloId)}/reconteo`),
   crearAjusteInventario: (datos: Record<string, unknown>) => solicitarApi<{ id: string; codigo: string; cantidadSistema: number; cantidadContada: number; nuevas: number; faltantes: number; recuperadas: number }>("/mototaxis/ajustes-inventario", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
-  subirImagenUnidad: (id: string, archivo: File) => { const formulario = new FormData(); formulario.append("archivo", archivo, archivo.name); return solicitarApi<{ id: string; archivoId: string; orden: number; ruta: string }>(`/mototaxis/unidades/${id}/imagenes`, { method: "POST", body: formulario }); },
+  subirImagenUnidad: (id: string, archivo: File, alProgresar?: (porcentaje: number) => void) => { const formulario = new FormData(); formulario.append("archivo", archivo, archivo.name); return subirApiConProgreso<{ id: string; archivoId: string; orden: number; ruta: string }>(`/mototaxis/unidades/${id}/imagenes`, formulario, alProgresar); },
   eliminarImagenUnidad: (id: string, idImagen: string) => solicitarApi<{ eliminado: boolean }>(`/mototaxis/unidades/${id}/imagenes/${idImagen}`, { method: "DELETE" }),
   garantias: () => solicitarApi<GarantiaMototaxi[]>("/mototaxis/garantias"),
   reclamos: () => solicitarApi<ReclamoGarantia[]>("/mototaxis/reclamos"),

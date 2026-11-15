@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { categoriasProductos, db, marcasProductos, productos, productosImagenes } from "@magina/database";
+import { categoriasProductos, db, marcasProductos, modelosMototaxis, productos, productosImagenes } from "@magina/database";
 import type { FastifyRequest } from "fastify";
 import { readFile, unlink } from "node:fs/promises";
 import { extname, resolve } from "node:path";
@@ -7,7 +7,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
-type TipoImagen = "categorias" | "marcas" | "productos";
+type TipoImagen = "categorias" | "marcas" | "productos" | "modelos-mototaxi";
 const formatos = {
   "image/jpeg": { extension: ".jpg", firma: (b: Buffer) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
   "image/png": { extension: ".png", firma: (b: Buffer) => b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) },
@@ -19,7 +19,7 @@ export class ServicioImagenesCatalogo {
   constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
 
   private validarTipo(tipo: string): TipoImagen {
-    if (tipo !== "categorias" && tipo !== "marcas" && tipo !== "productos") throw new NotFoundException("No se encontró la imagen.");
+    if (tipo !== "categorias" && tipo !== "marcas" && tipo !== "productos" && tipo !== "modelos-mototaxi") throw new NotFoundException("No se encontró la imagen.");
     return tipo;
   }
 
@@ -34,7 +34,7 @@ export class ServicioImagenesCatalogo {
     if (contenido.length > validarConfiguracionEntorno().maximoImagenBytes) throw new BadRequestException("La imagen supera el tamaño máximo permitido.");
     if (!formato.firma(contenido)) throw new BadRequestException("El contenido no coincide con el formato de imagen seleccionado.");
 
-    const tabla = tipo === "categorias" ? categoriasProductos : marcasProductos;
+    const tabla = tipo === "categorias" ? categoriasProductos : tipo === "modelos-mototaxi" ? modelosMototaxis : marcasProductos;
     const [registro] = await db.select({ id: tabla.id, rutaImagen: tabla.rutaImagen }).from(tabla).where(eq(tabla.id, id)).limit(1);
     if (!registro) throw new NotFoundException(tipo === "categorias" ? "No se encontró la categoría." : tipo === "marcas" ? "No se encontró la marca." : "No se encontró el producto.");
 
@@ -104,7 +104,7 @@ export class ServicioImagenesCatalogo {
     if (!ruta) return;
     const idArchivo = ruta.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
     if (idArchivo) { await this.almacenamiento.eliminarArchivoRegistrado(idArchivo).catch(() => undefined); return; }
-    const coincidencia = ruta.match(/^\/inventario\/imagenes\/(categorias|marcas|productos)\/([0-9a-f-]{36}\.(?:jpg|png|webp))$/);
+    const coincidencia = ruta.match(/^\/inventario\/imagenes\/(categorias|marcas|productos|modelos-mototaxi)\/([0-9a-f-]{36}\.(?:jpg|png|webp))$/);
     if (coincidencia) await unlink(resolve(validarConfiguracionEntorno().carpetaSubidas, "catalog-images", coincidencia[1], coincidencia[2])).catch(() => undefined);
   }
 
