@@ -223,7 +223,7 @@ export function OrdenesCotizacionesPage({ modo, puedeCrear }: { modo: ModoGestio
     finally { setGuardando(false); }
   }
   function imprimirCotizacion(cotizacion: Cotizacion) {
-    return (formato: "A4" | "TICKET") => imprimirDocumento({ tipo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, cliente: cotizacion.clienteNombre, vigencia: cotizacion.vigenteHasta ?? undefined, estado: cotizacion.estado, lineas: cotizacion.detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad: String(cantidad), precio: dinero(precio), total: dinero(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: dinero(totalLineas(cotizacion.detalles)), observacion: cotizacion.observacion ?? undefined }, formato);
+    return (formato: "A4" | "TICKET") => imprimirDocumento({ tipo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, cliente: cotizacion.clienteNombre ?? "Sin cliente", vigencia: cotizacion.vigenteHasta ?? undefined, estado: cotizacion.estado, lineas: cotizacion.detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad: String(cantidad), precio: dinero(precio), total: dinero(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: dinero(totalLineas(cotizacion.detalles)), observacion: cotizacion.observacion ?? undefined }, formato);
   }
 
   function abrirVentaCotizacion(cotizacion: Cotizacion, tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA") {

@@ -560,6 +560,8 @@ html[data-theme="oscuro"] .gestion-cotizacion-paper .orden-document-meta strong 
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-menu { position: relative; display: inline-flex; flex: 0 0 36px; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-trigger { cursor: pointer; list-style: none; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-trigger::-webkit-details-marker { display: none; }
+.gestion-ingresos-page.is-cotizaciones .cotizacion-document-trigger { border-color: var(--cotizacion-red); background: var(--cotizacion-red); color: #fff; }
+.gestion-ingresos-page.is-cotizaciones .cotizacion-document-trigger:hover { border-color: #b91d33; background: #b91d33; color: #fff; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-options { position: absolute; z-index: 40; right: 0; bottom: calc(100% + 7px); display: grid; min-width: 158px; padding: 5px; border: 1px solid #d6e1eb; border-radius: 9px; background: #fff; box-shadow: 0 12px 28px #102d4d24; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-options button { min-height: 34px; padding: 0 10px; border: 0; background: transparent; color: #244562; text-align: left; font-size: 12px; }
 .gestion-ingresos-page.is-cotizaciones .cotizacion-document-options button:hover:not(:disabled) { background: #eef4f9; color: #174b80; }

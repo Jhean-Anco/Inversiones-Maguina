@@ -164,12 +164,13 @@ function datosBoleta(presentacionId: string, clave = randomUUID()) {
   return { ...venta, tipoComprobante: "BOLETA" };
 }
 
-function datosEntradaStock(productoId: string, presentacionId: string, cantidad: number, costoUnitario: number) {
+function datosEntradaStock(productoId: string, presentacionId: string, cantidad: number, costoUnitario: number, cuentaFinancieraId: string) {
   return {
     fecha: fechaHoyPeru(),
     tipoDocumento: "SIN_DOCUMENTO",
     proveedorDireccion: "Dirección sintética de prueba",
     observacion: "Recepción de prueba automatizada",
+    pagos: [{ cuentaFinancieraId, medioPago: "EFECTIVO", importePagado: Number((cantidad * costoUnitario).toFixed(2)) }],
     detalles: [{ productoId, presentacionId, cantidad, costoUnitario }],
   };
 }
@@ -187,13 +188,17 @@ async function crearCuentaEfectivo() {
 
 async function crearEgresoParaPago(monto: number) {
   const registro = await servicioEgresos.crear({
-    tipo: "GASTO_OPERATIVO",
+    tipo: "MOTOTAXI",
     fecha: fechaHoyPeru(),
     categoria: "Prueba automatizada",
     concepto: `Egreso sintético ${randomUUID().slice(0, 8)}`,
     beneficiario: "Proveedor de prueba",
     moneda: "PEN",
     monto,
+    mototaxiMarca: "Marca QA",
+    mototaxiModelo: "Modelo QA",
+    mototaxiNumeroMotor: `MOTOR-${randomUUID()}`,
+    mototaxiNumeroChasis: `CHASIS-${randomUUID()}`,
   }, usuarioId);
   egresoIds.push(registro.id);
   return registro.id;
@@ -327,7 +332,8 @@ test("respuesta aceptada del NubeFact simulado marca la boleta como emitida", as
 
 test("compra de repuestos registra el documento, actualiza saldo y genera movimiento en PostgreSQL", async () => {
   const producto = await crearProductoConStock(0);
-  const entrada = await servicioEntradasStock.crear(datosEntradaStock(producto.productoId, producto.presentacionId, 3, 4.25), usuarioId);
+  const cuentaId = await crearCuentaEfectivo();
+  const entrada = await servicioEntradasStock.crear(datosEntradaStock(producto.productoId, producto.presentacionId, 3, 4.25, cuentaId), usuarioId);
   entradaStockIds.push(entrada.id);
 
   const [saldo] = await db.select({ cantidad: esquema.saldosStock.cantidad }).from(esquema.saldosStock)
@@ -346,10 +352,11 @@ test("compra de repuestos registra el documento, actualiza saldo y genera movimi
 
 test("compra de repuestos inválida revierte cabecera y conserva el saldo de PostgreSQL", async () => {
   const producto = await crearProductoConStock(2);
+  const cuentaId = await crearCuentaEfectivo();
   const antes = await db.select({ id: esquema.entradasStock.id }).from(esquema.entradasStock);
 
   await assert.rejects(
-    () => servicioEntradasStock.crear(datosEntradaStock(producto.productoId, randomUUID(), 1, 5), usuarioId),
+    () => servicioEntradasStock.crear(datosEntradaStock(producto.productoId, randomUUID(), 1, 5, cuentaId), usuarioId),
     (error) => error instanceof BadRequestException && /no está disponible para compra/.test(error.message),
   );
 
