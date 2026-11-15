@@ -164,7 +164,7 @@ export class ServicioEntradasStock {
     });
     if (detallesDocumento.length > 100) throw new BadRequestException("El documento admite hasta 100 lineas.");
     if (new Set(detallesDocumento.map((linea) => linea.clave)).size !== detallesDocumento.length) throw new BadRequestException("Las lineas del documento tienen claves repetidas.");
-    const medioPago = texto(datos.medioPago, "El medio de pago", 30);
+    const medioPago = texto(datos.medioPago, "El medio de pago", 30, true);
     if (medioPago && !(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
     const montoPagado = datos.montoPagado === undefined || datos.montoPagado === null || datos.montoPagado === "" ? null : decimal(datos.montoPagado, "El monto pagado", 2, 0);
     const pagosSolicitados = Array.isArray(datos.pagos) ? datos.pagos : (montoPagado ?? 0) > 0 ? [{ cuentaFinancieraId: datos.cuentaFinancieraId, medioPago, importePagado: montoPagado }] : [];
