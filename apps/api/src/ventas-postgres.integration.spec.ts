@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
@@ -328,6 +328,16 @@ test("una boleta rechazada muestra la respuesta SUNAT y puede reintentarse sin r
     assert.match(filaRechazada?.detalleProveedor ?? "", /2335/);
     assert.match(filaRechazada?.detalleProveedor ?? "", /El documento del cliente no coincide/);
 
+    await assert.rejects(() => servicio.consultarEstadoComprobante("id-inválido"), (error) => error instanceof BadRequestException);
+    await assert.rejects(() => servicio.consultarEstadoComprobante(randomUUID()), (error) => error instanceof NotFoundException);
+    globalThis.fetch = (async () => { throw new Error("fallo de red simulado"); }) as typeof fetch;
+    await assert.rejects(() => servicio.consultarEstadoComprobante(venta.id), (error) => error instanceof BadRequestException);
+    globalThis.fetch = (async () => new Response(JSON.stringify({ error: "Servicio temporalmente no disponible" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    })) as typeof fetch;
+    await assert.rejects(() => servicio.consultarEstadoComprobante(venta.id), (error) => error instanceof BadRequestException && /HTTP 503/.test(error.message));
+
     let consultaCapturada: Record<string, unknown> | undefined;
     globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
       consultaCapturada = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -338,7 +348,7 @@ test("una boleta rechazada muestra la respuesta SUNAT y puede reintentarse sin r
         sunat_responsecode: 2335,
       }), { status: 200, headers: { "content-type": "application/json" } });
     }) as typeof fetch;
-    const resultadoConsulta = await servicio.consultarRechazo(venta.id);
+    const resultadoConsulta = await servicio.consultarEstadoComprobante(venta.id);
     const [ventaConsultada] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, venta.id));
     const datosConsultados = ventaConsultada.datosNubefact as { respuesta: unknown; consultaComprobante: { respuesta: Record<string, unknown> } };
     assert.deepEqual(consultaCapturada, { operacion: "consultar_comprobante", tipo_de_comprobante: 2, serie: solicitudCapturada?.serie, numero: solicitudCapturada?.numero });

@@ -633,7 +633,7 @@ export class ServicioIngresos {
     }
   }
 
-  async consultarRechazo(ingresoIdEntrada: string) {
+  async consultarEstadoComprobante(ingresoIdEntrada: string) {
     if (!uuidValido(ingresoIdEntrada)) throw new BadRequestException("El comprobante no es válido.");
     const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, ingresoIdEntrada)).limit(1);
     if (!venta) throw new NotFoundException("No se encontró la venta.");
@@ -648,8 +648,9 @@ export class ServicioIngresos {
     const consultaAnterior = datos.consultaComprobante && typeof datos.consultaComprobante === "object" ? datos.consultaComprobante as Record<string, unknown> : {};
     const respuestaAnterior = consultaAnterior.respuesta && typeof consultaAnterior.respuesta === "object" ? consultaAnterior.respuesta as Record<string, unknown>
       : datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
-    if (analizarEstadoComprobante(venta.estado, datos, respuestaAnterior).estadoProveedor !== "RECHAZADO_SUNAT") {
-      throw new ConflictException("Solo se puede consultar el detalle de un comprobante rechazado por SUNAT.");
+    const estadoActual = analizarEstadoComprobante(venta.estado, datos, respuestaAnterior).estadoProveedor;
+    if (!["RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO"].includes(estadoActual)) {
+      throw new ConflictException("Solo se puede consultar un comprobante rechazado o pendiente de confirmación.");
     }
     if (!process.env.NUBEFACT_RUTA?.trim() || !process.env.NUBEFACT_TOKEN?.trim()) throw new BadRequestException("NubeFact no está configurado para consultar comprobantes.");
 
@@ -679,9 +680,9 @@ export class ServicioIngresos {
     const consultaComprobante = { solicitud: consulta, respuesta: cuerpo, respuestaHttp: respuesta.status, consultadoEn: new Date().toISOString() };
     const datosActualizados = { ...datos, consultaComprobante };
     const analisis = analizarEstadoComprobante(venta.estado, datosActualizados, cuerpo);
-    const consultaConfirmada = analisis.estadoProveedor === "ACEPTADO_SUNAT" || analisis.estadoProveedor === "RECHAZADO_SUNAT";
+    const consultaFinal = analisis.estadoProveedor === "ACEPTADO_SUNAT" || analisis.estadoProveedor === "RECHAZADO_SUNAT";
     const estado = analisis.estadoProveedor === "ACEPTADO_SUNAT" ? "EMITIDO" : analisis.estadoProveedor === "RECHAZADO_SUNAT" ? "ERROR_NUBEFACT" : venta.estado;
-    await db.update(ingresos).set({ ...(consultaConfirmada ? { estado } : {}), datosNubefact: datosActualizados }).where(eq(ingresos.id, venta.id));
+    await db.update(ingresos).set({ ...(consultaFinal ? { estado } : {}), datosNubefact: datosActualizados }).where(eq(ingresos.id, venta.id));
     if (estado === "EMITIDO") {
       const archivos = await this.archivarNubeFact("INGRESO", venta.id, venta.tipoComprobante, `${serie}-${String(numero).padStart(6, "0")}`, cuerpo);
       if (archivos) await db.update(ingresos).set({ datosNubefact: { ...datosActualizados, archivos } }).where(eq(ingresos.id, venta.id));
@@ -721,7 +722,7 @@ export class ServicioIngresos {
       const respuestaConsulta = consultaComprobante.respuesta && typeof consultaComprobante.respuesta === "object" ? consultaComprobante.respuesta as Record<string, unknown> : null;
       const respuestaOriginal = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
       const estadoConsulta = respuestaConsulta ? analizarEstadoComprobante(fila.estado, datos, respuestaConsulta).estadoProveedor : "";
-      const respuesta = estadoConsulta === "ACEPTADO_SUNAT" || estadoConsulta === "RECHAZADO_SUNAT" ? respuestaConsulta! : respuestaOriginal;
+      const respuesta = consultaComprobante.respuesta && ["ACEPTADO_SUNAT", "RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO"].includes(estadoConsulta) ? respuestaConsulta! : respuestaOriginal;
       const estadoDocumento = analizarEstadoComprobante(fila.estado, datos, respuesta);
       const anulacion = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
       const estadoAnulacion = typeof anulacion?.estado === "string" ? anulacion.estado : null;
