@@ -610,7 +610,9 @@ export class ServicioIngresos {
     const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, ingresoIdEntrada)).limit(1);
     if (!venta) throw new NotFoundException("No se encontró la venta.");
     const datosAnteriores = venta.datosNubefact && typeof venta.datosNubefact === "object" ? venta.datosNubefact as Record<string, unknown> : {};
-    const respuestaAnterior = datosAnteriores.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {};
+    const consultaComprobante = datosAnteriores.consultaComprobante && typeof datosAnteriores.consultaComprobante === "object" ? datosAnteriores.consultaComprobante as Record<string, unknown> : {};
+    const respuestaConsultada = consultaComprobante.respuesta && typeof consultaComprobante.respuesta === "object" ? consultaComprobante.respuesta as Record<string, unknown> : null;
+    const respuestaAnterior = respuestaConsultada ?? (datosAnteriores.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {});
     validarElegibilidadReintento({ tipoComprobante: venta.tipoComprobante, fecha: venta.fecha, estado: venta.estado, datos: datosAnteriores, respuesta: respuestaAnterior, fechaHoy: fechaActualPeru() });
     const [reclamo] = await db.update(ingresos).set({ estado: "NUBEFACT_PENDIENTE" })
       .where(and(eq(ingresos.id, venta.id), eq(ingresos.estado, venta.estado))).returning({ id: ingresos.id });
@@ -629,6 +631,62 @@ export class ServicioIngresos {
       }
       throw problema;
     }
+  }
+
+  async consultarRechazo(ingresoIdEntrada: string) {
+    if (!uuidValido(ingresoIdEntrada)) throw new BadRequestException("El comprobante no es válido.");
+    const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, ingresoIdEntrada)).limit(1);
+    if (!venta) throw new NotFoundException("No se encontró la venta.");
+    if (venta.tipoComprobante !== "BOLETA" && venta.tipoComprobante !== "FACTURA") {
+      throw new BadRequestException("Solo se puede consultar el rechazo de una boleta o factura electrónica.");
+    }
+    const datos = venta.datosNubefact && typeof venta.datosNubefact === "object" ? venta.datosNubefact as Record<string, unknown> : {};
+    const solicitudOriginal = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
+    const serie = typeof solicitudOriginal.serie === "string" ? solicitudOriginal.serie.trim() : "";
+    const numero = Number(solicitudOriginal.numero ?? datos.numero);
+    if (!serie || !Number.isInteger(numero) || numero < 1) throw new ConflictException("No se encontró la serie y número del comprobante para consultarlo en NubeFact.");
+    const consultaAnterior = datos.consultaComprobante && typeof datos.consultaComprobante === "object" ? datos.consultaComprobante as Record<string, unknown> : {};
+    const respuestaAnterior = consultaAnterior.respuesta && typeof consultaAnterior.respuesta === "object" ? consultaAnterior.respuesta as Record<string, unknown>
+      : datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+    if (analizarEstadoComprobante(venta.estado, datos, respuestaAnterior).estadoProveedor !== "RECHAZADO_SUNAT") {
+      throw new ConflictException("Solo se puede consultar el detalle de un comprobante rechazado por SUNAT.");
+    }
+    if (!process.env.NUBEFACT_RUTA?.trim() || !process.env.NUBEFACT_TOKEN?.trim()) throw new BadRequestException("NubeFact no está configurado para consultar comprobantes.");
+
+    const consulta = { operacion: "consultar_comprobante", tipo_de_comprobante: venta.tipoComprobante === "FACTURA" ? 1 : 2, serie, numero };
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(process.env.NUBEFACT_RUTA.trim(), {
+        method: "POST",
+        headers: { Authorization: process.env.NUBEFACT_TOKEN.trim(), "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(consulta),
+        signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs),
+      });
+    } catch {
+      throw new BadRequestException("No se pudo consultar NubeFact. La emisión no se modificó; vuelve a intentar la consulta más tarde.");
+    }
+    let cuerpo: Record<string, unknown>;
+    try {
+      const json: unknown = await respuesta.json();
+      cuerpo = json && typeof json === "object" && !Array.isArray(json) ? json as Record<string, unknown> : { respuesta: json };
+    } catch {
+      cuerpo = { error: "NubeFact devolvió una respuesta que no se pudo interpretar." };
+    }
+    if (!respuesta.ok) {
+      throw new BadRequestException(`NubeFact respondió con HTTP ${respuesta.status} al consultar el comprobante. La emisión no se modificó.`);
+    }
+
+    const consultaComprobante = { solicitud: consulta, respuesta: cuerpo, respuestaHttp: respuesta.status, consultadoEn: new Date().toISOString() };
+    const datosActualizados = { ...datos, consultaComprobante };
+    const analisis = analizarEstadoComprobante(venta.estado, datosActualizados, cuerpo);
+    const consultaConfirmada = analisis.estadoProveedor === "ACEPTADO_SUNAT" || analisis.estadoProveedor === "RECHAZADO_SUNAT";
+    const estado = analisis.estadoProveedor === "ACEPTADO_SUNAT" ? "EMITIDO" : analisis.estadoProveedor === "RECHAZADO_SUNAT" ? "ERROR_NUBEFACT" : venta.estado;
+    await db.update(ingresos).set({ ...(consultaConfirmada ? { estado } : {}), datosNubefact: datosActualizados }).where(eq(ingresos.id, venta.id));
+    if (estado === "EMITIDO") {
+      const archivos = await this.archivarNubeFact("INGRESO", venta.id, venta.tipoComprobante, `${serie}-${String(numero).padStart(6, "0")}`, cuerpo);
+      if (archivos) await db.update(ingresos).set({ datosNubefact: { ...datosActualizados, archivos } }).where(eq(ingresos.id, venta.id));
+    }
+    return { estadoProveedor: analisis.estadoProveedor, detalleProveedor: analisis.detalleProveedor, respuestaHttp: respuesta.status, consultadoEn: consultaComprobante.consultadoEn };
   }
 
   async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string }) {
@@ -659,7 +717,11 @@ export class ServicioIngresos {
       const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
       const serie = typeof solicitud.serie === "string" ? solicitud.serie : "";
       const numero = Number(solicitud.numero ?? 0);
-      const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+      const consultaComprobante = datos.consultaComprobante && typeof datos.consultaComprobante === "object" ? datos.consultaComprobante as Record<string, unknown> : {};
+      const respuestaConsulta = consultaComprobante.respuesta && typeof consultaComprobante.respuesta === "object" ? consultaComprobante.respuesta as Record<string, unknown> : null;
+      const respuestaOriginal = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+      const estadoConsulta = respuestaConsulta ? analizarEstadoComprobante(fila.estado, datos, respuestaConsulta).estadoProveedor : "";
+      const respuesta = estadoConsulta === "ACEPTADO_SUNAT" || estadoConsulta === "RECHAZADO_SUNAT" ? respuestaConsulta! : respuestaOriginal;
       const estadoDocumento = analizarEstadoComprobante(fila.estado, datos, respuesta);
       const anulacion = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
       const estadoAnulacion = typeof anulacion?.estado === "string" ? anulacion.estado : null;
@@ -990,7 +1052,9 @@ export class ServicioIngresos {
     const datosAnteriores = reintento?.datosAnteriores;
     const historialExistente = Array.isArray(datosAnteriores?.historialEmisiones) ? datosAnteriores.historialEmisiones : [];
     const solicitudAnterior = datosAnteriores?.solicitud && typeof datosAnteriores.solicitud === "object" ? datosAnteriores.solicitud as Record<string, unknown> : null;
-    const respuestaAnterior = datosAnteriores?.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {};
+    const consultaComprobanteAnterior = datosAnteriores?.consultaComprobante && typeof datosAnteriores.consultaComprobante === "object" ? datosAnteriores.consultaComprobante as Record<string, unknown> : {};
+    const respuestaConsultadaAnterior = consultaComprobanteAnterior.respuesta && typeof consultaComprobanteAnterior.respuesta === "object" ? consultaComprobanteAnterior.respuesta as Record<string, unknown> : null;
+    const respuestaAnterior = respuestaConsultadaAnterior ?? (datosAnteriores?.respuesta && typeof datosAnteriores.respuesta === "object" ? datosAnteriores.respuesta as Record<string, unknown> : {});
     const estadoAnterior = datosAnteriores ? analizarEstadoComprobante("ERROR_NUBEFACT", datosAnteriores, respuestaAnterior) : null;
     const historialEmisiones = reintento && solicitudAnterior ? [...historialExistente, {
       codigoComprobante: `${String(solicitudAnterior.serie ?? "")}-${String(solicitudAnterior.numero ?? "")}`,
@@ -999,6 +1063,8 @@ export class ServicioIngresos {
       respuestaHttp: datosAnteriores?.respuestaHttp ?? null,
       solicitud: solicitudAnterior,
       respuesta: respuestaAnterior,
+      respuestaInicial: datosAnteriores?.respuesta ?? null,
+      consultaComprobante: Object.keys(consultaComprobanteAnterior).length ? consultaComprobanteAnterior : null,
       reintentadoEn: new Date().toISOString(),
     }] : historialExistente;
     const metadatosHistorial = historialEmisiones.length ? { historialEmisiones } : {};

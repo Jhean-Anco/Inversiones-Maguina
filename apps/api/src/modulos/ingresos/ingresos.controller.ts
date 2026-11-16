@@ -44,6 +44,7 @@ export class ControladorIngresos {
   @Patch("clientes/:id") @RequierePermiso("PERSONAS.EDITAR") actualizarCliente(@Param("id") id: string, @Body() datos: unknown) { return this.ingresos.actualizarCliente(id, datos); }
   @Get("nubefact/estado") @RequierePermiso("INGRESOS.CREAR") estadoNubefact() { return this.ingresos.estadoNubefact(); }
   @Post() @RequierePermiso("INGRESOS.CREAR") crear(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.crear(datos, solicitud.usuario.id); }
+  @Post(":id/consultar-rechazo") @RequierePermiso("INGRESOS.LEER") consultarRechazo(@Param("id") id: string) { return this.ingresos.consultarRechazo(id); }
   @Post(":id/reintentar-emision") @RequierePermiso("INGRESOS.CREAR") reintentarEmision(@Param("id") id: string) { return this.ingresos.reintentarEmision(id); }
   @Get(":id/notas/fuente") @RequierePermiso("INGRESOS.LEER") obtenerFuenteNota(@Param("id") id: string) { return this.ingresos.obtenerFuenteNota(id); }
   @Get(":id/notas") @RequierePermiso("INGRESOS.LEER") listarNotas(@Param("id") id: string) { return this.ingresos.listarNotas(id); }

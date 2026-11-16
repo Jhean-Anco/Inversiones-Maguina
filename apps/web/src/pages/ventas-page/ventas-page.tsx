@@ -69,6 +69,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   const [guardandoAnulacion, setGuardandoAnulacion] = useState(false);
   const [ventaRechazada, setVentaRechazada] = useState<VentaListado | null>(null);
   const [guardandoReintento, setGuardandoReintento] = useState(false);
+  const [consultandoRechazo, setConsultandoRechazo] = useState(false);
   const [errorReintento, setErrorReintento] = useState("");
   const [mensajeReintento, setMensajeReintento] = useState("");
 
@@ -114,6 +115,27 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
 
   const abrirAnulacion = (documento: DocumentoAnulacion) => { setDocumentoAnulacion(documento); setMotivoAnulacion(""); setConfirmoNoEntregado(false); setErrorAnulacion(""); };
   const abrirRechazo = (venta: VentaListado) => { setVentaRechazada(venta); setErrorReintento(""); setMensajeReintento(""); };
+  const procesarConsultaRechazo = async () => {
+    if (!ventaRechazada) return;
+    setConsultandoRechazo(true); setErrorReintento("");
+    try {
+      const resultado = await servicioIngresos.consultarRechazo(ventaRechazada.id);
+      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
+      const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
+      if (resultado.estadoProveedor === "ACEPTADO_SUNAT") {
+        setVentaRechazada(null);
+        setMensajeReintento(`NubeFact confirmó que ${ventaRechazada.codigoComprobante} fue aceptado por SUNAT.`);
+      } else {
+        if (ventaActualizada?.estadoProveedor === "RECHAZADO_SUNAT") {
+          setVentaRechazada({ ...ventaActualizada, detalleProveedor: resultado.detalleProveedor || ventaActualizada.detalleProveedor });
+        }
+        setErrorReintento(resultado.detalleProveedor || "NubeFact no confirmó un estado final ni devolvió el detalle. El rechazo original se conserva; vuelve a consultar o verifica este comprobante en NubeFact.");
+      }
+    } catch (problema) {
+      setErrorReintento(problema instanceof Error ? problema.message : "No se pudo consultar el comprobante en NubeFact.");
+    } finally { setConsultandoRechazo(false); }
+  };
   const procesarReintento = async () => {
     if (!ventaRechazada) return;
     setGuardandoReintento(true); setErrorReintento("");
@@ -187,15 +209,15 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       claseTabla="ventas-table"
       claseContenedor="ventas-table-scroll"
     />
-    {ventaRechazada && <div className="ventas-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardandoReintento) setVentaRechazada(null); }}>
+    {ventaRechazada && <div className="ventas-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardandoReintento && !consultandoRechazo) setVentaRechazada(null); }}>
       <section className="ventas-notes-modal ventas-rejection-modal" role="dialog" aria-modal="true" aria-labelledby="ventas-rejection-title">
-        <header><div><span>RESPUESTA DE SUNAT</span><h2 id="ventas-rejection-title">{ventaRechazada.codigoComprobante}</h2></div><button type="button" aria-label="Cerrar motivo del rechazo" disabled={guardandoReintento} onClick={() => setVentaRechazada(null)}>×</button></header>
+        <header><div><span>RESPUESTA DE SUNAT</span><h2 id="ventas-rejection-title">{ventaRechazada.codigoComprobante}</h2></div><button type="button" aria-label="Cerrar motivo del rechazo" disabled={guardandoReintento || consultandoRechazo} onClick={() => setVentaRechazada(null)}>×</button></header>
         <div className="ventas-notes-body">
-          <p className="ventas-rejection-lead"><strong>La boleta fue rechazada y no tiene validez tributaria.</strong> Revisa el motivo informado por NubeFact/SUNAT. El reintento no permite corregir los datos de la venta; si la causa requiere cambios, corrígelos primero por el flujo correspondiente para evitar otro rechazo.</p>
+          <p className="ventas-rejection-lead"><strong>El comprobante fue rechazado y no tiene validez tributaria.</strong> Consulta la respuesta actual de NubeFact para obtener el detalle de SUNAT. Si la causa requiere corregir datos, hazlo antes de reintentar para evitar otro rechazo.</p>
           <section className="ventas-rejection-reason" aria-label="Motivo del rechazo"><span>Motivo devuelto por el proveedor</span><p>{ventaRechazada.detalleProveedor || "NubeFact no guardó una descripción del rechazo. Consulta el CDR o el detalle de este comprobante en NubeFact antes de emitir nuevamente."}</p></section>
           <p className="ventas-rejection-retry-note">El reintento usará los datos guardados en esta venta y el siguiente correlativo electrónico. No volverá a descontar inventario ni a registrar otro cobro.</p>
           {errorReintento && <p className="ventas-message is-error" role="alert">{errorReintento}</p>}
-          <div className="ventas-rejection-actions"><button type="button" className="ventas-new-button" disabled={guardandoReintento} onClick={() => setVentaRechazada(null)}>Cerrar</button>{puedeCrear && <button type="button" className="ventas-new-button is-retry" disabled={guardandoReintento} onClick={() => void procesarReintento()}><RotateCcw aria-hidden="true" size={15}/>{guardandoReintento ? "Reintentando emisión…" : "Reintentar emisión"}</button>}</div>
+          <div className="ventas-rejection-actions"><button type="button" className="ventas-new-button" disabled={guardandoReintento || consultandoRechazo} onClick={() => setVentaRechazada(null)}>Cerrar</button><button type="button" className="ventas-new-button" disabled={guardandoReintento || consultandoRechazo} onClick={() => void procesarConsultaRechazo()}>{consultandoRechazo ? "Consultando NubeFact…" : "Consultar motivo"}</button>{puedeCrear && <button type="button" className="ventas-new-button is-retry" disabled={guardandoReintento || consultandoRechazo} onClick={() => void procesarReintento()}><RotateCcw aria-hidden="true" size={15}/>{guardandoReintento ? "Reintentando emisión…" : "Reintentar emisión"}</button>}</div>
         </div>
       </section>
     </div>}
