@@ -328,6 +328,28 @@ test("una boleta rechazada muestra la respuesta SUNAT y puede reintentarse sin r
     assert.match(filaRechazada?.detalleProveedor ?? "", /2335/);
     assert.match(filaRechazada?.detalleProveedor ?? "", /El documento del cliente no coincide/);
 
+    let consultaCapturada: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+      consultaCapturada = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        aceptada_por_sunat: false,
+        sunat_description: "El documento del cliente no coincide.",
+        sunat_note: "Validado nuevamente en NubeFact.",
+        sunat_responsecode: 2335,
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }) as typeof fetch;
+    const resultadoConsulta = await servicio.consultarRechazo(venta.id);
+    const [ventaConsultada] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, venta.id));
+    const datosConsultados = ventaConsultada.datosNubefact as { respuesta: unknown; consultaComprobante: { respuesta: Record<string, unknown> } };
+    assert.deepEqual(consultaCapturada, { operacion: "consultar_comprobante", tipo_de_comprobante: 2, serie: solicitudCapturada?.serie, numero: solicitudCapturada?.numero });
+    assert.equal(resultadoConsulta.estadoProveedor, "RECHAZADO_SUNAT");
+    assert.match(resultadoConsulta.detalleProveedor ?? "", /Validado nuevamente en NubeFact/);
+    assert.deepEqual(datosConsultados.respuesta, (venta.datosNubefact as { respuesta: unknown }).respuesta);
+    assert.equal(datosConsultados.consultaComprobante.respuesta.sunat_note, "Validado nuevamente en NubeFact.");
+    const listadoConsultado = await servicio.listarVentas({ tipoVenta: "REPUESTOS" });
+    const filaConsultada = listadoConsultado.items.find((item) => item.id === venta.id);
+    assert.match(filaConsultada?.detalleProveedor ?? "", /Validado nuevamente en NubeFact/);
+
     const movimientosAntes = await db.select({ id: esquema.movimientosStock.id }).from(esquema.movimientosStock)
       .where(and(eq(esquema.movimientosStock.origenId, venta.id), eq(esquema.movimientosStock.origenTipo, "INGRESO")));
     const pagosAntes = await db.select({ id: esquema.ingresosPagos.id }).from(esquema.ingresosPagos)
