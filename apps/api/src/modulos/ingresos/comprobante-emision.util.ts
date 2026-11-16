@@ -21,16 +21,24 @@ export function analizarEstadoComprobante(
   const detalleRechazo = [descripcionSunat, notaSunat && notaSunat !== descripcionSunat ? notaSunat : "", codigoSunat ? `Código de respuesta SUNAT: ${codigoSunat}` : "", errorTexto]
     .filter(Boolean).join(" · ") || "SUNAT rechazó el comprobante, pero NubeFact no devolvió el motivo detallado.";
   const ticket = respuesta.sunat_ticket_numero;
+  const estadoRemoto = [respuesta.estado, respuesta.status, respuesta.estado_comprobante].find((valor): valor is string => typeof valor === "string")?.trim().toLocaleLowerCase("es-PE") ?? "";
+  const estadoPendiente = ["en cola", "queued", "queue", "en proceso", "processing", "procesando", "pendiente", "pending"].some((texto) => estadoRemoto.includes(texto));
+  const descripcionPendiente = /pendient|en proceso|processing|en cola|queued/i.test(`${descripcionSunat} ${notaSunat}`);
+  const estadoRechazado = ["rechazado", "rejected", "denegado", "denied", "no aceptado"].some((texto) => estadoRemoto.includes(texto));
+  const codigoNoAceptado = Boolean(codigoSunat && !["0", "0000"].includes(codigoSunat));
+  const descripcionRechazo = /rechaz|no acept|inv[aá]lid|no coincide|no corresponde|no existe|inconsistente/i.test(`${descripcionSunat} ${notaSunat}`);
 
   if (errorSunat) return { estadoProveedor: "ERROR_SUNAT", detalleProveedor: errorSunat };
-  if (estado === "NUBEFACT_PENDIENTE") return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: errorTexto || descripcionSunat || null };
-  if (respuesta.aceptada_por_sunat === false) return { estadoProveedor: "RECHAZADO_SUNAT", detalleProveedor: detalleRechazo };
+  if (estadoPendiente || descripcionPendiente || estado === "NUBEFACT_PENDIENTE") return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: descripcionSunat || notaSunat || errorTexto || "NubeFact aún no confirma el resultado del comprobante." };
+  if (respuesta.aceptada_por_sunat === false && (estadoRechazado || codigoNoAceptado || descripcionRechazo)) return { estadoProveedor: "RECHAZADO_SUNAT", detalleProveedor: detalleRechazo };
+  if (respuesta.aceptada_por_sunat === false && errorTexto) return { estadoProveedor: "ERROR_NUBEFACT", detalleProveedor: errorTexto };
+  if (respuesta.aceptada_por_sunat === false) return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: "NubeFact aún no confirma el resultado. La respuesta no contiene un rechazo SUNAT detallado; consulta el estado antes de volver a enviar." };
+  if (estadoRechazado) return { estadoProveedor: "RECHAZADO_SUNAT", detalleProveedor: detalleRechazo };
   if (errorTexto) return { estadoProveedor: "ERROR_NUBEFACT", detalleProveedor: errorTexto };
   if (respuesta.aceptada_por_sunat === true) return { estadoProveedor: "ACEPTADO_SUNAT", detalleProveedor: descripcionSunat || null };
 
-  const estadoRemoto = [respuesta.estado, respuesta.status, respuesta.estado_comprobante].find((valor): valor is string => typeof valor === "string")?.trim().toLocaleLowerCase("es-PE") ?? "";
   if (ticket !== undefined && ticket !== null && String(ticket).trim()) return { estadoProveedor: "EN_PROCESO", detalleProveedor: descripcionSunat || "Ticket SUNAT " + String(ticket) };
-  if (["en cola", "queued", "queue", "en proceso", "processing", "procesando", "pendiente"].some((texto) => estadoRemoto.includes(texto))) return { estadoProveedor: "EN_PROCESO", detalleProveedor: descripcionSunat || estadoRemoto };
+  if (estadoPendiente) return { estadoProveedor: "EN_PROCESO", detalleProveedor: descripcionSunat || estadoRemoto };
   if (estado.startsWith("ERROR")) return { estadoProveedor: "ERROR_EMISION", detalleProveedor: descripcionSunat || null };
   return { estadoProveedor: "EMITIDO", detalleProveedor: descripcionSunat || null };
 }

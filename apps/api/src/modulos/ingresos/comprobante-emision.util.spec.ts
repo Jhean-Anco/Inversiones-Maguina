@@ -22,21 +22,42 @@ test("conserva descripción, nota, código y errores de una boleta rechazada por
   });
 });
 
-test("el rechazo sin descripción explícita aún muestra el error del proveedor", () => {
+test("los errores del proveedor no se clasifican como rechazo definitivo de SUNAT", () => {
   assert.deepEqual(
     analizarEstadoComprobante("ERROR_NUBEFACT", {}, { aceptada_por_sunat: false, errors: { cliente: "Documento inválido" } }),
     {
-      estadoProveedor: "RECHAZADO_SUNAT",
+      estadoProveedor: "ERROR_NUBEFACT",
       detalleProveedor: "cliente: Documento inválido",
     },
   );
 });
 
-test("el rechazo sin detalle del proveedor entrega un mensaje de respaldo", () => {
+test("una respuesta negativa sin motivo ni estado explícito queda pendiente de confirmación", () => {
   assert.deepEqual(analizarEstadoComprobante("ERROR_NUBEFACT", {}, { aceptada_por_sunat: false }), {
-    estadoProveedor: "RECHAZADO_SUNAT",
-    detalleProveedor: "SUNAT rechazó el comprobante, pero NubeFact no devolvió el motivo detallado.",
+    estadoProveedor: "PENDIENTE_CONFIRMACION",
+    detalleProveedor: "NubeFact aún no confirma el resultado. La respuesta no contiene un rechazo SUNAT detallado; consulta el estado antes de volver a enviar.",
   });
+});
+
+test("acepta como rechazo solo el estado explícito reportado por el proveedor", () => {
+  assert.equal(analizarEstadoComprobante("ERROR_NUBEFACT", {}, {
+    aceptada_por_sunat: false,
+    estado: "RECHAZADO",
+  }).estadoProveedor, "RECHAZADO_SUNAT");
+});
+
+test("prioriza el estado pendiente devuelto por NubeFact aunque aceptada_por_sunat sea falso", () => {
+  assert.deepEqual(analizarEstadoComprobante("ERROR_NUBEFACT", {}, {
+    aceptada_por_sunat: false,
+    estado: "PENDIENTE",
+  }), {
+    estadoProveedor: "PENDIENTE_CONFIRMACION",
+    detalleProveedor: "NubeFact aún no confirma el resultado del comprobante.",
+  });
+  assert.equal(analizarEstadoComprobante("ERROR_NUBEFACT", {}, {
+    aceptada_por_sunat: false,
+    sunat_description: "El comprobante está pendiente de envío.",
+  }).estadoProveedor, "PENDIENTE_CONFIRMACION");
 });
 
 test("no confunde un error SOAP o una respuesta pendiente con rechazo definitivo", () => {

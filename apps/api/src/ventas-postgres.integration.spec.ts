@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
-import { BadRequestException, ConflictException } from "@nestjs/common";
+import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
@@ -327,6 +327,38 @@ test("una boleta rechazada muestra la respuesta SUNAT y puede reintentarse sin r
     assert.equal(filaRechazada?.estadoProveedor, "RECHAZADO_SUNAT");
     assert.match(filaRechazada?.detalleProveedor ?? "", /2335/);
     assert.match(filaRechazada?.detalleProveedor ?? "", /El documento del cliente no coincide/);
+
+    await assert.rejects(() => servicio.consultarEstadoComprobante("id-inválido"), (error) => error instanceof BadRequestException);
+    await assert.rejects(() => servicio.consultarEstadoComprobante(randomUUID()), (error) => error instanceof NotFoundException);
+    globalThis.fetch = (async () => { throw new Error("fallo de red simulado"); }) as typeof fetch;
+    await assert.rejects(() => servicio.consultarEstadoComprobante(venta.id), (error) => error instanceof BadRequestException);
+    globalThis.fetch = (async () => new Response(JSON.stringify({ error: "Servicio temporalmente no disponible" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    })) as typeof fetch;
+    await assert.rejects(() => servicio.consultarEstadoComprobante(venta.id), (error) => error instanceof BadRequestException && /HTTP 503/.test(error.message));
+
+    let consultaCapturada: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (_input: URL | RequestInfo, init?: RequestInit) => {
+      consultaCapturada = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({
+        aceptada_por_sunat: false,
+        sunat_description: "El documento del cliente no coincide.",
+        sunat_note: "Validado nuevamente en NubeFact.",
+        sunat_responsecode: 2335,
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }) as typeof fetch;
+    const resultadoConsulta = await servicio.consultarEstadoComprobante(venta.id);
+    const [ventaConsultada] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, venta.id));
+    const datosConsultados = ventaConsultada.datosNubefact as { respuesta: unknown; consultaComprobante: { respuesta: Record<string, unknown> } };
+    assert.deepEqual(consultaCapturada, { operacion: "consultar_comprobante", tipo_de_comprobante: 2, serie: solicitudCapturada?.serie, numero: solicitudCapturada?.numero });
+    assert.equal(resultadoConsulta.estadoProveedor, "RECHAZADO_SUNAT");
+    assert.match(resultadoConsulta.detalleProveedor ?? "", /Validado nuevamente en NubeFact/);
+    assert.deepEqual(datosConsultados.respuesta, (venta.datosNubefact as { respuesta: unknown }).respuesta);
+    assert.equal(datosConsultados.consultaComprobante.respuesta.sunat_note, "Validado nuevamente en NubeFact.");
+    const listadoConsultado = await servicio.listarVentas({ tipoVenta: "REPUESTOS" });
+    const filaConsultada = listadoConsultado.items.find((item) => item.id === venta.id);
+    assert.match(filaConsultada?.detalleProveedor ?? "", /Validado nuevamente en NubeFact/);
 
     const movimientosAntes = await db.select({ id: esquema.movimientosStock.id }).from(esquema.movimientosStock)
       .where(and(eq(esquema.movimientosStock.origenId, venta.id), eq(esquema.movimientosStock.origenTipo, "INGRESO")));
