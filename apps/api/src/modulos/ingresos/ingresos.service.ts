@@ -649,8 +649,8 @@ export class ServicioIngresos {
     const respuestaAnterior = consultaAnterior.respuesta && typeof consultaAnterior.respuesta === "object" ? consultaAnterior.respuesta as Record<string, unknown>
       : datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
     const estadoActual = analizarEstadoComprobante(venta.estado, datos, respuestaAnterior).estadoProveedor;
-    if (!["RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO"].includes(estadoActual)) {
-      throw new ConflictException("Solo se puede consultar un comprobante rechazado o pendiente de confirmación.");
+    if (!["RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO", "ERROR_SUNAT", "ERROR_NUBEFACT", "ERROR_EMISION"].includes(estadoActual)) {
+      throw new ConflictException("Solo se puede consultar un comprobante pendiente, en proceso, con error o rechazado.");
     }
     if (!process.env.NUBEFACT_RUTA?.trim() || !process.env.NUBEFACT_TOKEN?.trim()) throw new BadRequestException("NubeFact no está configurado para consultar comprobantes.");
 

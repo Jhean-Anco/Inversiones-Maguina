@@ -514,7 +514,7 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
   }
 });
 
-test("Ventas muestra el motivo del rechazo y ofrece un reintento accesible", async ({ page }) => {
+test("Ventas resume el Estado SUNAT y ofrece un reintento accesible", async ({ page }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar Ventas.");
   const [rolAdministrador] = await db
     .select({ id: roles.id })
@@ -577,8 +577,13 @@ test("Ventas muestra el motivo del rechazo y ofrece un reintento accesible", asy
     await expect(page).toHaveURL(/\/inicio$/);
     await page.goto("/ingresos/ventas/repuestos");
 
-    await expect(page.getByRole("button", { name: "Ver motivo y opciones" })).toBeVisible();
-    await page.getByRole("button", { name: "Ver motivo y opciones" }).click();
+    await expect(page.getByRole("columnheader", { name: "Estado SUNAT" })).toBeVisible();
+    const filaRechazada = page.getByRole("row").filter({ hasText: "BBB1-000001" });
+    await expect(filaRechazada.getByText("Rechazado", { exact: true })).toBeVisible();
+    await expect(filaRechazada.getByText(/El documento del cliente no coincide/)).toHaveCount(0);
+    const consultarEstado = page.getByRole("button", { name: "Consultar estado SUNAT de BBB1-000001" });
+    await expect(consultarEstado).toBeVisible();
+    await consultarEstado.click();
     const dialogo = page.getByRole("dialog", { name: "BBB1-000001" });
     await expect(dialogo.getByText(/El documento del cliente no coincide/)).toBeVisible();
     await expect(dialogo.getByText(/2335/)).toBeVisible();
@@ -586,7 +591,7 @@ test("Ventas muestra el motivo del rechazo y ofrece un reintento accesible", asy
 
     await dialogo.getByRole("button", { name: "Reintentar emisión" }).click();
     await expect(page.getByText("El nuevo comprobante BBB1-000002 fue aceptado por SUNAT.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Ver motivo y opciones" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Consultar estado SUNAT de BBB1-000002" })).toHaveCount(0);
   } finally {
     await db.delete(usuariosRoles).where(and(eq(usuariosRoles.usuarioId, usuarioId), eq(usuariosRoles.rolId, rolAdministrador.id)));
   }
