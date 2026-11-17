@@ -1,4 +1,4 @@
-﻿import { useEffect, useId, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useId, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FileOutput, Mail, Phone } from "lucide-react";
@@ -307,7 +307,6 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
           <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={busquedaProducto} onChange={(evento) => setBusquedaProducto(evento.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar en el catálogo de repuestos" autoComplete="off" /></label>
           <div className="venta-catalog-results" aria-live="polite">
             {productos.length ? productos.map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}>
-              <div className="venta-catalog-product-image" aria-hidden="true">▧</div>
               <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigo} · {producto.presentacion}</span></div>
               <div className="venta-catalog-product-meta"><span>Stock <b>{Number(producto.stockBase).toLocaleString("es-PE")}</b></span><strong>{soles(Number(producto.precio))}</strong></div>
               <button type="button" onClick={() => agregarProducto(producto)}>Agregar a la orden</button>

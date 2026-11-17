@@ -200,6 +200,6 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
         </div>
       </>}
     </>}
-    {resumen?.notasInternas && resumen.notasInternas.recientes.length > 0 && <article className="inicio-panel inicio-recent-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">SALIDAS INTERNAS</span><h2>Notas de venta</h2><p>Control interno de productos y servicios, separado de las boletas.</p></div></header><div className="inicio-recent-list">{resumen.notasInternas.recientes.map((nota) => <div key={nota.id}><span className="inicio-recent-avatar" aria-hidden="true">NV</span><div><strong>{nota.cliente}</strong><small>{nota.codigo} · {fechaCorta(nota.fecha)} · Nota interna</small></div><b>{soles(nota.total)}</b></div>)}</div></article>}
+    {resumen?.notasInternas && resumen.notasInternas.recientes.length > 0 && <article className="inicio-panel inicio-recent-panel"><header className="inicio-panel-heading"><div><span className="inicio-panel-kicker">SALIDAS INTERNAS</span><h2>Notas de venta</h2><p>Control interno de productos y servicios, separado de las boletas.</p></div></header><div className="inicio-recent-list">{resumen.notasInternas.recientes.map((nota) => <div key={nota.id}><div><strong>{nota.cliente}</strong><small>{nota.codigo} · {fechaCorta(nota.fecha)} · Nota interna</small></div><b>{soles(nota.total)}</b></div>)}</div></article>}
   </section>;
 }

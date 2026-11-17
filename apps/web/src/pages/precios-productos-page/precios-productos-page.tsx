@@ -75,7 +75,7 @@ export function PreciosProductosPage({ integrado = false, revision = 0, alCrearP
     const precio = precios[item.id] ?? redondearPrecioADecimos(item.precio);
     const cambio = precio !== item.precio;
     return <tr key={item.id} className={`${item.productoActivo && item.precioActivo ? "" : "is-inactive"}${cambio ? " has-price-change" : ""}`}>
-          <td data-label="Producto"><div className="precios-productos-product"><span className="precios-productos-image" aria-hidden="true">{item.producto.slice(0, 1).toLocaleUpperCase("es-PE")}</span><span><strong>{item.producto}</strong><small>{item.codigo} · {item.marca}{!item.productoActivo ? " · Producto inactivo" : ""}</small></span></div></td>
+          <td data-label="Producto"><div className="precios-productos-product"><span><strong>{item.producto}</strong><small>{item.codigo} · {item.marca}{!item.productoActivo ? " · Producto inactivo" : ""}</small></span></div></td>
           <td data-label="Presentación">{item.presentacion}{item.presentacionBase && <small className="precios-productos-base">Unidad base</small>}</td>
           <td data-label="Lista">{item.listaPrecio}{!item.precioActivo && <small className="precios-productos-base">Precio inactivo</small>}</td>
           <td data-label="Desde">{Number(item.cantidadMinima).toLocaleString("es-PE")}</td>

@@ -274,7 +274,7 @@ jobs:
     name: Publicar solo después de CI, escaneos y humo
     runs-on: ubuntu-latest
     needs: [quality, images]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && contains(fromJSON('["refs/heads/main","refs/heads/development"]'), github.ref)
     permissions:
       contents: read
       packages: write
@@ -342,7 +342,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: publish
     if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' && contains(fromJSON('["refs/heads/main","refs/heads/development"]'), github.ref) &&
       vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     environment: production
     permissions:
@@ -368,9 +368,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          current="$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/main" | jq -r .sha)"
+          current="$(curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_REF_NAME" | jq -r .sha)"
           if [ "$current" != "$GITHUB_SHA" ]; then
-            echo "main cambió; se cancela el despliegue de esta revisión."
+            echo "La rama de despliegue cambió; se cancela el despliegue de esta revisión."
             exit 1
           fi
           api="$(curl -fsS --max-time 15 https://api.inversionesmaguina.network/health)"

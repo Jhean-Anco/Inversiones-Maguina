@@ -5,7 +5,6 @@
 .conductores-kicker { color: #7187a0; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
 .conductores-fields input, .conductores-fields select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid #d5e0ea; border-radius: 9px; background: #fff; color: #1c3652; font: inherit; font-size: 13px; }
 .conductores-card { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 16px; border: 1px solid #dce5ee; border-radius: 13px; background: #fff; box-shadow: 0 4px 14px #17345108; }
-.conductores-avatar { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: #edf4fa; color: #174f88; font-weight: 800; }
 .conductores-info { min-width: 0; }
 .conductores-card h2 { margin: 0 0 5px; font-size: 14px; }
 .conductores-card p, .conductores-card small { display: block; margin: 0; color: #72849a; font-size: 11px; }
@@ -30,5 +29,4 @@ html[data-theme="oscuro"] .conductores-heading p, html[data-theme="oscuro"] .con
 html[data-theme="oscuro"] .conductores-card, html[data-theme="oscuro"] .conductores-form { border-color: #314761; background: #17263a; color: #e1eaf4; }
 html[data-theme="oscuro"] .conductores-fields label, html[data-theme="oscuro"] .conductores-card h2 { color: #d9e8f8; }
 html[data-theme="oscuro"] .conductores-fields input, html[data-theme="oscuro"] .conductores-fields select, html[data-theme="oscuro"] .conductores-form > header > button, html[data-theme="oscuro"] .conductores-form > footer > button:first-child { border-color: #314761; background: #142235; color: #e1eaf4; }
-html[data-theme="oscuro"] .conductores-avatar { background: #203b57; color: #9bcaff; }
 .conductores-heading { display: none; }

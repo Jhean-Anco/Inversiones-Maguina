@@ -244,7 +244,6 @@ export function InicioPage() {
     contenidoRef.current?.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [ubicacion.pathname]);
 
-  const iniciales = perfil?.nombreCompleto.split(/\s+/).slice(0, 2).map((parte) => parte[0]).join("") ?? "IM";
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
   const cantidadNotificaciones = alertasStockBajo.length + seriesFaltantes.length;
   const esPerfilAmplio = () => {
@@ -338,7 +337,6 @@ export function InicioPage() {
             <button className="topbar-theme-button" type="button" onClick={alternarTema} aria-label={`Activar modo ${tema === "claro" ? "oscuro" : "claro"}`} title={`Modo ${tema === "claro" ? "oscuro" : "claro"}`}><Icono nombre={tema === "claro" ? "luna" : "sol"} /><span>{tema === "claro" ? "Modo oscuro" : "Modo claro"}</span></button>
             <div className="topbar-profile-wrap">
               <button className="topbar-profile-trigger" type="button" aria-label="Abrir mi perfil" onClick={() => { setMenuCabecera(null); navegar("/mi-perfil"); }}>
-                <span className="topbar-avatar">{iniciales}</span>
                 <span className="topbar-user"><strong>{perfil?.nombreCompleto ?? "Cargando perfil"}</strong><small>{rolPrincipal}</small></span>
               </button>
             </div>

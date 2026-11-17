@@ -11,7 +11,6 @@ export function CatalogoLoading({ mensaje, cantidadTarjetas = 5 }: PropiedadesCa
       <div className="catalog-loading-grid" aria-hidden="true">
         {Array.from({ length: cantidadTarjetas }, (_, indice) => (
           <div className="catalog-loading-card" key={indice}>
-            <span className="catalog-loading-image" />
             <span className="catalog-loading-line catalog-loading-line-short" />
             <span className="catalog-loading-line" />
             <span className="catalog-loading-actions"><i /><i /></span>

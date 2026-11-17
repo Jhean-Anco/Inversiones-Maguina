@@ -56,7 +56,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             </div>;
           })}
         </nav>
-        <p className="producto-wizard-hint">Paso {paso} de 3 · {paso === 1 ? "Comienza con lo esencial para reconocer el repuesto." : paso === 2 ? "Define cómo controlarás y venderás las existencias." : "Códigos, ficha técnica e imagen son opcionales; puedes completarlos después."}</p>
+        <p className="producto-wizard-hint">Paso {paso} de 3 · {paso === 1 ? "Comienza con lo esencial para reconocer el repuesto." : paso === 2 ? "Define cómo controlarás y venderás las existencias." : "Completa códigos, ficha técnica y estado del producto."}</p>
         {paso === 1 && (
           <fieldset className="producto-form-section">
             <legend>Identificación</legend>
@@ -147,7 +147,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
         <section className="producto-brand-modal" role="dialog" aria-modal="true" aria-labelledby="marca-rapida-titulo">
           <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario de marca" onClick={() => formulario.setMarcaModalAbierto(false)}>×</button>
           <form onSubmit={(event) => { event.preventDefault(); void formulario.crearMarca(); }}>
-            <div className="catalog-form-title"><span>✦</span><div><h2 id="marca-rapida-titulo">Agregar marca</h2><p>Guarda el nombre y una imagen para asociarla al producto.</p></div></div>
+            <div className="catalog-form-title"><span>✦</span><div><h2 id="marca-rapida-titulo">Agregar marca</h2><p>Guarda el nombre para asociarlo al producto.</p></div></div>
             {formulario.errorLocal && <div className="catalog-alert" role="alert">{formulario.errorLocal}</div>}
             <label>Nombre de la marca<input autoFocus value={formulario.marcaNueva} onChange={(event) => formulario.setMarcaNueva(event.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Honda" /></label>
             <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={formulario.creandoMarca} onClick={() => formulario.setMarcaModalAbierto(false)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={formulario.creandoMarca}>{formulario.creandoMarca ? "Guardando…" : "Guardar marca"}</button></div>

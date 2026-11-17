@@ -88,9 +88,9 @@
 .stock-detail-modal .stock-detail-lines-title { margin: 3px 0 0; color: #193b58; font-size: 16px; letter-spacing: -.02em; }
 .stock-detail-modal .stock-detail-lines-heading > strong { border-radius: 999px; padding: 5px 9px; background: #eef4f8; color: #5b758b; font-size: 10px; white-space: nowrap; }
 .stock-detail-modal .stock-detail-lines { display: grid; max-height: min(330px, 40dvh); overflow: auto; border: 1px solid #e2eaf1; border-radius: 13px; background: #fff; }
-.stock-detail-modal .stock-detail-line { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f5; padding: 13px 15px; }
+.stock-detail-modal .stock-detail-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f5; padding: 13px 15px; }
 .stock-detail-modal .stock-detail-line:last-child { border-bottom: 0; }
-.stock-detail-modal .stock-detail-line-mark { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #e0eaf2; border-radius: 10px; background: #f4f8fb; color: #3e6c8f; font-size: 13px; font-weight: 800; }
+
 .stock-detail-modal .stock-detail-line-product { display: grid; min-width: 0; gap: 4px; }
 .stock-detail-modal .stock-detail-line-product > strong { overflow: hidden; color: #23445f; font-size: 12px; text-overflow: ellipsis; }
 .stock-detail-modal .stock-detail-line small { color: #7b8ea0; font-size: 10px; line-height: 1.4; }
@@ -123,7 +123,6 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-summary-total 
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-total > strong,
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-footer > div > b { color: #a8d8f7; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-lines-heading > strong,
-html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { border-color: #354d64; background: #203449; color: #bdd5e8; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-color: #2b4055; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-note { border-color: #5485a9; background: #1a2d41; color: #c2d4e4; }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-evidence { border-color: #3b5870; background: #1b3044; color: #b5dcf5; }
@@ -141,8 +140,7 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary > div { min-height: 78px; padding: 10px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer { align-items: flex-start; flex-direction: column; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); gap: 9px; padding: 11px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: minmax(0, 1fr) auto; gap: 9px; padding: 11px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-lines { max-height: 34dvh; }
 
@@ -184,8 +182,8 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-
 .stock-detail-modal .stock-detail-lines-title { font-size: 20px; font-weight: 500; }
 .stock-detail-modal .stock-detail-lines-heading > strong { padding: 7px 12px; font-size: 12px; }
 .stock-detail-modal .stock-detail-lines { max-height: min(300px, 38dvh); gap: 8px; overflow: auto; border: 0; border-radius: 0; background: transparent; }
-.stock-detail-modal .stock-detail-line { min-height: 76px; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 14px; border: 1px solid #e0e9f1; border-radius: 15px; padding: 15px 18px; background: #fff; box-shadow: 0 5px 16px #17354b09; }
-.stock-detail-modal .stock-detail-line-mark { width: 44px; height: 44px; border-radius: 12px; font-size: 15px; }
+.stock-detail-modal .stock-detail-line { min-height: 76px; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; border: 1px solid #e0e9f1; border-radius: 15px; padding: 15px 18px; background: #fff; box-shadow: 0 5px 16px #17354b09; }
+
 .stock-detail-modal .stock-detail-line-product { gap: 5px; }
 .stock-detail-modal .stock-detail-line-product > strong { font-size: 14px; }
 .stock-detail-modal .stock-detail-line small { font-size: 12px; }
@@ -197,7 +195,6 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-content,
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-footer { background: var(--tema-superficie); }
 html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line { border-color: #30465c; background: #152537; box-shadow: none; }
-html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { border-color: #354d64; background: #203449; color: #bdd5e8; }
   :where(html[data-responsive-profile="mobile-landscape"]) .catalog-modal.stock-detail-modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); border-radius: 18px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-heading { min-height: 112px; gap: 13px; padding: 18px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-entry-icon { width: 48px; height: 48px; flex-basis: 48px; border-radius: 14px; font-size: 23px; }
@@ -210,8 +207,7 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { bo
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary strong { font-size: 13px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary small { font-size: 10px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-summary-total strong { font-size: 17px; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 12px; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line-mark { width: 36px; height: 36px; }
+  :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-footer { bottom: -18px; align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: -18px; padding: 14px 0 18px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
@@ -227,8 +223,7 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { bo
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary strong { font-size: 13px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary small { font-size: 10px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary-total strong { font-size: 17px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 38px minmax(0, 1fr); gap: 10px; padding: 12px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 36px; height: 36px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-total { grid-column: 2; justify-items: start; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer { bottom: -18px; align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: -18px; padding: 14px 0 18px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-footer > div { width: 100%; justify-content: space-between; }
@@ -238,9 +233,7 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { bo
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-content { padding: 14px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary > div { min-height: 88px; padding: 10px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-summary strong { white-space: normal; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: 32px minmax(0, 1fr); }
-  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line-mark { width: 31px; height: 31px; }
-
+  :where(html[data-responsive-profile="mobile-portrait"]) .stock-detail-modal .stock-detail-line { grid-template-columns: minmax(0, 1fr) auto; }
 /* El detalle reutiliza la cabecera y el marco del formulario flotante compartido. */
 .stock-detail-modal .stock-detail-heading {
   min-height: 156px;

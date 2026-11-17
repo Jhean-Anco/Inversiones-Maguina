@@ -1499,17 +1499,10 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   padding-bottom: 14px;
   background: #fff;
 }
-.catalog-loading-image,
 .catalog-loading-line,
 .catalog-loading-actions i {
   display: block;
-  background: linear-gradient(100deg, #edf2f7 25%, #f7f9fc 40%, #edf2f7 60%);
-  background-size: 220% 100%;
-  animation: catalog-loading-shimmer 1.4s ease-in-out infinite;
-}
-.catalog-loading-image {
-  aspect-ratio: 1.55 / 1;
-  margin-bottom: 15px;
+  background: #edf2f7;
 }
 .catalog-loading-line {
   width: calc(100% - 30px);
@@ -1537,11 +1530,6 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
 @keyframes catalog-loading-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-@keyframes catalog-loading-shimmer {
-  to {
-    background-position-x: -220%;
   }
 }
   :where(html[data-responsive-profile="tablet-landscape"]) .catalog-loading-grid {
@@ -1573,7 +1561,6 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   }
 @media (prefers-reduced-motion: reduce) {
   .catalog-loading-spinner,
-  .catalog-loading-image,
   .catalog-loading-line,
   .catalog-loading-actions i {
     animation: none;
@@ -4029,13 +4016,9 @@ html[data-theme="oscuro"] #root .erp-icon-action.is-danger:hover:not(:disabled) 
   animation: modulo-route-enter 0.24s cubic-bezier(0.2, 0.7, 0.25, 1) both;
 }
 @keyframes modulo-route-enter {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 9px, 0);
-  }
+  0% { opacity: 0; }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 .login-success-overlay {

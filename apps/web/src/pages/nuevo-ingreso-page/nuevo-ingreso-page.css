@@ -92,10 +92,6 @@ html[data-theme="oscuro"] #root .venta-product-tools>span,html[data-theme="oscur
 .venta-catalog-product{display:grid;gap:10px;padding:12px;border:1px solid #e2eaf2;border-radius:11px;background:#fff}
 .venta-catalog-sidebar{container-type:inline-size}
 .venta-catalog-results{grid-template-columns:repeat(3,minmax(0,1fr));align-content:start}
-.venta-catalog-product-image{display:grid;min-height:92px;place-items:center;overflow:hidden;border-radius:8px;background:linear-gradient(145deg,#f4f8fc,#e9f0f8);color:#8ba0b9}
-.venta-catalog-product-image img{width:100%;height:104px;object-fit:contain}
-.venta-catalog-product-image.is-image-missing::after{content:"▧";color:#8ba0b9;font-size:38px;line-height:1}
-.venta-catalog-product-image span{font-size:38px;line-height:1}
 .venta-catalog-status{grid-column:1/-1;padding:10px 4px}
 .venta-catalog-empty{grid-column:1/-1}
 .venta-catalog-empty:has(.venta-catalog-empty-face){min-height:220px;align-content:center;justify-items:center;text-align:center}
@@ -177,7 +173,7 @@ html[data-theme="oscuro"] #root .venta-catalog-sidebar>header p,html[data-theme=
 html[data-theme="oscuro"] #root .venta-catalog-search,html[data-theme="oscuro"] #root .venta-catalog-sidebar>header>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-catalog-search input{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-catalog-product-meta{border-color:var(--tema-borde)}
-html[data-theme="oscuro"] #root .venta-catalog-product-image{background:linear-gradient(145deg,#1d2d42,#24384f);color:#7187a2}
+
 html[data-theme="oscuro"] #root .venta-catalog-product>button,html[data-theme="oscuro"] #root .venta-catalog-empty>button{border-color:var(--tema-borde);background:#1d2d42;color:var(--tema-texto)}.venta-editor.is-catalog-open .venta-form-paper{width:auto;min-height:0}
 
 /* La vista de venta aprovecha el encabezado del comprobante y el espacio superior. */
@@ -315,18 +311,14 @@ html[data-theme="oscuro"] #root .venta-client-search-document{border-color:var(-
 html[data-theme="oscuro"] #root .venta-recent-products,html[data-theme="oscuro"] #root .venta-recent-products>button{border-color:var(--tema-borde);background:var(--tema-superficie)}
 html[data-theme="oscuro"] #root .venta-recent-products h3{color:var(--tema-texto)}
 html[data-theme="oscuro"] #root .venta-recent-products>button>strong:last-child{background:#243b55;color:#c1dcf6}
-.venta-recent-products>button{display:grid;grid-template-columns:58px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:center;column-gap:10px;row-gap:4px;width:100%;min-height:80px;padding:9px 10px;border:1px solid #e1e9f2;border-radius:10px;background:#fff;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.venta-recent-products>button{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:10px;row-gap:4px;width:100%;min-height:80px;padding:9px 10px;border:1px solid #e1e9f2;border-radius:10px;background:#fff;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
 .venta-recent-products>button:hover{transform:translateY(-1px);border-color:#b9cde2;box-shadow:0 5px 14px #173b6312}
 .venta-recent-products>button:focus-visible{outline:3px solid #2563a044;outline-offset:2px}
-.venta-recent-product-image{display:grid!important;grid-column:1;grid-row:1/3;width:58px;height:58px;place-items:center;overflow:hidden;border:1px solid #e1e9f2;border-radius:9px;background:linear-gradient(145deg,#fff,#f5f8fc);color:#8ba0b9}
-.venta-recent-product-image img{width:100%;height:100%;object-fit:contain}
-.venta-recent-product-image>span{display:grid!important;width:100%;height:100%;place-items:center;color:#8ba0b9;font-size:23px}
-.venta-recent-product-image.is-image-missing::after{content:"▧";color:#8ba0b9;font-size:23px;line-height:1}
-.venta-recent-product-info{display:grid!important;grid-column:2;grid-row:1;align-content:end;gap:4px;min-width:0}
+.venta-recent-product-info{display:grid!important;grid-column:1;grid-row:1;align-content:end;gap:4px;min-width:0}
 .venta-recent-product-info strong{display:-webkit-box;overflow:hidden;color:#193b61;font-size:12px;line-height:1.25;text-overflow:ellipsis;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .venta-recent-product-info small{overflow:hidden;color:#74869b;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
-.venta-recent-products>button>strong:last-child{grid-column:2;grid-row:2;justify-self:start;align-self:start;padding:3px 7px;border-radius:6px;background:#edf4fb;color:#174b80;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-html[data-theme="oscuro"] #root .venta-recent-product-image{border-color:var(--tema-borde);background:var(--tema-superficie)}
+.venta-recent-products>button>strong:last-child{grid-column:1;grid-row:2;justify-self:start;align-self:start;padding:3px 7px;border-radius:6px;background:#edf4fb;color:#174b80;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
 .venta-line-affectation{display:grid;width:min(190px,100%);gap:3px;margin-top:7px;color:#71849b;font-size:10px}
 .venta-line-affectation select{width:100%;min-height:30px;padding:0 7px;border:1px solid #d5e0ec;border-radius:6px;background:#fff;color:#173b65;font:inherit;font-size:11px}
 html[data-theme="oscuro"] #root .venta-line-affectation{color:var(--tema-texto-secundario)}

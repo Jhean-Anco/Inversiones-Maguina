@@ -102,7 +102,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   }
 
   const renderizarTarjeta = (registro: T) => <article className="catalog-manager-card" key={registro.id}>
-              <div className="catalog-manager-thumbnail"><span>{registro.nombre.trim().slice(0, 1).toLocaleUpperCase("es-PE")}</span></div>
               <div className="catalog-manager-card-main"><strong className="catalog-manager-name">{registro.nombre}</strong>
                 {esMarca && <div className="catalog-manager-usage">{(registro.uso === "AMBOS" || registro.uso === "REPUESTOS") && <span>Repuestos</span>}{(registro.uso === "AMBOS" || registro.uso === "MOTOTAXIS") && <span>Mototaxis</span>}</div>}
               </div>
