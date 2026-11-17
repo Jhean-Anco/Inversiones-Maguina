@@ -8,8 +8,6 @@ import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 
 type TipoComprobante = "BOLETA" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO" | "NOTA_DEBITO";
 const destino: Record<string, string> = {
-  FOTO_REPUESTO: "imagenes/repuestos", FOTO_CATEGORIA: "imagenes/categorias", FOTO_MARCA: "imagenes/marcas",
-  FOTO_MOTOTAXI: "imagenes/mototaxis", EVIDENCIA_COMPRA: "compras/evidencias",
   BOLETA: "ventas/boletas", FACTURA: "ventas/facturas", NOTA_VENTA: "ventas/notas-venta",
   NOTA_CREDITO: "ventas/notas-credito", NOTA_DEBITO: "ventas/notas-debito",
 };
@@ -55,13 +53,6 @@ export class ServicioAlmacenamiento {
     await db.delete(archivosLocales).where(eq(archivosLocales.id, id));
     await unlink(resolve(this.raiz(), registro.rutaRelativa)).catch(() => undefined);
     return true;
-  }
-
-  async subirImagenCatalogo(tipo: "categorias" | "marcas" | "productos" | "modelos-mototaxi", id: string, nombre: string, mime: string, contenido: Buffer) {
-    const tipoArchivo = tipo === "productos" ? "FOTO_REPUESTO" : tipo === "categorias" ? "FOTO_CATEGORIA" : tipo === "modelos-mototaxi" ? "FOTO_MOTOTAXI_MODELO" : "FOTO_MARCA";
-    const entidadTipo = tipo === "productos" ? "PRODUCTO" : tipo === "categorias" ? "CATEGORIA" : tipo === "modelos-mototaxi" ? "MODELO_MOTOTAXI" : "MARCA";
-    const archivo = await this.guardarArchivo(tipoArchivo, tipoArchivo, entidadTipo, id, nombre, mime, contenido);
-    return { ...archivo, rutaImagen: archivo.ruta };
   }
 
   async archivarDocumentosNubeFact(entidadTipo: string, entidadId: string, tipoComprobante: string, codigo: string, datos: Record<string, unknown>) {

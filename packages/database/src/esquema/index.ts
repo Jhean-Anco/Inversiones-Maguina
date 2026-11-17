@@ -210,7 +210,6 @@ export const categoriasProductos = pgTable("categorias_productos", {
   id: uuid("id").defaultRandom().primaryKey(),
   nombre: varchar("nombre", { length: 100 }).notNull(),
   descripcion: varchar("descripcion", { length: 240 }),
-  rutaImagen: text("ruta_imagen"),
   activo: boolean("activo").notNull().default(true),
   creadoEn: fechaCreacion(),
   actualizadoEn: fechaActualizacion(),
@@ -221,7 +220,6 @@ export const marcasProductos = pgTable("marcas_productos", {
   nombre: varchar("nombre", { length: 100 }).notNull(),
   uso: varchar("uso", { length: 12 }).notNull().default("AMBOS"),
   descripcion: varchar("descripcion", { length: 240 }),
-  rutaImagen: text("ruta_imagen"),
   activo: boolean("activo").notNull().default(true),
   creadoEn: fechaCreacion(),
   actualizadoEn: fechaActualizacion(),
@@ -256,7 +254,6 @@ export const productos = pgTable("productos", {
   stockMinimo: numeric("stock_minimo", { precision: 18, scale: 3 }).notNull().default("0"),
   afectacionIgv: varchar("afectacion_igv", { length: 20 }).notNull().default("GRAVADO"),
   afectoIgv: boolean("afecto_igv").notNull().default(true),
-  rutaImagen: text("ruta_imagen"),
   fichaTecnica: jsonb("ficha_tecnica").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
   activo: boolean("activo").notNull().default(true),
   creadoEn: fechaCreacion(),
@@ -290,7 +287,6 @@ export const modelosMototaxis = pgTable("modelos_mototaxis", {
   capacidadAsientos: integer("capacidad_asientos"),
   capacidadCargaKg: numeric("capacidad_carga_kg", { precision: 10, scale: 2 }),
   especificacionesAdicionales: text("especificaciones_adicionales"),
-  rutaImagen: text("ruta_imagen"),
   activo: boolean("activo").notNull().default(true),
   creadoEn: fechaCreacion(),
   actualizadoEn: fechaActualizacion(),
@@ -486,18 +482,6 @@ export const reclamosGarantiaMototaxis = pgTable("reclamos_garantia_mototaxis", 
   check("reclamos_garantia_mototaxis_estado_ck", sql`${tabla.estado} IN ('ABIERTO', 'ENVIADO', 'APROBADO', 'RECHAZADO', 'RESUELTO')`),
 ]);
 
-export const productosImagenes = pgTable("productos_imagenes", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  productoId: uuid("producto_id").notNull().references(() => productos.id, { onDelete: "cascade" }),
-  rutaImagen: text("ruta_imagen").notNull(),
-  orden: integer("orden").notNull(),
-  creadoEn: fechaCreacion(),
-}, (tabla) => [
-  uniqueIndex("productos_imagenes_producto_orden_unico").on(tabla.productoId, tabla.orden),
-  index("productos_imagenes_producto_idx").on(tabla.productoId),
-  check("productos_imagenes_orden_ck", sql`${tabla.orden} BETWEEN 1 AND 5`),
-]);
-
 export const archivosLocales = pgTable("archivos_locales", {
   id: uuid("id").defaultRandom().primaryKey(),
   tipoArchivo: varchar("tipo_archivo", { length: 50 }).notNull(),
@@ -512,18 +496,6 @@ export const archivosLocales = pgTable("archivos_locales", {
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("archivos_locales_entidad_idx").on(tabla.entidadTipo, tabla.entidadId, tabla.tipoArchivo),
-]);
-
-export const imagenesMototaxis = pgTable("imagenes_mototaxis", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  unidadId: uuid("unidad_id").notNull().references(() => unidadesMototaxis.id, { onDelete: "cascade" }),
-  archivoId: uuid("archivo_id").notNull().unique().references(() => archivosLocales.id, { onDelete: "restrict" }),
-  orden: integer("orden").notNull(),
-  creadoEn: fechaCreacion(),
-}, (tabla) => [
-  uniqueIndex("imagenes_mototaxis_unidad_orden_unico").on(tabla.unidadId, tabla.orden),
-  index("imagenes_mototaxis_unidad_idx").on(tabla.unidadId),
-  check("imagenes_mototaxis_orden_ck", sql`${tabla.orden} BETWEEN 1 AND 5`),
 ]);
 
 export const productosCodigos = pgTable("productos_codigos", {
@@ -592,9 +564,6 @@ export const entradasStock = pgTable("entradas_stock", {
   proveedorDireccion: varchar("proveedor_direccion", { length: 250 }),
   observacion: text("observacion"),
   totalDocumento: numeric("total_documento", { precision: 14, scale: 2 }),
-  evidenciaRuta: varchar("evidencia_ruta", { length: 260 }),
-  evidenciaNombre: varchar("evidencia_nombre", { length: 255 }),
-  evidenciaMime: varchar("evidencia_mime", { length: 100 }),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),

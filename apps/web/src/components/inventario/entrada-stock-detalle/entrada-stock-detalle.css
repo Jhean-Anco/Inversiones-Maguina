@@ -256,7 +256,7 @@ html[data-theme="oscuro"] #root .stock-detail-modal .stock-detail-line-mark { bo
   height: 106px;
   transform: translateY(-50%);
   border-radius: 16px;
-  background: #fff url("/logo.png") center / contain no-repeat;
+  background: #fff url("/logo.webp") center / contain no-repeat;
   content: "";
 }
 .stock-detail-modal .stock-entry-icon { display: none; }

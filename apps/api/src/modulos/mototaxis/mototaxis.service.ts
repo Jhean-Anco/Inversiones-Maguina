@@ -1,11 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, archivosLocales, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, imagenesMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosMototaxisVentas, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
-import type { FastifyRequest } from "fastify";
+import { db, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosMototaxisVentas, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
-import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
@@ -67,7 +65,6 @@ function validarModelo(valor: unknown) {
 
 @Injectable()
 export class ServicioMototaxis {
-  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
   listarMarcas() { return db.select().from(marcasProductos).where(or(eq(marcasProductos.uso, "MOTOTAXIS"), eq(marcasProductos.uso, "AMBOS"))).orderBy(asc(marcasProductos.nombre)); }
 
   async crearMarca(valor: unknown) {
@@ -83,7 +80,7 @@ export class ServicioMototaxis {
       version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
       marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, tipoMototaxi: modelosMototaxis.tipoMototaxi, tipoMotor: modelosMototaxis.tipoMotor, tipoRefrigeracion: modelosMototaxis.tipoRefrigeracion, coloresDisponibles: modelosMototaxis.coloresDisponibles, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
       transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
-      capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, rutaImagen: modelosMototaxis.rutaImagen, activo: modelosMototaxis.activo })
+      capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
       .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
       .where(and(incluirInactivos ? undefined : eq(modelosMototaxis.activo, true), q ? or(ilike(modelosMototaxis.nombre, `%${q}%`), ilike(modelosMototaxis.codigo, `%${q}%`), ilike(marcasProductos.nombre, `%${q}%`)) : undefined))
       .orderBy(asc(marcasProductos.nombre), asc(modelosMototaxis.nombre));
@@ -160,7 +157,7 @@ export class ServicioMototaxis {
       version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
       marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, tipoMototaxi: modelosMototaxis.tipoMototaxi, tipoMotor: modelosMototaxis.tipoMotor, tipoRefrigeracion: modelosMototaxis.tipoRefrigeracion, coloresDisponibles: modelosMototaxis.coloresDisponibles, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
       transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
-      capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, rutaImagen: modelosMototaxis.rutaImagen, activo: modelosMototaxis.activo })
+      capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
       .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).where(eq(modelosMototaxis.id, id)).limit(1);
     if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
     return modelo;
@@ -247,60 +244,7 @@ export class ServicioMototaxis {
     ]);
     const n = Number(total?.total ?? 0);
     const ids = items.map((item) => item.id);
-    const imagenes = ids.length ? await db.select({ unidadId: imagenesMototaxis.unidadId, id: imagenesMototaxis.id, archivoId: archivosLocales.id, ruta: sql<string>`'/archivos/' || ${archivosLocales.id} || '/contenido'`, orden: imagenesMototaxis.orden })
-      .from(imagenesMototaxis).innerJoin(archivosLocales, eq(imagenesMototaxis.archivoId, archivosLocales.id)).where(inArray(imagenesMototaxis.unidadId, ids)).orderBy(asc(imagenesMototaxis.orden)) : [];
-    const imagenesPorUnidad = new Map<string, typeof imagenes>();
-    for (const imagen of imagenes) imagenesPorUnidad.set(imagen.unidadId, [...(imagenesPorUnidad.get(imagen.unidadId) ?? []), imagen]);
-    return { items: items.map((item) => ({ ...item, imagenes: (imagenesPorUnidad.get(item.id) ?? []).map(({ id, archivoId, ruta, orden }) => ({ id, archivoId, ruta, orden })) })), total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)), disponiblesPorColor };
-  }
-
-  async listarImagenesUnidad(idEntrada: string) {
-    if (!uuidValido(idEntrada)) throw new BadRequestException("El identificador de la unidad no es válido.");
-    const [unidad] = await db.select({ id: unidadesMototaxis.id }).from(unidadesMototaxis).where(eq(unidadesMototaxis.id, idEntrada)).limit(1);
-    if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
-    return db.select({ id: imagenesMototaxis.id, archivoId: archivosLocales.id, ruta: sql<string>`'/archivos/' || ${archivosLocales.id} || '/contenido'`, orden: imagenesMototaxis.orden })
-      .from(imagenesMototaxis).innerJoin(archivosLocales, eq(imagenesMototaxis.archivoId, archivosLocales.id)).where(eq(imagenesMototaxis.unidadId, idEntrada)).orderBy(asc(imagenesMototaxis.orden));
-  }
-
-  async guardarImagenUnidad(idEntrada: string, solicitud: FastifyRequest) {
-    if (!uuidValido(idEntrada)) throw new BadRequestException("El identificador de la unidad no es válido.");
-    const [unidad] = await db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo }).from(unidadesMototaxis).where(eq(unidadesMototaxis.id, idEntrada)).limit(1);
-    if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
-    const actuales = await db.select({ orden: imagenesMototaxis.orden }).from(imagenesMototaxis).where(eq(imagenesMototaxis.unidadId, idEntrada));
-    const orden = [1, 2, 3, 4, 5].find((valor) => !actuales.some((imagen) => imagen.orden === valor));
-    if (!orden) throw new BadRequestException("Cada mototaxi admite como máximo cinco fotografías.");
-    const archivo = await solicitud.file();
-    if (!archivo) throw new BadRequestException("Selecciona una fotografía para subir.");
-    const formatos: Record<string, { extension: string; valido: (b: Buffer) => boolean }> = {
-      "image/jpeg": { extension: ".jpg", valido: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-      "image/png": { extension: ".png", valido: (b) => b.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) },
-      "image/webp": { extension: ".webp", valido: (b) => b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP" },
-    };
-    const formato = formatos[archivo.mimetype];
-    if (!formato) throw new BadRequestException("La fotografía debe ser JPG, PNG o WebP.");
-    const contenido = await archivo.toBuffer();
-    if (contenido.length > 10 * 1024 * 1024) throw new BadRequestException("La fotografía supera el máximo de 10 MB.");
-    if (!formato.valido(contenido)) throw new BadRequestException("El contenido no coincide con el formato de imagen seleccionado.");
-    const guardado = await this.almacenamiento.guardarArchivo("FOTO_MOTOTAXI", "FOTO_MOTOTAXI", "MOTOTAXI", idEntrada, `${unidad.codigo}-${randomUUID()}${formato.extension}`, archivo.mimetype, contenido);
-    try {
-      const [imagen] = await db.insert(imagenesMototaxis).values({ unidadId: idEntrada, archivoId: guardado.id, orden }).returning({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId, orden: imagenesMototaxis.orden });
-      return { ...imagen, ruta: guardado.ruta };
-    } catch (error) {
-      await this.almacenamiento.eliminarArchivoRegistrado(guardado.id).catch(() => undefined);
-      throw error;
-    }
-  }
-
-  async eliminarImagenUnidad(idEntrada: string, idImagenEntrada: string) {
-    if (![idEntrada, idImagenEntrada].every(uuidValido)) throw new BadRequestException("Los identificadores de la fotografía no son válidos.");
-    const [imagen] = await db.select({ id: imagenesMototaxis.id, archivoId: imagenesMototaxis.archivoId,  }).from(imagenesMototaxis)
-      .where(and(eq(imagenesMototaxis.id, idImagenEntrada), eq(imagenesMototaxis.unidadId, idEntrada))).limit(1);
-    if (!imagen) throw new NotFoundException("No se encontró la fotografía de la mototaxi.");
-    await db.transaction(async (tx) => {
-      await tx.delete(imagenesMototaxis).where(eq(imagenesMototaxis.id, idImagenEntrada));
-    });
-    await this.almacenamiento.eliminarArchivoRegistrado(imagen.archivoId);
-    return { eliminado: true };
+    return { items, total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)), disponiblesPorColor };
   }
 
   async crearCompra(valor: unknown, usuarioId: string) {

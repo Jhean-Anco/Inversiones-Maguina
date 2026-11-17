@@ -8,7 +8,7 @@ import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
-import { ErrorApi, srcImagen } from "../../services/api-cliente";
+import { ErrorApi } from "../../services/api-cliente";
 import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
 import { imprimirDocumento } from "../../services/impresion-documentos";
 import { FormularioCliente } from "../clientes-page/clientes-page";
@@ -307,7 +307,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
           <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={busquedaProducto} onChange={(evento) => setBusquedaProducto(evento.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar en el catálogo de repuestos" autoComplete="off" /></label>
           <div className="venta-catalog-results" aria-live="polite">
             {productos.length ? productos.map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}>
-              <div className="venta-catalog-product-image">{producto.rutaImagen ? <img src={srcImagen(producto.rutaImagen)} alt={producto.nombre} loading="lazy" onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.add("is-image-missing"); }} /> : <span aria-hidden="true">▧</span>}</div>
+              <div className="venta-catalog-product-image" aria-hidden="true">▧</div>
               <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigo} · {producto.presentacion}</span></div>
               <div className="venta-catalog-product-meta"><span>Stock <b>{Number(producto.stockBase).toLocaleString("es-PE")}</b></span><strong>{soles(Number(producto.precio))}</strong></div>
               <button type="button" onClick={() => agregarProducto(producto)}>Agregar a la orden</button>

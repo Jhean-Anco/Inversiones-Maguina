@@ -1268,6 +1268,13 @@
       "when": 1794744809279,
       "tag": "0180_cotizaciones_cliente_opcional",
       "breakpoints": true
+    },
+    {
+      "idx": 181,
+      "version": "7",
+      "when": 1794889807391,
+      "tag": "0181_motionless_sharon_carter",
+      "breakpoints": true
     }
   ]
 }

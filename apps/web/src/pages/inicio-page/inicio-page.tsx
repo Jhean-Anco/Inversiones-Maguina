@@ -257,7 +257,7 @@ export function InicioPage() {
       {menuAbierto && <button className="erp-menu-scrim" aria-label="Cerrar menú" type="button" onClick={() => setMenuAbierto(false)} />}
       <aside ref={asideRef} className="erp-sidebar">
         <div className="erp-brand">
-          <img src="/logo.png" alt="Inversiones Maguiña" />
+          <img src="/logo.webp" alt="Inversiones Maguiña" />
           <div><strong>MAGUIÑA</strong></div>
         </div>
 

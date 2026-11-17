@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { unlink } from "node:fs/promises";
-import { resolve, sep } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { hash } from "argon2";
 import { and, eq } from "drizzle-orm";
 import {
-  archivosLocales,
   cerrarBaseDatos,
   categoriasProductos,
   cuentasFinancieras,
@@ -45,32 +42,29 @@ const sufijo = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
 const nombreUsuario = `qa-e2e-${sufijo}`;
 const correo = `qa-e2e-${sufijo}@example.invalid`;
 const contrasena = randomBytes(24).toString("base64url");
-const imagenCategoria = resolve(process.cwd(), "apps/web/public/logo.png");
 let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
 let categoriaPruebaId: string | undefined;
 
 async function limpiarCategoriaTemporal(id: string) {
-  const archivos = await db
-    .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa })
-    .from(archivosLocales)
-    .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, id)));
-  const raizSubidas = resolve(process.cwd(), process.env.UPLOADS_DIR?.trim() || "storage");
-
-  for (const archivo of archivos) {
-    const rutaAbsoluta = resolve(raizSubidas, archivo.rutaRelativa);
-    assert.ok(rutaAbsoluta.startsWith(`${raizSubidas}${sep}`), "La limpieza E2E solo puede borrar archivos dentro de UPLOADS_DIR.");
-    try {
-      await unlink(rutaAbsoluta);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-    await db.delete(archivosLocales).where(eq(archivosLocales.id, archivo.id));
-  }
-
   await db.delete(categoriasProductos).where(eq(categoriasProductos.id, id));
 }
+
+test("la API ya no sirve ni recibe imagenes o evidencias de usuario", async ({ request }) => {
+  const api = process.env.VITE_API_URL;
+  assert.ok(api, "La prueba requiere la URL de API configurada para el frontend.");
+  const archivo = `${randomUUID()}.webp`;
+  const imagen = await request.get(new URL(`/inventario/imagenes/categorias/${archivo}`, api).toString());
+  const subida = await request.post(new URL("/inventario/imagenes/categorias", api).toString(), {
+    multipart: { archivo: { name: archivo, mimeType: "image/webp", buffer: Buffer.from("fake image") } },
+  });
+  const evidencia = await request.get(new URL(`/inventario/entradas-stock/${randomUUID()}/evidencia`, api).toString());
+
+  expect(imagen.status()).toBe(404);
+  expect(subida.status()).toBe(404);
+  expect(evidencia.status()).toBe(404);
+});
 
 test.beforeAll(async () => {
   assert.equal(process.env.NODE_ENV, "test", "E2E exige NODE_ENV=test.");
@@ -288,7 +282,7 @@ test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async (
   }
 });
 
-test("el rol de almacén crea y edita una categoría con imagen persistida", async ({ page }) => {
+test("el rol de almacén crea y edita una categoría sin archivo", async ({ page }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar el catálogo.");
   const [rolAlmacenero] = await db
     .select({ id: roles.id })
@@ -313,8 +307,6 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     await page.getByRole("button", { name: "Crear categoría" }).click();
     const dialogo = page.getByRole("dialog");
     await dialogo.getByRole("textbox", { name: /Nombre/ }).fill(nombreCategoria);
-    await dialogo.locator('input[type="file"]').setInputFiles(imagenCategoria);
-
     const respuestaCrear = page.waitForResponse((respuesta) =>
       respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname.endsWith("/inventario/categorias"),
     );
@@ -327,21 +319,12 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
 
     const tarjeta = page.locator(".catalog-manager-card").filter({ hasText: nombreCategoria });
     await expect(tarjeta).toBeVisible();
-    await expect.poll(() => tarjeta.locator("img").evaluate((imagen) => (imagen as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-
-    const archivosCategoria = await db
-      .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa, mimeType: archivosLocales.mimeType })
-      .from(archivosLocales)
-      .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, categoriaPruebaId)));
-    expect(archivosCategoria).toHaveLength(1);
-    expect(archivosCategoria[0]?.mimeType).toBe("image/png");
     const [categoriaGuardada] = await db
-      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .select({ nombre: categoriasProductos.nombre })
       .from(categoriasProductos)
       .where(eq(categoriasProductos.id, categoriaPruebaId))
       .limit(1);
     expect(categoriaGuardada?.nombre).toBe(nombreCategoria);
-    expect(categoriaGuardada?.rutaImagen).toContain(archivosCategoria[0]?.id);
 
     await tarjeta.getByRole("button", { name: `Editar categoría ${nombreCategoria}` }).click();
     const dialogoEdicion = page.getByRole("dialog");
@@ -351,12 +334,11 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     await expect(tarjetaEditada).toBeVisible();
 
     const [categoriaEditada] = await db
-      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .select({ nombre: categoriasProductos.nombre })
       .from(categoriasProductos)
       .where(eq(categoriasProductos.id, categoriaPruebaId))
       .limit(1);
     expect(categoriaEditada?.nombre).toBe(nombreEditado);
-    expect(categoriaEditada?.rutaImagen).toBe(categoriaGuardada?.rutaImagen);
   } finally {
     try {
       if (categoriaPruebaId) await limpiarCategoriaTemporal(categoriaPruebaId);

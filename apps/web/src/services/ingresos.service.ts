@@ -2,7 +2,7 @@ import { solicitarApi } from "./api-cliente";
 import { servicioIdentidad } from "./identidad.service";
 
 export type ProductoParaIngreso = {
-  productoId: string; codigo: string; nombre: string; marca: string; rutaImagen: string | null; afectoIgv: boolean; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO"; presentacionId: string;
+  productoId: string; codigo: string; nombre: string; marca: string; afectoIgv: boolean; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO"; presentacionId: string;
   presentacion: string; unidadCodigo: string; unidad: string; factorAUnidadBase: string; precio: string; stockBase: string;
   listaPrecioCodigo: string; listaPrecioNombre: string;
 };

@@ -6,7 +6,6 @@ import {
   preciosProductos,
   productos,
   productosCodigos,
-  productosImagenes,
   productosPresentaciones,
   saldosStock,
   tiposListasPrecio,
@@ -86,7 +85,7 @@ export class ServicioProductos {
     const [items, [total]] = await Promise.all([
       db.select({
         id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
-        rutaImagen: productos.rutaImagen, activo: productos.activo, creadoEn: productos.creadoEn,
+        activo: productos.activo, creadoEn: productos.creadoEn,
         stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`, stockMinimo: productos.stockMinimo,
         categoriaId: categoriasProductos.id, categoria: categoriasProductos.nombre,
         marcaId: marcasProductos.id, marca: marcasProductos.nombre,
@@ -113,7 +112,7 @@ export class ServicioProductos {
     const [items, [total]] = await Promise.all([
       db.select({
         id: preciosProductos.id, productoId: productos.id, codigo: productos.codigoInterno, producto: productos.nombre,
-        imagen: productos.rutaImagen, marca: marcasProductos.nombre, presentacion: productosPresentaciones.nombre,
+        marca: marcasProductos.nombre, presentacion: productosPresentaciones.nombre,
         presentacionBase: productosPresentaciones.esBase, listaPrecio: tiposListasPrecio.nombre,
         precio: preciosProductos.precio, cantidadMinima: preciosProductos.cantidadMinima,
         vigenteDesde: preciosProductos.vigenteDesde, vigenteHasta: preciosProductos.vigenteHasta,
@@ -149,7 +148,7 @@ export class ServicioProductos {
     const [producto] = await db.select({
       id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
       categoriaId: productos.categoriaId, marcaId: productos.marcaId,
-      unidadBaseCodigo: productos.unidadBaseCodigo, stockMinimo: productos.stockMinimo, afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv, rutaImagen: productos.rutaImagen,
+      unidadBaseCodigo: productos.unidadBaseCodigo, stockMinimo: productos.stockMinimo, afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv,
       stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`,
       fichaTecnica: productos.fichaTecnica, activo: productos.activo, creadoEn: productos.creadoEn, actualizadoEn: productos.actualizadoEn,
       categoria: categoriasProductos.nombre, marca: marcasProductos.nombre, unidadBase: unidadesMedida.nombre,
@@ -161,10 +160,8 @@ export class ServicioProductos {
       .where(eq(productos.id, id)).limit(1);
     if (!producto) throw new NotFoundException("No se encontró el producto.");
 
-    const [codigos, imagenes, presentaciones, precios] = await Promise.all([
+    const [codigos, presentaciones, precios] = await Promise.all([
       db.select().from(productosCodigos).where(eq(productosCodigos.productoId, id)).orderBy(asc(productosCodigos.tipo)),
-      db.select({ id: productosImagenes.id, rutaImagen: productosImagenes.rutaImagen, orden: productosImagenes.orden })
-        .from(productosImagenes).where(eq(productosImagenes.productoId, id)).orderBy(asc(productosImagenes.orden)),
       db.select({ id: productosPresentaciones.id, clave: productosPresentaciones.id, unidadMedidaCodigo: productosPresentaciones.unidadMedidaCodigo, unidadMedida: unidadesMedida.nombre, nombre: productosPresentaciones.nombre, factorAUnidadBase: productosPresentaciones.factorAUnidadBase, seCompra: productosPresentaciones.seCompra, seVende: productosPresentaciones.seVende, esBase: productosPresentaciones.esBase, activo: productosPresentaciones.activo })
         .from(productosPresentaciones).innerJoin(unidadesMedida, eq(productosPresentaciones.unidadMedidaCodigo, unidadesMedida.codigo))
         .where(and(eq(productosPresentaciones.productoId, id), eq(productosPresentaciones.activo, true))).orderBy(asc(productosPresentaciones.esBase)),
@@ -172,7 +169,7 @@ export class ServicioProductos {
         .from(preciosProductos).innerJoin(tiposListasPrecio, eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id))
         .where(and(eq(preciosProductos.productoId, id), eq(preciosProductos.activo, true))).orderBy(asc(preciosProductos.tipoListaPrecioId)),
     ]);
-    return { ...producto, codigos, presentaciones, precios, imagenes };
+    return { ...producto, codigos, presentaciones, precios };
   }
 
   async guardar(entrada: unknown, idExistente?: string) {

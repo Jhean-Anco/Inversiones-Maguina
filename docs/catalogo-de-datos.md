@@ -78,7 +78,6 @@ Restricciones e indices declarados:
 | `id` | `uuid` | NULL | PK | yes | - |
 | `nombre` | `varchar` | NOT NULL | - | - | - |
 | `descripcion` | `varchar` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -394,9 +393,6 @@ Restricciones e indices declarados:
 | `proveedor_direccion` | `varchar` | NULL | - | - | - |
 | `observacion` | `text` | NULL | - | - | - |
 | `total_documento` | `numeric` | NULL | - | - | - |
-| `evidencia_ruta` | `varchar` | NULL | - | - | - |
-| `evidencia_nombre` | `varchar` | NULL | - | - | - |
-| `evidencia_mime` | `varchar` | NULL | - | - | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
@@ -514,22 +510,6 @@ Restricciones e indices declarados:
 - UNIQUE INDEX `guias_remision_correlativo_unico`
 - CHECK `guias_remision_tipo_ck`
 - CHECK `guias_remision_numero_ck`
-
-
-### `imagenes_mototaxis`
-
-| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
-|---|---|---|---|---|---|
-| `id` | `uuid` | NULL | PK | yes | - |
-| `unidad_id` | `uuid` | NOT NULL | FK | - | unidadesMototaxis.id |
-| `archivo_id` | `uuid` | NOT NULL | FK, UNIQUE | - | archivosLocales.id |
-| `orden` | `integer` | NOT NULL | - | - | - |
-| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
-Restricciones e indices declarados:
-
-- UNIQUE INDEX `imagenes_mototaxis_unidad_orden_unico`
-- INDEX `imagenes_mototaxis_unidad_idx`
-- CHECK `imagenes_mototaxis_orden_ck`
 
 
 ### `ingresos`
@@ -650,7 +630,6 @@ Restricciones e indices declarados:
 | `nombre` | `varchar` | NOT NULL | - | - | - |
 | `uso` | `varchar` | NOT NULL | - | yes | - |
 | `descripcion` | `varchar` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -686,7 +665,6 @@ Restricciones e indices declarados:
 | `capacidad_asientos` | `integer` | NULL | - | - | - |
 | `capacidad_carga_kg` | `numeric` | NULL | - | - | - |
 | `especificaciones_adicionales` | `text` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -954,7 +932,6 @@ Restricciones e indices declarados:
 | `stock_minimo` | `numeric` | NOT NULL | - | yes | - |
 | `afectacion_igv` | `varchar` | NOT NULL | - | yes | - |
 | `afecto_igv` | `boolean` | NOT NULL | - | yes | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `ficha_tecnica` | `jsonb` | NOT NULL | - | yes | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
@@ -979,22 +956,6 @@ Restricciones e indices declarados:
 
 - UNIQUE INDEX `productos_codigos_tipo_codigo_unico`
 - INDEX `productos_codigos_producto_idx`
-
-
-### `productos_imagenes`
-
-| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
-|---|---|---|---|---|---|
-| `id` | `uuid` | NULL | PK | yes | - |
-| `producto_id` | `uuid` | NOT NULL | FK | - | productos.id |
-| `ruta_imagen` | `text` | NOT NULL | - | - | - |
-| `orden` | `integer` | NOT NULL | - | - | - |
-| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
-Restricciones e indices declarados:
-
-- UNIQUE INDEX `productos_imagenes_producto_orden_unico`
-- INDEX `productos_imagenes_producto_idx`
-- CHECK `productos_imagenes_orden_ck`
 
 
 ### `productos_presentaciones`

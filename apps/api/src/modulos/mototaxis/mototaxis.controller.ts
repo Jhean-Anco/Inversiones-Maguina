@@ -29,9 +29,6 @@ export class ControladorMototaxis {
   @Get("ajustes-inventario") @RequierePermiso("MOTOTAXIS.LEER") listarAjustesInventario() { return this.mototaxis.listarAjustesInventario(); }
   @Get("ajustes-inventario/:modeloId/reconteo") @RequierePermiso("MOTOTAXIS.LEER") obtenerReconteoModelo(@Param("modeloId") modeloId: string) { return this.mototaxis.obtenerReconteoModelo(modeloId); }
   @Post("ajustes-inventario") @RequierePermiso("MOTOTAXIS.EDITAR") crearAjusteInventario(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.crearAjusteInventario(datos, solicitud.usuario.id); }
-  @Get("unidades/:id/imagenes") @RequierePermiso("MOTOTAXIS.LEER") listarImagenesUnidad(@Param("id") id: string) { return this.mototaxis.listarImagenesUnidad(id); }
-  @Post("unidades/:id/imagenes") @RequierePermiso("MOTOTAXIS.EDITAR") subirImagenUnidad(@Param("id") id: string, @Req() solicitud: FastifyRequest) { return this.mototaxis.guardarImagenUnidad(id, solicitud); }
-  @Delete("unidades/:id/imagenes/:idImagen") @RequierePermiso("MOTOTAXIS.EDITAR") eliminarImagenUnidad(@Param("id") id: string, @Param("idImagen") idImagen: string) { return this.mototaxis.eliminarImagenUnidad(id, idImagen); }
   @Post("compras") @RequierePermiso("MOTOTAXIS.CREAR") crearCompra(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.crearCompra(datos, solicitud.usuario.id); }
   @Post("unidades/:id/estado") @RequierePermiso("MOTOTAXIS.EDITAR") cambiarEstado(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.cambiarEstado(id, datos, solicitud.usuario.id); }
   @Get("unidades/:id/movimientos") @RequierePermiso("MOTOTAXIS.LEER") listarMovimientos(@Param("id") id: string) { return this.mototaxis.listarMovimientos(id); }

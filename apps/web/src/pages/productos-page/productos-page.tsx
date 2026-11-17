@@ -34,8 +34,8 @@ export function ProductosPage() {
     const completo = await modulo.consultar(id);
     if (completo) setProductoParaEtiqueta(completo);
   }
-  async function guardarProducto(datos: Parameters<typeof modulo.guardar>[0], imagenesNuevas: File[], imagenesEliminadas: string[]) {
-    const guardado = await modulo.guardar(datos, productoEditando?.id, imagenesNuevas, imagenesEliminadas);
+  async function guardarProducto(datos: Parameters<typeof modulo.guardar>[0]) {
+    const guardado = await modulo.guardar(datos, productoEditando?.id);
     if (guardado) { setRevision((actual) => actual + 1); cerrarFormulario(); }
     return guardado;
   }

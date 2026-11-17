@@ -55,9 +55,8 @@
     background-color: #061a38;
     background-image:
       linear-gradient(90deg, rgb(4 20 45 / 38%) 0%, rgb(4 20 45 / 13%) 43%, rgb(4 20 45 / 3%) 76%),
-      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%),
-      url('/fondo-login.png');
-    background-position: center, center, center;
+      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%);
+    background-position: center, center;
     background-size: cover;
     background-repeat: no-repeat;
   }
@@ -142,9 +141,8 @@
     background-color: #061a38;
     background-image:
       linear-gradient(90deg, rgb(4 20 45 / 38%) 0%, rgb(4 20 45 / 13%) 43%, rgb(4 20 45 / 3%) 76%),
-      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%),
-      url('/fondo-login.png');
-    background-position: center, center, center;
+      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%);
+    background-position: center, center;
     background-size: cover;
     background-repeat: no-repeat;
   }
@@ -229,9 +227,8 @@
     background-color: #061a38;
     background-image:
       linear-gradient(90deg, rgb(4 20 45 / 38%) 0%, rgb(4 20 45 / 13%) 43%, rgb(4 20 45 / 3%) 76%),
-      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%),
-      url('/fondo-login.png');
-    background-position: center, center, center;
+      linear-gradient(0deg, rgb(3 15 32 / 24%), transparent 38%);
+    background-position: center, center;
     background-size: cover;
     background-repeat: no-repeat;
   }

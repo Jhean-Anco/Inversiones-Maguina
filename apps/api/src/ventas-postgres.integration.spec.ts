@@ -58,8 +58,8 @@ before(async () => {
   ({ db, clientePostgres, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
-  servicioEntradasStock = new ServicioEntradasStock(new ServicioAlmacenamiento());
-  servicioMototaxis = new ServicioMototaxis(new ServicioAlmacenamiento());
+  servicioEntradasStock = new ServicioEntradasStock();
+  servicioMototaxis = new ServicioMototaxis();
   const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
   seriesFiscalesPrueba.push(serieBoleta);
   await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });

@@ -67,6 +67,8 @@ jobs:
         run: pnpm docs:check
       - name: Probar integración de despliegue
         run: node --test .github/scripts/deploy-dokploy.test.mjs
+      - name: Verificar retiro de cargas e imágenes
+        run: node --test .github/scripts/no-user-files.test.mjs
       - name: Typecheck de workspaces
         run: pnpm typecheck
       - name: Build real
@@ -238,6 +240,7 @@ jobs:
           web_headers="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -S -O /dev/null http://127.0.0.1/ 2>&1)"
           printf '%s\n' "$web_headers"
           grep -iq 'HTTP/1.1 200 OK' <<< "$web_headers"
+          grep -iq 'Cache-Control: no-cache' <<< "$web_headers"
           grep -iq 'connect-src.*https://api.inversionesmaguina.network' <<< "$web_headers"
           web_build_info="$(docker compose --env-file .env -f compose.test.yaml exec -T web wget -qO- http://127.0.0.1/build-info.json)"
           printf 'Frontend build info: %s\n' "$web_build_info"

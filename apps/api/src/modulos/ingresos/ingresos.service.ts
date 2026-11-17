@@ -1370,7 +1370,7 @@ export class ServicioIngresos {
     const productoPorCodigoExacto = codigosExactos[0]?.productoId ?? productoPorCodigoInterno;
     const ahora = new Date();
     return db.select({
-      productoId: productos.id, codigo: productos.codigoInterno, nombre: productos.nombre, marca: marcasProductos.nombre, rutaImagen: productos.rutaImagen,
+      productoId: productos.id, codigo: productos.codigoInterno, nombre: productos.nombre, marca: marcasProductos.nombre,
       afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv, presentacionId: productosPresentaciones.id, presentacion: productosPresentaciones.nombre,
       unidadCodigo: productosPresentaciones.unidadMedidaCodigo, unidad: unidadesMedida.nombre,
       factorAUnidadBase: productosPresentaciones.factorAUnidadBase, precio: preciosProductos.precio,

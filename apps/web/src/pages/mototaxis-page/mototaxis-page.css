@@ -298,7 +298,7 @@ html[data-theme="oscuro"] #root .mototaxis-page .moto-search-select > input,html
 .moto-purchase-dialog .moto-modal-title > button { width: 40px; height: 40px; flex: 0 0 40px; border-color: #ffffff42; background: #ffffff12; color: #fff; font-size: 24px; }
 .moto-purchase-dialog .moto-modal-title > button:hover { background: #ffffff24; }
 .moto-purchase-dialog > .moto-modal-title { gap: 16px; }
-.moto-purchase-dialog > .moto-modal-title::before { content: ""; width: 54px; height: 54px; flex: 0 0 54px; border: 1px solid #ffffff55; border-radius: 12px; background: #fff url("/logo.png") center / contain no-repeat; }
+.moto-purchase-dialog > .moto-modal-title::before { content: ""; width: 54px; height: 54px; flex: 0 0 54px; border: 1px solid #ffffff55; border-radius: 12px; background: #fff url("/logo.webp") center / contain no-repeat; }
 .moto-purchase-dialog .moto-modal-title > div { min-width: 0; flex: 1 1 auto; }
 .moto-purchase-dialog .moto-purchase-layout { min-height: 0; overflow: auto; padding: 22px 28px 28px; overscroll-behavior: contain; }
 .moto-purchase-dialog .moto-purchase-form {

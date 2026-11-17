@@ -32,9 +32,6 @@ importers:
       '@fastify/cookie':
         specifier: ^11.1.3
         version: 11.1.3
-      '@fastify/multipart':
-        specifier: ^10.1.6
-        version: 10.1.6
       '@magina/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -774,17 +771,11 @@ packages:
   '@fastify/ajv-compiler@4.0.7':
     resolution: {integrity: sha512-VP0yIfwlc1ohj733keYDqyHm1VWeP9VQxYomunhr90jkC4aNNibbkrRiaNgPgqj1ORxUenILR4qzA/ppYBNAtQ==}
 
-  '@fastify/busboy@3.2.4':
-    resolution: {integrity: sha512-lQS8xcXT54rdJb+wlG/Q7SMSdtkZEpLPHooSDUZyyZm9LJD7X1kONPhVoPaHq+dsPtWUGGLIz9gBNhs9qKbylw==}
-
   '@fastify/cookie@11.1.3':
     resolution: {integrity: sha512-RBhlMNsmSG6C5KGiTkhSXBF75xIrUMSytDDBcpnVewhJ8XVYnJTu+SV6FYKXClIRsBuRjOfKbBSULvnPD3X/mg==}
 
   '@fastify/cors@11.3.0':
     resolution: {integrity: sha512-ggQGua+xHv1MvePbPr0v//xLYEsCXbWspquXCJS9Ot5YoRXq8J8ZWzHnxDBVnbtXosvistXo6LtNzOJswf64Fw==}
-
-  '@fastify/deepmerge@3.2.4':
-    resolution: {integrity: sha512-kc8GQq5gX9RRhw0rov3DMrN8wS8yRlxJRdDzsYwwdBV/wazuVgc/1K7CKL90tlvu3RlHan6Y0R0aE3nJtBz2eQ==}
 
   '@fastify/error@4.2.1':
     resolution: {integrity: sha512-MYBumuIwP+5MIpXSyKm6/o1Eigcoij186lWUssX3LH5U8KWqU0ktZhzC4CErIX9EJeQeRGI+zJZQWakBlFbUcg==}
@@ -803,9 +794,6 @@ packages:
 
   '@fastify/middie@9.3.4':
     resolution: {integrity: sha512-dd8phTnVWzx3iKPBKSvtRUT8+Igvy/MP+P5HcY2tjejEyeVbyjkD4HgzKessUObue5RRM5J6PZdxtAqgbn84yw==}
-
-  '@fastify/multipart@10.1.6':
-    resolution: {integrity: sha512-5ykP7SkCbL06ek+j7fa4o1F8XASF4+KjqVLbuANqXunxXqjWdCQk0pw/+kWH3e8ho7Mw21EhuZp24EqtR04yKg==}
 
   '@fastify/proxy-addr@5.1.2':
     resolution: {integrity: sha512-uqB4QsgVoro0XDC+DIftIMGXHdBPn+lK6Ek3xXAIxPMCJfqxnbtyEoMCm2KPUVOuIosd7Cyw9HawEqMFM/UA+g==}
@@ -3995,8 +3983,6 @@ snapshots:
       ajv-formats: 3.0.1(ajv@8.20.0)
       fast-uri: 4.2.3
 
-  '@fastify/busboy@3.2.4': {}
-
   '@fastify/cookie@11.1.3':
     dependencies:
       cookie: 2.0.1
@@ -4006,8 +3992,6 @@ snapshots:
     dependencies:
       fastify-plugin: 6.0.1
       toad-cache: 3.7.4
-
-  '@fastify/deepmerge@3.2.4': {}
 
   '@fastify/error@4.2.1': {}
 
@@ -4033,14 +4017,6 @@ snapshots:
       find-my-way: 9.7.0
       path-to-regexp: 8.4.2
       reusify: 1.1.0
-
-  '@fastify/multipart@10.1.6':
-    dependencies:
-      '@fastify/busboy': 3.2.4
-      '@fastify/deepmerge': 3.2.4
-      '@fastify/error': 4.2.1
-      fastify-plugin: 6.0.1
-      secure-json-parse: 4.1.1
 
   '@fastify/proxy-addr@5.1.2':
     dependencies:

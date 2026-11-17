@@ -34,7 +34,7 @@ export function useCatalogo<T extends RegistroCatalogo>(servicio: ServicioCatalo
   useEffect(() => { void cargar(); }, [cargar]);
 
   const guardar = useCallback(async (
-    datos: { nombre: string; id?: string; imagen?: File; uso?: UsoMarca },
+    datos: { nombre: string; id?: string; uso?: UsoMarca },
     alCrear?: (registro: T) => void,
     alCompletar?: () => void,
   ) => {
@@ -43,7 +43,6 @@ export function useCatalogo<T extends RegistroCatalogo>(servicio: ServicioCatalo
     try {
       const registro = await servicio.guardar({ nombre: datos.nombre, ...(datos.id ? { id: datos.id } : {}), ...(datos.uso ? { uso: datos.uso } : {}) });
       if (!datos.id) alCrear?.(registro);
-      if (datos.imagen) await servicio.subirImagen(registro.id, datos.imagen);
       await cargar();
       alCompletar?.();
       return true;

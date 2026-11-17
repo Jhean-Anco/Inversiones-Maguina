@@ -56,7 +56,7 @@
   height: 106px;
   transform: translateY(-50%);
   border-radius: 16px;
-  background: #fff url("/logo.png") center / contain no-repeat;
+  background: #fff url("/logo.webp") center / contain no-repeat;
   content: "";
 }
 :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form)) > header h2,
@@ -206,7 +206,7 @@
   height: 106px;
   transform: translateY(-50%);
   border-radius: 16px;
-  background: #fff url("/logo.png") center / contain no-repeat;
+  background: #fff url("/logo.webp") center / contain no-repeat;
   content: "";
 }
 .venta-new-client-heading strong,
@@ -336,7 +336,7 @@ html[data-theme="oscuro"] .moto-adjust-modal > .moto-modal-title { border-color:
   height: 106px;
   transform: translateY(-50%);
   border-radius: 16px;
-  background: #fff url("/logo.png") center / contain no-repeat;
+  background: #fff url("/logo.webp") center / contain no-repeat;
   content: "";
 }
 .ordenes-emit-dialog > header h2,

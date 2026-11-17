@@ -55,7 +55,6 @@ export type EntradaStock = {
   observacion?: string | null;
   total: string;
   totalDocumento?: string | null;
-  evidenciaNombre?: string | null;
   cantidadProductos?: number;
   creadoEn: string;
   detalles?: DetalleEntradaStock[];

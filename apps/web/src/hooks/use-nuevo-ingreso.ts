@@ -27,7 +27,7 @@ function leerProductosRecientes(): ProductoParaIngreso[] {
       if (typeof item !== "object" || item === null) return false;
       const producto = item as Record<string, unknown>;
       const camposTexto = ["productoId", "codigo", "nombre", "marca", "presentacionId", "presentacion", "unidadCodigo", "unidad", "factorAUnidadBase", "precio", "stockBase", "listaPrecioCodigo", "listaPrecioNombre"];
-      return camposTexto.every((campo) => typeof producto[campo] === "string") && typeof producto.afectoIgv === "boolean" && ["GRAVADO", "EXONERADO", "INAFECTO"].includes(String(producto.afectacionIgv)) && (typeof producto.rutaImagen === "string" || producto.rutaImagen === null);
+      return camposTexto.every((campo) => typeof producto[campo] === "string") && typeof producto.afectoIgv === "boolean" && ["GRAVADO", "EXONERADO", "INAFECTO"].includes(String(producto.afectacionIgv));
     }).slice(0, 8);
   } catch { return []; }
 }

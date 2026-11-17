@@ -77,8 +77,8 @@ function ProductoNuevoCompra({ alCerrar, alCrear }: { alCerrar: () => void; alCr
     return () => { document.body.style.overflow = anterior; window.removeEventListener("keydown", escape); };
   }, [alCerrar, modulo.guardando]);
 
-  async function guardarProducto(datos: DatosProducto, imagenesNuevas: File[], imagenesEliminadas: string[]) {
-    const guardado = await modulo.guardar(datos, undefined, imagenesNuevas, imagenesEliminadas);
+  async function guardarProducto(datos: DatosProducto) {
+    const guardado = await modulo.guardar(datos);
     if (guardado) alCrear(datos.nombre);
     return guardado;
   }

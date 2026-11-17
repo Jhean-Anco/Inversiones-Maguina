@@ -6,7 +6,7 @@ import { servicioIngresos, type ClienteRegistrado, type DatosClienteNuevo, type 
 import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
 import { servicioProductos, type CatalogosProducto, type DatosProducto } from "../../services/inventario/productos.service";
 import { useNuevoIngreso, type TipoVenta } from "../../hooks/use-nuevo-ingreso";
-import { srcImagen, urlApi } from "../../services/api-cliente";
+import { urlApi } from "../../services/api-cliente";
 import { PagoIngresoDialog } from "../../components/ingresos/pago-ingreso-dialog/pago-ingreso-dialog";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
@@ -209,9 +209,9 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     finally { setCargandoAltaProducto(false); }
   }
 
-  async function guardarProductoDesdeVenta(datos: DatosProducto, imagenesNuevas: File[], imagenesEliminadas: string[]) {
+  async function guardarProductoDesdeVenta(datos: DatosProducto) {
     try {
-      const resultado = await servicioProductos.guardar(datos, undefined, imagenesNuevas, imagenesEliminadas);
+      const resultado = await servicioProductos.guardar(datos);
       venta.setBusqueda(resultado.producto.codigoInterno);
       venta.setError(resultado.advertencia ?? "");
       setMostrarAltaProducto(false);
@@ -316,7 +316,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
           <div className={`venta-catalog-results${!buscandoEnCatalogo && !venta.buscando ? " is-recent-results" : ""}`} aria-live="polite">
             {venta.buscando ? <p className="venta-catalog-status">Buscando en inventario?</p> : buscandoEnCatalogo ? productosResultados.length ? productosResultados.map((producto) => (
               <article className="venta-catalog-product" key={producto.presentacionId}>
-                <div className="venta-catalog-product-image">{producto.rutaImagen ? <img src={srcImagen(producto.rutaImagen)} alt={producto.nombre} loading="lazy" onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.add("is-image-missing"); }} /> : <span aria-hidden="true">&#x25A7;</span>}</div>
+                <div className="venta-catalog-product-image" aria-hidden="true">&#x25A7;</div>
                 <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigo} {"\u00b7"} {producto.presentacion}</span></div>
                 <div className="venta-catalog-product-meta"><span>Stock <b>{Number(producto.stockBase).toLocaleString("es-PE")}</b></span><strong>{soles(Number(producto.precio))}</strong></div>
                 <button type="button" onClick={() => venta.agregarProducto(producto)}>{Number(producto.stockBase) > 0 ? "Agregar a la venta" : "Agregar de nuevo"}</button>
@@ -327,7 +327,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
                 <h3>&#218;ltimos repuestos seleccionados</h3>
                 {venta.productosRecientes.length ? venta.productosRecientes.slice(0, 8).map((producto) => (
                   <button type="button" key={producto.presentacionId} onClick={() => venta.agregarProducto(producto)}>
-                    <span className="venta-recent-product-image">{producto.rutaImagen ? <img src={srcImagen(producto.rutaImagen)} alt="" loading="lazy" onError={(evento) => { evento.currentTarget.hidden = true; evento.currentTarget.parentElement?.classList.add("is-image-missing"); }} /> : <span aria-hidden="true">&#x25A7;</span>}</span>
+                    <span className="venta-recent-product-image" aria-hidden="true">&#x25A7;</span>
                     <span className="venta-recent-product-info"><strong>{producto.nombre}</strong><small>{producto.codigo} {"\u00b7"} {producto.presentacion}</small></span>
                     <strong>{soles(Number(producto.precio))}</strong>
                   </button>
@@ -435,7 +435,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     </form>
     {clienteEnDetalle && <ClienteDetalleDialog cliente={clienteEnDetalle} editable={permisos.includes("PERSONAS.EDITAR")} onClose={() => setClienteEnDetalle(null)} onSave={async (datos) => { const clienteActualizado = await servicioIngresos.actualizarCliente(clienteEnDetalle.id, datos); venta.actualizarClienteEnResultados(clienteActualizado); setClienteEnDetalle(clienteActualizado); }} />}
     {mostrarCobranza && venta.exito?.nubefact && venta.exito.tipoComprobante  && createPortal(<PagoIngresoDialog cuentaFinancieraInicialId={cuentaPagoId} ingresoId={venta.exito.id} total={venta.exito.total} contadoPendiente={contadoEmitido && cobranzaContadoPendiente} importeInicialObligatorio={pagoInicialCreditoPendiente && cobranzaContadoPendiente} fechaPagoInicial={venta.fecha} importeInicial={contadoEmitido ? venta.exito.total : venta.exito.importePagoInicial} medioPagoInicial={venta.exito.medioPago} onPaymentRecorded={() => { if (cobranzaContadoPendiente) setCobranzaContadoRegistradaId(venta.exito?.id ?? null); }} onClose={() => setMostrarCobranza(false)} />, document.body)}
-    {mostrarAltaProducto && createPortal(cargandoAltaProducto ? <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-label="Preparando el registro del repuesto"><p>Cargando formulario de repuesto…</p></section></div> : catalogosAltaProducto ? <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={async (nombre, imagen) => { const resultado = await servicioProductos.crearMarca(nombre, imagen); return { ...resultado.marca, advertencia: resultado.advertencia }; }} alCrearCategoria={async (nombre, imagen) => { const resultado = await servicioProductos.crearCategoria(nombre, imagen); return { ...resultado.categoria, advertencia: resultado.advertencia }; }} /> : <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-labelledby="venta-alta-producto-error"><button className="catalog-modal-close" type="button" aria-label="Cerrar" onClick={() => setMostrarAltaProducto(false)}>×</button><h2 id="venta-alta-producto-error">No se pudo abrir el registro</h2><p>{errorAltaProducto}</p><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button><button className="catalog-submit" type="button" onClick={() => void abrirAltaProducto()}>Reintentar</button></div></section></div>, document.getElementById("root") ?? document.body)}
+    {mostrarAltaProducto && createPortal(cargandoAltaProducto ? <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-label="Preparando el registro del repuesto"><p>Cargando formulario de repuesto…</p></section></div> : catalogosAltaProducto ? <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={async (nombre) => { const resultado = await servicioProductos.crearMarca(nombre); return { ...resultado.marca, advertencia: resultado.advertencia }; }} alCrearCategoria={async (nombre) => { const resultado = await servicioProductos.crearCategoria(nombre); return { ...resultado.categoria, advertencia: resultado.advertencia }; }} /> : <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-labelledby="venta-alta-producto-error"><button className="catalog-modal-close" type="button" aria-label="Cerrar" onClick={() => setMostrarAltaProducto(false)}>×</button><h2 id="venta-alta-producto-error">No se pudo abrir el registro</h2><p>{errorAltaProducto}</p><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button><button className="catalog-submit" type="button" onClick={() => void abrirAltaProducto()}>Reintentar</button></div></section></div>, document.getElementById("root") ?? document.body)}
   </div>;
 }
 

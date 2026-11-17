@@ -49,10 +49,10 @@ export function useProductos() {
     return () => window.clearTimeout(temporizador);
   }, [pagina, porPagina, busqueda, cargarPagina]);
 
-  const guardar = useCallback(async (datos: DatosProducto, id?: string, imagenesNuevas: File[] = [], imagenesEliminadas: string[] = []) => {
+  const guardar = useCallback(async (datos: DatosProducto, id?: string) => {
     setError(""); setGuardando(true);
     try {
-      const resultado = await servicioProductos.guardar(datos, id, imagenesNuevas, imagenesEliminadas);
+      const resultado = await servicioProductos.guardar(datos, id);
       setPagina(1);
       await cargarPagina(1, porPagina, busqueda);
       if (resultado.advertencia) setError(resultado.advertencia);
@@ -67,15 +67,15 @@ export function useProductos() {
     catch (problema) { manejarError(problema, "No se pudo cargar el detalle del producto."); return null; }
   }, [manejarError]);
 
-  const crearMarca = useCallback(async (nombre: string, imagen: File) => {
-    const resultado = await servicioProductos.crearMarca(nombre.trim(), imagen);
+  const crearMarca = useCallback(async (nombre: string) => {
+    const resultado = await servicioProductos.crearMarca(nombre.trim());
     const marca = resultado.marca;
     setCatalogos((actual) => ({ ...actual, marcas: [...actual.marcas, marca].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
     return { ...marca, advertencia: resultado.advertencia };
   }, []);
 
-  const crearCategoria = useCallback(async (nombre: string, imagen: File) => {
-    const resultado = await servicioProductos.crearCategoria(nombre.trim(), imagen);
+  const crearCategoria = useCallback(async (nombre: string) => {
+    const resultado = await servicioProductos.crearCategoria(nombre.trim());
     const categoria = resultado.categoria;
     setCatalogos((actual) => ({ ...actual, categorias: [...actual.categorias, categoria].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
     return { ...categoria, advertencia: resultado.advertencia };

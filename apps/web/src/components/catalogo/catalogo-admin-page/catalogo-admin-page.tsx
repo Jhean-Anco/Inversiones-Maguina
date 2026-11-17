@@ -5,9 +5,7 @@ import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
 import { getResponsiveProfile } from "../../../utilidades/responsive-profile";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
-import { srcImagen } from "../../../services/api-cliente";
 import { AccionIcono } from "../../ui/accion-icono";
-import { ImageUploadCard } from "../../ui/image-upload-card/image-upload-card";
 import type { RegistroCatalogo, ServicioCatalogo, UsoMarca } from "../../../services/inventario/catalogos.service";
 
 type FiltroEstado = "TODOS" | "ACTIVOS" | "INACTIVOS";
@@ -38,13 +36,9 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const esMarca = tipo === "marca";
   const singular = esMarca ? "marca" : "categoría";
   const plural = esMarca ? "Marcas" : "Categorías";
-  const imagenLabel = esMarca ? "Logotipo" : "Imagen";
   const { registros, cargando, guardando, error, setError, guardar, cambiarEstado } = useCatalogo(servicio, mensajeCarga);
   const [busqueda, setBusqueda] = useState("");
   const [nombre, setNombre] = useState("");
-  const [rutaImagen, setRutaImagen] = useState("");
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [vistaPrevia, setVistaPrevia] = useState("");
   const [registroEditado, setRegistroEditado] = useState<T | null>(null);
   const [usoMarca, setUsoMarca] = useState<UsoMarca | "">("");
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>("TODOS");
@@ -75,35 +69,20 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     return () => window.removeEventListener("resize", actualizarAncho);
   }, []);
 
-  useEffect(() => {
-    if (!imagen) { setVistaPrevia(srcImagen(rutaImagen || null)); return; }
-    const temporal = URL.createObjectURL(imagen);
-    setVistaPrevia(temporal);
-    return () => URL.revokeObjectURL(temporal);
-  }, [imagen, rutaImagen]);
-
   function limpiarFormulario() {
-    setNombre(""); setRutaImagen(""); setImagen(null); setRegistroEditado(null); setUsoMarca("");
+    setNombre(""); setRegistroEditado(null); setUsoMarca("");
   }
   function cerrarModal() { if (guardando) return; setModalAbierto(false); limpiarFormulario(); }
   function cerrarConfirmacionEstado() { if (confirmandoEstado) return; setConfirmacionEstado(null); }
   function abrirNuevo() { setError(""); limpiarFormulario(); setModalAbierto(true); }
   function abrirEdicion(registro: T) {
-    setError(""); setRegistroEditado(registro); setNombre(registro.nombre); setRutaImagen(registro.rutaImagen ?? ""); setImagen(null); setUsoMarca(registro.uso ?? "AMBOS"); setModalAbierto(true);
-  }
-  function seleccionarImagen(archivo?: File) {
-    if (!archivo) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(archivo.type) || archivo.size > 5 * 1024 * 1024) {
-      setError("Elige una imagen JPG, PNG o WebP de hasta 5 MB."); return;
-    }
-    setError(""); setImagen(archivo);
+    setError(""); setRegistroEditado(registro); setNombre(registro.nombre); setUsoMarca(registro.uso ?? "AMBOS"); setModalAbierto(true);
   }
   function guardarRegistro(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault(); setError("");
     if (esMarca && !usoMarca) { setError("Indica si la marca se usa en repuestos, mototaxis o ambos."); return; }
-    if (!imagen && !rutaImagen) { setError(`Selecciona ${esMarca ? "el logotipo" : "una imagen"} para ${singular}.`); return; }
     void guardar(
-      { nombre: nombre.trim(), ...(registroEditado ? { id: registroEditado.id } : {}), ...(esMarca && usoMarca ? { uso: usoMarca } : {}), ...(imagen ? { imagen } : {}) },
+      { nombre: nombre.trim(), ...(registroEditado ? { id: registroEditado.id } : {}), ...(esMarca && usoMarca ? { uso: usoMarca } : {}) },
       (registro) => setRegistroEditado(registro),
       () => { setModalAbierto(false); limpiarFormulario(); setVersionListado((version) => version + 1); },
     );
@@ -123,7 +102,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   }
 
   const renderizarTarjeta = (registro: T) => <article className="catalog-manager-card" key={registro.id}>
-              <div className={`catalog-manager-thumbnail${esMarca ? " is-logo" : ""}`}>{registro.rutaImagen ? <img src={srcImagen(registro.rutaImagen)} alt="" loading="lazy" /> : <span>{registro.nombre.trim().slice(0, 1).toLocaleUpperCase("es-PE")}</span>}</div>
+              <div className="catalog-manager-thumbnail"><span>{registro.nombre.trim().slice(0, 1).toLocaleUpperCase("es-PE")}</span></div>
               <div className="catalog-manager-card-main"><strong className="catalog-manager-name">{registro.nombre}</strong>
                 {esMarca && <div className="catalog-manager-usage">{(registro.uso === "AMBOS" || registro.uso === "REPUESTOS") && <span>Repuestos</span>}{(registro.uso === "AMBOS" || registro.uso === "MOTOTAXIS") && <span>Mototaxis</span>}</div>}
               </div>
@@ -158,13 +137,12 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
 
     {modalAbierto && <div className="catalog-manager-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarModal(); }}>
       <section ref={dialogoRef} className="catalog-manager-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-manager-form-title">
-        <header className="catalog-manager-dialog-head"><div className={`catalog-manager-dialog-symbol${esMarca ? " is-brand" : ""}`}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre o la imagen." : `Agrega una ${singular} al catálogo.`}</p></div><button type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
+        <header className="catalog-manager-dialog-head"><div className={`catalog-manager-dialog-symbol${esMarca ? " is-brand" : ""}`}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}</p></div><button type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
         {error && <div className="catalog-manager-dialog-error" role="alert">{error}</div>}
         <form className="catalog-manager-form" onSubmit={guardarRegistro}>
           <div className="catalog-manager-form-body">
             <label className="catalog-manager-name-field"><span>Nombre<b>*</b></span><input autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
             {esMarca && <label className="catalog-manager-name-field"><span>Se usa en<b>*</b></span><select value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
-            <ImageUploadCard title={imagenLabel} description={esMarca ? "La imagen identificará esta marca en el catálogo." : "La imagen ayudará a reconocer esta categoría."} hint={imagen?.name ?? "JPG, PNG o WebP · hasta 5 MB"} previews={vistaPrevia ? [{ key: "catalog", src: vistaPrevia, alt: imagenLabel }] : []} buttonLabel={imagen || rutaImagen ? "Cambiar imagen" : "Seleccionar imagen"} disabled={guardando} uploadStatus={guardando && imagen ? "uploading" : "ready"} uploadMessage="Guardando imagen…" onSelect={(files) => seleccionarImagen(files[0])} />
           </div>
           <footer className="catalog-manager-form-actions"><button type="button" className="catalog-manager-cancel" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" className="catalog-manager-save" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button></footer>
         </form>
