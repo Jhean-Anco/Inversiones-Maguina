@@ -18,10 +18,10 @@ async function listarArchivos(directorio) {
   return encontrados;
 }
 
-test("el logo es la unica imagen distribuida con la aplicacion web", async () => {
+test("solo se distribuyen el logo y el fondo optimizado del login", async () => {
   const archivos = await listarArchivos(join(root, "apps/web/public"));
   const imagenes = archivos.filter((ruta) => extensionsImagen.test(ruta));
-  assert.deepEqual(imagenes.map((ruta) => relative(root, ruta).replaceAll("\\", "/")), ["apps/web/public/logo.webp"]);
+  assert.deepEqual(imagenes.map((ruta) => relative(root, ruta).replaceAll("\\", "/")), ["apps/web/public/fondo-login.webp", "apps/web/public/logo.webp"]);
 });
 
 test("el esquema activo no almacena imagenes ni evidencias adjuntas", async () => {
