@@ -243,7 +243,6 @@ export class ServicioMototaxis {
         .where(eq(unidadesMototaxis.estado, "DISPONIBLE")).groupBy(modelosMototaxis.id, marcasProductos.nombre, modelosMototaxis.nombre, unidadesMototaxis.color).orderBy(asc(marcasProductos.nombre), asc(modelosMototaxis.nombre), asc(unidadesMototaxis.color)),
     ]);
     const n = Number(total?.total ?? 0);
-    const ids = items.map((item) => item.id);
     return { items, total: n, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(n / porPagina)), disponiblesPorColor };
   }
 

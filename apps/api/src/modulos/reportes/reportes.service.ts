@@ -65,6 +65,25 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     return { desde, hasta, total: resumen?.total ?? "0.00" };
   }
 
+  async ingresosDashboard(mes: RangoFechas, anual: RangoFechas) {
+    const fechasMes = and(gte(ingresos.fecha, mes.desde), lte(ingresos.fecha, mes.hasta), comprobantesVenta);
+    const fechasAnuales = and(gte(ingresos.fecha, anual.desde), lte(ingresos.fecha, anual.hasta));
+    const documentosAnuales = and(fechasAnuales, inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]));
+    const [porMedioPago, flujoPorComprobante, flujoPorConcepto] = await Promise.all([
+      db.select({ medioPago: ingresos.medioPago, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
+        .from(ingresos).where(fechasMes).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
+      db.select({ fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
+        .from(ingresos).where(documentosAnuales).groupBy(ingresos.fecha, ingresos.tipoComprobante).orderBy(asc(ingresos.fecha), asc(ingresos.tipoComprobante)),
+      db.select({ fecha: ingresos.fecha, tipo: ingresosDetalle.tipo, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` })
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(documentosAnuales).groupBy(ingresos.fecha, ingresosDetalle.tipo).orderBy(asc(ingresos.fecha), asc(ingresosDetalle.tipo)),
+    ]);
+    return {
+      mes: { porMedioPago },
+      anual: { rango: anual, flujoPorComprobante, flujoPorConcepto },
+    };
+  }
+
   async ingresos(rango: RangoFechas) {
     const condicion = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesVenta);
     const condicionDetalle = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]));

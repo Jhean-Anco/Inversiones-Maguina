@@ -21,8 +21,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
-            const normalizedId = id.replaceAll("\\", "/");
-            if (/\/node_modules\/(?:@heroui\/react|@react-aria|@react-stately|@internationalized)\//.test(normalizedId)) return "vendor-heroui";
             if (/react-dom|\/react\/|\\react\\|scheduler/.test(id)) return "vendor-react";
             if (/react-router|@remix-run/.test(id)) return "vendor-router";
           },

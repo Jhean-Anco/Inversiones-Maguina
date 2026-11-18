@@ -16,10 +16,5 @@
 .notificacion-flotante-exito .notificacion-flotante-icono{background:#d9f3e5;color:#14804f}
 .notificacion-flotante-informacion{border-color:#bed8ef;background:#f5faff;color:#1c527f}
 .notificacion-flotante-informacion .notificacion-flotante-icono{background:#deefff;color:#1768a8}
-html[data-theme="oscuro"] .notificacion-flotante{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto);box-shadow:0 16px 45px #0008}
-html[data-theme="oscuro"] .notificacion-flotante-error .notificacion-flotante-icono{background:#56292e;color:#ffb9bc}
-html[data-theme="oscuro"] .notificacion-flotante-advertencia .notificacion-flotante-icono{background:#554321;color:#ffda87}
-html[data-theme="oscuro"] .notificacion-flotante-exito .notificacion-flotante-icono{background:#214b39;color:#9be5bd}
-html[data-theme="oscuro"] .notificacion-flotante-informacion .notificacion-flotante-icono{background:#203f5c;color:#a5d4ff}
 @keyframes notificacion-flotante-entrada{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}:where(html[data-responsive-profile="mobile-portrait"]) .alertas-globales{top:10px;right:10px;width:calc(100vw - 20px)}:where(html[data-responsive-profile="mobile-portrait"]) .notificacion-flotante{grid-template-columns:28px minmax(0,1fr) 26px;padding:11px}
 @media(prefers-reduced-motion:reduce){.notificacion-flotante{animation:none}}

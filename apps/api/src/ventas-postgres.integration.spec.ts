@@ -24,7 +24,6 @@ validarBaseDePruebas();
 
 type PaqueteBaseDatos = typeof import("@magina/database");
 let db: PaqueteBaseDatos["db"];
-let clientePostgres: PaqueteBaseDatos["clientePostgres"];
 let cerrarBaseDatos: PaqueteBaseDatos["cerrarBaseDatos"];
 let esquema: PaqueteBaseDatos;
 let servicio: ServicioIngresos;
@@ -55,7 +54,7 @@ function fechaHoyPeru() {
 before(async () => {
   const modulo = await import("@magina/database");
   esquema = modulo;
-  ({ db, clientePostgres, cerrarBaseDatos } = modulo);
+  ({ db, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
   servicioEntradasStock = new ServicioEntradasStock();

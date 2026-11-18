@@ -23,6 +23,31 @@
   :where(html[data-responsive-profile="mobile-landscape"]) .login-intro { margin-bottom: 20px; }
 .login-success-overlay { animation: login-overlay-enter 180ms ease-out both; }
 .login-success-card { animation: login-card-enter 240ms ease-out both; }
+.login-success-overlay {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #07192eb8;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+.login-success-card {
+  position: relative;
+  display: grid;
+  width: min(100%, 360px);
+  justify-items: center;
+  padding: 34px 30px 28px;
+  border: 1px solid #ffffffd9;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px #06172b55;
+  text-align: center;
+}
+.login-success-card h2 { margin: 0; font-size: 20px; }
+.login-success-card p { margin: 8px 0 0; font-size: 13px; }
 .login-success-spinner {
   display: block;
   width: 58px;
@@ -36,10 +61,20 @@
   animation: login-validation-spin 900ms linear infinite;
 }
 @keyframes login-validation-spin { to { transform: rotate(360deg); } }
+@keyframes login-overlay-enter {
+  0% { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes login-card-enter {
+  0% { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
 .login-success-card h2 { color: #102d4f; }
 .login-success-card p { max-width: 280px; color: #62758b; line-height: 1.55; }
 
 @media (prefers-reduced-motion: reduce) {
+  .login-success-overlay,
+  .login-success-card { animation: none; }
   .login-success-spinner { animation-duration: 1.1s; animation-iteration-count: 1; }
 }
 
@@ -332,10 +367,6 @@
   .login-form input:not([type='checkbox']),
   .submit-button { transition: none; }
 }
-
-html[data-theme="oscuro"] #root .login-panel { border-color: var(--tema-borde); box-shadow: 0 24px 70px rgb(0 0 0 / 40%); }
-html[data-theme="oscuro"] #root .login-intro { color: var(--tema-texto-secundario); }
-html[data-theme="oscuro"] #root .login-footer { border-top-color: var(--tema-borde); color: var(--tema-texto-secundario); }
   :where(html[data-responsive-profile="laptop"]) .login-panel {
     position: relative;
     overflow: hidden;
@@ -490,13 +521,6 @@ html[data-theme="oscuro"] #root .login-footer { border-top-color: var(--tema-bor
     -webkit-backdrop-filter: blur(32px) saturate(150%);
   }
 
-html[data-theme="oscuro"] #root .login-panel {
-  border-color: rgb(221 238 255 / 34%);
-  background: linear-gradient(145deg, rgb(26 66 111 / 45%), rgb(5 20 42 / 38%)) !important;
-  backdrop-filter: blur(32px) saturate(150%);
-  -webkit-backdrop-filter: blur(32px) saturate(150%);
-}
-
 /* Fondo y tarjeta de marca para teléfonos, sin depender de la fotografía desktop. */
   :where(html[data-responsive-profile="mobile-landscape"]) .login-mobile-logo {
     display: block;
@@ -584,7 +608,7 @@ html[data-theme="oscuro"] #root .login-panel {
     -webkit-appearance: none !important;
     -webkit-background-clip: padding-box !important;
     caret-color: #f5f8fd;
-    color-scheme: dark;
+    color-scheme: light;
   }
   :where(html[data-responsive-profile="mobile-landscape"]) .login-panel .login-form input:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 3px rgb(90 168 239 / 20%), 0 0 0 1000px #0a2348 inset !important;
@@ -687,7 +711,7 @@ html[data-theme="oscuro"] #root .login-panel {
     -webkit-appearance: none !important;
     -webkit-background-clip: padding-box !important;
     caret-color: #f5f8fd;
-    color-scheme: dark;
+    color-scheme: light;
   }
   :where(html[data-responsive-profile="mobile-portrait"]) .login-panel .login-form input:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 3px rgb(90 168 239 / 20%), 0 0 0 1000px #0a2348 inset !important;
@@ -711,6 +735,27 @@ html[data-theme="oscuro"] #root .login-panel {
   :where(html[data-responsive-profile="mobile-landscape"]) .login-options { margin: 8px 0 10px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .submit-button { min-height: 42px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .login-footer { padding-top: 6px; }
+
+@media (max-width: 760px) and (max-height: 560px) {
+  :where(html[data-responsive-profile="mobile-portrait"]) .login-layout {
+    height: auto;
+    min-height: 100dvh;
+    align-items: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) .login-panel {
+    max-height: none;
+    overflow: visible;
+    backdrop-filter: blur(14px) saturate(125%);
+    -webkit-backdrop-filter: blur(14px) saturate(125%);
+  }
+  :where(html[data-responsive-profile="mobile-portrait"]) .login-mobile-logo {
+    width: min(112px, 21svh, 32vw);
+    margin-bottom: 6px;
+  }
+}
 
 .login-mobile-logo { display: none; }
 
@@ -738,12 +783,5 @@ html[data-theme="oscuro"] #root .login-panel {
   :where(html[data-responsive-profile="mobile-landscape"]) .login-form input:not([type='checkbox']), :where(html[data-responsive-profile="mobile-landscape"]) .submit-button { transition: none; } }
   @media (prefers-reduced-motion: reduce) {
   :where(html[data-responsive-profile="mobile-portrait"]) .login-form input:not([type='checkbox']), :where(html[data-responsive-profile="mobile-portrait"]) .submit-button { transition: none; } }
-
-html[data-theme="oscuro"] #root .login-panel {
-  border-color: rgb(221 238 255 / 32%);
-  background: linear-gradient(145deg, rgb(44 103 163 / 43%), rgb(5 23 49 / 36%)) !important;
-  backdrop-filter: blur(28px) saturate(145%);
-  -webkit-backdrop-filter: blur(28px) saturate(145%);
-}
   :where(html[data-responsive-profile="mobile-landscape"]) .login-mobile-logo { display: block; }
   :where(html[data-responsive-profile="mobile-portrait"]) .login-mobile-logo { display: block; }

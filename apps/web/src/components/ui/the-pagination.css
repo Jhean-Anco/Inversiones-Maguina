@@ -109,25 +109,6 @@
   background: #f5f7f9;
   color: #8292a1;
 }
-
-html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav {
-  border-color: #40536b;
-  background: #1a2a3d;
-  color: #d5e5f5;
-}
-
-html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav:hover:not(:disabled):not([aria-disabled="true"]) {
-  border-color: #6d89a8;
-  background: #263d57;
-  color: #fff;
-}
-
-html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav:disabled,
-html[data-theme="oscuro"] .listado-maestro .listado-maestro-paginacion .the-pagination .pagination__link--nav[aria-disabled="true"] {
-  border-color: #34465c;
-  background: #172333;
-  color: #8597ab;
-}
   :where(html[data-responsive-profile="mobile-portrait"]) .the-pagination .pagination__link--nav { min-width: 36px; padding-inline: 8px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .the-pagination .pagination__link--nav span {
     display: none;

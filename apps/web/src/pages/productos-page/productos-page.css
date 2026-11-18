@@ -56,10 +56,6 @@
 .repuestos-module .precios-productos-page.is-integrated .precios-productos-input {
   margin-inline: auto;
 }
-
-html[data-theme="oscuro"] #root .repuestos-module {
-  color: var(--tema-texto);
-}
   :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated {
     min-height: 0;
     padding: 0 14px;

@@ -1,10 +1,10 @@
 export type VarianteListado = "tabla" | "tarjetas";
-import { getResponsiveProfile } from "../../../utilidades/responsive-profile";
+import { getViewportProfile } from "../../../utilidades/viewport";
 
-export type { ResponsiveProfile } from "../../../utilidades/responsive-profile";
+export type { ViewportProfile } from "../../../utilidades/viewport";
 
 export function tamanioListadoSegunPantalla(ancho: number, variante: VarianteListado, alto = typeof window === "undefined" ? 768 : window.innerHeight) {
-  const perfil = getResponsiveProfile(ancho, alto);
+  const perfil = getViewportProfile(ancho, alto);
   if (variante === "tabla") {
     if (perfil === "laptop" || perfil === "tablet-landscape") return 10;
     if (perfil === "tablet-portrait") return 8;

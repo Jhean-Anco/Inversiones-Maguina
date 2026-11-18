@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, or } from "drizzle-orm";
 import { conductores, db, personas, tiposDocumento, tiposPersona } from "@magina/database";
 
 function texto(valor: unknown, etiqueta: string, maximo: number, requerido = false) {

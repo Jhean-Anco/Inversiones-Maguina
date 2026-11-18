@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";

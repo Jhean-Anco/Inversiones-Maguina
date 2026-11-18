@@ -26,8 +26,3 @@
 .config-series-save:hover:not(:disabled){border-color:var(--erp-brand-deep,#071e3c);background:var(--erp-brand-deep,#071e3c)}
 .config-series-dialog>footer button:disabled{opacity:.58;cursor:wait}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-backdrop{align-items:end;padding:0}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-dialog{width:100%;max-height:96dvh;border-radius:18px 18px 0 0}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-fields{padding:19px 20px 0}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-error{margin-right:20px;margin-left:20px}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-fields{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-portrait"]) .config-series-fields .config-series-field-wide{grid-column:auto}
 @media(prefers-reduced-motion:reduce){.config-series-backdrop{backdrop-filter:none}}
-html[data-theme="oscuro"] .config-series-dialog{color:var(--tema-texto)}
-html[data-theme="oscuro"] .config-series-fields label{color:var(--tema-texto)}
-html[data-theme="oscuro"] .config-series-fields :is(input,select){border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] .config-series-dialog>footer{border-color:var(--tema-borde)!important;background:var(--tema-superficie)!important}
-html[data-theme="oscuro"] .config-series-cancel{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}

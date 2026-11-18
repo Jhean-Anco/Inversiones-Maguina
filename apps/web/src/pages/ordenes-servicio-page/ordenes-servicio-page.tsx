@@ -369,7 +369,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
             </section>
 
             <div className="venta-data-footer ordenes-data-footer">
-              <label className="venta-observation-card ordenes-reason-card">Motivo de ingreso<textarea aria-label="Motivo de ingreso" value={motivo} maxLength={2000} rows={3} onChange={(evento) => setMotivo(evento.target.value)} placeholder="Describe por qué ingresa el vehículo al taller" required /></label>
+              <label className="venta-observation-card ordenes-reason-card">Motivo de ingreso (opcional)<textarea aria-label="Motivo de ingreso (opcional)" value={motivo} maxLength={2000} rows={3} onChange={(evento) => setMotivo(evento.target.value)} placeholder="Describe por qué ingresa el vehículo al taller" /></label>
               <div className="venta-checkout-actions ordenes-checkout-actions">
                 <div className="venta-checkout-total">
                   <label className="venta-checkout-amount ordenes-advance-amount"><span>Monto de adelanto recibido</span><input type="number" min="0" step="0.01" max={totalOrden(lineas)} value={adelanto} onChange={(evento) => setAdelanto(evento.target.value)} /></label>

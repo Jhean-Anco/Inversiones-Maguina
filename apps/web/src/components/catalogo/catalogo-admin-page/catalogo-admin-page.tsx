@@ -2,7 +2,7 @@ import "./catalogo-admin-page.css";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useCatalogo } from "../../../hooks/use-catalogo";
 import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
-import { getResponsiveProfile } from "../../../utilidades/responsive-profile";
+import { getViewportProfile } from "../../../utilidades/viewport";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 import { AccionIcono } from "../../ui/accion-icono";
@@ -60,7 +60,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     return coincideTexto && coincideEstado && coincideTipo;
   }), [registros, busqueda, filtroEstado, filtroTipo, esMarca]);
   const [versionListado, setVersionListado] = useState(0);
-  const perfilResponsive = getResponsiveProfile(anchoViewport, altoViewport);
+  const perfilResponsive = getViewportProfile(anchoViewport, altoViewport);
   const columnas = perfilResponsive === "laptop" ? 4 : perfilResponsive === "tablet-landscape" ? 3 : perfilResponsive === "tablet-portrait" || perfilResponsive === "mobile-landscape" ? 2 : 1;
 
   useEffect(() => {

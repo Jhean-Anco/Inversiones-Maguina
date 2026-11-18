@@ -137,7 +137,6 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/inicio$/);
   await expect(page.locator(".topbar-logout-button")).toBeVisible();
-  await expect(page.locator(".topbar-user")).toContainText("Usuario E2E Prueba");
   const navegacion = page.getByRole("navigation", { name: "Navegación principal" });
   await expect(navegacion.getByRole("link", { name: "Resumen" })).toBeVisible();
   await expect(navegacion.getByRole("button", { name: "Inventario" })).toHaveCount(0);
@@ -202,28 +201,6 @@ test("el formulario de acceso expone controles utilizables con teclado y viewpor
 
   const anchoDocumento = await page.evaluate(() => document.documentElement.scrollWidth);
   assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
-});
-
-test("el tema claro y oscuro se alterna y persiste entre recargas", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
-  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
-  await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page).toHaveURL(/\/inicio$/);
-
-  const raiz = page.locator("html");
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
-  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
-  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
-  await expect(raiz).toHaveJSProperty("style.colorScheme", "dark");
-  await page.reload();
-  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
-
-  await page.getByRole("button", { name: "Activar modo claro" }).click();
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
-  await expect(raiz).toHaveJSProperty("style.colorScheme", "light");
-  await page.reload();
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
 });
 
 test("el shell autenticado no se desborda en anchos móviles, tablet y escritorio", async ({ page }) => {

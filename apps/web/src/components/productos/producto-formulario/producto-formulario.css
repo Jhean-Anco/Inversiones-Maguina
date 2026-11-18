@@ -28,4 +28,3 @@
   :where(html[data-responsive-profile="mobile-portrait"]) .producto-modal .producto-editor-table td:has(input[type="checkbox"]) input { grid-column: 2; grid-row: 1; }
   :where(html[data-responsive-profile="mobile-portrait"]) .producto-modal .producto-editor-table td:last-child { display: flex; align-items: flex-end; justify-content: flex-end; }
   :where(html[data-responsive-profile="mobile-portrait"]) .producto-modal .producto-editor-table .producto-base-row { color: #29445f; }
-  html:where([data-responsive-profile="mobile-portrait"])[data-theme="oscuro"] #root .producto-modal .producto-editor-table tbody tr { border-color: var(--tema-borde); background: var(--tema-superficie); }

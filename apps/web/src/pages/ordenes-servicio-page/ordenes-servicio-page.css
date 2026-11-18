@@ -89,24 +89,13 @@
 .ordenes-whatsapp-extension label{display:grid;gap:6px;color:#355372;font-size:11px;font-weight:700}
 .ordenes-whatsapp-extension textarea{min-height:74px;resize:vertical;border:1px solid #d5e1ef;border-radius:8px;padding:8px;color:#173d65;font:inherit;font-size:12px}
 .ordenes-whatsapp-extension>button{background:#174b80;color:white;text-align:center}
-html[data-theme="oscuro"] #root .ordenes-whatsapp-options{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-whatsapp-options>button,html[data-theme="oscuro"] #root .ordenes-whatsapp-extension label{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-whatsapp-extension textarea{border-color:var(--tema-borde);background:#132235;color:var(--tema-texto)}
 .ordenes-financial-fields{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(180px,.55fr) minmax(220px,1fr);align-items:stretch;gap:12px 18px;padding:12px 22px 14px;border-bottom:1px solid #e5edf5}
 .ordenes-financial-fields>label,.ordenes-financial-fields>.selector-cuenta-financiera,.ordenes-payment-summary label{display:flex;flex-direction:column;justify-content:flex-start;gap:7px;color:#24466b;font-size:12px;font-weight:650}
 .ordenes-financial-fields textarea,.ordenes-financial-fields input,.ordenes-financial-fields select{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #d5e1ef;border-radius:10px;padding:10px 12px;color:#173d65;background:#fff;font:inherit}.ordenes-financial-fields textarea{min-height:82px;resize:vertical}.ordenes-financial-fields .selector-cuenta-financiera select{padding:0 12px}
 .ordenes-reason-field{box-sizing:border-box;display:grid!important;grid-template-columns:minmax(0,1fr);align-content:start;gap:7px!important;min-width:0;padding:12px;border:1px solid #e2eaf3;border-radius:10px;background:#fff}.ordenes-reason-field textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:100px;height:100px;margin:0}.ordenes-financial-fields .selector-cuenta-financiera{min-width:0}.ordenes-financial-fields .selector-cuenta-financiera .selector-cuenta-hint{font-size:10px;line-height:1.4}
 .ordenes-payment-summary{display:flex;align-items:center;gap:18px;padding:8px 14px;border:1px solid #d5e1ef;border-radius:10px;background:#f5f8fc}
 .ordenes-payment-summary>strong{white-space:nowrap;color:#0f3b68}
-.ordenes-payment-summary .selector-cuenta-financiera{min-width:260px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}
-html[data-theme="oscuro"] #root .ordenes-vehicle-fields label,html[data-theme="oscuro"] #root .ordenes-customer-field,html[data-theme="oscuro"] #root .ordenes-diagnosis>label,html[data-theme="oscuro"] #root .ordenes-comprobante{color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .ordenes-vehicle-fields :is(input,textarea,select),html[data-theme="oscuro"] #root .ordenes-diagnosis textarea,html[data-theme="oscuro"] #root .ordenes-comprobante select{border-color:var(--tema-borde);background:#132235;color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-diagnosis>strong{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-client-picker .venta-client-results,html[data-theme="oscuro"] #root .ordenes-client-empty{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-client-picker .venta-client-result-select{border-color:var(--tema-borde);color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-client-picker .venta-client-result-select:hover{background:#1b2b40}
-html[data-theme="oscuro"] #root .ordenes-client-empty button,html[data-theme="oscuro"] #root .ordenes-emit-button{border-color:var(--tema-borde);background:#1d2d42;color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .ordenes-timeline{border-color:var(--tema-borde)}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:3!important;grid-row:1!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1!important;grid-row:2!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields .ordenes-field-full{grid-column:1/-1!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label, :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-customer-field{width:100%;min-width:0;margin-bottom:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label{grid-template-rows:minmax(38px,auto) 42px;gap:4px;line-height:1.15;font-size:10px;white-space:normal}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input{height:42px;min-height:42px;padding:6px 8px;font-size:11px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input[type=date]{padding-right:3px;padding-left:3px;font-size:10px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .ordenes-client-picker{grid-template-columns:64px minmax(0,1fr) 44px 44px!important;gap:5px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client{width:44px;padding:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-add-client{width:44px;height:50px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-document-select{width:64px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-diagnosis textarea{min-height:58px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .listado-maestro-cabecera{align-items:flex-start}
+.ordenes-payment-summary .selector-cuenta-financiera{min-width:260px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:3!important;grid-row:1!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1!important;grid-row:2!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields .ordenes-field-full{grid-column:1/-1!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label, :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-customer-field{width:100%;min-width:0;margin-bottom:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label{grid-template-rows:minmax(38px,auto) 42px;gap:4px;line-height:1.15;font-size:10px;white-space:normal}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input{height:42px;min-height:42px;padding:6px 8px;font-size:11px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input[type=date]{padding-right:3px;padding-left:3px;font-size:10px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .ordenes-client-picker{grid-template-columns:64px minmax(0,1fr) 44px 44px!important;gap:5px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client{width:44px;padding:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-add-client{width:44px;height:50px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-document-select{width:64px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-diagnosis textarea{min-height:58px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .listado-maestro-cabecera{align-items:flex-start}
 
 
 
@@ -119,9 +108,7 @@ html[data-theme="oscuro"] #root .ordenes-timeline{border-color:var(--tema-borde)
 :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .ordenes-table td:last-child{text-align:center}
 :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .ventas-row-actions{justify-content:center;min-width:0}
 
-html[data-theme="oscuro"] #root .ordenes-financial-fields>label,html[data-theme="oscuro"] #root .ordenes-financial-fields>.selector-cuenta-financiera{color:var(--tema-texto-secundario)}html[data-theme="oscuro"] #root .ordenes-financial-fields .ordenes-reason-field{border-color:var(--tema-borde);background:var(--tema-superficie)}html[data-theme="oscuro"] #root .ordenes-financial-fields textarea,html[data-theme="oscuro"] #root .ordenes-financial-fields input,html[data-theme="oscuro"] #root .ordenes-financial-fields select{border-color:var(--tema-borde);background:#132235;color:var(--tema-texto)}html[data-theme="oscuro"] #root .ordenes-financial-fields .selector-cuenta-financiera .selector-cuenta-hint{color:var(--tema-texto-secundario)}
-
-.ordenes-reason-card{box-sizing:border-box;align-self:stretch;min-width:0}.ordenes-reason-card textarea{min-height:76px;height:76px;max-height:76px;resize:vertical}.ordenes-checkout-actions{min-width:0}.ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:end;gap:12px}.ordenes-advance-amount{min-width:0}.ordenes-advance-amount input{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}.ordenes-checkout-actions .venta-checkout-buttons{justify-content:flex-end}html[data-theme="oscuro"] #root .ordenes-advance-amount input{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-landscape"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.ordenes-reason-card{box-sizing:border-box;align-self:stretch;min-width:0}.ordenes-reason-card textarea{min-height:76px;height:76px;max-height:76px;resize:vertical}.ordenes-checkout-actions{min-width:0}.ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:end;gap:12px}.ordenes-advance-amount{min-width:0}.ordenes-advance-amount input{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}.ordenes-checkout-actions .venta-checkout-buttons{justify-content:flex-end}:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-landscape"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
 
 /* Evita que el detalle estire una zona vac?a cuando ya hay contenido; el pie sigue al ?ltimo campo y sus botones. */
 #root .venta-page.is-data-step .venta-form-scroll.ordenes-form-scroll>.venta-form-body:not(:has(>.venta-empty)){flex:0 0 auto!important;min-height:0!important}
@@ -169,3 +156,157 @@ html[data-theme="oscuro"] #root .ordenes-financial-fields>label,html[data-theme=
   :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
   :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
   :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
+
+/* En pantallas amplias, el catálogo y la orden permanecen en paneles paralelos. */
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(250px, .42fr) minmax(0, 1.58fr) !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+}
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-catalog-sidebar {
+  width: auto;
+  max-height: 100%;
+  min-height: 0;
+}
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open > .ordenes-form-paper {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* La orden completa se desplaza como un solo documento, incluidos sus campos y acciones. */
+#root .venta-page.is-data-step .ordenes-form-paper {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+#root .venta-page.is-data-step .ordenes-form-paper > .ordenes-form-scroll {
+  /* La regla compartida del formulario aplica overflow y flex con !important. */
+  display: contents !important;
+}
+#root .venta-page.is-data-step .ordenes-form-paper .ordenes-form-scroll > .venta-form-body {
+  min-height: 180px;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+#root .venta-page.is-data-step .ordenes-form-paper .venta-lines {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+#root .venta-page.is-data-step .venta-editor.is-catalog-open > .ordenes-form-paper {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+#root .venta-page.is-data-step .ordenes-form-paper > .venta-form-heading {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  flex: 0 0 auto;
+}
+#root .venta-page.is-data-step .ordenes-client-picker > input,
+#root .venta-page.is-data-step .ordenes-client-picker > .ordenes-search-client,
+#root .venta-page.is-data-step .ordenes-client-picker > .ordenes-add-client {
+  box-sizing: border-box;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+}
+
+/* En móvil, la orden ocupa el área principal sin el marco interior del shell. */
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .erp-content.is-new-sale-view:has(.ordenes-servicio-page) {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  scrollbar-gutter: auto;
+}
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page,
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page > .venta-layout,
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .ordenes-form-paper {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  scrollbar-gutter: auto;
+}
+
+/* Tablet vertical usa el alto natural de página para alojar los dos paneles. */
+:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 0 0 16px !important;
+  scrollbar-gutter: auto;
+}
+:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page > .venta-layout {
+  height: auto !important;
+  min-height: 0 !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+  height: auto !important;
+  min-height: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-catalog-sidebar {
+  position: static !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  height: max(320px, calc(100dvh - 140px)) !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .ordenes-form-paper {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* Mantener las dos columnas de catálogo y documento en tablet y pantallas anchas. */
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+  display: grid !important;
+  grid-template-columns: minmax(235px, .42fr) minmax(0, 1.58fr) !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+}
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open > .venta-catalog-sidebar {
+  position: relative !important;
+  width: auto !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open > .ordenes-form-paper {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+/* El shell puede no tener perfil responsive; conserva igualmente catálogo y orden en paralelo. */
+#root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+  display: grid;
+  grid-template-columns: minmax(235px, .42fr) minmax(0, 1.58fr);
+}
+:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+}

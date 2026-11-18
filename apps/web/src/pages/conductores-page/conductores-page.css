@@ -23,10 +23,4 @@
 .conductores-primary { min-height: 40px; padding: 0 14px; border: 1px solid var(--action-primary-border); border-radius: 10px; background: var(--action-primary-surface); color: var(--action-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .conductores-primary:disabled { opacity: .65; cursor: wait; }
 .conductores-page :is(button, input, select):focus-visible { outline: 3px solid #3784bd55; outline-offset: 2px; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-page { padding: 20px 14px 30px; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-heading { align-items: flex-start; flex-direction: column; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-fields { grid-template-columns: 1fr; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-fields .conductores-wide { grid-column: auto; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-backdrop { align-items: end; padding: 8px; } :where(html[data-responsive-profile="mobile-portrait"]) .conductores-form { max-height: calc(100dvh - 16px); padding: 16px; border-radius: 16px 16px 10px 10px; }
-html[data-theme="oscuro"] .conductores-page { color: #e1eaf4; }
-html[data-theme="oscuro"] .conductores-heading { border-color: #314761; }
-html[data-theme="oscuro"] .conductores-heading p, html[data-theme="oscuro"] .conductores-kicker, html[data-theme="oscuro"] .conductores-card p, html[data-theme="oscuro"] .conductores-card small { color: #a9bdd3; }
-html[data-theme="oscuro"] .conductores-card, html[data-theme="oscuro"] .conductores-form { border-color: #314761; background: #17263a; color: #e1eaf4; }
-html[data-theme="oscuro"] .conductores-fields label, html[data-theme="oscuro"] .conductores-card h2 { color: #d9e8f8; }
-html[data-theme="oscuro"] .conductores-fields input, html[data-theme="oscuro"] .conductores-fields select, html[data-theme="oscuro"] .conductores-form > header > button, html[data-theme="oscuro"] .conductores-form > footer > button:first-child { border-color: #314761; background: #142235; color: #e1eaf4; }
 .conductores-heading { display: none; }

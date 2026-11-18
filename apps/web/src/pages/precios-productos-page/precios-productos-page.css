@@ -28,12 +28,6 @@
 .precios-productos-empty strong{color:#173b65}
 .precios-productos-empty span{font-size:13px}
 .precios-productos-page .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-html[data-theme="oscuro"] #root .precios-productos-page,html[data-theme="oscuro"] #root .precios-productos-heading h1{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-heading p{color:var(--tema-texto-secundario)}
-html[data-theme="oscuro"] #root .precios-productos-heading>strong{border-color:var(--tema-borde);background:var(--tema-superficie)}
-html[data-theme="oscuro"] #root .precios-productos-product strong,html[data-theme="oscuro"] #root .precios-productos-empty strong{color:var(--tema-texto)}
-html[data-theme="oscuro"] #root .precios-productos-input input,
-html[data-theme="oscuro"] #root .precios-productos-table td>button{border-color:var(--tema-borde);background:var(--tema-superficie);color:var(--tema-texto)}
 :where(html[data-responsive-profile="mobile-portrait"]) .precios-productos-page{padding:14px 12px 24px}:where(html[data-responsive-profile="mobile-portrait"]) .precios-productos-heading{align-items:flex-start;flex-direction:column;gap:10px}:where(html[data-responsive-profile="mobile-portrait"]) .precios-productos-heading h1{font-size:23px}
 .precios-productos-row-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px}
   :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table{display:block;width:100%;min-width:0;border-collapse:separate;border-spacing:0}
@@ -49,7 +43,6 @@ html[data-theme="oscuro"] #root .precios-productos-table td>button{border-color:
   :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-input{width:min(100%,130px)}
   :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table td>button{align-self:start}
   :where(html[data-responsive-profile="mobile-landscape"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-row-actions{justify-content:flex-start}
-  html:where([data-responsive-profile="mobile-landscape"])[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody tr{border-color:var(--tema-borde);background:var(--tema-superficie)}
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table{display:block;width:100%;min-width:0;border-collapse:separate;border-spacing:0}
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody{display:grid;gap:10px;padding:10px}
@@ -63,5 +56,4 @@ html[data-theme="oscuro"] #root .precios-productos-table td>button{border-color:
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-input{width:min(100%,130px)}
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-table td>button{align-self:start}
   :where(html[data-responsive-profile="mobile-portrait"]) .repuestos-module .precios-productos-page.is-integrated .precios-productos-row-actions{justify-content:flex-start}
-  html:where([data-responsive-profile="mobile-portrait"])[data-theme="oscuro"] #root .repuestos-module .precios-productos-page.is-integrated .precios-productos-table tbody tr{border-color:var(--tema-borde);background:var(--tema-superficie)}
 .precios-productos-heading { display: none; }

@@ -9,6 +9,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
+    "lint": "biome lint apps/api/src apps/api/playwright.config.ts apps/web/src apps/web/vite.config.ts packages/database/src packages/database/drizzle.config.ts scripts .github/scripts",
     "test": "turbo run test --filter=@magina/api",
     "test:unit": "turbo run test:unit --filter=@magina/api",
     "test:integration": "turbo run test:integration --filter=@magina/api",
@@ -19,13 +20,14 @@
     "test:all": "pnpm test:all:api && pnpm test:e2e",
     "test:coverage": "turbo run test:coverage --filter=@magina/api",
     "format": "prettier --write .",
-    "format:check": "prettier --check package.json pnpm-workspace.yaml turbo.json .github/workflows/pipeline.yml \"compose*.yaml\"",
+    "format:check": "prettier --check package.json pnpm-workspace.yaml turbo.json biome.jsonc \".github/workflows/*.yml\" \"compose*.yaml\"",
     "docs:api": "node scripts/documentar-api.mjs",
     "docs:data": "node scripts/documentar-datos.mjs",
     "docs:check": "pnpm docs:api && pnpm docs:data && node scripts/comprobar-documentacion.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@biomejs/biome": "2.6.6",
     "@playwright/test": "1.65.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",

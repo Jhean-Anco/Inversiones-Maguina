@@ -5,7 +5,7 @@ Este sistema define la capa compartida para las pantallas del ERP. Las vistas de
 ## Identidad y lectura
 
 - Azul marino para estructura y navegación, rojo para acciones principales y estado activo.
-- Fondo gris frío y superficies blancas en modo claro; superficies azul pizarra y texto claro en modo oscuro.
+- Fondo gris frío y superficies blancas para mantener una lectura clara y consistente.
 - Inter/Segoe UI/system-ui, con tamaños legibles y jerarquía basada en peso, tamaño y espacio.
 - Lectura operativa: bordes discretos, contenedores con radios de 8 a 16 px y sombras suaves para separar niveles.
 
@@ -20,7 +20,7 @@ Este sistema define la capa compartida para las pantallas del ERP. Las vistas de
 | Radios | `--erp-radius-sm/md/lg` | `8px`, `12px`, `16px` |
 | Espacio | `--erp-space-1` a `--erp-space-6` | escala de `4px` a `24px` |
 
-El tema oscuro redefine superficie, texto, bordes, foco y sombras en `html[data-theme="oscuro"]`. Los componentes compartidos deben consumir los tokens o equivalentes semánticos del tema.
+Los componentes compartidos mantienen las superficies, el texto y los estados visuales claros en todas las pantallas.
 
 ## Controles, estados y accesibilidad
 
@@ -32,4 +32,4 @@ El tema oscuro redefine superficie, texto, bordes, foco y sombras en `html[data-
 
 ## Implementación
 
-La capa común vive en `apps/web/src/main/erp-design-system.css`, importada después de los estilos globales y del tema. Los estilos específicos de cada vista se quedan junto a su módulo. Esta capa no debe alojar reglas de negocio ni alterar contratos del backend.
+La capa común vive en `apps/web/src/main/erp-design-system.css`, importada después de los estilos globales. Los estilos específicos de cada vista se quedan junto a su módulo. Esta capa no debe alojar reglas de negocio ni alterar contratos del backend.

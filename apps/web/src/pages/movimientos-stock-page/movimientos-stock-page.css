@@ -43,14 +43,6 @@
   gap: 10px;
   padding-top: 2px;
 }
-
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > select,
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-controles > input {
-  border-color: var(--tema-borde);
-  background-color: var(--tema-superficie);
-  color: var(--tema-texto);
-}
   :where(html[data-responsive-profile="tablet-portrait"]) .catalog-content[aria-label="Movimientos y ajustes"] .listado-maestro-cabecera {
     align-items: flex-start;
   }
@@ -209,37 +201,6 @@ html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajust
   color: #647a91;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table th {
-  border-color: var(--tema-borde);
-  background: #1c2b3e;
-  color: var(--tema-texto-secundario);
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table td {
-  border-color: var(--tema-borde);
-  color: var(--tema-texto-secundario);
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table tbody tr:hover {
-  background: #1b2b40;
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-table-product strong {
-  color: var(--tema-texto);
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-increase {
-  border-color: #315844;
-  background: #1c3428;
-  color: #a3dbb7;
-}
-
-html[data-theme="oscuro"] #root .catalog-content[aria-label="Movimientos y ajustes"] .stock-movement-badge.is-decrease {
-  border-color: #664347;
-  background: #362529;
-  color: #e0a4a2;
 }
 
 @media (prefers-reduced-motion: reduce) {

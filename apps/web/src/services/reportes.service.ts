@@ -21,5 +21,12 @@ const parametros = ({ desde, hasta }: FiltroReporte) => new URLSearchParams({ de
 export const servicioReportes = {
   resumenIngresosMes: () => solicitarApi<{ desde: string; hasta: string; total: string }>("/reportes/ingresos/resumen-mes"),
   ingresos: (filtro: FiltroReporte) => solicitarApi<ReporteIngresos>("/reportes/ingresos?" + parametros(filtro)),
+  ingresosDashboard: (rangos: { mes: FiltroReporte; anual: FiltroReporte }) => {
+    const query = new URLSearchParams({ desde: rangos.anual.desde, hasta: rangos.anual.hasta, mesDesde: rangos.mes.desde });
+    return solicitarApi<{
+      mes: Pick<ReporteIngresos, "porMedioPago">;
+      anual: Pick<ReporteIngresos, "rango" | "flujoPorComprobante" | "flujoPorConcepto">;
+    }>(`/reportes/ingresos/dashboard?${query.toString()}`);
+  },
   inventario: (filtro: FiltroReporte) => solicitarApi<ReporteInventario>("/reportes/inventario?" + parametros(filtro)),
 };

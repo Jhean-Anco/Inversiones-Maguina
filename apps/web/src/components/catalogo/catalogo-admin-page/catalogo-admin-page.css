@@ -100,34 +100,12 @@
 .catalog-manager-name-field input { width: 100%; height: 44px; box-sizing: border-box; border: 1px solid #dce5ed; border-radius: 9px; padding: 0 12px; background: #fbfcfe; color: #193957; font: inherit; font-size: 14px; outline: 0; }
 .catalog-manager-name-field select { width: 100%; }
 .catalog-manager-name-field input:focus { border-color: #3984c4; background: #fff; box-shadow: 0 0 0 3px #3984c41a; }
-.catalog-manager-dropzone { display: flex; min-height: 96px; align-items: center; gap: 12px; border: 1px dashed #c8d6e3; border-radius: 11px; padding: 11px; background: #f9fbfd; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
-.catalog-manager-dropzone:hover,.catalog-manager-dropzone.is-dragging { border-color: #3e8ab9; background: #f1f8fc; }
-.catalog-manager-dropzone input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); clip-path: inset(50%); white-space: nowrap; }
-.catalog-manager-dropzone:focus-within { outline: 3px solid #3984c433; outline-offset: 2px; }
-.catalog-manager-drop-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
-.catalog-manager-drop-copy strong { overflow: hidden; color: #2c4e6b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.catalog-manager-drop-copy small { color: #8595a6; font-size: 12px; }
-.catalog-manager-upload-icon { display: grid; width: 35px; height: 35px; flex: 0 0 auto; place-items: center; border: 1px solid #dce8f1; border-radius: 10px; background: #fff; color: #24638a; }
-.catalog-manager-upload-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
-.catalog-manager-upload-action { flex: 0 0 auto; border: 1px solid #d8e5ef; border-radius: 7px; padding: 7px 9px; background: #fff; color: #245779; font-size: 10px; font-weight: 750; }
 .catalog-manager-form-actions { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e9eef3; padding-top: 13px; }
 .catalog-manager-cancel,.catalog-manager-save { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; border-radius: 10px; padding: 0 14px; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .catalog-manager-cancel { border: 1px solid #dfe6ed; background: #fff; color: #5b7187; }
 .catalog-manager-save { border: 1px solid var(--action-primary-border); background: var(--action-primary-surface); color: var(--action-primary); box-shadow: 0 3px 8px #a51f3210; }
 .catalog-manager-save:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); }
 .catalog-manager-save:disabled,.catalog-manager-cancel:disabled { opacity: .55; cursor: wait; }
-
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { color: #e2eaf4; }
-
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog{ border-color: var(--tema-borde); background: #151f2e; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog { border-color: var(--tema-borde); background: #151f2e; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog h2 { color: #e4edf7; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-confirm-dialog p { color: #b3c0d0; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-card { border-color: var(--tema-borde); background: #151f2e; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog-head h2 { color: #e4edf7; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-search input,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-status-filter select,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name-field select,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dialog-head > button,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-name-field input,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-dropzone { border-color: var(--tema-borde); background: #101a28; color: #e4edf7; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-row-actions button,html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-cancel { border-color: var(--tema-borde); background: #182639; color: #c1cedb; }
-html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager-usage span { border-color: var(--tema-borde); background: #1c2a3b; color: #c1cedb; }
   :where(html[data-responsive-profile="mobile-landscape"]) .erp-content.is-catalog-view.is-catalog-admin-view .catalog-manager { padding: 12px 14px 16px; }
 
   :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager-search { width: 100%; min-width: 0; flex: 1 1 100%; }
@@ -213,11 +191,6 @@ html[data-theme="oscuro"] .erp-content.is-catalog-view.is-catalog-admin-view .ca
 }
 .catalog-manager .catalog-manager-status-filter > span { line-height: 1.2; }
 .catalog-manager .catalog-manager-status-filter select { width: 100%; height: 46px; box-sizing: border-box; border-radius: 10px; font-weight: 650; }
-html[data-theme="oscuro"] .catalog-manager .listado-maestro-cabecera {
-  border-bottom-color: var(--tema-borde);
-  background: linear-gradient(115deg, #111d2c 0%, #151f2e 58%, #101a28 100%);
-}
-html[data-theme="oscuro"] .catalog-manager .catalog-manager-status-filter { color: var(--tema-texto-secundario); }
   :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager .listado-maestro-cabecera { padding: 15px 16px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager .listado-maestro-controles { width: 100%; max-width: none; flex-basis: 100%; grid-template-columns: minmax(0, 1fr) 170px; }
   :where(html[data-responsive-profile="mobile-landscape"]) .catalog-manager.is-brand-manager .listado-maestro-controles { grid-template-columns: minmax(0, 1fr) 150px 150px; }

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
 import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";

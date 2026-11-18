@@ -6,7 +6,6 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 
-type TipoComprobante = "BOLETA" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO" | "NOTA_DEBITO";
 const destino: Record<string, string> = {
   BOLETA: "ventas/boletas", FACTURA: "ventas/facturas", NOTA_VENTA: "ventas/notas-venta",
   NOTA_CREDITO: "ventas/notas-credito", NOTA_DEBITO: "ventas/notas-debito",

@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  font-family: Inter, Segoe UI, sans-serif;
+  color: #172336;
+  background: #f4f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Paleta y valores de uso común. */
+  --blue: #0b376a;
+  --blue-deep: #071e3c;
+  --red: #ed2535;
+  --muted: #7b879a;
+  --action-primary: #c91f32;
+  --action-primary-hover: #a91b2b;
+  --action-primary-solid: #c91f32;
+  --action-primary-solid-hover: #a91b2b;
+  --action-primary-surface: #fff4f5;
+  --action-primary-hover-surface: #ffe8ea;
+  --action-primary-border: #edbbc1;
+  --action-primary-focus: #c91f3266;
+  --action-secondary: #174b78;
+
+  /* Tokens del sistema visual ERP. */
+  --erp-ink: #142b42;
+  --erp-ink-muted: #52697d;
+  --erp-ink-soft: #687e91;
+  --erp-brand: #0b376a;
+  --erp-brand-deep: #071e3c;
+  --erp-accent: #c91f32;
+  --erp-canvas: #f3f6f9;
+  --erp-surface: #ffffff;
+  --erp-surface-muted: #f7f9fb;
+  --erp-border: #dbe3e9;
+  --erp-border-strong: #c5d1db;
+  --erp-focus: #2878b9;
+  --erp-shadow-card: 0 8px 24px rgb(15 42 66 / 6%);
+  --erp-shadow-raised: 0 16px 38px rgb(15 42 66 / 12%);
+  --erp-radius-sm: 8px;
+  --erp-radius-md: 12px;
+  --erp-radius-lg: 16px;
+  --erp-space-1: 4px;
+  --erp-space-2: 8px;
+  --erp-space-3: 12px;
+  --erp-space-4: 16px;
+  --erp-space-5: 20px;
+  --erp-space-6: 24px;
+  --erp-font-body: Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}

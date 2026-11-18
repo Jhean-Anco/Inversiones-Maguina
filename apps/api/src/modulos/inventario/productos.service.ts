@@ -14,7 +14,6 @@ import {
 import { and, asc, count, eq, exists, gt, ilike, lte, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { generarCodigoBarrasInterno } from "./codigo-barras";
-import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
 type RegistroPresentacion = { clave?: unknown; unidadMedidaCodigo?: unknown; nombre?: unknown; factorAUnidadBase?: unknown; seCompra?: unknown; seVende?: unknown };
 type RegistroPrecio = { presentacionClave?: unknown; tipoListaPrecioId?: unknown; precio?: unknown; cantidadMinima?: unknown; vigenteDesde?: unknown; vigenteHasta?: unknown };

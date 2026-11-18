@@ -84,7 +84,7 @@ export class ServicioIngresos {
     const detalles = validarDetallesGestion(datos.detalles, true);
     const fechaRecepcion = texto(datos.fechaRecepcion, "La fecha de recepción", 10, true)!;
     const fechaAcabado = texto(datos.fechaAcabado, "La fecha estimada de acabado", 10, true)!;
-    const motivo = texto(datos.motivo, "El motivo de ingreso", 2000, true)!;
+    const motivo = texto(datos.motivo, "El motivo de ingreso", 2000) ?? "";
     const adelanto = datos.adelanto === undefined ? 0 : numero(datos.adelanto, "El adelanto", 2, 0);
     const adelantoMedioPago = adelanto > 0 ? texto(datos.adelantoMedioPago, "El medio de pago del adelanto", 30, true)! : null;
     const adelantoCuentaFinancieraId = adelanto > 0 ? await validarCuentaFinanciera(datos.adelantoCuentaFinancieraId, adelantoMedioPago!, true) : null;
@@ -116,7 +116,7 @@ export class ServicioIngresos {
       validarFecha(fechaAcabado, "La fecha estimada de acabado");
       if (fechaAcabado < actual.fechaRecepcion) throw new BadRequestException("La fecha estimada de acabado no puede ser anterior a la fecha de recepción.");
     }
-    const motivo = datos.motivo === undefined ? actual.motivo : texto(datos.motivo, "El motivo de ingreso", 2000, true)!;
+    const motivo = datos.motivo === undefined ? actual.motivo : texto(datos.motivo, "El motivo de ingreso", 2000) ?? "";
     const adelanto = datos.adelanto === undefined ? Number(actual.adelanto) : numero(datos.adelanto, "El adelanto", 2, 0);
     const adelantoMedioPago = adelanto > 0 ? (datos.adelantoMedioPago === undefined ? actual.adelantoMedioPago : texto(datos.adelantoMedioPago, "El medio de pago del adelanto", 30, true)!) : null;
     const adelantoCuentaFinancieraId = adelanto > 0 ? await validarCuentaFinanciera(datos.adelantoCuentaFinancieraId ?? actual.adelantoCuentaFinancieraId, adelantoMedioPago!, true) : null;

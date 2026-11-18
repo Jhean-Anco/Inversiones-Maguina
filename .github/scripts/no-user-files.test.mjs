@@ -42,11 +42,12 @@ test("el frontend y API no exponen controles ni transporte de archivos del usuar
   }
 });
 
-test("el servidor obliga a revalidar HTML despues de un despliegue", async () => {
+test("el servidor revalida HTML tras despliegue sin borrar los archivos persistentes", async () => {
   const nginx = await readFile(join(root, "docker/nginx.conf"), "utf8");
   const compose = await readFile(join(root, "compose.prod.yaml"), "utf8");
   assert.match(nginx, /location\s+\/\s*\{[^}]*Cache-Control\s+"no-cache"/s);
-  assert.match(compose, /node scripts\/clean-uploads\.mjs/);
+  assert.match(compose, /node node_modules\/drizzle-kit\/bin\.cjs migrate/);
+  assert.doesNotMatch(compose, /clean-uploads\.mjs/);
 });
 
 test("el saneamiento borra imagenes y adjuntos, y conserva documentos del sistema", async () => {
