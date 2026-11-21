@@ -2,8 +2,14 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import {
   categoriasProductos,
   db,
+  entradasStock,
+  entradasStockDetalle,
+  ingresos,
+  ingresosDetalle,
+  movimientosStock,
   marcasProductos,
   preciosProductos,
+  usuarios,
   productos,
   productosCodigos,
   productosPresentaciones,
@@ -11,17 +17,17 @@ import {
   tiposListasPrecio,
   unidadesMedida,
 } from "@magina/database";
-import { and, asc, count, eq, exists, gt, ilike, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gt, ilike, lte, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { generarCodigoBarrasInterno } from "./codigo-barras";
 
 type RegistroPresentacion = { clave?: unknown; unidadMedidaCodigo?: unknown; nombre?: unknown; factorAUnidadBase?: unknown; seCompra?: unknown; seVende?: unknown };
-type RegistroPrecio = { presentacionClave?: unknown; tipoListaPrecioId?: unknown; precio?: unknown; cantidadMinima?: unknown; vigenteDesde?: unknown; vigenteHasta?: unknown };
+type RegistroPrecio = { presentacionId?: unknown; tipoListaPrecioId?: unknown; precio?: unknown; cantidadMinima?: unknown; vigenteDesde?: unknown; vigenteHasta?: unknown; precioAnterior?: unknown };
 type RegistroCodigo = { tipo?: unknown; codigo?: unknown };
 type DatosProducto = {
   nombre?: unknown; descripcion?: unknown; categoriaId?: unknown; marcaId?: unknown;
   unidadBaseCodigo?: unknown; stockMinimo?: unknown; afectoIgv?: unknown; afectacionIgv?: unknown; fichaTecnica?: unknown; codigos?: unknown;
-  presentaciones?: unknown; precios?: unknown; activo?: unknown;
+  presentaciones?: unknown; activo?: unknown;
 };
 
 const texto = (valor: unknown, nombre: string, maximo: number, minimo = 1) => {
@@ -39,6 +45,18 @@ const uuid = (valor: unknown, nombre: string) => {
   if (typeof valor !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor)) throw new BadRequestException(`${nombre} no es válido.`);
   return valor;
 };
+
+const precioGeneralBase = sql<string | null>`(
+  select precio.precio from precios_productos precio
+  join tipos_listas_precio lista on lista.id = precio.tipo_lista_precio_id
+  join productos_presentaciones presentacion on presentacion.id = precio.presentacion_id
+  where precio.producto_id = ${productos.id} and precio.activo and lista.activo and lista.codigo = 'GENERAL'
+    and presentacion.activo and presentacion.es_base and precio.cantidad_minima <= 1
+    and (precio.vigente_desde is null or precio.vigente_desde <= now())
+    and (precio.vigente_hasta is null or precio.vigente_hasta > now())
+  order by precio.cantidad_minima desc, precio.vigente_desde desc nulls last, precio.creado_en desc, precio.id
+  limit 1
+)`;
 
 @Injectable()
 export class ServicioProductos {
@@ -68,23 +86,28 @@ export class ServicioProductos {
       .orderBy(asc(sql`${stockActual} / nullif(${productos.stockMinimo}, 0)`), asc(productos.nombre));
   }
 
-  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
+  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estado?: string; marca?: string; precio?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
     const tamano = Number.parseInt(filtros.porPagina ?? "10", 10);
     const porPagina = [4, 6, 8, 10].includes(tamano) ? tamano : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
-    const condicion = coincidencia ? or(
+    const condicion = and(
+      filtros.estado === "ACTIVOS" ? eq(productos.activo, true) : filtros.estado === "INACTIVOS" ? eq(productos.activo, false) : undefined,
+      filtros.marca ? eq(marcasProductos.id, uuid(filtros.marca, "La marca")) : undefined,
+      filtros.precio === "PENDIENTE" ? sql`${precioGeneralBase} is null` : filtros.precio === "VIGENTE" ? sql`${precioGeneralBase} is not null` : undefined,
+      coincidencia ? or(
+      ilike(marcasProductos.nombre, coincidencia),
       ilike(productos.nombre, coincidencia),
       ilike(productos.descripcion, coincidencia),
       ilike(productos.codigoInterno, coincidencia),
       exists(db.select({ id: productosCodigos.id }).from(productosCodigos).where(and(eq(productosCodigos.productoId, productos.id), ilike(productosCodigos.codigo, coincidencia)))),
-    ) : undefined;
+    ) : undefined);
 
     const [items, [total]] = await Promise.all([
       db.select({
         id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
-        activo: productos.activo, creadoEn: productos.creadoEn,
+        activo: productos.activo, creadoEn: productos.creadoEn, precioGeneral: precioGeneralBase,
         stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`, stockMinimo: productos.stockMinimo,
         categoriaId: categoriasProductos.id, categoria: categoriasProductos.nombre,
         marcaId: marcasProductos.id, marca: marcasProductos.nombre,
@@ -94,20 +117,28 @@ export class ServicioProductos {
         .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
         .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
         .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
-        .where(condicion).orderBy(asc(productos.nombre)).limit(porPagina).offset((pagina - 1) * porPagina),
-      db.select({ total: count() }).from(productos).where(condicion),
+        .where(condicion).orderBy(asc(productos.nombre), asc(productos.id)).limit(porPagina).offset((pagina - 1) * porPagina),
+      db.select({ total: count() }).from(productos)
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id)).where(condicion),
     ]);
     const totalRegistros = total?.total ?? 0;
     return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
   }
 
-  async listarPrecios(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
+  async listarPrecios(filtros: { pagina?: string; porPagina?: string; busqueda?: string; marca?: string; lista?: string; vigencia?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
     const tamano = Number.parseInt(filtros.porPagina ?? "10", 10);
     const porPagina = [4, 6, 8, 10].includes(tamano) ? tamano : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
-    const condicion = coincidencia ? or(ilike(productos.nombre, coincidencia), ilike(productos.codigoInterno, coincidencia), ilike(marcasProductos.nombre, coincidencia)) : undefined;
+    const condicion = and(
+      filtros.marca ? eq(productos.marcaId, uuid(filtros.marca, "La marca")) : undefined,
+      filtros.lista ? eq(preciosProductos.tipoListaPrecioId, uuid(filtros.lista, "La lista de precios")) : undefined,
+      filtros.vigencia === "VIGENTE" ? sql`${preciosProductos.activo} and (${preciosProductos.vigenteDesde} is null or ${preciosProductos.vigenteDesde} <= now()) and (${preciosProductos.vigenteHasta} is null or ${preciosProductos.vigenteHasta} > now())`
+        : filtros.vigencia === "PROGRAMADO" ? sql`${preciosProductos.activo} and ${preciosProductos.vigenteDesde} > now()`
+        : filtros.vigencia === "FINALIZADO" ? sql`${preciosProductos.activo} and ${preciosProductos.vigenteHasta} <= now()` : undefined,
+      coincidencia ? or(ilike(productos.nombre, coincidencia), ilike(productos.codigoInterno, coincidencia), ilike(marcasProductos.nombre, coincidencia)) : undefined,
+    );
     const [items, [total]] = await Promise.all([
       db.select({
         id: preciosProductos.id, productoId: productos.id, codigo: productos.codigoInterno, producto: productos.nombre,
@@ -121,7 +152,7 @@ export class ServicioProductos {
         .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
         .innerJoin(productosPresentaciones, eq(preciosProductos.presentacionId, productosPresentaciones.id))
         .innerJoin(tiposListasPrecio, eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id))
-        .where(condicion).orderBy(asc(productos.nombre), asc(tiposListasPrecio.nombre), asc(productosPresentaciones.nombre), asc(preciosProductos.cantidadMinima))
+        .where(condicion).orderBy(asc(productos.nombre), asc(tiposListasPrecio.nombre), asc(productosPresentaciones.nombre), asc(preciosProductos.cantidadMinima), desc(preciosProductos.vigenteDesde), asc(preciosProductos.id))
         .limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(preciosProductos)
         .innerJoin(productos, eq(preciosProductos.productoId, productos.id))
@@ -132,14 +163,70 @@ export class ServicioProductos {
     return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
   }
 
-  async actualizarPrecio(idEntrada: string, valor: unknown) {
-    const id = uuid(idEntrada, "El precio");
-    const precio = decimal(valor, "El precio", 0, 2);
-    if (Math.round(Number(precio) * 100) % 10 !== 0) throw new BadRequestException("El precio debe avanzar en múltiplos de S/ 0.10.");
-    const [actualizado] = await db.update(preciosProductos).set({ precio, actualizadoEn: new Date() })
-      .where(eq(preciosProductos.id, id)).returning({ id: preciosProductos.id, precio: preciosProductos.precio });
-    if (!actualizado) throw new NotFoundException("No se encontró el precio del producto.");
-    return actualizado;
+  async configurarPrecio(idEntrada: string, valor: unknown, usuarioId: string, precioIdEntrada?: string) {
+    const id = uuid(idEntrada, "El producto");
+    if (typeof valor !== "object" || valor === null || Array.isArray(valor)) throw new BadRequestException("Ingresa un precio válido.");
+    const datos = valor as RegistroPrecio;
+    const precioId = precioIdEntrada ? uuid(precioIdEntrada, "El precio") : null;
+    const correccion = precioId ? decimal(datos.precioAnterior, "El precio anterior", 0.01, 2) : null;
+    const precio = decimal(datos.precio, "El precio", 0.10, 2);
+    if (Number(precio) >= 10_000_000_000 || Math.round(Number(precio) * 100) % 10 !== 0) throw new BadRequestException("Ingresa un precio válido en múltiplos de S/ 0.10.");
+    const vigenteDesde = this.fechaOpcional(datos.vigenteDesde);
+    const vigenteHasta = this.fechaOpcional(datos.vigenteHasta);
+
+    return db.transaction(async (tx) => {
+      const [producto] = await tx.select({ id: productos.id }).from(productos).where(eq(productos.id, id)).for("update");
+      if (!producto) throw new NotFoundException("No se encontró el repuesto.");
+      const [anterior] = precioId ? await tx.select().from(preciosProductos).where(and(eq(preciosProductos.id, precioId), eq(preciosProductos.productoId, id))) : [];
+      if (precioId && !anterior) throw new NotFoundException("No se encontró el precio del repuesto.");
+      const ahora = new Date();
+      if (anterior && (!anterior.activo || (anterior.vigenteHasta && anterior.vigenteHasta <= ahora) || Number(anterior.precio) !== Number(correccion))) {
+        throw new ConflictException("El precio cambió o ya finalizó. Vuelve a abrir el historial.");
+      }
+      const presentacionId = anterior?.presentacionId ?? uuid(datos.presentacionId, "La presentación");
+      const tipoListaPrecioId = anterior?.tipoListaPrecioId ?? uuid(datos.tipoListaPrecioId, "La lista de precios");
+      const cantidadMinima = anterior?.cantidadMinima ?? decimal(datos.cantidadMinima ?? "1", "La cantidad mínima", 0.001, 3);
+      if (Number(cantidadMinima) >= 100_000_000_000) throw new BadRequestException("La cantidad mínima supera el máximo permitido.");
+      const [presentacion] = await tx.select({ id: productosPresentaciones.id }).from(productosPresentaciones).where(and(
+        eq(productosPresentaciones.id, presentacionId), eq(productosPresentaciones.productoId, id),
+        eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seVende, true),
+      ));
+      if (!presentacion) throw new BadRequestException("Selecciona una presentación habilitada para venta.");
+      const [lista] = await tx.select({ id: tiposListasPrecio.id }).from(tiposListasPrecio).where(and(eq(tiposListasPrecio.id, tipoListaPrecioId), eq(tiposListasPrecio.activo, true)));
+      if (!lista) throw new BadRequestException("Selecciona una lista de precios activa.");
+      if (anterior && (Number(anterior.precio) === Number(precio) || (anterior.vigenteDesde && anterior.vigenteDesde >= ahora))) {
+        if (Number(anterior.precio) === Number(precio)) return anterior;
+        const [actualizado] = await tx.update(preciosProductos).set({ precio, usuarioId, actualizadoEn: ahora }).where(eq(preciosProductos.id, anterior.id)).returning();
+        return actualizado;
+      }
+      const inicio = vigenteDesde ?? ahora;
+      const fin = anterior ? anterior.vigenteHasta : vigenteHasta;
+      if (inicio < ahora || (fin && fin <= inicio)) throw new BadRequestException("Selecciona una vigencia futura válida o aplica el precio desde ahora.");
+      const precios = await tx.select().from(preciosProductos).where(and(
+        eq(preciosProductos.productoId, id), eq(preciosProductos.presentacionId, presentacionId),
+        eq(preciosProductos.tipoListaPrecioId, tipoListaPrecioId), eq(preciosProductos.cantidadMinima, cantidadMinima), eq(preciosProductos.activo, true),
+      ));
+      const solapados = precios.filter((item) => (!item.vigenteHasta || item.vigenteHasta > inicio) && (!fin || !item.vigenteDesde || item.vigenteDesde < fin));
+      const programados = solapados.filter((item) => item.vigenteDesde && item.vigenteDesde >= inicio);
+      if (programados.length) throw new ConflictException("La vigencia coincide con un precio programado para esta presentación, lista y cantidad.");
+      if (solapados.length) await Promise.all(solapados.map((item) => tx.update(preciosProductos).set({ vigenteHasta: inicio, actualizadoEn: ahora }).where(eq(preciosProductos.id, item.id))));
+      const [nuevo] = await tx.insert(preciosProductos).values({ productoId: id, presentacionId, tipoListaPrecioId, precio, cantidadMinima, vigenteDesde: inicio, vigenteHasta: fin, usuarioId }).returning();
+      return nuevo;
+    });
+  }
+
+  async costosCompra(idEntrada: string) {
+    const id = uuid(idEntrada, "El producto");
+    const costo = sql<string | null>`round(sum(${entradasStockDetalle.costoUnitario} * ${entradasStockDetalle.cantidad}) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 4)`;
+    const [[ultima], [promedio]] = await Promise.all([
+      db.select({ fecha: entradasStock.fecha, importe: costo })
+        .from(entradasStockDetalle).innerJoin(entradasStock, eq(entradasStockDetalle.entradaId, entradasStock.id))
+        .where(eq(entradasStockDetalle.productoId, id))
+        .groupBy(entradasStock.id).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn), desc(entradasStock.id)).limit(1),
+      db.select({ importe: costo })
+        .from(entradasStockDetalle).where(eq(entradasStockDetalle.productoId, id)),
+    ]);
+    return { ultima: ultima ?? null, promedioPonderado: promedio?.importe ?? null };
   }
 
   async consultar(idEntrada: string) {
@@ -150,7 +237,7 @@ export class ServicioProductos {
       unidadBaseCodigo: productos.unidadBaseCodigo, stockMinimo: productos.stockMinimo, afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv,
       stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`,
       fichaTecnica: productos.fichaTecnica, activo: productos.activo, creadoEn: productos.creadoEn, actualizadoEn: productos.actualizadoEn,
-      categoria: categoriasProductos.nombre, marca: marcasProductos.nombre, unidadBase: unidadesMedida.nombre,
+      categoria: categoriasProductos.nombre, marca: marcasProductos.nombre, unidadBase: unidadesMedida.nombre, precioGeneral: precioGeneralBase,
     }).from(productos)
       .innerJoin(categoriasProductos, eq(productos.categoriaId, categoriasProductos.id))
       .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
@@ -164,11 +251,28 @@ export class ServicioProductos {
       db.select({ id: productosPresentaciones.id, clave: productosPresentaciones.id, unidadMedidaCodigo: productosPresentaciones.unidadMedidaCodigo, unidadMedida: unidadesMedida.nombre, nombre: productosPresentaciones.nombre, factorAUnidadBase: productosPresentaciones.factorAUnidadBase, seCompra: productosPresentaciones.seCompra, seVende: productosPresentaciones.seVende, esBase: productosPresentaciones.esBase, activo: productosPresentaciones.activo })
         .from(productosPresentaciones).innerJoin(unidadesMedida, eq(productosPresentaciones.unidadMedidaCodigo, unidadesMedida.codigo))
         .where(and(eq(productosPresentaciones.productoId, id), eq(productosPresentaciones.activo, true))).orderBy(asc(productosPresentaciones.esBase)),
-      db.select({ id: preciosProductos.id, presentacionId: preciosProductos.presentacionId, tipoListaPrecioId: preciosProductos.tipoListaPrecioId, tipoLista: tiposListasPrecio.nombre, precio: preciosProductos.precio, cantidadMinima: preciosProductos.cantidadMinima, vigenteDesde: preciosProductos.vigenteDesde, vigenteHasta: preciosProductos.vigenteHasta, activo: preciosProductos.activo })
+      db.select({ id: preciosProductos.id, presentacionId: preciosProductos.presentacionId, tipoListaPrecioId: preciosProductos.tipoListaPrecioId, tipoLista: tiposListasPrecio.nombre, precio: preciosProductos.precio, cantidadMinima: preciosProductos.cantidadMinima, vigenteDesde: preciosProductos.vigenteDesde, vigenteHasta: preciosProductos.vigenteHasta, activo: preciosProductos.activo, usuario: usuarios.nombreUsuario })
         .from(preciosProductos).innerJoin(tiposListasPrecio, eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id))
-        .where(and(eq(preciosProductos.productoId, id), eq(preciosProductos.activo, true))).orderBy(asc(preciosProductos.tipoListaPrecioId)),
+        .leftJoin(usuarios, eq(usuarios.id, preciosProductos.usuarioId))
+        .where(eq(preciosProductos.productoId, id)).orderBy(desc(preciosProductos.creadoEn), asc(preciosProductos.id)),
     ]);
     return { ...producto, codigos, presentaciones, precios };
+  }
+
+  async historial(idEntrada: string) {
+    const id = uuid(idEntrada, "El producto");
+    const [movimientos, [compra], [venta]] = await Promise.all([
+      db.select({ id: movimientosStock.id, tipo: movimientosStock.tipo, sentido: movimientosStock.sentido,
+        cantidad: movimientosStock.cantidadBase, fecha: movimientosStock.creadoEn, motivo: movimientosStock.motivo,
+      }).from(movimientosStock).where(eq(movimientosStock.productoId, id)).orderBy(desc(movimientosStock.creadoEn)).limit(15),
+      db.select({ fecha: entradasStock.fecha, importe: sql<string>`(${entradasStockDetalle.costoUnitario} / nullif(${entradasStockDetalle.factorAUnidadBase}, 0))::numeric(18,4)` })
+        .from(entradasStockDetalle).innerJoin(entradasStock, eq(entradasStockDetalle.entradaId, entradasStock.id))
+        .where(eq(entradasStockDetalle.productoId, id)).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(1),
+      db.select({ fecha: ingresos.fecha, importe: sql<string>`(${ingresosDetalle.precioUnitario} / nullif(${ingresosDetalle.factorAUnidadBase}, 0))::numeric(18,4)` })
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(and(eq(ingresosDetalle.productoId, id), sql`${ingresos.estado} <> 'ANULADO'`)).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(1),
+    ]);
+    return { movimientos, compra: compra ?? null, venta: venta ?? null };
   }
 
   async guardar(entrada: unknown, idExistente?: string) {
@@ -183,9 +287,7 @@ export class ServicioProductos {
             stockMinimo: datos.stockMinimo, afectacionIgv: datos.afectacionIgv, afectoIgv: datos.afectoIgv, fichaTecnica: datos.fichaTecnica, ...(datos.activo === undefined ? {} : { activo: datos.activo }),
           }).where(eq(productos.id, id)).returning({ id: productos.id });
           if (!actualizado) throw new NotFoundException("No se encontró el producto.");
-          await tx.delete(preciosProductos).where(eq(preciosProductos.productoId, id));
           await tx.delete(productosCodigos).where(eq(productosCodigos.productoId, id));
-          await tx.delete(productosPresentaciones).where(eq(productosPresentaciones.productoId, id));
           await this.insertarRelaciones(tx, id, datos);
           return id;
         }
@@ -239,11 +341,8 @@ export class ServicioProductos {
       ...presentacionesEntrada.map((item, indice) => this.validarPresentacion(item, indice))];
     if (new Set(presentaciones.map((item) => item.clave)).size !== presentaciones.length) throw new BadRequestException("Cada presentación debe tener un identificador diferente.");
     if (!presentaciones.some((item) => item.seCompra) || !presentaciones.some((item) => item.seVende)) throw new BadRequestException("Configura por lo menos una presentación para compra y otra para venta.");
-    const preciosEntrada = Array.isArray(datos.precios) ? datos.precios as RegistroPrecio[] : [];
-    const precios = preciosEntrada.map((item) => this.validarPrecio(item, presentaciones));
-    if (!precios.some((item) => item.presentacionClave === "base")) throw new BadRequestException("Agrega un precio para la unidad base.");
     const activo = typeof datos.activo === "boolean" ? datos.activo : undefined;
-    return { nombre, descripcion, categoriaId, marcaId, unidadBaseCodigo, stockMinimo, afectacionIgv, afectoIgv: afectacionIgv === "GRAVADO", fichaTecnica, codigos, presentaciones, precios, activo };
+    return { nombre, descripcion, categoriaId, marcaId, unidadBaseCodigo, stockMinimo, afectacionIgv, afectoIgv: afectacionIgv === "GRAVADO", fichaTecnica, codigos, presentaciones, activo };
   }
 
   private validarFichaTecnica(valor: unknown): Record<string, string | number | boolean | null> {
@@ -281,27 +380,11 @@ export class ServicioProductos {
     return { clave, unidadMedidaCodigo, nombre, factorAUnidadBase, seCompra, seVende, esBase: false };
   }
 
-  private validarPrecio(valor: RegistroPrecio, presentaciones: { clave: string }[]) {
-    if (typeof valor !== "object" || valor === null) throw new BadRequestException("Un precio no es válido.");
-    const precio = valor as RegistroPrecio;
-    const presentacionClave = texto(precio.presentacionClave, "La presentación del precio", 60);
-    if (!presentaciones.some((item) => item.clave === presentacionClave)) throw new BadRequestException("El precio referencia una presentación que no existe.");
-    const precioSoles = decimal(precio.precio, "El precio", 0, 2);
-    if (Math.round(Number(precioSoles) * 100) % 10 !== 0) throw new BadRequestException("El precio debe avanzar en múltiplos de S/ 0.10.");
-    return {
-      presentacionClave,
-      tipoListaPrecioId: uuid(precio.tipoListaPrecioId, "La lista de precios"),
-      precio: precioSoles,
-      cantidadMinima: decimal(precio.cantidadMinima ?? "1", "La cantidad mínima", 0.001, 3),
-      vigenteDesde: this.fechaOpcional(precio.vigenteDesde),
-      vigenteHasta: this.fechaOpcional(precio.vigenteHasta),
-    };
-  }
-
   private fechaOpcional(valor: unknown) {
     if (valor === null || valor === undefined || valor === "") return null;
-    const fecha = new Date(String(valor));
-    if (Number.isNaN(fecha.getTime())) throw new BadRequestException("Una vigencia de precio no es válida.");
+    if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw new BadRequestException("Ingresa una fecha de vigencia válida.");
+    const fecha = new Date(`${valor}T00:00:00-05:00`);
+    if (Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== valor) throw new BadRequestException("Una vigencia de precio no es válida.");
     return fecha;
   }
 
@@ -316,32 +399,32 @@ export class ServicioProductos {
       const [unidad] = await tx.select({ codigo: unidadesMedida.codigo }).from(unidadesMedida).where(and(eq(unidadesMedida.codigo, presentacion.unidadMedidaCodigo), eq(unidadesMedida.activo, true))).limit(1);
       if (!unidad) throw new BadRequestException(`La unidad «${presentacion.unidadMedidaCodigo}» no está en el catálogo de unidades activo.`);
     }
-    let tienePrecioGeneralBase = false;
-    for (const precio of datos.precios) {
-      const [lista] = await tx.select({ id: tiposListasPrecio.id, codigo: tiposListasPrecio.codigo }).from(tiposListasPrecio).where(and(eq(tiposListasPrecio.id, precio.tipoListaPrecioId), eq(tiposListasPrecio.activo, true))).limit(1);
-      if (!lista) throw new BadRequestException("Selecciona un tipo de lista de precios activo.");
-      if (lista.codigo === "GENERAL" && precio.presentacionClave === "base") {
-        if (Number(precio.cantidadMinima) !== 1) throw new BadRequestException("El precio general de la unidad base debe iniciar desde una unidad.");
-        tienePrecioGeneralBase = true;
-      }
-    }
-    if (!tienePrecioGeneralBase) throw new BadRequestException("Agrega un precio general para la unidad base.");
-    const idsPorClave = new Map<string, string>();
+    const existentes = await tx.select().from(productosPresentaciones).where(eq(productosPresentaciones.productoId, productoId));
+    const porId = new Map(existentes.map((item) => [item.id, item]));
+    const conservadas = new Set<string>();
     for (const presentacion of datos.presentaciones) {
-      const [guardada] = await tx.insert(productosPresentaciones).values({
+      const existente = presentacion.esBase ? existentes.find((item) => item.esBase) : porId.get(presentacion.clave);
+      const valores = {
         productoId, unidadMedidaCodigo: presentacion.unidadMedidaCodigo, nombre: presentacion.nombre,
         factorAUnidadBase: presentacion.factorAUnidadBase, seCompra: presentacion.seCompra,
         seVende: presentacion.seVende, esBase: presentacion.esBase,
-      }).returning({ id: productosPresentaciones.id });
-      idsPorClave.set(presentacion.clave, guardada.id);
+      };
+      if (!existente) {
+        await tx.insert(productosPresentaciones).values(valores);
+        continue;
+      }
+      if (existente.esBase !== presentacion.esBase) throw new BadRequestException("La unidad base debe conservar su presentación.");
+      conservadas.add(existente.id);
+      if (existente.unidadMedidaCodigo !== valores.unidadMedidaCodigo || Number(existente.factorAUnidadBase) !== Number(valores.factorAUnidadBase)) {
+        const [movimiento] = await tx.select({ id: movimientosStock.id }).from(movimientosStock).where(eq(movimientosStock.productoId, productoId)).limit(1);
+        const [precio] = await tx.select({ id: preciosProductos.id }).from(preciosProductos).where(eq(preciosProductos.presentacionId, existente.id)).limit(1);
+        if (movimiento || precio) throw new ConflictException("La unidad o equivalencia tiene operaciones o precios registrados. Crea una presentación con la nueva equivalencia.");
+      }
+      await tx.update(productosPresentaciones).set({ ...valores, activo: true, actualizadoEn: new Date() }).where(eq(productosPresentaciones.id, existente.id));
+    }
+    for (const existente of existentes) {
+      if (existente.activo && !conservadas.has(existente.id)) await tx.update(productosPresentaciones).set({ activo: false, actualizadoEn: new Date() }).where(eq(productosPresentaciones.id, existente.id));
     }
     if (datos.codigos.length) await tx.insert(productosCodigos).values(datos.codigos.map((codigo) => ({ productoId, ...codigo })));
-    if (datos.precios.length) await tx.insert(preciosProductos).values(datos.precios.map((precio) => ({
-      productoId, presentacionId: idsPorClave.get(precio.presentacionClave)!, tipoListaPrecioId: precio.tipoListaPrecioId,
-      precio: precio.precio, cantidadMinima: precio.cantidadMinima, vigenteDesde: precio.vigenteDesde, vigenteHasta: precio.vigenteHasta,
-    })));
   }
 }
-
-
-

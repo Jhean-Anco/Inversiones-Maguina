@@ -1,8 +1,11 @@
-﻿import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { PaginationBasic } from "../the-pagination";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { tamanioListadoSegunPantalla } from "./paginacion-responsive";
-import "./listado-maestro.css";
+import { CabeceraListado } from "./cabecera-listado";
+import { EstadoGlobal } from "../estado-global/estado-global";
+import { NotificacionFlotante } from "../notificacion-flotante/notificacion-flotante";
+import { ListaTarjetas } from "./lista-tarjetas";
+import { PaginacionListado } from "./paginacion-listado";
+import { TablaListado } from "./tabla-listado";
 
 type PaginacionLocal = { modo: "local" };
 type PaginacionRemota = {
@@ -10,9 +13,10 @@ type PaginacionRemota = {
   desde: number; hasta: number; alCambiarPagina: (pagina: number) => void; alCambiarTamanio: (tamanio: number) => void;
 };
 type Comun<T> = {
-  titulo: string; descripcion?: string; registros: readonly T[]; cargando?: boolean; error?: ReactNode;
+  titulo: string; descripcion?: string; registros: readonly T[]; cargando?: boolean; error?: string | null;
   vacio?: ReactNode; controlesCabecera?: ReactNode; paginacion: PaginacionLocal | PaginacionRemota;
   etiqueta?: string; resetKey?: string | number;
+  claseCabecera?: string; claseControlesCabecera?: string; clasePaginacion?: string;
 };
 type Tabla<T> = Comun<T> & {
   variante: "tabla"; encabezadoTabla: ReactNode; renderizarFila: (registro: T) => ReactNode;
@@ -24,16 +28,20 @@ type Tarjetas<T> = Comun<T> & {
 };
 type Props<T> = Tabla<T> | Tarjetas<T>;
 
+const clasesRaiz = "mx-0 flex h-full min-h-0 min-w-0 w-full max-w-none flex-[1_1_auto] flex-col overflow-hidden box-border rounded-2xl border border-[var(--erp-border,#dce5ed)] bg-[var(--erp-surface,#fff)] text-[var(--erp-ink,#172033)] shadow-[var(--erp-shadow-card,0_8px_24px_#15344f0a)]";
+const clasesContenido = "flex min-h-0 min-w-0 w-full flex-[1_1_auto] max-h-none flex-col overflow-hidden p-0";
+
 export function ListadoMaestro<T>(props: Props<T>) {
   const [paginaLocal, setPaginaLocal] = useState(1);
   const [viewport, setViewport] = useState(() => ({ ancho: typeof window === "undefined" ? 1366 : window.innerWidth, alto: typeof window === "undefined" ? 768 : window.innerHeight }));
   const tamanioAdaptativo = tamanioListadoSegunPantalla(viewport.ancho, props.variante, viewport.alto);
   const [tamanioLocal, setTamanioLocal] = useState(tamanioAdaptativo);
+
   useEffect(() => {
     const actualizar = () => setViewport({ ancho: window.innerWidth, alto: window.innerHeight });
     window.addEventListener("resize", actualizar, { passive: true });
     return () => window.removeEventListener("resize", actualizar);
-  }, [props.variante]);
+  }, []);
   useEffect(() => { setPaginaLocal(1); }, [props.resetKey]);
   useEffect(() => {
     if (props.paginacion.modo === "local" && tamanioLocal !== tamanioAdaptativo) {
@@ -43,6 +51,7 @@ export function ListadoMaestro<T>(props: Props<T>) {
       props.paginacion.alCambiarTamanio(tamanioAdaptativo);
     }
   }, [props.paginacion, tamanioAdaptativo, tamanioLocal]);
+
   const remoto = props.paginacion.modo === "remota" ? props.paginacion : null;
   const tamanio = remoto?.tamanio ?? tamanioLocal;
   const total = remoto?.total ?? props.registros.length;
@@ -51,29 +60,21 @@ export function ListadoMaestro<T>(props: Props<T>) {
   const desde = remoto?.desde ?? (props.registros.length ? (pagina - 1) * tamanio + 1 : 0);
   const hasta = remoto?.hasta ?? Math.min(pagina * tamanio, props.registros.length);
   const visibles = useMemo(() => remoto ? props.registros : props.registros.slice((pagina - 1) * tamanio, pagina * tamanio), [props.registros, pagina, remoto, tamanio]);
-  const contenedorFooter = typeof document === "undefined" ? null : document.querySelector(".erp-main");
 
   function cambiarPagina(nuevaPagina: number) {
+    if (nuevaPagina === pagina) return;
     if (remoto) remoto.alCambiarPagina(nuevaPagina);
     else setPaginaLocal(Math.max(1, Math.min(nuevaPagina, totalPaginas)));
   }
 
-  return <section className={`listado-maestro is-${props.variante}`} aria-label={props.etiqueta ?? props.titulo} aria-description={props.descripcion}>
-    {props.error && <div className="listado-maestro-error" role="alert">{props.error}</div>}
-    <header className="listado-maestro-cabecera">
-      <div className="listado-maestro-controles">{props.controlesCabecera}</div>
-      <span className="listado-maestro-resumen" aria-live="polite">Mostrando {desde.toLocaleString("es-PE")}–{hasta.toLocaleString("es-PE")} de {total.toLocaleString("es-PE")}</span>
-    </header>
-    <div className="listado-maestro-contenido" aria-live="polite">
-      {props.cargando ? <div className="listado-maestro-estado" role="status">Cargando…</div> : total === 0 ? <div className="listado-maestro-vacio">{props.vacio}</div> : props.variante === "tabla" ? (
-        <div className={`listado-maestro-tabla-scroll ${props.claseContenedor ?? ""}`}><table className={`listado-maestro-tabla ${props.centrarCeldas !== false ? "is-centered-cells" : ""} ${props.claseTabla ?? ""}`}><thead>{props.encabezadoTabla}</thead><tbody>{visibles.map(props.renderizarFila)}</tbody></table></div>
-      ) : <div className={`listado-maestro-tarjetas ${props.claseTarjeta ?? ""}`} style={{ "--listado-columnas": Math.max(1, props.columnas) } as React.CSSProperties}>{visibles.map(props.renderizarTarjeta)}</div>}
+  return <section className={`listado-maestro is-${props.variante} ${clasesRaiz}`} aria-label={props.etiqueta ?? props.titulo} aria-description={props.descripcion}>
+    <NotificacionFlotante mensaje={props.error} />
+    <CabeceraListado total={total} desde={desde} hasta={hasta} controles={props.controlesCabecera} claseCabecera={props.claseCabecera} claseControles={props.claseControlesCabecera} />
+    <div className={`listado-maestro-contenido ${clasesContenido}`} aria-live="polite">
+      {props.cargando ? <EstadoGlobal tipo="cargando" /> : total === 0 ? <EstadoGlobal tipo="vacio">{props.error ? "No se pudieron cargar los datos." : props.vacio}</EstadoGlobal> : props.variante === "tabla" ? (
+        <TablaListado encabezado={props.encabezadoTabla} filas={visibles.map(props.renderizarFila)} claseTabla={props.claseTabla} claseContenedor={props.claseContenedor} centrarCeldas={props.centrarCeldas} />
+      ) : <ListaTarjetas tarjetas={visibles.map(props.renderizarTarjeta)} columnas={props.columnas} claseTarjeta={props.claseTarjeta} />}
     </div>
-    {contenedorFooter && createPortal(<footer className="listado-maestro-footer">
-      <nav className="listado-maestro-paginacion" aria-label="Paginación del listado">
-        <PaginationBasic page={pagina} totalPages={totalPaginas} onPageChange={cambiarPagina} ariaLabel="Paginación del listado" isDisabled={props.cargando} />
-      </nav>
-    </footer>, contenedorFooter)}
+    <PaginacionListado pagina={pagina} totalPaginas={totalPaginas} alCambiar={cambiarPagina} cargando={props.cargando} clase={props.clasePaginacion} />
   </section>;
 }
-

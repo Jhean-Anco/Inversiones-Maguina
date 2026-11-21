@@ -1,5 +1,3 @@
-import "./compras-page.css";
-import "../../styles/egresos-tabla.css";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -10,18 +8,14 @@ import { ProductoFormulario } from "../../components/productos/producto-formular
 import { useProductos } from "../../hooks/use-productos";
 import { useEntradasStock } from "../../hooks/use-entradas-stock";
 import type { DatosProducto } from "../../services/inventario/productos.service";
-import type { EntradaStock } from "../../services/inventario/entradas-stock.service";
+import {
+  egresosTableClasses,
+  egresosTableNumberClasses,
+  egresosTableScrollClasses,
+} from "../../styles/egresos-tabla-classes";
+import { FilaCompra } from "./fila-compra";
 
-const soles = (valor: string | number) => `S/ ${Number(valor).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const documentosCompra: Record<string, string> = { FACTURA: "Factura", BOLETA: "Boleta", GUIA_REMISION: "Guía de remisión", NOTA: "Nota", SIN_DOCUMENTO: "Sin documento", OTRO: "Otro" };
-const encabezadoCompras = <tr><th>Fecha</th><th>Compra y documento</th><th>Proveedor</th><th>Artículos</th><th>Pago</th><th className="is-number">Total</th><th>Estado</th><th>Detalle</th></tr>;
-function filaCompra(entrada: EntradaStock, alAbrir: (id: string) => void) {
-  const total = Number(entrada.totalDocumento ?? entrada.total);
-  const pagado = entrada.montoPagado == null ? null : Number(entrada.montoPagado);
-  const saldo = pagado == null ? null : Math.max(0, total - pagado);
-  return <tr key={entrada.id}><td>{new Date(`${entrada.fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}</td><td><strong>{entrada.codigo}</strong><small>{documentosCompra[entrada.tipoDocumento] ?? entrada.tipoDocumento} · {entrada.numeroDocumento || "Registro interno"}</small></td><td><strong>{entrada.proveedor || "No especificado"}</strong>{entrada.proveedorTipoDocumento && entrada.proveedorNumeroDocumento && <small>{entrada.proveedorTipoDocumento} · {entrada.proveedorNumeroDocumento}</small>}</td><td>{entrada.cantidadProductos ?? 0} {(entrada.cantidadProductos ?? 0) === 1 ? "producto" : "productos"}</td><td>{entrada.medioPago || "Sin registrar"}<small>{pagado == null ? "Pago no registrado" : saldo === 0 ? "Pagada" : `Pagado ${soles(pagado)}`}</small></td><td className="is-number"><strong>{soles(total)}</strong></td><td><span className={`egresos-status${saldo === null ? " is-muted" : saldo > 0 ? " is-pending" : " is-paid"}`}>{saldo === null ? "Sin pago" : saldo > 0 ? `Saldo ${soles(saldo)}` : "Pagada"}</span></td><td><button className="egresos-row-button" type="button" onClick={() => alAbrir(entrada.id)}>Ver detalle</button></td></tr>;
-}
-
+const encabezadoCompras = <tr><th>Fecha</th><th>Compra y documento</th><th>Proveedor</th><th>Artículos</th><th>Pago</th><th className={egresosTableNumberClasses}>Total</th><th>Estado</th><th>Detalle</th></tr>;
 export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean }) {
   const navegar = useNavigate();
   const ubicacion = useLocation();
@@ -50,17 +44,22 @@ export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean
       busqueda={modulo.busqueda}
       busquedaPlaceholder="Buscar por código, proveedor o documento"
       busquedaAriaLabel="Buscar compras"
+      claseCabecera="compra-listado-cabecera"
       variante="tabla"
       encabezadoTabla={encabezadoCompras}
-      renderizarFila={(entrada) => filaCompra(entrada, modulo.abrirProductoDetalle)}
-      claseTabla="egresos-table stock-purchases-table"
-      claseContenedorTabla="egresos-table-scroll"
+      renderizarFila={(entrada) => <FilaCompra key={entrada.id} entrada={entrada} alAbrir={modulo.abrirProductoDetalle} />}
+      claseTabla={egresosTableClasses}
+      claseContenedorTabla={egresosTableScrollClasses}
       alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}
       alCrear={() => navegar("/egresos/compras/nueva")}
       alCambiarPagina={modulo.cambiarPagina}
       alCambiarTamanioPagina={modulo.cambiarPorPagina}
     />}
-    {modulo.modalAbierto && <EntradaStockFormulario {...modulo} cerrarModal={() => { modulo.cerrarModal(); if (esNuevaCompra) navegar("/egresos/compras"); }} modoPagina={esNuevaCompra} alAgregarProducto={() => setProductoFormularioAbierto(true)} />}
+    {esNuevaCompra && modulo.modalAbierto && <EntradaStockFormulario
+      modulo={modulo}
+      cerrar={() => { modulo.cerrarModal(); navegar("/egresos/compras"); }}
+      alAgregarProducto={() => setProductoFormularioAbierto(true)}
+    />}
     {productoFormularioAbierto && <ProductoNuevoCompra alCerrar={() => setProductoFormularioAbierto(false)} alCrear={(nombre) => { setProductoFormularioAbierto(false); modulo.cambiarBusquedaProducto(nombre); }} />}
     {!esNuevaCompra && modulo.entradaDetalle && <EntradaStockDetalle entrada={modulo.entradaDetalle} alCerrar={modulo.cerrarDetalle} />}
   </>;

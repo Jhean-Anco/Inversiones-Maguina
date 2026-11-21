@@ -15,6 +15,7 @@ export type ReporteInventario = {
   rango: FiltroReporte;
   resumen: { productos: number; productosConStock: number; sinStock: number; productosConMovimiento: number };
   items: Array<{ id: string; codigo: string; nombre: string; marca: string; categoria: string | null; unidad: string; stockActual: string; entradasPeriodo: string; salidasPeriodo: string }>;
+  mototaxis?: { resumen: { modelos: number; modelosConStock: number; sinStock: number; modelosConMovimiento: number }; items: Array<{ id: string; codigo: string; nombre: string; marca: string; stockActual: number; entradasPeriodo: number; salidasPeriodo: number }> };
 };
 
 const parametros = ({ desde, hasta }: FiltroReporte) => new URLSearchParams({ desde, hasta }).toString();

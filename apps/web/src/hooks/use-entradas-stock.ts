@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
 import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
-import { servicioIdentidad } from "../services/identidad.service";
-import { servicioProveedores, type ProveedorRegistrado } from "../services/proveedores.service";
 import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
+import { useProveedorEntradaStock } from "./use-proveedor-entrada-stock";
+import { useCatalogoRecientes, type CatalogoReciente, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../components/catalogo/use-catalogo-recientes";
 
 type DetalleBorrador = { clave: string; productoId: string; presentacionId: string; codigo: string; nombre: string; presentacion: string; unidad: string; cantidad: string; costoUnitario: string; importeTotal: string; factor: number };
 type PagoBorrador = { clave: string; cuentaFinancieraId: string; medioPago: string; importe: string };
@@ -24,22 +24,12 @@ export function useEntradasStock(alGuardarse?: () => void) {
   const [fecha, setFecha] = useState(fechaHoy());
   const [tipoDocumento, setTipoDocumento] = useState("FACTURA");
   const [numeroDocumento, setNumeroDocumento] = useState("");
-  const [proveedor, setProveedor] = useState("");
-  const [proveedorTipoPersona, setProveedorTipoPersona] = useState("");
-  const [proveedorTipoDocumento, setProveedorTipoDocumento] = useState("RUC");
-  const [proveedorNumeroDocumento, setProveedorNumeroDocumento] = useState("");
-  const [proveedorDireccion, setProveedorDireccion] = useState("");
-  const [proveedoresEncontrados, setProveedoresEncontrados] = useState<ProveedorRegistrado[]>([]);
-  const [buscandoProveedores, setBuscandoProveedores] = useState(false);
-  const [proveedorNoEncontrado, setProveedorNoEncontrado] = useState(false);
-  const [datosProveedorEditables, setDatosProveedorEditables] = useState(false);
-  const [creandoProveedor, setCreandoProveedor] = useState(false);
-  const [identidadProveedor, setIdentidadProveedor] = useState<Awaited<ReturnType<typeof servicioIdentidad.consultar>> | null>(null);
   const [medioPago, setMedioPago] = useState("");
   const [cuentaFinancieraId, setCuentaFinancieraId] = useState("");
   const [observacion, setObservacion] = useState("");
   const [productoBusqueda, setProductoBusqueda] = useState("");
   const [productosEncontrados, setProductosEncontrados] = useState<ProductoParaCompra[]>([]);
+  const catalogoRecienteRepuestos = useCatalogoRecientes("repuestos");
   const [buscandoProductos, setBuscandoProductos] = useState(false);
   const [productoElegido, setProductoElegido] = useState("");
   const [cantidadProducto, setCantidadProducto] = useState("1");
@@ -54,6 +44,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
     if (problema instanceof ErrorApi && problema.estado === 401) { navegar("/login", { replace: true }); return; }
     setError(problema instanceof Error ? problema.message : alternativa);
   }, [navegar]);
+  const datosProveedor = useProveedorEntradaStock(setError, manejarError);
 
   const cargarPagina = useCallback(async (numeroPagina = pagina, tamano = porPagina, textoBusqueda = busqueda) => {
     const consulta = ++consultaActual.current;
@@ -76,7 +67,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
   useEffect(() => {
     const texto = productoBusqueda.trim();
     if (productoElegido) { setBuscandoProductos(false); return; }
-    if (texto.length < 3) { setProductosEncontrados([]); setBuscandoProductos(false); return; }
+    if (texto.length < MIN_CARACTERES_BUSQUEDA_CATALOGO) { setProductosEncontrados([]); setBuscandoProductos(false); return; }
     let vigente = true;
     setBuscandoProductos(true);
     const temporizador = window.setTimeout(() => {
@@ -100,77 +91,31 @@ export function useEntradasStock(alGuardarse?: () => void) {
       return;
     }
     setDetalles((actuales) => [...actuales, { clave: claveLocal(), productoId: producto.productoId, presentacionId: producto.presentacionId, codigo: producto.codigoInterno, nombre: producto.nombre, presentacion: producto.presentacion, unidad: producto.unidadMedida, cantidad: "1", costoUnitario: "0.0000", importeTotal: "0.00", factor: Number(producto.factorAUnidadBase) }]);
+    catalogoRecienteRepuestos.registrar({ id: producto.presentacionId, nombre: producto.nombre, codigo: producto.codigoInterno, detalle: producto.presentacion });
     setProductoElegido(producto.presentacionId);
     setProductoBusqueda(`${producto.nombre} · ${producto.presentacion}`);
     setProductosEncontrados((actuales) => actuales.length ? actuales : [producto]);
     setError(""); setCantidadProducto("1"); setCostoProducto("");
+  }
+  async function seleccionarProductoReciente(reciente: CatalogoReciente) {
+    setBuscandoProductos(true);
+    setError("");
+    try {
+      const coincidencias = await servicioEntradasStock.buscarProductos(reciente.codigo);
+      const producto = coincidencias.find((item) => item.presentacionId === reciente.id);
+      if (!producto) { setError("Ese repuesto ya no está disponible para compra. Búscalo nuevamente para actualizar sus datos."); return; }
+      seleccionarProductoCompra(producto);
+    } catch (problema) {
+      manejarError(problema, "No se pudo actualizar el repuesto reciente.");
+    } finally { setBuscandoProductos(false); }
   }
 
   function limpiarProductoElegido() {
     setProductoElegido(""); setProductoBusqueda(""); setProductosEncontrados([]); setCantidadProducto("1"); setCostoProducto("");
   }
 
-  async function buscarProveedor() {
-    const numero = proveedorNumeroDocumento.trim();
-    const requerido = proveedorTipoDocumento === "DNI" ? 8 : proveedorTipoDocumento === "RUC" ? 11 : 1;
-    if (numero.length < requerido || (proveedorTipoDocumento !== "EXT" && numero.length !== requerido)) {
-      setError(proveedorTipoDocumento === "DNI" ? "Ingresa los 8 dígitos del DNI para buscar al proveedor." : proveedorTipoDocumento === "RUC" ? "Ingresa los 11 dígitos del RUC para buscar al proveedor." : "Ingresa el documento extranjero para buscar al proveedor.");
-      setProveedoresEncontrados([]); setProveedorNoEncontrado(false); return;
-    }
-    setError(""); setBuscandoProveedores(true); setProveedoresEncontrados([]); setProveedorNoEncontrado(false); setIdentidadProveedor(null);
-    try {
-      const resultados = await servicioProveedores.listar(numero);
-      const codigoDocumento = proveedorTipoDocumento === "DNI" ? "01" : proveedorTipoDocumento === "RUC" ? "06" : proveedorTipoDocumento;
-      const coincidencias = resultados.filter((item) => item.numeroDocumento === numero && (item.tipoDocumento === proveedorTipoDocumento || item.tipoDocumento === codigoDocumento));
-      setProveedoresEncontrados(coincidencias);
-      setProveedorNoEncontrado(coincidencias.length === 0);
-    } catch (problema) { manejarError(problema, "No se pudo buscar el proveedor en el directorio."); }
-    finally { setBuscandoProveedores(false); }
-  }
-
-  async function abrirRegistroProveedor() {
-    setDatosProveedorEditables(true); setCreandoProveedor(true); setProveedorNoEncontrado(false); setError(""); setIdentidadProveedor(null);
-    if (proveedorTipoDocumento !== "DNI" && proveedorTipoDocumento !== "RUC") { setError("El directorio de proveedores permite registrar DNI o RUC."); return; }
-    setBuscandoProveedores(true);
-    try {
-      const identidad = await servicioIdentidad.consultar(proveedorTipoDocumento, proveedorNumeroDocumento.trim());
-      setIdentidadProveedor(identidad);
-      setProveedor(identidad.razonSocial || [identidad.nombres, identidad.apellidoPaterno, identidad.apellidoMaterno].filter(Boolean).join(" "));
-      setProveedorTipoPersona(identidad.tipoPersona);
-      setProveedorDireccion(identidad.direccion ?? "");
-    } catch (problema) { manejarError(problema, "No se pudieron consultar los datos del documento."); }
-    finally { setBuscandoProveedores(false); }
-  }
-
-  async function crearProveedor() {
-    const tipo = proveedorTipoDocumento;
-    const numero = proveedorNumeroDocumento.trim();
-    if ((tipo !== "DNI" && tipo !== "RUC") || !identidadProveedor) { setError("Busca los datos del proveedor antes de registrarlo."); return; }
-    try {
-      const creado = await servicioProveedores.crear({ tipoDocumento: tipo, numeroDocumento: numero,
-        razonSocial: tipo === "RUC" && numero.startsWith("20") ? identidadProveedor.razonSocial || proveedor : undefined,
-        nombres: tipo === "DNI" || (tipo === "RUC" && !numero.startsWith("20")) ? identidadProveedor.nombres : undefined,
-        apellidoPaterno: tipo === "DNI" || (tipo === "RUC" && !numero.startsWith("20")) ? identidadProveedor.apellidoPaterno : undefined,
-        apellidoMaterno: tipo === "DNI" || (tipo === "RUC" && !numero.startsWith("20")) ? identidadProveedor.apellidoMaterno : undefined,
-      });
-      setProveedor(creado.nombre); setProveedorTipoPersona(identidadProveedor.tipoPersona); setProveedorDireccion(identidadProveedor.direccion ?? "");
-      setProveedoresEncontrados([creado]); setDatosProveedorEditables(false); setCreandoProveedor(false); setError("");
-    } catch (problema) { manejarError(problema, "No se pudo registrar el proveedor en el directorio."); }
-  }
-
-  function seleccionarProveedor(entrada: ProveedorRegistrado) {
-    const tipo = entrada.tipoDocumento === "01" ? "DNI" : entrada.tipoDocumento === "06" ? "RUC" : entrada.tipoDocumento;
-    setProveedor(entrada.nombre || entrada.razonSocial || [entrada.nombres, entrada.apellidoPaterno, entrada.apellidoMaterno].filter(Boolean).join(" "));
-    setProveedorTipoPersona(tipo === "DNI" || (tipo === "RUC" && !entrada.numeroDocumento.startsWith("20")) ? "NATURAL" : "JURIDICA");
-    setProveedorTipoDocumento(tipo);
-    setProveedorNumeroDocumento(entrada.numeroDocumento);
-    setProveedorDireccion("");
-    setIdentidadProveedor(null); setDatosProveedorEditables(true); setCreandoProveedor(false);
-    setProveedoresEncontrados([]); setProveedorNoEncontrado(false); setError("");
-  }
-
   function abrirNuevo() {
-    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); setProveedor(""); setProveedorTipoPersona(""); setProveedorTipoDocumento("RUC"); setProveedorNumeroDocumento(""); setProveedorDireccion(""); setProveedoresEncontrados([]); setBuscandoProveedores(false); setProveedorNoEncontrado(false); setDatosProveedorEditables(false); setCreandoProveedor(false); setIdentidadProveedor(null); setMedioPago(""); setCuentaFinancieraId(""); setObservacion(""); setPagosCompra([{ clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]);
+    setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); datosProveedor.limpiarProveedor(); setMedioPago(""); setCuentaFinancieraId(""); setObservacion(""); setPagosCompra([{ clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]);
     setProductoBusqueda(""); setProductosEncontrados([]); setProductoElegido(""); setCantidadProducto("1"); setCostoProducto(""); setDetalles([]); setModalAbierto(true);
   }
   function agregarDetalle() {
@@ -193,7 +138,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
     if (detalles.some((detalle) => Number(detalle.importeTotal) <= 0 || Number(detalle.cantidad) <= 0)) { setError("Completa la cantidad y el precio total de cada repuesto."); return; }
     const pagos = pagosCompra.map((pago) => ({ cuentaFinancieraId: pago.cuentaFinancieraId, medioPago: pago.medioPago, importePagado: pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "0") }));
     if (pagosCompra.some((pago) => !pago.cuentaFinancieraId || !pago.medioPago || Number(pago.importe || (pagosCompra.length === 1 ? totalBorrador : 0)) <= 0) || Math.round(pagos.reduce((suma, pago) => suma + Number(pago.importePagado), 0) * 100) !== Math.round(totalBorrador * 100)) { setError("Completa los importes y las cuentas. La suma debe coincidir con el total de la compra."); return; }
-    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: proveedor.trim(), proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento: proveedorNumeroDocumento.trim(), proveedorDireccion: proveedorDireccion.trim(), medioPago: pagos.length === 1 ? pagos[0].medioPago : null, cuentaFinancieraId: pagos.length === 1 ? pagos[0].cuentaFinancieraId : null, montoPagado: totalBorrador.toFixed(2), pagos, observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario, importeTotal }) => ({ productoId, presentacionId, cantidad, costoUnitario, importeTotal })) };
+    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: datosProveedor.proveedor.trim(), proveedorTipoPersona: datosProveedor.proveedorTipoPersona, proveedorTipoDocumento: datosProveedor.proveedorTipoDocumento, proveedorNumeroDocumento: datosProveedor.proveedorNumeroDocumento.trim(), proveedorDireccion: datosProveedor.proveedorDireccion.trim(), medioPago: pagos.length === 1 ? pagos[0].medioPago : null, cuentaFinancieraId: pagos.length === 1 ? pagos[0].cuentaFinancieraId : null, montoPagado: totalBorrador.toFixed(2), pagos, observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario, importeTotal }) => ({ productoId, presentacionId, cantidad, costoUnitario, importeTotal })) };
     setGuardando(true);
     try {
       await servicioEntradasStock.crear(datos);
@@ -210,12 +155,8 @@ export function useEntradasStock(alGuardarse?: () => void) {
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, error, setError, busqueda, setBusqueda, cambiarPagina: setPagina, cambiarPorPagina,
     modalAbierto, abrirNuevo, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
-    fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, observacion, setObservacion,
-    proveedorTipoPersona, setProveedorTipoPersona,
-    proveedorTipoDocumento, setProveedorTipoDocumento,
-    proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion,
-    proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, creandoProveedor, setDatosProveedorEditables, buscarProveedor, abrirRegistroProveedor, crearProveedor, seleccionarProveedor,
-    productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido,
+    fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, ...datosProveedor, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, observacion, setObservacion,
+    productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, productosRecientes: catalogoRecienteRepuestos.recientes, seleccionarProductoReciente,
     seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto,
     detalles, setDetalles, totalBorrador, pagosCompra, setPagosCompra, agregarPagoCompra: () => setPagosCompra((actuales) => [...actuales, { clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]), quitarPagoCompra: (clave: string) => setPagosCompra((actuales) => actuales.filter((pago) => pago.clave !== clave)), agregarDetalle, quitarDetalle: (clave: string) => setDetalles((actuales) => actuales.filter((fila) => fila.clave !== clave)), guardar,
     entradaDetalle, cerrarDetalle: () => setEntradaDetalle(null), abrirProductoDetalle, cargandoDetalle,

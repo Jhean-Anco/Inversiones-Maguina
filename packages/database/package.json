@@ -14,7 +14,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed:frontend-dev": "node scripts/seed-frontend-development.mjs"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

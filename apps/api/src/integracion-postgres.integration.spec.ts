@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import { BadRequestException } from "@nestjs/common";
+import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 
 function urlDePruebas(): URL {
   assert.equal(process.env.NODE_ENV, "test", "La integración exige NODE_ENV=test.");
@@ -87,4 +89,18 @@ test("PostgreSQL conserva precisión monetaria y fraccionaria del esquema", asyn
     [Number(cantidad?.numeric_precision), Number(cantidad?.numeric_scale)],
     [14, 3],
   );
+});
+
+test("el listado de egresos valida filtros y pagina el resultado vacío", async () => {
+  const servicio = new ServicioEgresos();
+  await assert.rejects(servicio.listar({ tipo: "DESCONOCIDO" }), BadRequestException);
+
+  const sinFiltros = await servicio.listar({});
+  assert.deepEqual(sinFiltros, { items: [], total: 0, pagina: 1, porPagina: 10, totalPaginas: 1 });
+
+  const filtrado = await servicio.listar({ tipo: "MOTOTAXI", pagina: "2", porPagina: "4", busqueda: " moto%_ " });
+  assert.deepEqual(filtrado, { items: [], total: 0, pagina: 2, porPagina: 4, totalPaginas: 1 });
+
+  const normalizado = await servicio.listar({ pagina: "-3", porPagina: "7", busqueda: 4 as unknown as string });
+  assert.deepEqual(normalizado, { items: [], total: 0, pagina: 1, porPagina: 10, totalPaginas: 1 });
 });

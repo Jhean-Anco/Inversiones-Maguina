@@ -1,13 +1,21 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
-import { db, ajustesInventarioMototaxis, ajustesInventarioMototaxisDetalle, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosMototaxisVentas, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis } from "@magina/database";
+import { createHash, randomUUID } from "node:crypto";
+import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { bloquearModelos, moverSaldoModelo, precioVigenteModelo, siguientePrecioModelo } from "./inventario-modelos";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
 const redondear = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
+const transicionesReclamo: Record<string, readonly string[]> = {
+  ABIERTO: ["ENVIADO"],
+  ENVIADO: ["APROBADO", "RECHAZADO"],
+  APROBADO: ["RESUELTO"],
+  RECHAZADO: ["RESUELTO"],
+  RESUELTO: [],
+};
 
 function texto(valor: unknown, campo: string, maximo: number, requerido = false): string | null {
   if (typeof valor !== "string" || !valor.trim()) {
@@ -27,6 +35,13 @@ function importe(valor: unknown, campo: string, minimo = 0) {
 function fechaValida(valor: unknown, campo: string) {
   if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor) || Number.isNaN(new Date(`${valor}T00:00:00Z`).getTime()) || new Date(`${valor}T00:00:00Z`).toISOString().slice(0, 10) !== valor) throw new BadRequestException(`${campo} no es una fecha válida.`);
   return valor;
+}
+
+function sumarMeses(fecha: string, meses: number) {
+  const [anio, mes, dia] = fecha.split("-").map(Number);
+  const fin = new Date(Date.UTC(anio, mes - 1 + meses + 1, 0));
+  fin.setUTCDate(Math.min(dia, fin.getUTCDate()));
+  return fin.toISOString().slice(0, 10);
 }
 
 function validarModelo(valor: unknown) {
@@ -51,10 +66,8 @@ function validarModelo(valor: unknown) {
   if (cilindradaCc !== null && (!Number.isSafeInteger(cilindradaCc) || cilindradaCc <= 0 || cilindradaCc > 2_147_483_647)) throw new BadRequestException("La cilindrada debe ser un entero positivo válido.");
   if (capacidadAsientos !== null && (!Number.isSafeInteger(capacidadAsientos) || capacidadAsientos <= 0 || capacidadAsientos > 2_147_483_647)) throw new BadRequestException("La capacidad de asientos debe ser un entero positivo válido.");
   if (capacidadCargaKg !== null && (!Number.isFinite(capacidadCargaKg) || capacidadCargaKg <= 0 || capacidadCargaKg > 99_999_999.99 || Number(capacidadCargaKg.toFixed(2)) !== capacidadCargaKg)) throw new BadRequestException("La capacidad de carga debe ser positiva y tener hasta dos decimales.");
-  const precioVenta = d.precioVenta == null || d.precioVenta === "" ? null : importe(d.precioVenta, "El precio de venta", 0.01);
-  if (precioVenta !== null && precioVenta > 999_999_999_999.99) throw new BadRequestException("El precio de venta supera el máximo permitido.");
   return {
-    marcaId: d.marcaId, nombre, version: texto(d.version, "La versión", 80), precioVenta: precioVenta === null ? null : precioVenta.toFixed(2), categoriaVehicular,
+    marcaId: d.marcaId, nombre, version: texto(d.version, "La versión", 80), categoriaVehicular,
     fabricante: texto(d.fabricante, "El fabricante", 160), paisFabricacion: texto(d.paisFabricacion, "El país de fabricación", 100),
     marcaMotor: texto(d.marcaMotor, "La marca del motor", 100), modeloMotor: texto(d.modeloMotor, "El modelo del motor", 100), tipoMototaxi, tipoMotor, tipoRefrigeracion, coloresDisponibles, cilindradaCc,
     combustible: texto(d.combustible, "El combustible", 40), transmision: texto(d.transmision, "La transmisión", 60), carroceria: texto(d.carroceria, "La carrocería", 80),
@@ -75,14 +88,16 @@ export class ServicioMototaxis {
   }
 
   listarModelos(busqueda = "", incluirInactivos = false) {
-    const q = busqueda.trim().slice(0, 100);
+    const q = busqueda.trim().slice(0, 100).replace(/[\\%_]/g, "\\$&");
     return db.select({ id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marcaId: marcasProductos.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre,
-      version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
+      precioProgramado: siguientePrecioModelo("precio"),
+      precioProgramadoDesde: siguientePrecioModelo("vigente_desde"),
+      version: modelosMototaxis.version, precioVenta: precioVigenteModelo, stockDisponible: modelosMototaxis.stockDisponible, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
       marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, tipoMototaxi: modelosMototaxis.tipoMototaxi, tipoMotor: modelosMototaxis.tipoMotor, tipoRefrigeracion: modelosMototaxis.tipoRefrigeracion, coloresDisponibles: modelosMototaxis.coloresDisponibles, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
       transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
       capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
       .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
-      .where(and(incluirInactivos ? undefined : eq(modelosMototaxis.activo, true), q ? or(ilike(modelosMototaxis.nombre, `%${q}%`), ilike(modelosMototaxis.codigo, `%${q}%`), ilike(marcasProductos.nombre, `%${q}%`)) : undefined))
+      .where(and(incluirInactivos ? undefined : eq(modelosMototaxis.activo, true), q ? or(ilike(modelosMototaxis.nombre, `%${q}%`), ilike(modelosMototaxis.version, `%${q}%`), ilike(modelosMototaxis.codigo, `%${q}%`), ilike(marcasProductos.nombre, `%${q}%`)) : undefined))
       .orderBy(asc(marcasProductos.nombre), asc(modelosMototaxis.nombre));
   }
 
@@ -107,41 +122,84 @@ export class ServicioMototaxis {
     } catch (error) { if (this.esDuplicado(error)) throw new ConflictException("Ya existe este modelo y versión para la marca seleccionada."); throw error; }
   }
 
-  async actualizarPrecioVentaModelo(id: string, valor: unknown) {
-    if (!uuidValido(id)) throw new BadRequestException("El modelo seleccionado no es válido.");
+  async listarPreciosModelo(id: string) {
+    if (!uuidValido(id)) throw new BadRequestException("Selecciona un modelo válido.");
+    return db.select({
+      id: preciosModelosMototaxis.id, precio: preciosModelosMototaxis.precio,
+      vigenteDesde: preciosModelosMototaxis.vigenteDesde, vigenteHasta: preciosModelosMototaxis.vigenteHasta,
+      usuario: usuarios.nombreUsuario,
+    }).from(preciosModelosMototaxis)
+      .leftJoin(usuarios, eq(preciosModelosMototaxis.usuarioId, usuarios.id))
+      .where(eq(preciosModelosMototaxis.modeloId, id)).orderBy(desc(preciosModelosMototaxis.vigenteDesde));
+  }
+
+  async actualizarPrecioVentaModelo(id: string, valor: unknown, usuarioId: string, precioId?: string) {
+    if (!uuidValido(id)) throw new BadRequestException("Selecciona un modelo válido.");
+    if (precioId && !uuidValido(precioId)) throw new BadRequestException("Selecciona un precio válido.");
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Indica un precio de venta válido.");
-    const entrada = (valor as Record<string, unknown>).precioVenta;
-    const precioVenta = entrada == null || entrada === "" ? null : importe(entrada, "El precio de venta", 0.01);
-    const [modelo] = await db.update(modelosMototaxis).set({ precioVenta: precioVenta === null ? null : precioVenta.toFixed(2), actualizadoEn: new Date() })
-      .where(eq(modelosMototaxis.id, id)).returning({ id: modelosMototaxis.id });
-    if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
-    return this.obtenerModelo(modelo.id);
+    const datos = valor as Record<string, unknown>;
+    const precio = importe(datos.precioVenta, "El precio de venta", 0.01);
+    const precioAnterior = precioId ? importe(datos.precioAnterior, "El precio anterior", 0.01) : null;
+    if (precio > 999_999_999_999.99) throw new BadRequestException("El precio de venta supera el máximo permitido.");
+    const desde = datos.vigenteDesde ? new Date(`${fechaValida(datos.vigenteDesde, "El inicio de vigencia")}T00:00:00-05:00`) : null;
+    const hasta = datos.vigenteHasta ? new Date(`${fechaValida(datos.vigenteHasta, "El fin de vigencia")}T00:00:00-05:00`) : null;
+
+    await db.transaction(async (tx) => {
+      const [modelo] = await bloquearModelos(tx, [id]);
+      if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+      const ahora = new Date();
+      const previos = await tx.select().from(preciosModelosMototaxis).where(eq(preciosModelosMototaxis.modeloId, id));
+      const anterior = precioId ? previos.find((item) => item.id === precioId) : undefined;
+      if (precioId && !anterior) throw new NotFoundException("No se encontró el precio del modelo.");
+      if (anterior && ((anterior.vigenteHasta && anterior.vigenteHasta <= ahora) || Number(anterior.precio) !== precioAnterior)) {
+        throw new ConflictException("El precio cambió o ya finalizó. Vuelve a abrir el historial.");
+      }
+      if (anterior && Number(anterior.precio) === precio) return;
+      if (anterior && anterior.vigenteDesde >= ahora) {
+        await tx.update(preciosModelosMototaxis).set({ precio: precio.toFixed(2), usuarioId }).where(eq(preciosModelosMototaxis.id, anterior.id));
+        return;
+      }
+      const inicio = desde ?? ahora;
+      const fin = anterior ? anterior.vigenteHasta : hasta;
+      if (inicio < ahora || (fin && fin <= inicio)) throw new BadRequestException("Selecciona una vigencia futura válida o aplica el precio desde ahora.");
+      const solapados = previos.filter((item) => (!item.vigenteHasta || item.vigenteHasta > inicio) && (!fin || item.vigenteDesde < fin));
+      if (solapados.some((item) => item.vigenteDesde >= inicio)) throw new ConflictException("La vigencia coincide con un precio programado para el modelo.");
+      for (const item of solapados) {
+        await tx.update(preciosModelosMototaxis).set({ vigenteHasta: inicio }).where(eq(preciosModelosMototaxis.id, item.id));
+      }
+      await tx.insert(preciosModelosMototaxis).values({ modeloId: id, precio: precio.toFixed(2), vigenteDesde: inicio, vigenteHasta: fin, usuarioId });
+    });
+    return this.obtenerModelo(id);
   }
 
   async obtenerAnalisisModelo(id: string) {
     if (!uuidValido(id)) throw new BadRequestException("El modelo seleccionado no es válido.");
     const modelo = await this.obtenerModelo(id);
-    const [existencias, compra, ultimaCompra, ventas, ultimaVenta, comprasMensuales, ventasMensuales] = await Promise.all([
-      db.select({ estado: unidadesMototaxis.estado, cantidad: count() }).from(unidadesMototaxis).where(eq(unidadesMototaxis.modeloId, id)).groupBy(unidadesMototaxis.estado),
+    const [movimientos, compra, ultimaCompra, ventas, ultimaVenta, comprasMensuales, ventasMensuales] = await Promise.all([
+      db.select({ id: movimientosModelosMototaxis.id, tipo: movimientosModelosMototaxis.tipo,
+        cantidadAnterior: movimientosModelosMototaxis.cantidadAnterior, cantidadFinal: movimientosModelosMototaxis.cantidadFinal, fecha: movimientosModelosMototaxis.creadoEn,
+        usuario: usuarios.nombreUsuario,
+      }).from(movimientosModelosMototaxis).innerJoin(usuarios, eq(usuarios.id, movimientosModelosMototaxis.usuarioId))
+        .where(eq(movimientosModelosMototaxis.modeloId, id)).orderBy(desc(movimientosModelosMototaxis.creadoEn), desc(movimientosModelosMototaxis.id)).limit(15),
       db.select({ unidades: sql<string>`coalesce(sum(${comprasMototaxisDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${comprasMototaxisDetalle.cantidad}) > 0 then round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
         .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(eq(comprasMototaxisDetalle.modeloId, id)),
-      db.select({ precio: comprasMototaxisDetalle.costoUnitario, cantidad: comprasMototaxisDetalle.cantidad, fecha: comprasMototaxis.fecha, codigo: comprasMototaxis.codigo, documentoTipo: comprasMototaxis.documentoTipo, documentoNumero: comprasMototaxis.documentoNumero, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))` })
+      db.select({ precio: sql<string>`round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)`, cantidad: sql<number>`sum(${comprasMototaxisDetalle.cantidad})::int`, fecha: comprasMototaxis.fecha, codigo: comprasMototaxis.codigo, documentoTipo: comprasMototaxis.documentoTipo, documentoNumero: comprasMototaxis.documentoNumero, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))` })
         .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).innerJoin(personas, eq(comprasMototaxis.proveedorPersonaId, personas.id))
-        .where(eq(comprasMototaxisDetalle.modeloId, id)).orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn)).limit(1),
+        .where(eq(comprasMototaxisDetalle.modeloId, id)).groupBy(comprasMototaxis.id, personas.id)
+        .orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn), desc(comprasMototaxis.id)).limit(1),
       db.select({ unidades: sql<string>`coalesce(sum(${ingresosDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${ingresosDetalle.cantidad}) > 0 then round(sum(${ingresosDetalle.precioUnitario} * ${ingresosDetalle.cantidad}) / sum(${ingresosDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
-        .from(movimientosMototaxisVentas).innerJoin(movimientosMototaxis, eq(movimientosMototaxisVentas.movimientoId, movimientosMototaxis.id)).innerJoin(ingresosDetalle, eq(movimientosMototaxisVentas.ventaDetalleId, ingresosDetalle.id)).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).innerJoin(unidadesMototaxis, eq(movimientosMototaxis.unidadId, unidadesMototaxis.id))
-        .where(and(eq(unidadesMototaxis.modeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))),
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(and(eq(ingresosDetalle.mototaxiModeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))),
       db.select({ precio: ingresosDetalle.precioUnitario, fecha: ingresos.fecha, codigo: ingresos.codigo, tipoComprobante: ingresos.tipoComprobante, cliente: ingresos.clienteNombre })
-        .from(movimientosMototaxisVentas).innerJoin(movimientosMototaxis, eq(movimientosMototaxisVentas.movimientoId, movimientosMototaxis.id)).innerJoin(ingresosDetalle, eq(movimientosMototaxisVentas.ventaDetalleId, ingresosDetalle.id)).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).innerJoin(unidadesMototaxis, eq(movimientosMototaxis.unidadId, unidadesMototaxis.id))
-        .where(and(eq(unidadesMototaxis.modeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(1),
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(and(eq(ingresosDetalle.mototaxiModeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(1),
       db.select({ mes: sql<string>`to_char(date_trunc('month', ${comprasMototaxis.fecha}::date), 'YYYY-MM')`, promedio: sql<string>`round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)::text`, cantidad: sql<string>`sum(${comprasMototaxisDetalle.cantidad})` })
         .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(eq(comprasMototaxisDetalle.modeloId, id)).groupBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date)`).orderBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date) desc`).limit(12),
       db.select({ mes: sql<string>`to_char(date_trunc('month', ${ingresos.fecha}::date), 'YYYY-MM')`, promedio: sql<string>`round(sum(${ingresosDetalle.precioUnitario} * ${ingresosDetalle.cantidad}) / sum(${ingresosDetalle.cantidad}), 2)::text`, cantidad: sql<string>`sum(${ingresosDetalle.cantidad})` })
-        .from(movimientosMototaxisVentas).innerJoin(movimientosMototaxis, eq(movimientosMototaxisVentas.movimientoId, movimientosMototaxis.id)).innerJoin(ingresosDetalle, eq(movimientosMototaxisVentas.ventaDetalleId, ingresosDetalle.id)).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).innerJoin(unidadesMototaxis, eq(movimientosMototaxis.unidadId, unidadesMototaxis.id))
-        .where(and(eq(unidadesMototaxis.modeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).groupBy(sql`date_trunc('month', ${ingresos.fecha}::date)`).orderBy(sql`date_trunc('month', ${ingresos.fecha}::date) desc`).limit(12),
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+        .where(and(eq(ingresosDetalle.mototaxiModeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).groupBy(sql`date_trunc('month', ${ingresos.fecha}::date)`).orderBy(sql`date_trunc('month', ${ingresos.fecha}::date) desc`).limit(12),
     ]);
-    const stock = Object.fromEntries(existencias.map((fila) => [fila.estado, Number(fila.cantidad)]));
-    return { modelo, existencias: { total: Object.values(stock).reduce((suma, cantidad) => suma + cantidad, 0), disponibles: stock.DISPONIBLE ?? 0, reservadas: stock.RESERVADA ?? 0, vendidas: stock.VENDIDA ?? 0, garantia: stock.GARANTIA ?? 0, usoInterno: stock.USO_INTERNO ?? 0, baja: stock.BAJA ?? 0, faltantes: stock.FALTANTE ?? 0 },
+    return { modelo, movimientos, existencias: { disponibles: modelo.stockDisponible },
       compras: { unidades: Number(compra[0]?.unidades ?? 0), operaciones: Number(compra[0]?.operaciones ?? 0), ultimoPrecio: ultimaCompra[0]?.precio ?? null, promedioPonderado: compra[0]?.promedioPonderado ?? null, ultima: ultimaCompra[0] ?? null, historialMensual: comprasMensuales.reverse() },
       ventas: { unidades: Number(ventas[0]?.unidades ?? 0), operaciones: Number(ventas[0]?.operaciones ?? 0), ultimoPrecio: ultimaVenta[0]?.precio ?? null, promedioPonderado: ventas[0]?.promedioPonderado ?? null, ultima: ultimaVenta[0] ?? null, historialMensual: ventasMensuales.reverse() } };
   }
@@ -154,7 +212,7 @@ export class ServicioMototaxis {
 
   private async obtenerModelo(id: string) {
     const [modelo] = await db.select({ id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marcaId: marcasProductos.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre,
-      version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
+      version: modelosMototaxis.version, precioVenta: precioVigenteModelo, stockDisponible: modelosMototaxis.stockDisponible, categoriaVehicular: modelosMototaxis.categoriaVehicular, fabricante: modelosMototaxis.fabricante, paisFabricacion: modelosMototaxis.paisFabricacion,
       marcaMotor: modelosMototaxis.marcaMotor, modeloMotor: modelosMototaxis.modeloMotor, tipoMototaxi: modelosMototaxis.tipoMototaxi, tipoMotor: modelosMototaxis.tipoMotor, tipoRefrigeracion: modelosMototaxis.tipoRefrigeracion, coloresDisponibles: modelosMototaxis.coloresDisponibles, cilindradaCc: modelosMototaxis.cilindradaCc, combustible: modelosMototaxis.combustible,
       transmision: modelosMototaxis.transmision, carroceria: modelosMototaxis.carroceria, capacidadAsientos: modelosMototaxis.capacidadAsientos,
       capacidadCargaKg: modelosMototaxis.capacidadCargaKg, especificacionesAdicionales: modelosMototaxis.especificacionesAdicionales, activo: modelosMototaxis.activo })
@@ -202,7 +260,8 @@ export class ServicioMototaxis {
     const nombres = esJuridica ? null : texto(d.nombres, "Los nombres", 120, true);
     const apellidoPaterno = esJuridica ? null : texto(d.apellidoPaterno, "El apellido paterno", 120, true);
     const apellidoMaterno = esJuridica ? null : texto(d.apellidoMaterno, "El apellido materno", 120);
-    const [tipoDoc] = await db.select({ id: tiposDocumento.id }).from(tiposDocumento).where(eq(tiposDocumento.codigo, tipoDocumento)).limit(1);
+    const codigoDocumento = tipoDocumento === "DNI" ? "01" : "06";
+    const [tipoDoc] = await db.select({ id: tiposDocumento.id }).from(tiposDocumento).where(eq(tiposDocumento.codigo, codigoDocumento)).limit(1);
     const [tipoPer] = await db.select({ id: tiposPersona.id }).from(tiposPersona).where(eq(tiposPersona.codigo, esJuridica ? "JURIDICA" : "NATURAL")).limit(1);
     if (!tipoDoc || !tipoPer) throw new NotFoundException("Falta configurar el tipo de persona o documento requerido.");
     return db.transaction(async (tx) => {
@@ -254,61 +313,73 @@ export class ServicioMototaxis {
     if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha de compra no puede ser posterior a hoy.");
     const documentoTipo = texto(d.documentoTipo, "El tipo de documento", 20, true)!;
     if (!["FACTURA", "BOLETA", "NOTA", "OTRO", "SIN_DOCUMENTO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
-    if (!Array.isArray(d.unidades) || d.unidades.length < 1 || d.unidades.length > 30) throw new BadRequestException("Registra entre 1 y 30 unidades por compra.");
+    if (!Array.isArray(d.detalles) || d.detalles.length < 1 || d.detalles.length > 30) throw new BadRequestException("Registra entre 1 y 30 líneas por compra.");
+    const claveIdempotencia = d.claveIdempotencia;
+    if (claveIdempotencia !== undefined && !uuidValido(claveIdempotencia)) throw new BadRequestException("La referencia de la compra no es válida.");
+    const documentoNumero = documentoTipo === "SIN_DOCUMENTO" ? null : texto(d.documentoNumero, "El número del documento", 80);
+    const observacion = texto(d.observacion, "La observación", 2000);
+    const moneda = texto(d.moneda ?? "PEN", "La moneda", 3, true)!;
+    if (!["PEN", "USD", "EUR"].includes(moneda)) throw new BadRequestException("Selecciona una moneda válida.");
     const pagoTotal = importe(d.importePagoInicial, "El pago al contado");
     const pagosSolicitados = Array.isArray(d.pagosIniciales) ? d.pagosIniciales : [{ importePagado: pagoTotal, medioPago: d.medioPago ?? "EFECTIVO", cuentaFinancieraId: d.cuentaFinancieraId }];
     const pagosIniciales = await Promise.all(pagosSolicitados.map(async (valor) => {
       if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Revisa los medios de pago ingresados.");
       const pago = valor as Record<string, unknown>;
-      const importePagado = importe(pago.importePagado, "El importe del medio de pago");
+      const importePagado = importe(pago.importePagado, "El importe del medio de pago", 0.01);
       const medio = texto(pago.medioPago, "El medio de pago", 30, true)!;
       if (!(mediosPago as readonly string[]).includes(medio)) throw new BadRequestException("Selecciona un medio de pago válido.");
       const cuentaFinancieraId = await validarCuentaFinanciera(pago.cuentaFinancieraId, medio, true);
       return { importePagado, medioPago: medio, cuentaFinancieraId };
     }));
-    const unidades = d.unidades.map((entrada, i) => {
-      if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`La unidad ${i + 1} no es válida.`);
-      const u = entrada as Record<string, unknown>;
-      if (!uuidValido(u.modeloId)) throw new BadRequestException(`Selecciona el modelo de la unidad ${i + 1}.`);
-      const costo = importe(u.costoAdquisicion, `El costo de la unidad ${i + 1}`, 0.01);
-      const porcentaje = Number(u.porcentajeGarantia ?? 70);
-      const meses = Number(u.mesesGarantia ?? 12);
-      if (![70, 80].includes(porcentaje)) throw new BadRequestException("La cobertura de garantía debe ser 70% u 80%.");
-      if (!Number.isInteger(meses) || meses < 1 || meses > 120) throw new BadRequestException("El plazo de garantía debe estar entre 1 y 120 meses.");
-      return { modeloId: u.modeloId as string, costo, porcentaje, meses, vin: texto(u.vin, "El VIN", 40, true), motor: texto(u.numeroMotor, "El número de motor", 100, true), chasis: texto(u.numeroChasis, "El número de chasis", 100), anio: u.anioModelo == null || u.anioModelo === "" ? null : Number(u.anioModelo), color: texto(u.color, "El color", 60, true)! };
+    const detalles = d.detalles.map((entrada, indice) => {
+      if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`La línea ${indice + 1} no es válida.`);
+      const detalle = entrada as Record<string, unknown>;
+      if (!uuidValido(detalle.modeloId)) throw new BadRequestException(`Selecciona el modelo de la línea ${indice + 1}.`);
+      const cantidad = typeof detalle.cantidad === "number" || (typeof detalle.cantidad === "string" && detalle.cantidad.trim()) ? Number(detalle.cantidad) : NaN;
+      if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 2_147_483_647) throw new BadRequestException(`Ingresa una cantidad entera en la línea ${indice + 1}.`);
+      const porcentajeGarantia = Number(detalle.porcentajeGarantia ?? 80);
+      const mesesGarantia = Number(detalle.mesesGarantia ?? 12);
+      if (![70, 80].includes(porcentajeGarantia) || !Number.isInteger(mesesGarantia) || mesesGarantia < 1 || mesesGarantia > 120) {
+        throw new BadRequestException(`Revisa la cobertura y el plazo de garantía de la línea ${indice + 1}.`);
+      }
+      return { modeloId: detalle.modeloId, cantidad, costoUnitario: importe(detalle.costoUnitario, `El costo unitario de la línea ${indice + 1}`, 0.01), porcentajeGarantia, mesesGarantia };
     });
-    const total = redondear(unidades.reduce((s, u) => s + u.costo, 0));
+    const total = redondear(detalles.reduce((suma, detalle) => suma + detalle.costoUnitario * detalle.cantidad, 0));
+    if (total > 999_999_999_999.99) throw new BadRequestException("El total supera el máximo permitido.");
     const sumaPagos = pagosIniciales.reduce((suma, pago) => suma + pago.importePagado, 0);
     if (Math.round(sumaPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
     const codigo = `CM-${fecha.replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const proveedorId = d.proveedorPersonaId;
+    const unidades = detalles.reduce((suma, detalle) => suma + detalle.cantidad, 0);
+    const huellaSolicitud = createHash("sha256").update(JSON.stringify({ usuarioId, proveedorId, fecha, documentoTipo, documentoNumero, moneda, detalles, pagosIniciales, observacion })).digest("hex");
     return db.transaction(async (tx) => {
-      const proveedorId = d.proveedorPersonaId as string;
+      if (claveIdempotencia) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`compra-mototaxis:${claveIdempotencia}`}, 0))`);
+        const [existente] = await tx.select().from(comprasMototaxis).where(eq(comprasMototaxis.claveIdempotencia, claveIdempotencia));
+        if (existente) {
+          if (existente.huellaSolicitud !== huellaSolicitud) throw new ConflictException("La referencia ya corresponde a otra compra. Actualiza el listado antes de seguir.");
+          return { id: existente.id, codigo: existente.codigo, fecha: existente.fecha, total: existente.total, unidades, importePagado: existente.total, saldoPendiente: "0.00" };
+        }
+      }
       const [proveedor] = await tx.select({ id: proveedores.personaId, numeroDocumento: personas.numeroDocumento, tipoDocumento: tiposDocumento.codigo }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
       if (!proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
-      const modelos = await tx.select({ id: modelosMototaxis.id, coloresDisponibles: modelosMototaxis.coloresDisponibles }).from(modelosMototaxis).where(and(eq(modelosMototaxis.activo, true), inArray(modelosMototaxis.id, [...new Set(unidades.map((u) => u.modeloId))]))).for("update");
-      if (new Set(modelos.map((m) => m.id)).size !== new Set(unidades.map((u) => u.modeloId)).size) throw new BadRequestException("Cada unidad debe pertenecer a un modelo activo del catálogo de mototaxis.");
-      const coloresPorModelo = new Map(modelos.map((modelo) => [modelo.id, modelo.coloresDisponibles]));
-      for (const unidad of unidades) { const disponibles = coloresPorModelo.get(unidad.modeloId) ?? []; if (disponibles.length && !disponibles.some((color) => color.toLocaleLowerCase("es-PE") === unidad.color!.toLocaleLowerCase("es-PE"))) throw new BadRequestException("El color de una unidad no corresponde a los colores configurados para su modelo."); }
-      const [compra] = await tx.insert(comprasMototaxis).values({ codigo, proveedorPersonaId: proveedorId, fecha, documentoTipo, documentoNumero: texto(d.documentoNumero, "El número del documento", 80), moneda: texto(d.moneda ?? "PEN", "La moneda", 3, true)!, total: total.toFixed(2), observacion: texto(d.observacion, "La observación", 2000), usuarioId }).returning();
-      const detallePorModelo = new Map<string, string>();
-      for (const modeloId of [...new Set(unidades.map((u) => u.modeloId))]) {
-        const grupos = unidades.filter((u) => u.modeloId === modeloId);
-        const [detalle] = await tx.insert(comprasMototaxisDetalle).values({ compraId: compra.id, modeloId, orden: detallePorModelo.size + 1, cantidad: grupos.length, costoUnitario: (grupos.reduce((s, u) => s + u.costo, 0) / grupos.length).toFixed(2) }).returning();
-        detallePorModelo.set(modeloId, detalle.id);
-      }
-      for (const unidad of unidades) {
-        const codigoUnidad = `MT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
-        const datosUnidad: typeof unidadesMototaxis.$inferInsert = { codigo: codigoUnidad, compraDetalleId: detallePorModelo.get(unidad.modeloId)!, modeloId: unidad.modeloId,
-          vin: unidad.vin!, numeroMotor: unidad.motor!, numeroChasis: unidad.chasis, anioModelo: unidad.anio, color: unidad.color, costoAdquisicion: unidad.costo.toFixed(2) };
-        const [insertada] = await tx.insert(unidadesMototaxis).values(datosUnidad).returning();
-        await tx.insert(movimientosMototaxis).values({ unidadId: insertada.id, tipo: "RECEPCION", estadoNuevo: "DISPONIBLE", motivo: "COMPRA", observacion: `Recepción de compra ${codigo}`, usuarioId });
-        const iniciaEn = fecha;
-        const termina = this.sumarMeses(fecha, unidad.meses);
-        await tx.insert(garantiasMototaxis).values({ unidadId: insertada.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(unidad.porcentaje), mesesVigencia: unidad.meses, iniciaEn, terminaEn: termina });
+      const idsModelos = [...new Set(detalles.map((detalle) => detalle.modeloId))];
+      const modelos = await bloquearModelos(tx, idsModelos);
+      if (modelos.length !== idsModelos.length || modelos.some((modelo) => !modelo.activo)) throw new BadRequestException("Selecciona modelos activos del catálogo de mototaxis.");
+      const [compra] = await tx.insert(comprasMototaxis).values({ codigo, proveedorPersonaId: proveedorId, fecha, documentoTipo, documentoNumero, moneda, total: total.toFixed(2), observacion, usuarioId, claveIdempotencia, huellaSolicitud }).returning();
+      for (const [indice, linea] of detalles.entries()) {
+        const [detalle] = await tx.insert(comprasMototaxisDetalle).values({
+          compraId: compra.id, modeloId: linea.modeloId, orden: indice + 1, cantidad: linea.cantidad, costoUnitario: linea.costoUnitario.toFixed(2),
+        }).returning({ id: comprasMototaxisDetalle.id });
+        await moverSaldoModelo(tx, { modeloId: linea.modeloId, tipo: "COMPRA", origenId: detalle.id, diferencia: linea.cantidad, usuarioId });
+        await tx.insert(garantiasMototaxis).values({
+          compraDetalleId: detalle.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(linea.porcentajeGarantia),
+          mesesVigencia: linea.mesesGarantia, iniciaEn: fecha, terminaEn: sumarMeses(fecha, linea.mesesGarantia),
+        });
       }
       await tx.insert(pagosComprasMototaxis).values(pagosIniciales.map((pago) => ({ compraId: compra.id, fechaPago: fecha, importePagado: pago.importePagado.toFixed(2), medioPago: pago.medioPago, cuentaFinancieraId: pago.cuentaFinancieraId, claveIdempotencia: randomUUID(), usuarioId })));
-      return { id: compra.id, codigo, fecha, total: compra.total, unidades: unidades.length, importePagado: pagoTotal.toFixed(2), saldoPendiente: "0.00" };
-    }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("El VIN, la placa u otro identificador de la unidad ya está registrado."); throw error; });
+      return { id: compra.id, codigo, fecha, total: compra.total, unidades, importePagado: total.toFixed(2), saldoPendiente: "0.00" };
+    });
   }
 
   async listarCompras(busqueda = "") {
@@ -360,125 +431,50 @@ export class ServicioMototaxis {
     });
   }
 
-  async cambiarEstado(id: string, valor: unknown, usuarioId: string) {
-    if (!uuidValido(id) || !valor || typeof valor !== "object") throw new BadRequestException("La unidad o el ajuste no son válidos.");
-    const d = valor as Record<string, unknown>;
-    const estados = ["DISPONIBLE", "RESERVADA", "GARANTIA", "USO_INTERNO", "BAJA"];
-    if (typeof d.estado !== "string" || !estados.includes(d.estado)) throw new BadRequestException("Selecciona un estado válido.");
-    const motivo = texto(d.motivo, "El motivo del movimiento", 40, true)!;
-    if (!motivo.trim()) throw new BadRequestException("Indica el motivo del ajuste.");
-    return db.transaction(async (tx) => {
-      const [unidad] = await tx.select().from(unidadesMototaxis).where(eq(unidadesMototaxis.id, id)).for("update").limit(1);
-      if (!unidad) throw new NotFoundException("No se encontró la mototaxi.");
-      if (["VENDIDA", "BAJA"].includes(unidad.estado)) throw new ConflictException("Una unidad vendida o dada de baja no puede cambiarse directamente. Registra la devolución o reversa correspondiente.");
-      if (unidad.estado === "FALTANTE") throw new ConflictException("La unidad está marcada como no encontrada. Para recuperarla, regístrala como encontrada en el siguiente reconteo del modelo.");
-      const estado = d.estado as typeof estados[number];
-      const [actualizada] = await tx.update(unidadesMototaxis).set({ estado }).where(eq(unidadesMototaxis.id, id)).returning();
-      await tx.insert(movimientosMototaxis).values({ unidadId: id, tipo: "AJUSTE", estadoAnterior: unidad.estado, estadoNuevo: estado, motivo, observacion: texto(d.observacion, "La observación", 2000), usuarioId });
-      return actualizada;
-    });
-  }
-
   async obtenerReconteoModelo(modeloId: string) {
     if (!uuidValido(modeloId)) throw new BadRequestException("Selecciona un modelo de mototaxi válido.");
-    const [modelo] = await db.select({ id: modelosMototaxis.id, marca: marcasProductos.nombre, nombre: modelosMototaxis.nombre, version: modelosMototaxis.version })
-      .from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).where(eq(modelosMototaxis.id, modeloId)).limit(1);
-    if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
-    const unidades = await db.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor, numeroChasis: unidadesMototaxis.numeroChasis, estado: unidadesMototaxis.estado })
-      .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modeloId), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).orderBy(asc(unidadesMototaxis.vin));
-    return { modelo, cantidadSistema: unidades.filter((unidad) => unidad.estado !== "FALTANTE").length, unidades };
+    const modelo = await this.obtenerModelo(modeloId);
+    return { modelo: { id: modelo.id, marca: modelo.marca, nombre: modelo.nombre, version: modelo.version }, cantidadSistema: modelo.stockDisponible };
   }
 
   async crearAjusteInventario(valor: unknown, usuarioId: string) {
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos del reconteo no son válidos.");
     const d = valor as Record<string, unknown>;
     if (!uuidValido(d.modeloId)) throw new BadRequestException("Selecciona un modelo de mototaxi válido.");
-    if (d.cantidadContada !== undefined) {
-      const cantidadContada = Number(d.cantidadContada);
-      if (!Number.isInteger(cantidadContada) || cantidadContada < 0) throw new BadRequestException("La cantidad contada debe ser un número entero igual o mayor que cero.");
-      const motivo = texto(d.motivo, "El motivo del ajuste", 120, true)!;
-      if (motivo.trim().length < 2) throw new BadRequestException("El motivo debe tener al menos dos caracteres.");
-      const observacion = texto(d.observacion, "La observación", 2000);
-      const codigo = `AI-${fechaActualPeru().replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-      return db.transaction(async (tx) => {
-        const [modelo] = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(eq(modelosMototaxis.id, d.modeloId as string)).for("update").limit(1);
-        if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
-        const unidadesModelo = await tx.select({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado })
-          .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modelo.id), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).for("update");
-        const cantidadSistema = unidadesModelo.filter((unidad) => unidad.estado !== "FALTANTE").length;
-        const [ajuste] = await tx.insert(ajustesInventarioMototaxis).values({ codigo, modeloId: modelo.id, cantidadSistema, cantidadContada, motivo, observacion, usuarioId }).returning();
-        return { id: ajuste.id, codigo, cantidadSistema, cantidadContada, nuevas: 0, faltantes: 0, recuperadas: 0 };
-      });
+    const modeloId = d.modeloId;
+    const cantidadContada = d.cantidadContada;
+    if (typeof cantidadContada !== "number" || !Number.isInteger(cantidadContada) || cantidadContada < 0 || cantidadContada > 2_147_483_647) {
+      throw new BadRequestException("Ingresa una cantidad entera igual o mayor que cero.");
     }
-    if (!Array.isArray(d.unidadesSistemaIds) || !Array.isArray(d.unidadesEncontradas) || !Array.isArray(d.unidadesNuevas)) throw new BadRequestException("Registra las unidades del sistema, las encontradas y los VIN nuevos del reconteo.");
-    if (d.unidadesNuevas.length > 50) throw new BadRequestException("Un ajuste permite incorporar hasta 50 VIN nuevos.");
     const motivo = texto(d.motivo, "El motivo del ajuste", 120, true)!;
-    if (motivo.trim().length < 2) throw new BadRequestException("El motivo debe tener al menos dos caracteres.");
+    if (motivo.length < 2) throw new BadRequestException("El motivo debe tener al menos dos caracteres.");
     const observacion = texto(d.observacion, "La observación", 2000);
-    const idsEncontrados = d.unidadesEncontradas;
-    if (idsEncontrados.some((id) => !uuidValido(id)) || new Set(idsEncontrados).size !== idsEncontrados.length) throw new BadRequestException("La lista de unidades encontradas contiene identificadores inválidos o repetidos.");
-    const idsVistosEnFormulario = d.unidadesSistemaIds;
-    if (idsVistosEnFormulario.some((id) => !uuidValido(id)) || new Set(idsVistosEnFormulario).size !== idsVistosEnFormulario.length) throw new BadRequestException("La lista de unidades del reconteo contiene identificadores inválidos o repetidos.");
-    const nuevas = d.unidadesNuevas.map((entrada, indice) => {
-      if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) throw new BadRequestException(`Completa los datos del VIN nuevo ${indice + 1}.`);
-      const unidad = entrada as Record<string, unknown>;
-      const vin = texto(unidad.vin, "El VIN", 40, true)!;
-      const motor = texto(unidad.numeroMotor, "El número de motor", 100, true)!;
-      const costo = importe(unidad.costoAdquisicion, "El costo de adquisición", 0.01);
-      const anio = unidad.anioModelo === "" || unidad.anioModelo == null ? null : Number(unidad.anioModelo);
-      if (anio !== null && (!Number.isInteger(anio) || anio < 1990 || anio > 2100)) throw new BadRequestException("El año del modelo debe estar entre 1990 y 2100.");
-      return { vin, motor, chasis: texto(unidad.numeroChasis, "El número de chasis", 100), color: texto(unidad.color, "El color", 60), anio, costo };
-    });
-    if (new Set(nuevas.map((u) => u.vin.toLocaleUpperCase())).size !== nuevas.length) throw new BadRequestException("Hay VIN repetidos entre las unidades nuevas.");
     const codigo = `AI-${fechaActualPeru().replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     return db.transaction(async (tx) => {
-      const [modelo] = await tx.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(eq(modelosMototaxis.id, d.modeloId as string)).for("update").limit(1);
+      const [modelo] = await bloquearModelos(tx, [modeloId]);
       if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
-      const unidadesModelo = await tx.select({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado })
-        .from(unidadesMototaxis).where(and(eq(unidadesMototaxis.modeloId, modelo.id), notInArray(unidadesMototaxis.estado, ["VENDIDA", "BAJA"]))).for("update");
-      const idsSistema = new Set(unidadesModelo.map((unidad) => unidad.id));
-      if (idsEncontrados.some((id) => !idsSistema.has(id as string)) || idsVistosEnFormulario.length !== unidadesModelo.length || idsVistosEnFormulario.some((id) => !idsSistema.has(id as string))) throw new ConflictException("El inventario cambió mientras preparabas el reconteo. Recarga las unidades y vuelve a comparar.");
-      const activasSistema = unidadesModelo.filter((unidad) => unidad.estado !== "FALTANTE");
-      const faltantes = activasSistema.filter((unidad) => !idsEncontrados.includes(unidad.id));
-      const recuperadas = unidadesModelo.filter((unidad) => unidad.estado === "FALTANTE" && idsEncontrados.includes(unidad.id));
-      const cantidadContada = idsEncontrados.length + nuevas.length;
-      const [ajuste] = await tx.insert(ajustesInventarioMototaxis).values({ codigo, modeloId: modelo.id, cantidadSistema: activasSistema.length, cantidadContada, motivo, observacion, usuarioId }).returning();
-      for (const unidadFaltante of faltantes) {
-        const [actualizada] = await tx.update(unidadesMototaxis).set({ estado: "FALTANTE" }).where(eq(unidadesMototaxis.id, unidadFaltante.id)).returning({ id: unidadesMototaxis.id, vin: unidadesMototaxis.vin, codigo: unidadesMototaxis.codigo });
-        await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: actualizada.id, tipo: "FALTANTE" });
-        await tx.insert(movimientosMototaxis).values({ unidadId: actualizada.id, tipo: "AJUSTE", estadoAnterior: unidadFaltante.estado, estadoNuevo: "FALTANTE", motivo: "RECONTEO_FALTANTE", observacion: `Ajuste ${codigo}: VIN no encontrado en el reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
-      }
-      if (recuperadas.length) {
-        const movimientosPrevios = await tx.select({ unidadId: movimientosMototaxis.unidadId, estadoAnterior: movimientosMototaxis.estadoAnterior })
-          .from(movimientosMototaxis).where(and(inArray(movimientosMototaxis.unidadId, recuperadas.map((unidad) => unidad.id)), eq(movimientosMototaxis.motivo, "RECONTEO_FALTANTE"))).orderBy(desc(movimientosMototaxis.creadoEn));
-        const estadoPrevioPorUnidad = new Map<string, string>();
-        for (const movimiento of movimientosPrevios) if (movimiento.estadoAnterior && !estadoPrevioPorUnidad.has(movimiento.unidadId)) estadoPrevioPorUnidad.set(movimiento.unidadId, movimiento.estadoAnterior);
-        for (const unidadRecuperada of recuperadas) {
-          const estadoRestaurado = estadoPrevioPorUnidad.get(unidadRecuperada.id) ?? "DISPONIBLE";
-          await tx.update(unidadesMototaxis).set({ estado: estadoRestaurado }).where(eq(unidadesMototaxis.id, unidadRecuperada.id));
-          await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: unidadRecuperada.id, tipo: "RECUPERADA" });
-          await tx.insert(movimientosMototaxis).values({ unidadId: unidadRecuperada.id, tipo: "AJUSTE", estadoAnterior: "FALTANTE", estadoNuevo: estadoRestaurado, motivo: "RECONTEO_RECUPERADA", observacion: `Ajuste ${codigo}: VIN encontrado en un nuevo reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
-        }
-      }
-      for (const unidadNueva of nuevas) {
-        const codigoUnidad = `MT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
-        const [insertada] = await tx.insert(unidadesMototaxis).values({ codigo: codigoUnidad, compraDetalleId: null, modeloId: modelo.id, vin: unidadNueva.vin, numeroMotor: unidadNueva.motor, numeroChasis: unidadNueva.chasis, anioModelo: unidadNueva.anio, color: unidadNueva.color, costoAdquisicion: unidadNueva.costo.toFixed(2) }).returning({ id: unidadesMototaxis.id });
-        await tx.insert(ajustesInventarioMototaxisDetalle).values({ ajusteId: ajuste.id, unidadId: insertada.id, tipo: "NUEVA" });
-        await tx.insert(movimientosMototaxis).values({ unidadId: insertada.id, tipo: "AJUSTE", estadoNuevo: "DISPONIBLE", motivo: "RECONTEO_NUEVA", observacion: `Ajuste ${codigo}: VIN incorporado por reconteo.${observacion ? ` ${observacion}` : ""}`, usuarioId });
-      }
-      return { id: ajuste.id, codigo, cantidadSistema: activasSistema.length, cantidadContada, nuevas: nuevas.length, faltantes: faltantes.length, recuperadas: recuperadas.length };
-    }).catch((error) => { if (this.esDuplicado(error)) throw new ConflictException("Uno de los VIN nuevos, número de motor o chasis ya está registrado."); throw error; });
+      if (d.cantidadSistema !== undefined && d.cantidadSistema !== modelo.saldo) throw new ConflictException("El saldo del modelo cambió. Consulta el saldo actualizado y verifica el conteo.");
+      const [ajuste] = await tx.insert(ajustesInventarioMototaxis).values({
+        codigo, modeloId, cantidadSistema: modelo.saldo, cantidadContada, motivo, observacion, usuarioId,
+      }).returning();
+      await moverSaldoModelo(tx, { modeloId, tipo: "AJUSTE", origenId: ajuste.id, diferencia: cantidadContada - modelo.saldo, usuarioId });
+      return { id: ajuste.id, codigo, cantidadSistema: modelo.saldo, cantidadContada };
+    });
   }
 
   async listarAjustesInventario() {
-    const ajustes = await db.select({ id: ajustesInventarioMototaxis.id, codigo: ajustesInventarioMototaxis.codigo, modeloId: ajustesInventarioMototaxis.modeloId, marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, cantidadSistema: ajustesInventarioMototaxis.cantidadSistema, cantidadContada: ajustesInventarioMototaxis.cantidadContada, motivo: ajustesInventarioMototaxis.motivo, observacion: ajustesInventarioMototaxis.observacion, creadoEn: ajustesInventarioMototaxis.creadoEn })
-      .from(ajustesInventarioMototaxis).innerJoin(modelosMototaxis, eq(ajustesInventarioMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).orderBy(desc(ajustesInventarioMototaxis.creadoEn)).limit(100);
-    if (!ajustes.length) return [];
-    const detalles = await db.select({ ajusteId: ajustesInventarioMototaxisDetalle.ajusteId, tipo: ajustesInventarioMototaxisDetalle.tipo, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor })
-      .from(ajustesInventarioMototaxisDetalle).innerJoin(unidadesMototaxis, eq(ajustesInventarioMototaxisDetalle.unidadId, unidadesMototaxis.id)).where(inArray(ajustesInventarioMototaxisDetalle.ajusteId, ajustes.map((a) => a.id)));
-    const porAjuste = new Map<string, typeof detalles>();
-    for (const detalle of detalles) porAjuste.set(detalle.ajusteId, [...(porAjuste.get(detalle.ajusteId) ?? []), detalle]);
-    return ajustes.map((ajuste) => ({ ...ajuste, diferencias: porAjuste.get(ajuste.id) ?? [] }));
+    return db.select({
+      id: ajustesInventarioMototaxis.id, codigo: ajustesInventarioMototaxis.codigo, modeloId: ajustesInventarioMototaxis.modeloId,
+      marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version,
+      cantidadSistema: ajustesInventarioMototaxis.cantidadSistema, cantidadContada: ajustesInventarioMototaxis.cantidadContada,
+      motivo: ajustesInventarioMototaxis.motivo, observacion: ajustesInventarioMototaxis.observacion, creadoEn: ajustesInventarioMototaxis.creadoEn,
+      usuario: usuarios.nombreUsuario, aplicado: sql<boolean>`${movimientosModelosMototaxis.id} is not null`,
+    }).from(ajustesInventarioMototaxis)
+      .innerJoin(modelosMototaxis, eq(ajustesInventarioMototaxis.modeloId, modelosMototaxis.id))
+      .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
+      .innerJoin(usuarios, eq(usuarios.id, ajustesInventarioMototaxis.usuarioId))
+      .leftJoin(movimientosModelosMototaxis, and(eq(movimientosModelosMototaxis.tipo, "AJUSTE"), eq(movimientosModelosMototaxis.origenId, ajustesInventarioMototaxis.id)))
+      .orderBy(desc(ajustesInventarioMototaxis.creadoEn), desc(ajustesInventarioMototaxis.id));
   }
 
   async listarMovimientos(unidadId: string) {
@@ -487,12 +483,23 @@ export class ServicioMototaxis {
   }
 
   async listarGarantias() {
-    return db.select({ id: garantiasMototaxis.id, unidadId: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin,
-      marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
-      porcentajeProveedor: garantiasMototaxis.porcentajeProveedor, mesesVigencia: garantiasMototaxis.mesesVigencia, iniciaEn: garantiasMototaxis.iniciaEn, terminaEn: garantiasMototaxis.terminaEn,
-      alcance: garantiasMototaxis.alcance, exclusiones: garantiasMototaxis.exclusiones })
-      .from(garantiasMototaxis).innerJoin(unidadesMototaxis, eq(garantiasMototaxis.unidadId, unidadesMototaxis.id)).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id))
-      .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id)).innerJoin(personas, eq(garantiasMototaxis.proveedorPersonaId, personas.id)).orderBy(asc(garantiasMototaxis.terminaEn));
+    return db.select({
+      id: garantiasMototaxis.id, unidadId: unidadesMototaxis.id, compraDetalleId: garantiasMototaxis.compraDetalleId, vin: unidadesMototaxis.vin,
+      codigo: sql<string>`coalesce(${comprasMototaxis.codigo}, ${unidadesMototaxis.codigo})`,
+      cantidad: sql<number>`coalesce(${comprasMototaxisDetalle.cantidad}, 1)`,
+      marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version,
+      proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
+      porcentajeProveedor: garantiasMototaxis.porcentajeProveedor, mesesVigencia: garantiasMototaxis.mesesVigencia,
+      iniciaEn: garantiasMototaxis.iniciaEn, terminaEn: garantiasMototaxis.terminaEn,
+      alcance: garantiasMototaxis.alcance, exclusiones: garantiasMototaxis.exclusiones,
+    }).from(garantiasMototaxis)
+      .leftJoin(unidadesMototaxis, eq(garantiasMototaxis.unidadId, unidadesMototaxis.id))
+      .leftJoin(comprasMototaxisDetalle, eq(garantiasMototaxis.compraDetalleId, comprasMototaxisDetalle.id))
+      .leftJoin(comprasMototaxis, eq(comprasMototaxis.id, comprasMototaxisDetalle.compraId))
+      .innerJoin(modelosMototaxis, eq(modelosMototaxis.id, sql<string>`coalesce(${comprasMototaxisDetalle.modeloId}, ${unidadesMototaxis.modeloId})`))
+      .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
+      .innerJoin(personas, eq(garantiasMototaxis.proveedorPersonaId, personas.id))
+      .orderBy(desc(garantiasMototaxis.terminaEn), asc(garantiasMototaxis.id));
   }
 
   async crearReclamo(valor: unknown, usuarioId: string) {
@@ -500,28 +507,37 @@ export class ServicioMototaxis {
     const d = valor as Record<string, unknown>;
     if (!uuidValido(d.garantiaId)) throw new BadRequestException("Selecciona una garantía válida.");
     const fecha = fechaValida(d.fecha, "La fecha del reclamo");
+    if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha del reclamo no puede ser futura.");
     const descripcionFalla = texto(d.descripcionFalla, "La descripción de la falla", 2000, true)!;
     const costoTotal = importe(d.costoTotal, "El costo total del reclamo");
+    if (costoTotal > 999_999_999_999.99) throw new BadRequestException("El costo del reclamo supera el máximo permitido.");
     const [garantia] = await db.select().from(garantiasMototaxis).where(eq(garantiasMototaxis.id, d.garantiaId)).limit(1);
     if (!garantia) throw new NotFoundException("No se encontró la garantía.");
     if (fecha < garantia.iniciaEn || fecha > garantia.terminaEn) throw new BadRequestException("La fecha del reclamo está fuera de la vigencia de la garantía.");
     const porcentaje = Number(garantia.porcentajeProveedor);
-    const importeProveedor = redondear(costoTotal * porcentaje / 100);
-    const importeEmpresa = redondear(costoTotal - importeProveedor);
+    const totalCentimos = BigInt(Math.round(costoTotal * 100));
+    const proveedorCentimos = (totalCentimos * BigInt(porcentaje) + 50n) / 100n;
+    const importeProveedor = Number(proveedorCentimos) / 100;
+    const importeEmpresa = Number(totalCentimos - proveedorCentimos) / 100;
     const [reclamo] = await db.insert(reclamosGarantiaMototaxis).values({ garantiaId: d.garantiaId, fecha, descripcionFalla, costoTotal: costoTotal.toFixed(2), porcentajeProveedorAplicado: String(porcentaje), importeProveedor: importeProveedor.toFixed(2), importeEmpresa: importeEmpresa.toFixed(2), estado: "ABIERTO", usuarioId }).returning();
     return reclamo;
   }
 
-  listarReclamos() { return db.select().from(reclamosGarantiaMototaxis).orderBy(desc(reclamosGarantiaMototaxis.fecha)); }
-
-  private sumarMeses(fecha: string, meses: number) {
-    const [anio, mes, dia] = fecha.split("-").map(Number);
-    const indiceMes = mes - 1 + meses;
-    const anioFinal = anio + Math.floor(indiceMes / 12);
-    const mesFinal = indiceMes % 12;
-    const ultimoDia = new Date(Date.UTC(anioFinal, mesFinal + 1, 0)).getUTCDate();
-    return `${anioFinal}-${String(mesFinal + 1).padStart(2, "0")}-${String(Math.min(dia, ultimoDia)).padStart(2, "0")}`;
+  async avanzarReclamo(id: string, valor: unknown) {
+    if (!uuidValido(id) || !valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Selecciona un reclamo válido.");
+    const datos = valor as Record<string, unknown>;
+    const estado = texto(datos.estado, "El nuevo estado", 20, true)!;
+    const estadoAnterior = texto(datos.estadoAnterior, "El estado actual", 20, true)!;
+    if (!Object.hasOwn(transicionesReclamo, estadoAnterior) || !transicionesReclamo[estadoAnterior].includes(estado)) throw new BadRequestException("Ese cambio de estado no está permitido.");
+    const resolucion = texto(datos.resolucion, "La resolución", 2000, estado !== "ENVIADO");
+    const [reclamo] = await db.update(reclamosGarantiaMototaxis)
+      .set({ estado, ...(resolucion ? { resolucion } : {}) })
+      .where(and(eq(reclamosGarantiaMototaxis.id, id), eq(reclamosGarantiaMototaxis.estado, estadoAnterior))).returning();
+    if (!reclamo) throw new ConflictException("El reclamo cambió de estado. Actualiza el listado.");
+    return reclamo;
   }
+
+  listarReclamos() { return db.select().from(reclamosGarantiaMototaxis).orderBy(desc(reclamosGarantiaMototaxis.fecha), desc(reclamosGarantiaMototaxis.creadoEn)); }
 
   private esDuplicado(error: unknown) { return typeof error === "object" && error !== null && "code" in error && error.code === "23505"; }
 }

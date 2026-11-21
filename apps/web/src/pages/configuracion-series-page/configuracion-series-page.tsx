@@ -1,11 +1,12 @@
-import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { AccionIcono } from "../../components/ui/accion-icono";
+import { Etiqueta } from "../../components/ui/etiqueta";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
-import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
+import { Button } from "../../components/ui/button";
+import { clasesCamposPrecio, DialogoCatalogo } from "../../components/inventario/dialogo-catalogo";
 import { solicitarApi } from "../../services/api-cliente";
-import "./configuracion-series-page.css";
 
 type Tipo = "BOLETA" | "FACTURA" | "NOTA_CREDITO_FACTURA" | "NOTA_DEBITO_FACTURA" | "NOTA_CREDITO_BOLETA" | "NOTA_DEBITO_BOLETA" | "GUIA_REMITENTE" | "NOTA_VENTA" | "ORDEN_SERVICIO" | "COTIZACION";
 type Serie = { id: string; tipoComprobante: Tipo; serie: string; activa: boolean; ultimoNumero: number };
@@ -17,6 +18,7 @@ const tipos: { tipo: Tipo; nombre: string; regla: RegExp }[] = [
   { tipo: "NOTA_VENTA", nombre: "Nota de venta", regla: /^[A-Z0-9]{1,4}$/ }, { tipo: "ORDEN_SERVICIO", nombre: "Orden de servicio", regla: /^[A-Z0-9]{1,4}$/ }, { tipo: "COTIZACION", nombre: "Cotización", regla: /^[A-Z0-9]{1,4}$/ },
 ];
 
+const esFiscal = (tipo: Tipo) => !["NOTA_VENTA", "ORDEN_SERVICIO", "COTIZACION"].includes(tipo);
 const nombreDocumento = (tipo: Tipo) => tipos.find((opcion) => opcion.tipo === tipo)?.nombre ?? tipo;
 const ejemploSerie = (tipo: Tipo) => tipo.startsWith("NOTA_CREDITO_FACTURA") || tipo.startsWith("NOTA_DEBITO_FACTURA") || tipo === "FACTURA" ? "F001"
   : tipo.startsWith("NOTA_CREDITO_BOLETA") || tipo.startsWith("NOTA_DEBITO_BOLETA") || tipo === "BOLETA" ? "B001"
@@ -26,6 +28,8 @@ const ejemploSerie = (tipo: Tipo) => tipo.startsWith("NOTA_CREDITO_FACTURA") || 
 export function ConfiguracionSeriesPage() {
   const [series, setSeries] = useState<Serie[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("TODAS");
+  const [familia, setFamilia] = useState("");
   const [tipo, setTipo] = useState<Tipo>("BOLETA");
   const [serie, setSerie] = useState("");
   const [ultimoNumero, setUltimoNumero] = useState(0);
@@ -34,8 +38,7 @@ export function ConfiguracionSeriesPage() {
   const [guardando, setGuardando] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [actualizarLista, setActualizarLista] = useState(0);
-  const dialogoRef = useRef<HTMLElement>(null);
-  useDialogoFlotante(dialogoRef, mostrarFormulario, () => setMostrarFormulario(false));
+  const [confirmacion, setConfirmacion] = useState("");
 
   useEffect(() => {
     let vigente = true;
@@ -48,12 +51,17 @@ export function ConfiguracionSeriesPage() {
 
   const seriesFiltradas = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase("es-PE");
-    if (!termino) return series;
-    return series.filter((item) => `${nombreDocumento(item.tipoComprobante)} ${item.serie} ${item.activa ? "activa" : "inactiva"}`.toLocaleLowerCase("es-PE").includes(termino));
-  }, [busqueda, series]);
+    return series.filter((item) => {
+      const coincideEstado = filtroEstado === "TODAS" || (filtroEstado === "ACTIVAS" ? item.activa : !item.activa);
+      const coincideBusqueda = !termino || `${nombreDocumento(item.tipoComprobante)} ${item.serie} ${item.activa ? "activa" : "inactiva"}`.toLocaleLowerCase("es-PE").includes(termino);
+      const coincideFamilia = !familia || (familia === "FISCALES") === esFiscal(item.tipoComprobante);
+      return coincideEstado && coincideBusqueda && coincideFamilia;
+    });
+  }, [busqueda, familia, filtroEstado, series]);
 
   function abrirFormulario(item?: Serie) {
     setMensaje("");
+    setConfirmacion("");
     setTipo(item?.tipoComprobante ?? "BOLETA");
     setSerie(item?.serie ?? "");
     setUltimoNumero(item?.ultimoNumero ?? 0);
@@ -62,6 +70,7 @@ export function ConfiguracionSeriesPage() {
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
+    if (guardando) return;
     const normalizada = serie.trim().toUpperCase();
     const opcion = tipos.find((item) => item.tipo === tipo)!;
     if (!opcion.regla.test(normalizada)) { setMensaje(`Formato inválido para ${opcion.nombre}.`); return; }
@@ -69,6 +78,7 @@ export function ConfiguracionSeriesPage() {
     setMensaje("");
     try {
       await solicitarApi("/ingresos/series/configuracion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipoComprobante: tipo, serie: normalizada, ultimoNumero }) });
+      setConfirmacion(`Serie ${normalizada} guardada.`);
       setMostrarFormulario(false);
       setActualizarLista((actual) => actual + 1);
     } catch (error) {
@@ -76,9 +86,55 @@ export function ConfiguracionSeriesPage() {
     } finally { setGuardando(false); }
   }
 
-  return <main className="config-series-page">
-    <ListadoMaestro<Serie> variante="tabla" titulo="Series configuradas" descripcion="Series activas e históricas para cada tipo de documento." registros={seriesFiltradas} cargando={cargando} error={mensaje && !mostrarFormulario ? mensaje : undefined} paginacion={{ modo: "local" }} claseContenedor="config-series-table-wrap" controlesCabecera={<label className="listado-maestro-busqueda">Buscar serie<input value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Documento, serie o estado" autoComplete="off" /></label>} resetKey={busqueda} vacio={<><strong>{busqueda ? "No hay series que coincidan" : "Aún no hay series configuradas"}</strong><span>{busqueda ? "Prueba con otro documento, código de serie o estado." : "Configura una serie para habilitar la numeración de documentos."}</span></>} encabezadoTabla={<tr><th>Documento</th><th>Serie</th><th>Último número emitido</th><th>Estado</th><th>Acciones</th></tr>} renderizarFila={(item) => <tr key={item.id}><td><strong>{nombreDocumento(item.tipoComprobante)}</strong><small>{item.tipoComprobante === "NOTA_VENTA" || item.tipoComprobante === "ORDEN_SERVICIO" || item.tipoComprobante === "COTIZACION" ? "Documento interno" : "Documento fiscal"}</small></td><td><span className="config-series-code">{item.serie}</span></td><td>{item.ultimoNumero.toLocaleString("es-PE")}</td><td><span className={`config-series-status${item.activa ? " is-active" : ""}`}><i aria-hidden="true" />{item.activa ? "Activa" : "Inactiva"}</span></td><td><AccionIcono accion="editar" etiqueta={`Configurar ${nombreDocumento(item.tipoComprobante)} · ${item.serie}`} onClick={() => abrirFormulario(item)} /></td></tr>} />
-    <RegistrarAccionPrincipal etiqueta="Configurar serie" onClick={() => abrirFormulario()} />
-    {mostrarFormulario && createPortal(<div className="config-series-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) setMostrarFormulario(false); }}><section ref={dialogoRef} className="config-series-dialog" role="dialog" aria-modal="true" aria-labelledby="config-series-form-title"><header><div><p className="page-eyebrow">NUMERACIÓN DE DOCUMENTOS</p><h2 id="config-series-form-title">Configurar serie</h2><p>La numeración se guarda para el tipo de documento seleccionado.</p></div><button type="button" aria-label="Cerrar formulario" onClick={() => { if (!guardando) setMostrarFormulario(false); }}>×</button></header><form id="config-series-form" className="config-series-form-floating" onSubmit={(evento) => void guardar(evento)}><div className="config-series-fields"><label className="config-series-field-wide">Documento<select value={tipo} onChange={(evento) => { const siguienteTipo = evento.target.value as Tipo; setTipo(siguienteTipo); setSerie(series.find((item) => item.tipoComprobante === siguienteTipo && item.activa)?.serie ?? ""); setUltimoNumero(series.find((item) => item.tipoComprobante === siguienteTipo && item.activa)?.ultimoNumero ?? 0); }}><optgroup label="Documentos fiscales">{tipos.filter((item) => !["NOTA_VENTA", "ORDEN_SERVICIO", "COTIZACION"].includes(item.tipo)).map((item) => <option key={item.tipo} value={item.tipo}>{item.nombre}</option>)}</optgroup><optgroup label="Documentos internos">{tipos.filter((item) => ["NOTA_VENTA", "ORDEN_SERVICIO", "COTIZACION"].includes(item.tipo)).map((item) => <option key={item.tipo} value={item.tipo}>{item.nombre}</option>)}</optgroup></select></label><label>Serie<input required value={serie} onChange={(evento) => setSerie(evento.target.value.toUpperCase())} maxLength={4} placeholder={ejemploSerie(tipo)} /></label><label>Último número emitido<input type="number" min={0} max={99999999} step={1} required value={ultimoNumero} onChange={(evento) => setUltimoNumero(Number(evento.target.value))} /></label></div>{mensaje && mostrarFormulario && <p className="config-series-error" role="alert">{mensaje}</p>}</form><footer><button className="config-series-cancel" type="button" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</button><button className="config-series-save" type="submit" form="config-series-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar serie"}</button></footer></section></div>, document.body)}
-  </main>;
+  const serieActiva = series.find((item) => item.tipoComprobante === tipo && item.activa);
+  const configurada = series.find((item) => item.tipoComprobante === tipo && item.serie === serie.trim().toUpperCase());
+  const minimoCorrelativo = configurada?.ultimoNumero ?? (esFiscal(tipo) ? 0 : serieActiva?.ultimoNumero ?? 0);
+  const siguiente = Math.max(ultimoNumero, minimoCorrelativo) + 1;
+
+  return <section className="grid min-w-0 gap-4">
+    {confirmacion && <NotificacionFlotante tipo="exito" mensaje={confirmacion} onCerrar={() => setConfirmacion("")} />}
+    <ListadoMaestro<Serie> variante="tabla" titulo="Numeración de documentos" registros={seriesFiltradas} cargando={cargando} error={mensaje && !mostrarFormulario ? mensaje : undefined}
+      paginacion={{ modo: "local" }} resetKey={`${busqueda}|${familia}|${filtroEstado}`} vacio="No hay series para mostrar."
+      controlesCabecera={<>
+        <label className="listado-maestro-busqueda">Buscar serie<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Documento o serie" /></label>
+        <label className="listado-maestro-filtro">Documento<select value={familia} onChange={(e) => setFamilia(e.target.value)}><option value="">Todos</option><option value="FISCALES">Fiscales</option><option value="INTERNOS">Internos</option></select></label>
+        <label className="listado-maestro-filtro">Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}><option value="TODAS">Todas</option><option value="ACTIVAS">Activas</option><option value="INACTIVAS">Inactivas</option></select></label>
+        <RegistrarAccionPrincipal etiqueta="Configurar serie" onClick={() => abrirFormulario()} />
+      </>}
+      encabezadoTabla={<tr><th>Documento</th><th>Serie</th><th>Último emitido</th><th>Estado</th><th>Acciones</th></tr>}
+      renderizarFila={(item) => <tr key={item.id}>
+        <td><strong>{nombreDocumento(item.tipoComprobante)}</strong><small className="block">{esFiscal(item.tipoComprobante) ? "Fiscal" : "Interno"}</small></td>
+        <td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.serie}</span></td>
+        <td>{item.ultimoNumero.toLocaleString("es-PE")}</td><td><Etiqueta tono={item.activa ? "positiva" : "neutral"}>{item.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
+        <td><AccionIcono accion="editar" etiqueta={`Configurar ${nombreDocumento(item.tipoComprobante)} ${item.serie}`} onClick={() => abrirFormulario(item)} /></td>
+      </tr>}
+    />
+    {mostrarFormulario && <DialogoCatalogo titulo="Configurar serie" articulo={nombreDocumento(tipo)} codigo={serie.trim().toUpperCase()} alCerrar={() => setMostrarFormulario(false)} guardando={guardando}
+      acciones={<><Button variant="outline" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</Button><Button type="submit" form="config-series-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar serie"}</Button></>}>
+      <form id="config-series-form" onSubmit={(e) => void guardar(e)}>
+        <fieldset disabled={guardando} className={`m-0 border-0 p-0 ${clasesCamposPrecio}`}>
+          <label className="sm:col-span-2">Documento<select value={tipo} onChange={(e) => {
+            const elegido = e.target.value as Tipo;
+            const actual = series.find((item) => item.activa && item.tipoComprobante === elegido);
+            setTipo(elegido); setSerie(actual?.serie ?? ""); setUltimoNumero(actual?.ultimoNumero ?? 0);
+          }}>
+            <optgroup label="Fiscales">{tipos.filter((item) => esFiscal(item.tipo)).map((item) => <option key={item.tipo} value={item.tipo}>{item.nombre}</option>)}</optgroup>
+            <optgroup label="Internos">{tipos.filter((item) => !esFiscal(item.tipo)).map((item) => <option key={item.tipo} value={item.tipo}>{item.nombre}</option>)}</optgroup>
+          </select></label>
+          <label>Serie<input required value={serie} maxLength={4} placeholder={ejemploSerie(tipo)} onChange={(e) => {
+            const valor = e.target.value.toUpperCase();
+            setSerie(valor);
+            setUltimoNumero(series.find((item) => item.tipoComprobante === tipo && item.serie === valor)?.ultimoNumero ?? (esFiscal(tipo) ? 0 : serieActiva?.ultimoNumero ?? 0));
+          }} /></label>
+          <label>Último número emitido<input type="number" required min={minimoCorrelativo} max={99999999} step={1} value={ultimoNumero} onChange={(e) => setUltimoNumero(Number(e.target.value))} /></label>
+        </fieldset>
+        <dl className="my-4 grid gap-3 rounded-xl bg-[var(--erp-surface-muted)] p-4 sm:grid-cols-2 [&_dd]:m-0 [&_dt]:text-sm">
+          <div><dt>Serie activa actual</dt><dd className="font-semibold">{serieActiva?.serie ?? "Sin configurar"}</dd></div>
+          <div><dt>Próximo documento</dt><dd className="font-mono font-semibold">{serie.trim() ? `${serie.trim()}-${String(siguiente).padStart(6, "0")}` : "—"}</dd></div>
+        </dl>
+        {serieActiva && serie.trim() && serieActiva.serie !== serie.trim() && <p className="text-sm">Al guardar, {serie.trim()} será la serie activa para {nombreDocumento(tipo)}.</p>}
+        {mensaje && <p role="alert" className="text-sm text-[var(--erp-accent)]">{mensaje}</p>}
+      </form>
+    </DialogoCatalogo>}
+  </section>;
 }

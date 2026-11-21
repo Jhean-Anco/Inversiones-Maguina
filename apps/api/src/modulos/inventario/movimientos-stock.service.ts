@@ -1,15 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, exists, gte, ilike, or, sql } from "drizzle-orm";
-import { db, entradasStock, entradasStockDetalle, ingresos, marcasProductos, movimientosStock, productos, productosCodigos, saldosStock, unidadesMedida } from "@magina/database";
+import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { db, entradasStock, entradasStockDetalle, ingresos, marcasProductos, movimientosStock, productos, productosCodigos, saldosStock, unidadesMedida, usuarios } from "@magina/database";
 
 const motivosAjuste = ["INVENTARIO_FISICO", "MERMA", "DANIO", "PERDIDA", "DEVOLUCION", "CORRECCION", "OTRO"] as const;
 const tiposMovimiento = ["ENTRADA", "SALIDA", "AJUSTE"] as const;
-type DatosAjuste = { productoId?: unknown; sentido?: unknown; cantidad?: unknown; motivo?: unknown; observacion?: unknown };
+type DatosAjuste = { productoId?: unknown; sentido?: unknown; cantidad?: unknown; cantidadContada?: unknown; saldoEsperado?: unknown; motivo?: unknown; observacion?: unknown };
 
-function cantidadValida(valor: unknown) {
+function cantidadValida(valor: unknown, minimo = 0.001) {
   const numero = typeof valor === "number" ? valor : typeof valor === "string" && valor.trim() ? Number(valor) : NaN;
-  if (!Number.isFinite(numero) || numero < 0.001 || Number(numero.toFixed(3)) !== numero) throw new BadRequestException("La cantidad debe ser mayor que cero y tener hasta 3 decimales.");
+  if (!Number.isFinite(numero) || numero < minimo || numero >= 1_000_000_000_000 || Number(numero.toFixed(3)) !== numero) throw new BadRequestException(minimo ? "Ingresa una cantidad mayor que cero con hasta 3 decimales." : "Ingresa una cantidad igual o mayor que cero con hasta 3 decimales.");
   return numero;
 }
 
@@ -66,11 +66,13 @@ export class ServicioMovimientosStock {
         motivo: movimientosStock.motivo, observacion: movimientosStock.observacion,
         origenTipo: movimientosStock.origenTipo, origenId: movimientosStock.origenId,
         cantidadBase: movimientosStock.cantidadBase, costoUnitarioBase: movimientosStock.costoUnitarioBase,
+        saldoAnterior: movimientosStock.saldoAnterior, saldoFinal: movimientosStock.saldoFinal, usuario: usuarios.nombreUsuario,
         creadoEn: movimientosStock.creadoEn, productoId: productos.id,
         producto: productos.nombre, codigo: productos.codigoInterno,
         unidad: unidadesMedida.nombre, unidadCodigo: unidadesMedida.codigo,
         documentoOrigen: sql<string | null>`coalesce(${entradasStock.codigo}, ${ingresos.codigo})`,
       }).from(movimientosStock)
+        .innerJoin(usuarios, eq(usuarios.id, movimientosStock.usuarioId))
         .innerJoin(productos, eq(movimientosStock.productoId, productos.id))
         .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
         .leftJoin(entradasStock, and(eq(movimientosStock.origenTipo, "ENTRADA_STOCK"), eq(movimientosStock.origenId, entradasStock.id)))
@@ -91,9 +93,11 @@ export class ServicioMovimientosStock {
     if (typeof valor !== "object" || valor === null || Array.isArray(valor)) throw new BadRequestException("Los datos del ajuste no son válidos.");
     const datos = valor as DatosAjuste;
     if (typeof datos.productoId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(datos.productoId)) throw new BadRequestException("Selecciona un producto válido.");
-    if (datos.sentido !== "INGRESO" && datos.sentido !== "RETIRO") throw new BadRequestException("Selecciona si el ajuste suma o resta stock.");
-    const sentido = datos.sentido;
-    const cantidad = cantidadValida(datos.cantidad);
+    const porConteo = datos.cantidadContada !== undefined;
+    if (!porConteo && datos.sentido !== "INGRESO" && datos.sentido !== "RETIRO") throw new BadRequestException("Selecciona si el ajuste suma o resta stock.");
+    const cantidad = porConteo ? cantidadValida(datos.cantidadContada, 0) : cantidadValida(datos.cantidad);
+    const saldoEsperado = datos.saldoEsperado;
+    if (saldoEsperado !== undefined && (typeof saldoEsperado !== "string" || !/^\d{1,12}(\.\d{1,6})?$/.test(saldoEsperado))) throw new BadRequestException("El saldo de referencia no es válido.");
     const motivo = motivoValido(datos.motivo);
     if (datos.observacion !== undefined && datos.observacion !== null && (typeof datos.observacion !== "string" || datos.observacion.length > 1000)) throw new BadRequestException("La observación no puede superar los 1000 caracteres.");
     const observacion = typeof datos.observacion === "string" ? datos.observacion.trim() || null : null;
@@ -101,20 +105,23 @@ export class ServicioMovimientosStock {
     return db.transaction(async (tx) => {
       const [producto] = await tx.select({ id: productos.id }).from(productos).where(and(eq(productos.id, datos.productoId as string), eq(productos.activo, true))).limit(1);
       if (!producto) throw new NotFoundException("El producto no existe o está inactivo.");
-      const cantidadBase = cantidad.toFixed(6);
-      let saldoFinal: string | undefined;
-      if (sentido === "INGRESO") {
-        const [saldo] = await tx.insert(saldosStock).values({ productoId: producto.id, cantidad: cantidadBase })
-          .onConflictDoUpdate({ target: saldosStock.productoId, set: { cantidad: sql`${saldosStock.cantidad} + ${cantidadBase}`, actualizadoEn: new Date() } })
-          .returning({ cantidad: saldosStock.cantidad });
-        saldoFinal = saldo?.cantidad;
-      } else {
-        const [saldo] = await tx.update(saldosStock).set({ cantidad: sql`${saldosStock.cantidad} - ${cantidadBase}`, actualizadoEn: new Date() })
-          .where(and(eq(saldosStock.productoId, producto.id), gte(saldosStock.cantidad, cantidadBase)))
-          .returning({ cantidad: saldosStock.cantidad });
-        saldoFinal = saldo?.cantidad;
-        if (saldoFinal === undefined) throw new BadRequestException("El retiro supera el stock disponible del producto.");
-      }
+      await tx.insert(saldosStock).values({ productoId: producto.id, cantidad: "0" }).onConflictDoNothing();
+      const [saldo] = await tx.select({
+        cantidad: saldosStock.cantidad,
+        referenciaValida: saldoEsperado === undefined ? sql<boolean>`true` : sql<boolean>`${saldosStock.cantidad} = ${saldoEsperado}::numeric`,
+      }).from(saldosStock).where(eq(saldosStock.productoId, producto.id)).for("update");
+      if (!saldo.referenciaValida) throw new ConflictException("El saldo cambió. Selecciona nuevamente el repuesto y revisa el ajuste.");
+      const cantidadSolicitada = cantidad.toFixed(6);
+      const nuevoSaldo = porConteo ? sql`${cantidadSolicitada}::numeric`
+        : datos.sentido === "INGRESO" ? sql`${saldosStock.cantidad} + ${cantidadSolicitada}::numeric`
+        : sql`${saldosStock.cantidad} - ${cantidadSolicitada}::numeric`;
+      const [actualizado] = await tx.update(saldosStock).set({ cantidad: nuevoSaldo, actualizadoEn: new Date() })
+        .where(and(eq(saldosStock.productoId, producto.id), sql`${nuevoSaldo} >= 0 and ${nuevoSaldo} < 1000000000000`))
+        .returning({ cantidad: saldosStock.cantidad, diferencia: sql<string>`(${saldosStock.cantidad} - ${saldo.cantidad}::numeric)::text` });
+      if (!actualizado) throw new BadRequestException("El saldo resultante está fuera del rango permitido.");
+      if (Number(actualizado.diferencia) === 0) throw new BadRequestException("El conteo coincide con el saldo actual del repuesto.");
+      const sentido = actualizado.diferencia.startsWith("-") ? "RETIRO" : "INGRESO";
+      const cantidadBase = actualizado.diferencia.replace(/^-/, "");
       const [costo] = await tx.select({ valor: sql<string>`coalesce(sum(${entradasStockDetalle.cantidadBase} * ${entradasStockDetalle.costoUnitario} / nullif(${entradasStockDetalle.factorAUnidadBase}, 0)) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 0)::numeric(14,6)` })
         .from(entradasStockDetalle).where(eq(entradasStockDetalle.productoId, producto.id));
       const origenId = randomUUID();
@@ -122,11 +129,11 @@ export class ServicioMovimientosStock {
       const [movimiento] = await tx.insert(movimientosStock).values({
         productoId: producto.id, tipo: "AJUSTE", origenTipo: "AJUSTE_STOCK", origenId,
         origenDetalleId: detalleId, cantidadBase, costoUnitarioBase: costo?.valor ?? "0",
-        sentido, motivo, observacion, usuarioId,
+        sentido, motivo, observacion, usuarioId, saldoAnterior: saldo.cantidad, saldoFinal: actualizado.cantidad,
       }).returning({ id: movimientosStock.id, productoId: movimientosStock.productoId, tipo: movimientosStock.tipo,
         sentido: movimientosStock.sentido, motivo: movimientosStock.motivo, observacion: movimientosStock.observacion,
         cantidadBase: movimientosStock.cantidadBase, creadoEn: movimientosStock.creadoEn });
-      return { ...movimiento, saldoFinal };
+      return { ...movimiento, saldoFinal: actualizado.cantidad };
     });
   }
 }

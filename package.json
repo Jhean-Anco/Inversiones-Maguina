@@ -23,7 +23,8 @@
     "format:check": "prettier --check package.json pnpm-workspace.yaml turbo.json biome.jsonc \".github/workflows/*.yml\" \"compose*.yaml\"",
     "docs:api": "node scripts/documentar-api.mjs",
     "docs:data": "node scripts/documentar-datos.mjs",
-    "docs:check": "pnpm docs:api && pnpm docs:data && node scripts/comprobar-documentacion.mjs"
+    "docs:check": "pnpm docs:api && pnpm docs:data && node scripts/comprobar-documentacion.mjs",
+    "check:frontend-architecture": "node scripts/check-frontend-architecture.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

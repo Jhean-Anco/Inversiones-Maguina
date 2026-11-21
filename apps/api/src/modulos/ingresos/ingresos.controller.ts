@@ -13,17 +13,20 @@ type SolicitudAutenticada = FastifyRequest & { usuario: UsuarioAutenticado };
 export class ControladorIngresos {
   constructor(private readonly ingresos: ServicioIngresos) {}
 
-  @Get() @RequierePermiso("INGRESOS.LEER") listarVentas(@Query("tipoVenta") tipoVenta?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) {
-    return this.ingresos.listarVentas({ tipoVenta, pagina, porPagina, busqueda });
+  @Get() @RequierePermiso("INGRESOS.LEER") listarVentas(@Query("tipoVenta") tipoVenta?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string, @Query("tipoDocumento") tipoDocumento?: string, @Query("medioPago") medioPago?: string) {
+    return this.ingresos.listarVentas({ tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago });
   }
 
-  @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string, @Query("escaneo") escaneo?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite, escaneo === "1"); }
+  @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string, @Query("escaneo") escaneo?: string, @Query("paraVenta") paraVenta?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite, escaneo === "1", paraVenta === "1"); }
   @Get("mototaxis") @RequierePermiso("INGRESOS.CREAR") buscarMototaxisVenta(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarMototaxisVenta(busqueda); }
   @Get("series") @RequierePermiso("INGRESOS.CREAR") obtenerNumeraciones() { return this.ingresos.obtenerNumeraciones(); }
   @Get("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") listarSeriesConfiguradas() { return this.ingresos.listarSeriesConfiguradas(); }
   @Post("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarSerieConfigurada(@Body() datos: unknown) { return this.ingresos.guardarSerieConfigurada(datos); }
   @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }
-  @Get("guias/documentos") @RequierePermiso("INGRESOS.LEER") buscarDocumentosParaGuia(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarDocumentosParaGuia(busqueda); }
+  @Get("guias/documentos") @RequierePermiso("INGRESOS.LEER")
+  buscarDocumentosParaGuia(@Query("busqueda") busqueda?: string, @Query("tipo") tipo?: string) {
+    return this.ingresos.buscarDocumentosParaGuia(busqueda, tipo);
+  }
   @Get("guias/documentos/:id") @RequierePermiso("INGRESOS.LEER") obtenerDocumentoParaGuia(@Param("id") id: string) { return this.ingresos.obtenerDocumentoParaGuia(id); }
   @Get("ubigeos") @RequierePermiso("INGRESOS.LEER") listarUbigeos() { return this.ingresos.listarUbigeos(); }
   @Post("guias") @RequierePermiso("INGRESOS.CREAR") emitirGuia(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirGuia(datos, solicitud.usuario.id); }
@@ -35,6 +38,7 @@ export class ControladorIngresos {
   @Post("ordenes-servicio/:id/emitir") @RequierePermiso("INGRESOS.CREAR") emitirOrdenServicio(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirOrdenServicio(id, datos, solicitud.usuario.id); }
   @Get("cotizaciones") @RequierePermiso("INGRESOS.LEER") listarCotizaciones(@Query("busqueda") busqueda?: string) { return this.ingresos.listarCotizaciones(busqueda); }
   @Post("cotizaciones") @RequierePermiso("INGRESOS.CREAR") crearCotizacion(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.crearCotizacion(datos, solicitud.usuario.id); }
+  @Patch("cotizaciones/:id") @RequierePermiso("INGRESOS.CREAR") actualizarCotizacion(@Param("id") id: string, @Body() datos: unknown) { return this.ingresos.actualizarCotizacion(id, datos); }
   @Patch("cotizaciones/:id/estado") @RequierePermiso("INGRESOS.CREAR") cambiarEstadoCotizacion(@Param("id") id: string, @Body() datos: unknown) { return this.ingresos.cambiarEstadoCotizacion(id, datos); }
   @Post("cotizaciones/:id/convertir") @RequierePermiso("INGRESOS.CREAR") convertirCotizacion(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.convertirCotizacion(id, datos, solicitud.usuario.id); }
   @Get("clientes") @RequierePermiso("PERSONAS.LEER") buscarClientes(@Query("busqueda") busqueda?: string) { return this.ingresos.buscarClientes(busqueda); }
@@ -50,7 +54,7 @@ export class ControladorIngresos {
   @Get(":id/notas") @RequierePermiso("INGRESOS.LEER") listarNotas(@Param("id") id: string) { return this.ingresos.listarNotas(id); }
   @Post(":id/notas") @RequierePermiso("FACTURACION.NOTAS_EMITIR") emitirNota(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.emitirNota(id, datos, solicitud.usuario.id); }
   @Post(":id/anulacion") @RequierePermiso("FACTURACION.ANULAR") anularIngreso(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.anularIngreso(id, datos, solicitud.usuario.id); }
-  @Post(":id/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionIngreso(@Param("id") id: string) { return this.ingresos.consultarAnulacionIngreso(id); }
+  @Post(":id/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionIngreso(@Param("id") id: string, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.consultarAnulacionIngreso(id, solicitud.usuario.id); }
   @Post(":id/notas/:idNota/anulacion") @RequierePermiso("FACTURACION.ANULAR") anularNota(@Param("id") id: string, @Param("idNota") idNota: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.anularNota(id, idNota, datos, solicitud.usuario.id); }
   @Post(":id/notas/:idNota/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionNota(@Param("id") id: string, @Param("idNota") idNota: string) { return this.ingresos.consultarAnulacionNota(id, idNota); }
   @Get(":id/pagos") @RequierePermiso("INGRESOS.LEER") listarPagos(@Param("id") id: string) { return this.ingresos.listarPagos(id); }

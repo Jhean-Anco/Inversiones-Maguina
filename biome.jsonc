@@ -5,6 +5,9 @@
       "unsafeParameterDecoratorsEnabled": true,
     },
   },
+  "tailwind": {
+    "stylesheet": "./apps/web/src/main/index.css",
+  },
   "linter": {
     "enabled": true,
     "rules": {

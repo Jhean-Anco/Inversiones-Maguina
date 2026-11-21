@@ -1,174 +1,1077 @@
-.ordenes-service-page .venta-form-header-fields{display:grid;gap:0;padding:0;background:linear-gradient(180deg,#fbfcfe,#fff)}
-#root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,18%) minmax(0,20%) minmax(0,1fr)!important}
-#root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,18%) minmax(210px,22%) minmax(0,1fr)!important;gap:12px 18px;padding:16px 22px 12px}
-.ordenes-vehicle-fields>label{display:grid;min-width:0;gap:7px;color:#355372;font-size:12px;font-weight:700}
-.ordenes-vehicle-fields>label:nth-of-type(2){white-space:nowrap}
-.ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}
-.ordenes-vehicle-fields>.ordenes-motive-field{grid-column:span 1}
-.ordenes-vehicle-fields .ordenes-field-full{grid-column:1/-1}
-.ordenes-customer-field{position:relative;z-index:3;display:grid;grid-column:1/-1;grid-template-columns:minmax(0,1fr)!important;min-width:0;width:100%;gap:6px;color:#536b82;font-size:11px;font-weight:700}
-.ordenes-customer-field>.venta-client-selected{width:100%;box-sizing:border-box}
-.ordenes-customer-field>label{color:inherit;font:inherit}
-.ordenes-customer-field>.ordenes-client-picker{grid-area:auto!important}
-.ordenes-vehicle-fields input,.ordenes-vehicle-fields select,.ordenes-vehicle-fields textarea{box-sizing:border-box;width:100%;min-width:0;min-height:50px;padding:10px 13px;border:1px solid #d8e2eb;border-radius:9px;background:#fff;color:#293747;font:inherit;font-size:13px;font-weight:500}
-.ordenes-vehicle-fields textarea{min-height:70px;resize:vertical;line-height:1.45}
-.ordenes-vehicle-fields :is(input,textarea,select):focus{outline:0;border-color:#7294b8;box-shadow:0 0 0 3px #7294b81e}
-.ordenes-vehicle-fields :is(input,textarea,select):disabled{background:#f4f7fa;color:#7b8da0;cursor:not-allowed}
-.ordenes-client-picker{position:relative;display:grid;width:100%;min-width:0;grid-template-columns:86px minmax(0,1fr) auto 50px;align-items:center;gap:8px}
-.venta-layout.is-data-step .ordenes-client-picker{display:grid!important;grid-template-columns:86px minmax(0,1fr) auto 50px!important}
-.venta-layout.is-data-step .ordenes-client-picker>input{display:block;width:100%!important;min-width:0;height:42px;box-sizing:border-box;grid-column:auto!important}
-.ordenes-client-picker .venta-client-selected,.ordenes-client-picker>.venta-client-results,.ordenes-client-picker>.ordenes-client-feedback{grid-column:1/-1;min-width:0;width:100%;box-sizing:border-box}
-.ordenes-client-picker .venta-client-selected{min-height:44px}
-.ordenes-search-client,.ordenes-add-client{display:inline-flex;min-width:0;height:42px;align-items:center;justify-content:center;gap:6px;border:1px solid #d5e1ed;border-radius:9px;background:#fff;color:#24527e;font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease,box-shadow .15s ease}
-.ordenes-search-client{min-height:50px;padding:0 13px;border-color:#174b80;background:#174b80;color:#fff}
-.ordenes-search-client:hover:not(:disabled){border-color:#103c69;background:#103c69;color:#fff}
-.ordenes-search-client svg,.ordenes-add-client svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.ordenes-add-client{width:50px;height:50px;padding:0;color:#355f88}
-.ordenes-add-client:hover{border-color:#abc2d8;background:#f3f8fc;box-shadow:0 2px 7px #173b6012}
-.ordenes-search-client:disabled{border-color:#e5ebf1;background:#eff3f7;color:#9aa8b6;cursor:not-allowed}
-.ordenes-search-client:focus-visible,.ordenes-add-client:focus-visible{outline:3px solid #4c82b533;outline-offset:2px}
-.ordenes-document-select{width:86px!important;min-height:50px!important;padding:0 9px!important;border-color:#d6e1ed!important;border-radius:9px!important;background:#fff!important;color:#214d79!important;font-size:12px!important}
-.ordenes-client-feedback{padding:3px 2px 0;color:#7b8da0;font-size:11px;line-height:1.4}
-.ordenes-client-picker .venta-client-results{position:absolute;z-index:8;top:calc(100% + 5px);left:0;width:100%;max-height:220px;overflow:auto;border:1px solid #dce6ef;border-radius:9px;background:#fff;box-shadow:0 12px 26px #102f4c1c}
-.ordenes-client-picker .venta-client-result-select{display:grid;width:100%;gap:4px;padding:10px 12px;border:0;border-bottom:1px solid #edf1f5;background:transparent;color:#294d6c;text-align:left;cursor:pointer}
-.ordenes-client-picker .venta-client-result-select:hover{background:#f6f9fc}
-.ordenes-client-picker .venta-client-result-select strong{font-size:12px}
-.ordenes-client-picker .venta-client-result-select span{color:#8192a3;font-size:10px}
-.ordenes-client-empty{position:absolute;z-index:8;top:calc(100% + 5px);left:0;display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #dce6ef;border-radius:9px;background:#fff;box-shadow:0 12px 26px #102f4c1c;color:#71849b;font-size:11px}
-.ordenes-client-empty button{min-height:32px;padding:0 10px;border:1px solid #d5e1ed;border-radius:8px;background:#f4f8fc;color:#164a7c;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer}
-.ordenes-form-scroll{min-height:0}
-.ordenes-form-scroll .venta-form-body{min-height:180px}
-.ordenes-form-scroll .venta-product-tools button{min-height:32px;padding:0 11px;border:1px solid #dbe5f0;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:11px;font-weight:650;cursor:pointer}
-.ordenes-form-scroll .venta-product-tools button:hover{border-color:#b8cde0;background:#f5f9fc}
-.ordenes-diagnosis{align-content:start;gap:6px}
-.ordenes-diagnosis>strong{color:#183e68;font-size:12px}
-.ordenes-diagnosis>label{display:grid;gap:5px;color:#536b82;font-size:11px;font-weight:700}
-.ordenes-diagnosis textarea{box-sizing:border-box;width:100%;min-height:54px;padding:8px 9px;border:1px solid #d8e2ee;border-radius:8px;background:#fff;color:#172f4d;font:inherit;font-size:12px;font-weight:400;resize:vertical}
-.ordenes-diagnosis>textarea{min-height:64px}
-.ordenes-timeline{display:grid;gap:4px;max-height:110px;overflow:auto;padding-top:6px;border-top:1px solid #e2eaf3}
-.ordenes-timeline>strong{color:#365b7c;font-size:10px}
-.ordenes-timeline p{display:grid;gap:2px;margin:0;padding:5px 0;border-bottom:1px solid #edf1f5;color:#526b83;font-size:10px;line-height:1.4}
-.ordenes-timeline time{color:#8393a4;font-size:9px}
-.ordenes-checkout-actions{align-content:stretch}
-.ordenes-comprobante{display:grid;gap:5px;color:#536b82;font-size:11px;font-weight:700}
-.ordenes-comprobante select{box-sizing:border-box;width:100%;height:38px;padding:0 10px;border:1px solid #d8e2ee;border-radius:8px;background:#fff;color:#243b53;font:inherit;font-size:12px}
-.ordenes-emit-button{min-height:40px;padding:0 12px;border:1px solid #d5e1ed;border-radius:9px;background:#f4f8fc;color:#174b80;font:inherit;font-size:11px;font-weight:750;cursor:pointer}
-.ordenes-emit-button:hover:not(:disabled){background:#eaf2fa}
-.ordenes-page .listado-maestro-cabecera{align-items:center}
-.ordenes-row-caption{display:block;margin-top:3px;color:#8596a8;font-size:10px}
-.ordenes-page .ventas-state.is-progress{background:#edf4fc;color:#315d88}
-.ordenes-page .ventas-row-actions>button{font-size:11px;font-weight:700}
-.ordenes-page .ventas-row-actions>span{color:#7b8da1;font-size:10px}
-.ordenes-page .ordenes-table th:last-child{text-align:center}
-.ordenes-page .ordenes-table td:last-child{text-align:center}
-.ordenes-page .ventas-row-actions{gap:7px;justify-content:center}
-.ordenes-page .ventas-row-actions>.erp-icon-action,
-.ordenes-page .ventas-row-actions>.document-print-menu .erp-icon-action,
-.ordenes-page .ventas-row-actions>.ventas-actions a{box-sizing:border-box;width:36px;min-width:36px;height:36px;min-height:36px;flex:0 0 36px;padding:0;opacity:.78;transition:opacity .16s ease,transform .16s ease,background-color .16s ease}
-.ordenes-page .ventas-row-actions>.erp-icon-action svg,
-.ordenes-page .ventas-row-actions>.document-print-menu .erp-icon-action svg,
-.ordenes-page .ventas-row-actions>.ventas-actions a svg{width:16px;height:16px;flex:0 0 16px}
-.ordenes-page .ventas-row-actions>.erp-icon-action .orden-whatsapp-icon{width:19px;height:19px;flex:0 0 19px}
-.ordenes-page .ventas-row-actions>.document-print-menu .erp-icon-action .orden-whatsapp-icon{width:19px;height:19px;flex:0 0 19px}
-.ordenes-page .ventas-row-actions>.erp-icon-action:hover,.ordenes-page .ventas-row-actions>.erp-icon-action:focus-visible,.ordenes-page .ventas-row-actions>.document-print-menu .erp-icon-action:hover,.ordenes-page .ventas-row-actions>.document-print-menu .erp-icon-action:focus-visible,.ordenes-page .ventas-row-actions>.ventas-actions a:hover,.ordenes-page .ventas-row-actions>.ventas-actions a:focus-visible{opacity:1;transform:translateY(-1px)}
-.ordenes-whatsapp-options{position:absolute;z-index:40;top:calc(100% + 7px);right:0;display:grid;width:min(300px,calc(100vw - 32px));gap:5px;padding:8px;border:1px solid #d6e1eb;border-radius:11px;background:#fff;box-shadow:0 14px 34px #102d4d2b;text-align:left;transform-origin:top right;will-change:opacity,transform}
-.ordenes-whatsapp-options[data-menu-state="abriendo"]{animation:menu-opciones-entrada 160ms cubic-bezier(.2,.75,.25,1) both}
-.ordenes-whatsapp-options[data-menu-state="cerrando"]{animation:menu-opciones-salida 140ms ease-in both;pointer-events:none}
-.ordenes-whatsapp-options[data-menu-state="abriendo"]>*{animation:menu-opcion-entrada 130ms ease-out both}
-.ordenes-whatsapp-options[data-menu-state="abriendo"]>*:nth-child(2){animation-delay:35ms}
-.ordenes-whatsapp-options[data-menu-state="abriendo"]>*:nth-child(3){animation-delay:70ms}
-.ordenes-whatsapp-options[data-menu-state="cerrando"]>*{animation:menu-opcion-salida 90ms ease-in both}
-.ordenes-whatsapp-options[data-menu-state="cerrando"]>*:nth-child(1){animation-delay:50ms}
-.ordenes-whatsapp-options[data-menu-state="cerrando"]>*:nth-child(2){animation-delay:25ms}
-@media(prefers-reduced-motion:reduce){.ordenes-whatsapp-options,.ordenes-whatsapp-options>*{animation-duration:1ms!important;animation-delay:0ms!important}}
-.ordenes-whatsapp-options>button,.ordenes-whatsapp-extension>button{padding:9px 10px;border:0;border-radius:7px;background:transparent;color:#123f6a;font:inherit;font-size:12px;font-weight:650;text-align:left;cursor:pointer}
-.ordenes-whatsapp-options>button:hover:not(:disabled),.ordenes-whatsapp-extension>button:hover:not(:disabled){background:#edf4fa}
-.ordenes-whatsapp-options>button:disabled{color:#8192a3;cursor:not-allowed}
-.ordenes-whatsapp-options>small{padding:0 10px 6px;color:#6d8093;font-size:10px;line-height:1.4}
-.ordenes-whatsapp-extension{display:grid;gap:6px;padding:7px;border-top:1px solid #e5edf4}
-.ordenes-whatsapp-extension label{display:grid;gap:6px;color:#355372;font-size:11px;font-weight:700}
-.ordenes-whatsapp-extension textarea{min-height:74px;resize:vertical;border:1px solid #d5e1ef;border-radius:8px;padding:8px;color:#173d65;font:inherit;font-size:12px}
-.ordenes-whatsapp-extension>button{background:#174b80;color:white;text-align:center}
-.ordenes-financial-fields{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(180px,.55fr) minmax(220px,1fr);align-items:stretch;gap:12px 18px;padding:12px 22px 14px;border-bottom:1px solid #e5edf5}
-.ordenes-financial-fields>label,.ordenes-financial-fields>.selector-cuenta-financiera,.ordenes-payment-summary label{display:flex;flex-direction:column;justify-content:flex-start;gap:7px;color:#24466b;font-size:12px;font-weight:650}
-.ordenes-financial-fields textarea,.ordenes-financial-fields input,.ordenes-financial-fields select{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #d5e1ef;border-radius:10px;padding:10px 12px;color:#173d65;background:#fff;font:inherit}.ordenes-financial-fields textarea{min-height:82px;resize:vertical}.ordenes-financial-fields .selector-cuenta-financiera select{padding:0 12px}
-.ordenes-reason-field{box-sizing:border-box;display:grid!important;grid-template-columns:minmax(0,1fr);align-content:start;gap:7px!important;min-width:0;padding:12px;border:1px solid #e2eaf3;border-radius:10px;background:#fff}.ordenes-reason-field textarea{box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:100px;height:100px;margin:0}.ordenes-financial-fields .selector-cuenta-financiera{min-width:0}.ordenes-financial-fields .selector-cuenta-financiera .selector-cuenta-hint{font-size:10px;line-height:1.4}
-.ordenes-payment-summary{display:flex;align-items:center;gap:18px;padding:8px 14px;border:1px solid #d5e1ef;border-radius:10px;background:#f5f8fc}
-.ordenes-payment-summary>strong{white-space:nowrap;color:#0f3b68}
-.ordenes-payment-summary .selector-cuenta-financiera{min-width:260px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-financial-fields{grid-template-columns:minmax(0,1fr);padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-reason-field textarea{min-height:76px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary{align-items:stretch;flex-direction:column}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-payment-summary .selector-cuenta-financiera{min-width:0}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-data-footer{grid-template-columns:1fr!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px;padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:3!important;grid-row:1!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>.ordenes-customer-field{grid-column:1/-1!important;grid-row:2!important}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields .ordenes-field-full{grid-column:1/-1!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label, :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-customer-field{width:100%;min-width:0;margin-bottom:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label{grid-template-rows:minmax(38px,auto) 42px;gap:4px;line-height:1.15;font-size:10px;white-space:normal}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input{height:42px;min-height:42px;padding:6px 8px;font-size:11px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label>input[type=date]{padding-right:3px;padding-left:3px;font-size:10px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .ordenes-client-picker{grid-template-columns:64px minmax(0,1fr) 44px 44px!important;gap:5px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client{width:44px;padding:0}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-add-client{width:44px;height:50px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-document-select{width:64px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-diagnosis textarea{min-height:58px}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .listado-maestro-cabecera{align-items:flex-start}
+#root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 18%) minmax(0, 20%) minmax(0, 1fr) !important;
+}
+#root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 18%) minmax(210px, 22%) minmax(0, 1fr) !important;
+  gap: 12px 18px;
+  padding: 16px 22px 12px;
+}
+.ordenes-vehicle-fields > label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: #355372;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ordenes-vehicle-fields > label:nth-of-type(2) {
+  white-space: nowrap;
+}
+.ordenes-vehicle-fields > .ordenes-customer-field {
+  grid-column: 1/-1;
+}
+.ordenes-customer-field {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-column: 1/-1;
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-width: 0;
+  width: 100%;
+  gap: 6px;
+  color: #536b82;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ordenes-customer-field > .venta-client-selected {
+  width: 100%;
+  box-sizing: border-box;
+}
+.ordenes-customer-field > label {
+  color: inherit;
+  font: inherit;
+}
+.ordenes-customer-field > .ordenes-client-picker {
+  grid-area: auto !important;
+}
+.ordenes-vehicle-fields input,
+.ordenes-vehicle-fields select,
+.ordenes-vehicle-fields textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  padding: 10px 13px;
+  border: 1px solid #d8e2eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #293747;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.ordenes-vehicle-fields textarea {
+  min-height: 70px;
+  resize: vertical;
+  line-height: 1.45;
+}
+.ordenes-vehicle-fields :is(input, textarea, select):focus {
+  outline: 0;
+  border-color: #7294b8;
+  box-shadow: 0 0 0 3px #7294b81e;
+}
+.ordenes-vehicle-fields :is(input, textarea, select):disabled {
+  background: #f4f7fa;
+  color: #7b8da0;
+  cursor: not-allowed;
+}
+.ordenes-client-picker {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 86px minmax(0, 1fr) auto 50px;
+  align-items: center;
+  gap: 8px;
+}
+.venta-layout.is-data-step .ordenes-client-picker {
+  display: grid !important;
+  grid-template-columns: 86px minmax(0, 1fr) auto 50px !important;
+}
+.venta-layout.is-data-step .ordenes-client-picker > input {
+  display: block;
+  width: 100% !important;
+  min-width: 0;
+  height: 42px;
+  box-sizing: border-box;
+  grid-column: auto !important;
+}
+.ordenes-client-picker .venta-client-selected,
+.ordenes-client-picker > .venta-client-results,
+.ordenes-client-picker > .ordenes-client-feedback {
+  grid-column: 1/-1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ordenes-client-picker .venta-client-selected {
+  min-height: 44px;
+}
+.ordenes-search-client,
+.ordenes-add-client {
+  display: inline-flex;
+  min-width: 0;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #d5e1ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #24527e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.ordenes-search-client {
+  min-height: 50px;
+  padding: 0 13px;
+  border-color: #174b80;
+  background: #174b80;
+  color: #fff;
+}
+.ordenes-search-client:hover:not(:disabled) {
+  border-color: #103c69;
+  background: #103c69;
+  color: #fff;
+}
+.ordenes-search-client svg,
+.ordenes-add-client svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ordenes-add-client {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  color: #355f88;
+}
+.ordenes-add-client:hover {
+  border-color: #abc2d8;
+  background: #f3f8fc;
+  box-shadow: 0 2px 7px #173b6012;
+}
+.ordenes-search-client:disabled {
+  border-color: #e5ebf1;
+  background: #eff3f7;
+  color: #9aa8b6;
+  cursor: not-allowed;
+}
+.ordenes-search-client:focus-visible,
+.ordenes-add-client:focus-visible {
+  outline: 3px solid #4c82b533;
+  outline-offset: 2px;
+}
+.ordenes-document-select {
+  width: 86px !important;
+  min-height: 50px !important;
+  padding: 0 9px !important;
+  border-color: #d6e1ed !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #214d79 !important;
+  font-size: 12px !important;
+}
+.ordenes-client-feedback {
+  padding: 3px 2px 0;
+  color: #7b8da0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.ordenes-client-picker .venta-client-results {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #dce6ef;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 12px 26px #102f4c1c;
+}
+.ordenes-client-picker .venta-client-result-select {
+  display: grid;
+  width: 100%;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #edf1f5;
+  background: transparent;
+  color: #294d6c;
+  text-align: left;
+  cursor: pointer;
+}
+.ordenes-client-picker .venta-client-result-select:hover {
+  background: #f6f9fc;
+}
+.ordenes-client-picker .venta-client-result-select strong {
+  font-size: 12px;
+}
+.ordenes-client-picker .venta-client-result-select span {
+  color: #8192a3;
+  font-size: 10px;
+}
+.ordenes-form-scroll {
+  min-height: 0;
+}
+.ordenes-form-scroll .venta-form-body {
+  min-height: 180px;
+}
+.ordenes-form-scroll .venta-product-tools button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #dbe5f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #173c67;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ordenes-form-scroll .venta-product-tools button:hover {
+  border-color: #b8cde0;
+  background: #f5f9fc;
+}
+.ordenes-checkout-actions {
+  align-content: stretch;
+}
+.ordenes-page .listado-maestro-cabecera {
+  align-items: center;
+}
+.ordenes-row-oaption {
+  display: block;
+  margin-top: 3px;
+  color: #8596a8;
+  font-size: 10px;
+}
+.ordenes-page .ordenes-state.is-progress {
+  background: #edf4fc;
+  color: #315d88;
+}
+.ordenes-page .ordenes-row-actions > button {
+  font-size: 11px;
+  font-weight: 700;
+}
+.ordenes-page .ordenes-row-actions > span {
+  color: #7b8da1;
+  font-size: 10px;
+}
+.ordenes-page .ordenes-table th:last-child {
+  text-align: center;
+}
+.ordenes-page .ordenes-table td:last-child {
+  text-align: center;
+}
+.ordenes-page .ordenes-row-actions {
+  gap: 7px;
+  justify-content: center;
+}
+.ordenes-page .ordenes-row-actions > .erp-icon-action,
+.ordenes-page .ordenes-row-actions > .document-print-menu .erp-icon-action {
+  box-sizing: border-box;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  opacity: 0.78;
+  transition:
+    opacity var(--erp-button-state-duration) var(--erp-button-state-easing),
+    transform var(--erp-button-state-duration) var(--erp-button-state-easing),
+    background-color var(--erp-button-state-duration) var(--erp-button-state-easing);
+}
+.ordenes-page .ordenes-row-actions > .erp-icon-action svg,
+.ordenes-page .ordenes-row-actions > .document-print-menu .erp-icon-action svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+.ordenes-page .ordenes-row-actions > .erp-icon-action .orden-whatsapp-icon {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+.ordenes-page
+  .ordenes-row-actions
+  > .document-print-menu
+  .erp-icon-action
+  .orden-whatsapp-icon {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+.ordenes-page .ordenes-row-actions > .erp-icon-action:hover,
+.ordenes-page .ordenes-row-actions > .erp-icon-action:focus-visible,
+.ordenes-page .ordenes-row-actions > .document-print-menu .erp-icon-action:hover,
+.ordenes-page
+  .ordenes-row-actions
+  > .document-print-menu
+  .erp-icon-action:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.ordenes-whatsapp-options {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 7px);
+  right: 0;
+  display: grid;
+  width: min(300px, calc(100vw - 32px));
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #d6e1eb;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 14px 34px #102d4d2b;
+  text-align: left;
+  transform-origin: top right;
+  will-change: opacity, transform;
+}
+.ordenes-whatsapp-options[data-menu-state="abriendo"] {
+  animation: menu-opciones-entrada 160ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+.ordenes-whatsapp-options[data-menu-state="cerrando"] {
+  animation: menu-opciones-salida 140ms ease-in both;
+  pointer-events: none;
+}
+.ordenes-whatsapp-options[data-menu-state="abriendo"] > * {
+  animation: menu-opcion-entrada 130ms ease-out both;
+}
+.ordenes-whatsapp-options[data-menu-state="abriendo"] > *:nth-child(2) {
+  animation-delay: 35ms;
+}
+.ordenes-whatsapp-options[data-menu-state="abriendo"] > *:nth-child(3) {
+  animation-delay: 70ms;
+}
+.ordenes-whatsapp-options[data-menu-state="cerrando"] > * {
+  animation: menu-opcion-salida 90ms ease-in both;
+}
+.ordenes-whatsapp-options[data-menu-state="cerrando"] > *:nth-child(1) {
+  animation-delay: 50ms;
+}
+.ordenes-whatsapp-options[data-menu-state="cerrando"] > *:nth-child(2) {
+  animation-delay: 25ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ordenes-whatsapp-options,
+  .ordenes-whatsapp-options > * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+}
+.ordenes-whatsapp-options > button,
+.ordenes-whatsapp-extension > button {
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #123f6a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+.ordenes-whatsapp-options > button:hover:not(:disabled),
+.ordenes-whatsapp-extension > button:hover:not(:disabled) {
+  background: #edf4fa;
+}
+.ordenes-whatsapp-options > button:disabled {
+  color: #8192a3;
+  cursor: not-allowed;
+}
+.ordenes-whatsapp-options > small {
+  padding: 0 10px 6px;
+  color: #6d8093;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.ordenes-whatsapp-extension {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border-top: 1px solid #e5edf4;
+}
+.ordenes-whatsapp-extension label {
+  display: grid;
+  gap: 6px;
+  color: #355372;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ordenes-whatsapp-extension textarea {
+  min-height: 74px;
+  resize: vertical;
+  border: 1px solid #d5e1ef;
+  border-radius: 8px;
+  padding: 8px;
+  color: #173d65;
+  font: inherit;
+  font-size: 12px;
+}
+.ordenes-whatsapp-extension > button {
+  background: #174b80;
+  color: white;
+  text-align: center;
+}
+  .selector-cuenta-financiera
+  .selector-cuenta-financiera
+:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-data-footer {
+  grid-template-columns: 1fr !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-data-footer {
+  grid-template-columns: 1fr !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-data-footer {
+  grid-template-columns: 1fr !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  .ordenes-vehicle-fields
+  > .ordenes-customer-field {
+  grid-column: 1/-1;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  .ordenes-vehicle-fields
+  > .ordenes-customer-field {
+  grid-column: 1/-1;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > .ordenes-customer-field {
+  grid-column: 1/-1;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .venta-fields.ordenes-vehicle-fields {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px;
+  padding: 12px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > label:nth-of-type(3) {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > .ordenes-customer-field {
+  grid-column: 1/-1 !important;
+  grid-row: 2 !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > label,
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-customer-field {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > label {
+  grid-template-rows: minmax(38px, auto) 42px;
+  gap: 4px;
+  line-height: 1.15;
+  font-size: 10px;
+  white-space: normal;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > label
+  > input {
+  height: 42px;
+  min-height: 42px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > label
+  > input[type="date"] {
+  padding-right: 3px;
+  padding-left: 3px;
+  font-size: 10px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .venta-layout.is-data-step
+  .ordenes-client-picker {
+  grid-template-columns: 64px minmax(0, 1fr) 44px 44px !important;
+  gap: 5px;
+}
+:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-search-client {
+  width: 44px;
+  padding: 0;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-search-client
+  > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-add-client {
+  width: 44px;
+  height: 50px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-document-select {
+  width: 64px !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-page
+  .listado-maestro-cabecera {
+  align-items: flex-start;
+}
 
-
-
-
-#root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)!important;justify-content:stretch!important;align-items:stretch;gap:14px;margin:0 22px 18px;padding:0}
-#root .venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper .venta-form-scroll.ordenes-form-scroll > .venta-form-body:has(> .venta-empty){flex:1 0 auto!important}
+#root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) !important;
+  justify-content: stretch !important;
+  align-items: stretch;
+  gap: 14px;
+  margin: 0 22px 18px;
+  padding: 0;
+}
+#root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  .venta-form-paper
+  .venta-form-scroll.ordenes-form-scroll
+  > .venta-form-body:has(> .venta-empty) {
+  flex: 1 0 auto !important;
+}
 
 /* Servicio: encabezado independiente y campos en una sola línea de trabajo. */
-:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .ordenes-table th:last-child{text-align:center}
-:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .ordenes-table td:last-child{text-align:center}
-:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-page .ventas-row-actions{justify-content:center;min-width:0}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-page
+  .ordenes-table
+  th:last-child {
+  text-align: center;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-page
+  .ordenes-table
+  td:last-child {
+  text-align: center;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-page
+  .ordenes-row-actions {
+  justify-content: center;
+  min-width: 0;
+}
 
-.ordenes-reason-card{box-sizing:border-box;align-self:stretch;min-width:0}.ordenes-reason-card textarea{min-height:76px;height:76px;max-height:76px;resize:vertical}.ordenes-checkout-actions{min-width:0}.ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:end;gap:12px}.ordenes-advance-amount{min-width:0}.ordenes-advance-amount input{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}.ordenes-checkout-actions .venta-checkout-buttons{justify-content:flex-end}:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="tablet-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-landscape"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-landscape"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-data-footer.ordenes-data-footer{grid-template-columns:minmax(0,1fr)!important;gap:10px;margin:0 12px 14px!important}:where(html[data-responsive-profile="mobile-portrait"]) .ordenes-checkout-actions .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.ordenes-reason-oard {
+  box-sizing: border-box;
+  align-self: stretch;
+  min-width: 0;
+}
+.ordenes-reason-oard textarea {
+  min-height: 76px;
+  height: 76px;
+  max-height: 76px;
+  resize: vertical;
+}
+.ordenes-checkout-actions {
+  min-width: 0;
+}
+.ordenes-checkout-actions .venta-checkout-total {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: end;
+  gap: 12px;
+}
+.ordenes-advanoe-amount {
+  min-width: 0;
+}
+.ordenes-advanoe-amount input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d5e0ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #173c67;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ordenes-checkout-actions .venta-checkout-buttons {
+  justify-content: flex-end;
+}
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-checkout-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: end;
+  gap: 12px;
+}
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-checkout-actions
+  > .venta-checkout-total,
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-checkout-actions
+  > .venta-checkout-buttons {
+  display: contents;
+}
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-checkout-actions
+  > .venta-checkout-buttons
+  > button {
+  width: 100%;
+}
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-checkout-actions
+  > .venta-checkout-buttons
+  > .venta-submit {
+  min-width: 0;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-data-footer.ordenes-data-footer {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px;
+  margin: 0 12px 14px !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  .ordenes-checkout-actions
+  .venta-checkout-total {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-layout.is-data-step
+  .venta-data-footer.ordenes-data-footer {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px;
+  margin: 0 12px 14px !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  .ordenes-checkout-actions
+  .venta-checkout-total {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-data-footer.ordenes-data-footer {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px;
+  margin: 0 12px 14px !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-checkout-actions
+  .venta-checkout-total {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+}
 
-/* Evita que el detalle estire una zona vac?a cuando ya hay contenido; el pie sigue al ?ltimo campo y sus botones. */
-#root .venta-page.is-data-step .venta-form-scroll.ordenes-form-scroll>.venta-form-body:not(:has(>.venta-empty)){flex:0 0 auto!important;min-height:0!important}
-#root .venta-page.is-data-step .venta-form-scroll.ordenes-form-scroll>.venta-data-footer.ordenes-data-footer{margin:12px 22px 14px!important}
+/* Evita que el detalle estire una zona vao?a ouando ya hay oontenido; el pie sigue al ?ltimo oampo y sus botones. */
+#root
+  .venta-page.is-data-step
+  .venta-form-scroll.ordenes-form-scroll
+  > .venta-form-body:not(:has(> .venta-empty)) {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+}
+#root
+  .venta-page.is-data-step
+  .venta-form-scroll.ordenes-form-scroll
+  > .venta-data-footer.ordenes-data-footer {
+  margin: 12px 22px 14px !important;
+}
 
-.ordenes-service-error{width:100%;margin:0;color:#bd2735;font-size:12px;line-height:1.4}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .ordenes-vehicle-fields input[type=date]{appearance:none;padding-right:2px;padding-left:2px;font-size:9px}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .ordenes-vehicle-fields input[type=date]::-webkit-calendar-picker-indicator{width:10px;height:10px;margin:0;padding:0}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .ordenes-vehicle-fields input[type=date]::-webkit-datetime-edit{padding:0}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:auto!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:auto!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:auto!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-form-header-fields .venta-fields.ordenes-vehicle-fields{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-form-header-fields .ordenes-vehicle-fields>label:nth-of-type(3){grid-column:auto!important}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;overflow:visible!important}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.venta-catalog-sidebar{width:100%;max-height:38vh;min-height:220px}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.ordenes-form-paper{width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
-  :where(html[data-responsive-profile="laptop"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="laptop"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;overflow:visible!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.venta-catalog-sidebar{width:100%;max-height:38vh;min-height:220px}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.ordenes-form-paper{width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="tablet-landscape"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;overflow:visible!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.venta-catalog-sidebar{width:100%;max-height:38vh;min-height:220px}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.ordenes-form-paper{width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;overflow:visible!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.venta-catalog-sidebar{width:100%;max-height:38vh;min-height:220px}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.ordenes-form-paper{width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="mobile-landscape"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open{grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;overflow:visible!important}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.venta-catalog-sidebar{width:100%;max-height:38vh;min-height:220px}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open>.ordenes-form-paper{width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-form-header-fields.ordenes-reception-fields{grid-template-columns:minmax(0,1fr)!important}
-  :where(html[data-responsive-profile="mobile-portrait"]) #root .venta-layout.is-data-step .venta-document-fields.ordenes-vehicle-fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr)!important}
-  :where(html[data-responsive-profile="mobile-portrait"]) .ordenes-vehicle-fields>label:nth-of-type(2){white-space:normal}
+.ordenes-servioe-error {
+  width: 100%;
+  margin: 0;
+  color: #bd2735;
+  font-size: 12px;
+  line-height: 1.4;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .ordenes-vehicle-fields
+  input[type="date"] {
+  appearance: none;
+  padding-right: 2px;
+  padding-left: 2px;
+  font-size: 9px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .ordenes-vehicle-fields
+  input[type="date"]::-webkit-oalendar-picker-indioator {
+  width: 10px;
+  height: 10px;
+  margin: 0;
+  padding: 0;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .ordenes-vehicle-fields
+  input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .venta-fields.ordenes-vehicle-fields {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > label:nth-of-type(3) {
+  grid-column: auto !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .venta-fields.ordenes-vehicle-fields {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > label:nth-of-type(3) {
+  grid-column: auto !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .venta-fields.ordenes-vehicle-fields {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > label:nth-of-type(3) {
+  grid-column: auto !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .venta-fields.ordenes-vehicle-fields {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-form-header-fields
+  .ordenes-vehicle-fields
+  > label:nth-of-type(3) {
+  grid-column: auto !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
+  width: 100%;
+  max-height: 38vh;
+  min-height: 220px;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  #root
+  .venta-layout.is-data-step
+  .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="laptop"])
+  .ordenes-vehicle-fields
+  > label:nth-of-type(2) {
+  white-space: normal;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
+  width: 100%;
+  max-height: 38vh;
+  min-height: 220px;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  #root
+  .venta-layout.is-data-step
+  .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="tablet-landscape"])
+  .ordenes-vehicle-fields
+  > label:nth-of-type(2) {
+  white-space: normal;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
+  width: 100%;
+  max-height: 38vh;
+  min-height: 220px;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="tablet-portrait"])
+  .ordenes-vehicle-fields
+  > label:nth-of-type(2) {
+  white-space: normal;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
+  width: 100%;
+  max-height: 38vh;
+  min-height: 220px;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  #root
+  .venta-layout.is-data-step
+  .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="mobile-landscape"])
+  .ordenes-vehicle-fields
+  > label:nth-of-type(2) {
+  white-space: normal;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
+  width: 100%;
+  max-height: 38vh;
+  min-height: 220px;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-form-header-fields.ordenes-reception-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-layout.is-data-step
+  .venta-document-fields.ordenes-vehicle-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+}
+:where(html[data-responsive-profile="mobile-portrait"])
+  .ordenes-vehicle-fields
+  > label:nth-of-type(2) {
+  white-space: normal;
+}
 
-/* En pantallas amplias, el catálogo y la orden permanecen en paneles paralelos. */
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open {
-  grid-template-columns: minmax(250px, .42fr) minmax(0, 1.58fr) !important;
+/* En pantallas amplias, el oatálogo y la orden permaneoen en paneles paralelos. */
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"]
+  )
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open {
+  grid-template-columns: minmax(250px, 0.42fr) minmax(0, 1.58fr) !important;
   align-items: stretch !important;
   overflow: hidden !important;
 }
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-catalog-sidebar {
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"]
+  )
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
   width: auto;
   max-height: 100%;
   min-height: 0;
 }
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open > .ordenes-form-paper {
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"]
+  )
+  #root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
   width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
@@ -176,7 +1079,7 @@
   overflow: hidden !important;
 }
 
-/* La orden completa se desplaza como un solo documento, incluidos sus campos y acciones. */
+/* La orden oompleta se desplaza como un solo documento, incluidos sus campos y aooiones. */
 #root .venta-page.is-data-step .ordenes-form-paper {
   min-height: 0;
   overflow-x: hidden;
@@ -185,10 +1088,14 @@
   scrollbar-gutter: stable;
 }
 #root .venta-page.is-data-step .ordenes-form-paper > .ordenes-form-scroll {
-  /* La regla compartida del formulario aplica overflow y flex con !important. */
+  /* La regla oompartida del formulario aplioa overflow y flex oon !important. */
   display: contents !important;
 }
-#root .venta-page.is-data-step .ordenes-form-paper .ordenes-form-scroll > .venta-form-body {
+#root
+  .venta-page.is-data-step
+  .ordenes-form-paper
+  .ordenes-form-scroll
+  > .venta-form-body {
   min-height: 180px;
   flex: 0 0 auto;
   overflow: visible;
@@ -200,7 +1107,10 @@
   flex: 0 0 auto;
   overflow: visible;
 }
-#root .venta-page.is-data-step .venta-editor.is-catalog-open > .ordenes-form-paper {
+#root
+  .venta-page.is-data-step
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
@@ -219,23 +1129,43 @@
   max-height: 42px !important;
 }
 
-/* En móvil, la orden ocupa el área principal sin el marco interior del shell. */
-:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .erp-content.is-new-sale-view:has(.ordenes-servicio-page) {
-  box-sizing: border-box;
-  width: 100%;
-  margin: 0 !important;
-  padding: 0 !important;
-  scrollbar-gutter: auto;
-}
-:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page,
-:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page > .venta-layout,
-:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor {
+/* En móvil, la orden ooupa el área prinoipal sin el maroo interior del shell. */
+:where(
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"],
+    html[data-responsive-profile="mobile-portrait"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page,
+:where(
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"],
+    html[data-responsive-profile="mobile-portrait"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  > .venta-layout,
+:where(
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"],
+    html[data-responsive-profile="mobile-portrait"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
 }
-:where(html[data-responsive-profile="tablet-portrait"], html[data-responsive-profile="mobile-landscape"], html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .ordenes-form-paper {
+:where(
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"],
+    html[data-responsive-profile="mobile-portrait"]
+  )
+  #root
+  .venta-page.is-data-step
+  .ordenes-form-paper {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -243,7 +1173,9 @@
 }
 
 /* Tablet vertical usa el alto natural de página para alojar los dos paneles. */
-:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page {
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page {
   height: auto !important;
   max-height: none !important;
   min-height: 100% !important;
@@ -252,19 +1184,28 @@
   padding: 0 0 16px !important;
   scrollbar-gutter: auto;
 }
-:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page > .venta-layout {
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  > .venta-layout {
   height: auto !important;
   min-height: 0 !important;
   flex: 0 0 auto !important;
   overflow: visible !important;
 }
-:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open {
   height: auto !important;
   min-height: 0 !important;
   grid-template-columns: minmax(0, 1fr) !important;
   overflow: visible !important;
 }
-:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-catalog-sidebar {
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-catalog-sidebar {
   position: static !important;
   align-self: stretch !important;
   width: 100% !important;
@@ -273,28 +1214,57 @@
   min-height: 0 !important;
   box-sizing: border-box !important;
 }
-:where(html[data-responsive-profile="tablet-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .ordenes-form-paper {
+:where(html[data-responsive-profile="tablet-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .ordenes-form-paper {
   height: auto !important;
   max-height: none !important;
   min-height: 0 !important;
   overflow: visible !important;
 }
 
-/* Mantener las dos columnas de catálogo y documento en tablet y pantallas anchas. */
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+/* Mantener las dos columnas de oatálogo y documento en tablet y pantallas anchas. */
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"],
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open {
   display: grid !important;
-  grid-template-columns: minmax(235px, .42fr) minmax(0, 1.58fr) !important;
+  grid-template-columns: minmax(235px, 0.42fr) minmax(0, 1.58fr) !important;
   align-items: stretch !important;
   overflow: hidden !important;
 }
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open > .venta-catalog-sidebar {
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"],
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open
+  > .venta-catalog-sidebar {
   position: relative !important;
   width: auto !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
 }
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open > .ordenes-form-paper {
+:where(
+    html[data-responsive-profile="laptop"],
+    html[data-responsive-profile="tablet-landscape"],
+    html[data-responsive-profile="tablet-portrait"],
+    html[data-responsive-profile="mobile-landscape"]
+  )
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open
+  > .ordenes-form-paper {
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
@@ -302,11 +1272,22 @@
   overflow-y: auto !important;
 }
 
-/* El shell puede no tener perfil responsive; conserva igualmente catálogo y orden en paralelo. */
-#root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+/* El shell puede no tener perfil responsive; oonserva igualmente oatálogo y orden en paralelo. */
+#root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open {
   display: grid;
-  grid-template-columns: minmax(235px, .42fr) minmax(0, 1.58fr);
+  grid-template-columns: minmax(235px, 0.42fr) minmax(0, 1.58fr);
 }
-:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step.ordenes-servicio-page .venta-editor.is-catalog-open {
+:where(html[data-responsive-profile="mobile-portrait"])
+  #root
+  .venta-page.is-data-step.ordenes-servicio-page
+  .venta-editor.is-catalog-open {
   grid-template-columns: minmax(0, 1fr) !important;
+}
+
+
+:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .ordenes-client-picker {
+  grid-template-columns: 64px minmax(0, 1fr) 44px 44px !important;
+  gap: 5px !important;
 }

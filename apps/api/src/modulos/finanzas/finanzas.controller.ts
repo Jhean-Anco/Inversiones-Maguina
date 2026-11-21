@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, 
 import type { FastifyRequest } from "fastify";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
-import { RequierePermiso } from "../autenticacion/permisos";
+import { RequiereCualquieraPermiso, RequierePermiso } from "../autenticacion/permisos";
 import { ServicioFinanzas } from "./finanzas.service";
 
 type SolicitudAutenticada = FastifyRequest & { usuario: { id: string } };
@@ -17,7 +17,7 @@ export class ControladorFinanzas {
   listar() { return this.finanzas.listar(); }
 
   @Get("opciones")
-  @RequierePermiso("FINANZAS.LEER")
+  @RequiereCualquieraPermiso("FINANZAS.LEER", "FACTURACION.NOTAS_EMITIR")
   opciones() { return this.finanzas.opciones(); }
 
   @Get("resumen")

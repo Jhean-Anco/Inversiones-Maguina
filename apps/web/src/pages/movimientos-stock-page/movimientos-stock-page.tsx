@@ -1,35 +1,44 @@
-import "./movimientos-stock-page.css";
 import { useEffect } from "react";
 import { CatalogoListado } from "../../components/catalogo/catalogo-listado/catalogo-listado";
 import { AjusteStockFormulario } from "../../components/inventario/ajuste-stock-formulario/ajuste-stock-formulario";
+import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useMovimientosStock } from "../../hooks/use-movimientos-stock";
 import type { MovimientoStock } from "../../services/inventario/movimientos-stock.service";
+import {
+  movimientoCantidadClasses,
+  movimientoCodigoClasses,
+  movimientoDetalleClasses,
+  movimientoFechaClasses,
+  movimientoNombreProductoClasses,
+  movimientoProductoClasses,
+  movimientoTableClasses,
+  movimientoTableRowClasses,
+  movimientoTableScrollClasses,
+  movimientoHeaderClasses,
+  movimientoControlClasses,
+  movimientoPaginacionClasses,
+} from "./movimientos-stock-classes";
 
 const numero = new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
-const fechaHora = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short" });
+const fechaHora = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima" });
 const motivoVisible = (codigo: string | null) => ({ INVENTARIO_FISICO: "Conteo de inventario", MERMA: "Merma", DANIO: "Repuesto dañado", PERDIDA: "Pérdida", DEVOLUCION: "Devolución", CORRECCION: "Corrección de registro", OTRO: "Otro motivo" }[codigo ?? ""] ?? codigo ?? "—");
 
-function fuenteMovimiento(movimiento: MovimientoStock) {
-  if (movimiento.origenTipo === "ENTRADA_STOCK") return movimiento.documentoOrigen ? `Entrada ${movimiento.documentoOrigen}` : "Entrada de stock";
-  if (movimiento.origenTipo === "AJUSTE_STOCK") return "Ajuste manual";
-  return movimiento.documentoOrigen ?? movimiento.origenTipo;
-}
-
-const encabezadoMovimientos = <tr><th>Fecha y hora</th><th>Repuesto</th><th>Tipo</th><th>Variación</th><th>Motivo u origen</th><th>Observación</th></tr>;
+const encabezadoMovimientos = <tr><th>Fecha y hora</th><th>Repuesto</th><th>Anterior</th><th>Variación</th><th>Final</th><th>Motivo</th><th>Responsable</th><th>Observación</th></tr>;
 function filaMovimiento(movimiento: MovimientoStock) {
-  const aumento = movimiento.tipo === "ENTRADA" || (movimiento.tipo === "AJUSTE" && movimiento.sentido === "INGRESO");
-  const tipo = movimiento.tipo === "AJUSTE" ? `Ajuste · ${aumento ? "aumento" : "disminución"}` : movimiento.tipo === "ENTRADA" ? "Entrada" : "Salida";
-  return <tr key={movimiento.id}>
-          <td><time dateTime={movimiento.creadoEn}>{fechaHora.format(new Date(movimiento.creadoEn))}</time></td>
-          <td><span className="stock-movement-table-product"><small>{movimiento.codigo}</small><strong>{movimiento.producto}</strong></span></td>
-          <td><span className={`stock-movement-badge${aumento ? " is-increase" : " is-decrease"}`}>{tipo}</span></td>
-          <td><strong className={aumento ? "is-increase" : "is-decrease"}>{aumento ? "+" : "−"}{numero.format(Number(movimiento.cantidadBase))} {movimiento.unidad}</strong></td>
-          <td>{movimiento.motivo ? motivoVisible(movimiento.motivo) : fuenteMovimiento(movimiento)}</td>
-          <td>{movimiento.observacion || "—"}</td>
+  const aumento = movimiento.sentido === "INGRESO";
+  return <tr className={movimientoTableRowClasses} key={movimiento.id}>
+          <td><time className={movimientoFechaClasses} dateTime={movimiento.creadoEn}>{fechaHora.format(new Date(movimiento.creadoEn))}</time></td>
+          <td><span className={movimientoProductoClasses}><small className={movimientoCodigoClasses}>{movimiento.codigo}</small><strong className={movimientoNombreProductoClasses}>{movimiento.producto}</strong></span></td>
+          <td>{movimiento.saldoAnterior == null ? "—" : numero.format(Number(movimiento.saldoAnterior))}</td>
+          <td><strong className={movimientoCantidadClasses(aumento)}>{aumento ? "+" : "−"}{numero.format(Number(movimiento.cantidadBase))} {movimiento.unidad}</strong></td>
+          <td>{movimiento.saldoFinal == null ? "—" : numero.format(Number(movimiento.saldoFinal))}</td>
+          <td className={movimientoDetalleClasses}>{motivoVisible(movimiento.motivo)}</td>
+          <td>{movimiento.usuario}</td>
+          <td className={movimientoDetalleClasses}>{movimiento.observacion || "—"}</td>
         </tr>;
 }
 
-export function MovimientosStockPage() {
+export function MovimientosStockPage({ puedeAjustar }: { puedeAjustar: boolean }) {
   const modulo = useMovimientosStock();
   useEffect(() => {
     if (!modulo.modalAbierto) return;
@@ -41,19 +50,20 @@ export function MovimientosStockPage() {
   }, [modulo.modalAbierto, modulo.guardando]);
 
   return <>
+    {modulo.mensaje && <NotificacionFlotante tipo="exito" mensaje={modulo.mensaje} onCerrar={() => modulo.setMensaje("")} />}
     <CatalogoListado
-      titulo="Movimientos y ajustes"
+      titulo="Ajustes de inventario de repuestos"
       descripcion="Consulta las variaciones de stock y registra correcciones con motivo y trazabilidad."
-      etiquetaCrear="Crear ajuste de stock"
-      tituloListado="Historial de movimientos"
+      etiquetaCrear="Nuevo ajuste de repuestos"
+      tituloListado="Historial de ajustes"
       registros={modulo.movimientos}
       totalRegistros={modulo.total}
       cargando={modulo.cargando}
       mensajeCarga="Cargando movimientos…"
       error={modulo.modalAbierto ? "" : modulo.error}
       iconoVacio="↕"
-      tituloVacio="Aún no hay movimientos"
-      descripcionVacio="Las compras registradas y los ajustes que registres aparecerán aquí."
+      tituloVacio="Aún no hay ajustes"
+      descripcionVacio="Los ajustes manuales que registres aparecerán aquí."
       pagina={modulo.pagina}
       porPagina={modulo.porPagina}
       totalPaginas={modulo.totalPaginas}
@@ -62,16 +72,18 @@ export function MovimientosStockPage() {
       busqueda={modulo.busqueda}
       busquedaPlaceholder="Buscar repuesto, código o motivo"
       busquedaAriaLabel="Buscar movimientos de stock"
-      controlesFiltro={<select className="catalog-filter-select" value={modulo.tipo} onChange={(evento) => modulo.filtrarTipo(evento.target.value)} aria-label="Filtrar por tipo de movimiento"><option value="">Todos los movimientos</option><option value="ENTRADA">Entradas</option><option value="SALIDA">Salidas</option><option value="AJUSTE">Ajustes</option></select>}
       alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}
-      alCrear={modulo.abrirNuevo}
+      alCrear={puedeAjustar ? modulo.abrirNuevo : undefined}
       alCambiarPagina={modulo.cambiarPagina}
       alCambiarTamanioPagina={modulo.cambiarPorPagina}
       variante="tabla"
       encabezadoTabla={encabezadoMovimientos}
       renderizarFila={filaMovimiento}
-      claseTabla="stock-movement-table"
-      claseContenedorTabla="stock-movement-table-wrap"
+      claseTabla={movimientoTableClasses}
+      claseContenedorTabla={movimientoTableScrollClasses}
+      claseCabecera={movimientoHeaderClasses}
+      claseControlesCabecera={movimientoControlClasses}
+      clasePaginacion={movimientoPaginacionClasses}
     />
     {modulo.modalAbierto && <AjusteStockFormulario {...modulo} />}
   </>;

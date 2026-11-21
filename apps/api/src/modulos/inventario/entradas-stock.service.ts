@@ -36,7 +36,7 @@ function fechaValida(valor: unknown) {
 export class ServicioEntradasStock {
   async buscarProductos(busquedaEntrada?: string) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
-    if (busqueda.length < 3) return [];
+    if (busqueda.length < 4) return [];
     const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
     const filas = await db.select({
       productoId: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre,

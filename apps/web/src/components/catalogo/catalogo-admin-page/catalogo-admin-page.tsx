@@ -1,11 +1,14 @@
-import "./catalogo-admin-page.css";
+import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { cn } from "../../../lib/utils";
+import { catalogAdminClasses as ui } from "./catalogo-admin-classes";
 import { useCatalogo } from "../../../hooks/use-catalogo";
 import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
 import { getViewportProfile } from "../../../utilidades/viewport";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
 import { AccionIcono } from "../../ui/accion-icono";
+import { Etiqueta } from "../../ui/etiqueta";
 import type { RegistroCatalogo, ServicioCatalogo, UsoMarca } from "../../../services/inventario/catalogos.service";
 
 type FiltroEstado = "TODOS" | "ACTIVOS" | "INACTIVOS";
@@ -21,8 +24,8 @@ type CatalogoAdminPageProps<T extends RegistroCatalogo> = {
 
 const normalizar = (valor: string) => valor.trim().toLocaleLowerCase("es-PE");
 
-function Icono({ nombre }: { nombre: "buscar" | "editar" | "activar" | "desactivar" | "cerrar" | "subir" | "categoria" | "marca" }) {
-  if (nombre === "buscar") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>;
+function Icono({ nombre, className }: { nombre: "buscar" | "editar" | "activar" | "desactivar" | "cerrar" | "subir" | "categoria" | "marca"; className?: string }) {
+  if (nombre === "buscar") return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>;
   if (nombre === "editar") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.1-.8L19 8.3a2.1 2.1 0 0 0-3-3L5.1 16.2 4 20Z"/></svg>;
   if (nombre === "activar") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/></svg>;
   if (nombre === "desactivar") return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>;
@@ -101,18 +104,18 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     setConfirmacionEstado(null);
   }
 
-  const renderizarTarjeta = (registro: T) => <article className="catalog-manager-card" key={registro.id}>
-              <div className="catalog-manager-card-main"><strong className="catalog-manager-name">{registro.nombre}</strong>
-                {esMarca && <div className="catalog-manager-usage">{(registro.uso === "AMBOS" || registro.uso === "REPUESTOS") && <span>Repuestos</span>}{(registro.uso === "AMBOS" || registro.uso === "MOTOTAXIS") && <span>Mototaxis</span>}</div>}
+  const renderizarTarjeta = (registro: T) => <article className={cn("catalog-manager-card", ui.card)} key={registro.id}>
+              <div className={cn("catalog-manager-card-main", ui.cardMain)}><strong className={cn("catalog-manager-name", ui.name)}>{registro.nombre}</strong>
+                {esMarca && <div className={cn("catalog-manager-usage", ui.usage)}>{(registro.uso === "AMBOS" || registro.uso === "REPUESTOS") && <Etiqueta tono="marca" compacta>Repuestos</Etiqueta>}{(registro.uso === "AMBOS" || registro.uso === "MOTOTAXIS") && <Etiqueta tono="informativa" compacta>Mototaxis</Etiqueta>}</div>}
               </div>
-              <span className={`catalog-manager-status${registro.activo ? " is-active" : " is-inactive"}`}><i/>{registro.activo ? "Activa" : "Inactiva"}</span>
-              <div className="catalog-manager-row-actions">
+              <Etiqueta tono={registro.activo ? "positiva" : "neutral"}>{registro.activo ? "Activa" : "Inactiva"}</Etiqueta>
+              <div className={cn("catalog-manager-row-actions", ui.rowActions)}>
                 <AccionIcono accion="editar" etiqueta={`Editar ${singular} ${registro.nombre}`} onClick={() => abrirEdicion(registro)} />
                 <AccionIcono accion={registro.activo ? "desactivar" : "activar"} etiqueta={`${registro.activo ? "Desactivar" : "Activar"} ${singular} ${registro.nombre}`} onClick={() => setConfirmacionEstado(registro)} />
               </div>
             </article>;
 
-  return <section className={`catalog-manager ${esMarca ? "is-brand-manager" : "is-category-manager"}`} aria-label={plural}>
+  return <section className={cn("catalog-manager", esMarca ? "is-brand-manager" : "is-category-manager", ui.manager)} aria-label={plural}>
     <RegistrarAccionPrincipal etiqueta={`Crear ${singular}`} onClick={abrirNuevo} />
     <ListadoMaestro
       variante="tarjetas"
@@ -121,39 +124,41 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
       registros={filtrados}
       cargando={cargando}
       error={!modalAbierto ? error : ""}
-      vacio={<div className="catalog-manager-empty"><span className="catalog-manager-empty-icon"><Icono nombre={tipo}/></span><strong>{busqueda || filtroEstado !== "TODOS" ? "No hay resultados" : `Aún no hay ${plural.toLocaleLowerCase("es-PE")}`}</strong><p>{busqueda || filtroEstado !== "TODOS" ? "Prueba otra búsqueda o estado." : `Agrega una ${singular} para organizar el inventario.`}</p></div>}
+      vacio={<div className={cn("catalog-manager-empty", ui.empty)}><span className={cn("catalog-manager-empty-icon", ui.emptyIcon)}><Icono nombre={tipo}/></span><strong className={ui.emptyHeading}>{busqueda || filtroEstado !== "TODOS" ? "No hay resultados" : `Aún no hay ${plural.toLocaleLowerCase("es-PE")}`}</strong><p className={ui.emptyText}>{busqueda || filtroEstado !== "TODOS" ? "Prueba otra búsqueda o estado." : `Agrega una ${singular} para organizar el inventario.`}</p></div>}
       controlesCabecera={<>
-        <label className="catalog-manager-search"><Icono nombre="buscar"/><input type="search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder={`Buscar ${singular}...`} aria-label={`Buscar ${plural.toLocaleLowerCase("es-PE")}`} /></label>
-        <label className="catalog-manager-status-filter"><span>Estado</span><select value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)}><option value="TODOS">Todos</option><option value="ACTIVOS">Activas</option><option value="INACTIVOS">Inactivas</option></select></label>
-        {esMarca && <label className="catalog-manager-status-filter"><span>Tipo</span><select value={filtroTipo} onChange={(evento) => setFiltroTipo(evento.target.value as FiltroTipoMarca)}><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="TODOS">Todos</option></select></label>}
+        <label className={cn("catalog-manager-search", ui.search)}><Icono nombre="buscar" className={ui.searchIcon}/><input className={ui.searchInput} type="search" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder={`Buscar ${singular}...`} aria-label={`Buscar ${plural.toLocaleLowerCase("es-PE")}`} /></label>
+        <label className={cn("catalog-manager-status-filter", ui.statusFilter)}><span className={ui.filterLabel}>Estado</span><select className={ui.filterSelect} value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)}><option value="TODOS">Todos</option><option value="ACTIVOS">Activas</option><option value="INACTIVOS">Inactivas</option></select></label>
+        {esMarca && <label className={cn("catalog-manager-status-filter", ui.statusFilter)}><span className={ui.filterLabel}>Tipo</span><select className={ui.filterSelect} value={filtroTipo} onChange={(evento) => setFiltroTipo(evento.target.value as FiltroTipoMarca)}><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="TODOS">Todos</option></select></label>}
       </>}
+      claseCabecera={cn("catalog-admin-header", ui.header, ui.landscapeHeader, ui.portraitHeader)}
+      claseControlesCabecera={cn("catalog-admin-controls", ui.controls, esMarca && ui.brandControls, ui.landscapeControls, esMarca && ui.landscapeBrandControls, ui.portraitControls, esMarca && ui.portraitBrandControls)}
       paginacion={{ modo: "local" }}
       resetKey={`${busqueda}|${filtroEstado}|${filtroTipo}|${filtrados.length}|${versionListado}`}
       columnas={columnas}
       renderizarTarjeta={renderizarTarjeta}
-      claseTarjeta="catalog-manager-grid"
+      claseTarjeta={cn("catalog-manager-grid catalog-admin-grid", ui.grid)}
     />
 
-    {modalAbierto && <div className="catalog-manager-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarModal(); }}>
-      <section ref={dialogoRef} className="catalog-manager-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-manager-form-title">
-        <header className="catalog-manager-dialog-head"><div className={`catalog-manager-dialog-symbol${esMarca ? " is-brand" : ""}`}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}</p></div><button type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
-        {error && <div className="catalog-manager-dialog-error" role="alert">{error}</div>}
-        <form className="catalog-manager-form" onSubmit={guardarRegistro}>
-          <div className="catalog-manager-form-body">
-            <label className="catalog-manager-name-field"><span>Nombre<b>*</b></span><input autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
-            {esMarca && <label className="catalog-manager-name-field"><span>Se usa en<b>*</b></span><select value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
+    {modalAbierto && <div className={cn("catalog-manager-backdrop", ui.backdrop)} onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarModal(); }}>
+      <section ref={dialogoRef} className={cn("catalog-manager-dialog", ui.dialog)} role="dialog" aria-modal="true" aria-labelledby="catalog-manager-form-title">
+        <header className="catalog-manager-dialog-head"><div className={cn("catalog-manager-dialog-symbol", ui.dialogSymbol, esMarca && `is-brand ${ui.brandSymbol}`)}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}</p></div><button className={ui.closeButton} type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
+        {error && <NotificacionFlotante mensaje={error} />}
+        <form className={cn("catalog-manager-form", ui.form)} onSubmit={guardarRegistro}>
+          <div className={cn("catalog-manager-form-body", ui.formBody)}>
+            <label className={cn("catalog-manager-name-field", ui.nameField)}><span>Nombre<b>*</b></span><input className={ui.nameInput} autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
+            {esMarca && <label className={cn("catalog-manager-name-field", ui.nameField)}><span>Se usa en<b>*</b></span><select className={cn(ui.nameInput, ui.nameSelect)} value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
           </div>
-          <footer className="catalog-manager-form-actions"><button type="button" className="catalog-manager-cancel" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" className="catalog-manager-save" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button></footer>
+          <footer className={cn("catalog-manager-form-actions", ui.formActions)}><button type="button" className={cn("catalog-manager-cancel", ui.cancelButton)} onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" className={cn("catalog-manager-save", ui.saveButton)} disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button></footer>
         </form>
       </section>
     </div>}
 
-    {confirmacionEstado && <div className="catalog-manager-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarConfirmacionEstado(); }}>
-      <section ref={dialogoRef} className="catalog-manager-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-manager-confirm-title">
-        <div className={`catalog-manager-confirm-icon${confirmacionEstado.activo ? " is-disable" : " is-enable"}`}><Icono nombre={confirmacionEstado.activo ? "desactivar" : "activar"}/></div>
-        <h2 id="catalog-manager-confirm-title">{confirmacionEstado.activo ? `¿Desactivar ${singular}?` : `¿Habilitar ${singular}?`}</h2>
-        <p>Vas a {confirmacionEstado.activo ? "desactivar" : "habilitar"} <strong>{confirmacionEstado.nombre}</strong>. {confirmacionEstado.activo ? "Dejará de estar disponible para nuevos registros; la información histórica se conservará." : "Volverá a estar disponible para nuevos registros."}</p>
-        <footer><button className="catalog-manager-cancel" type="button" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button><button className={`catalog-manager-save${confirmacionEstado.activo ? " is-destructive" : ""}`} type="button" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button></footer>
+    {confirmacionEstado && <div className={cn("catalog-manager-backdrop", ui.backdrop)} onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarConfirmacionEstado(); }}>
+      <section ref={dialogoRef} className={cn("catalog-manager-confirm-dialog", ui.confirmDialog)} role="dialog" aria-modal="true" aria-labelledby="catalog-manager-confirm-title">
+        <div className={cn("catalog-manager-confirm-icon", ui.confirmIcon, confirmacionEstado.activo ? `is-disable ${ui.confirmDisable}` : `is-enable ${ui.confirmEnable}`)}><Icono nombre={confirmacionEstado.activo ? "desactivar" : "activar"}/></div>
+        <h2 id="catalog-manager-confirm-title" className={ui.confirmTitle}>{confirmacionEstado.activo ? `¿Desactivar ${singular}?` : `¿Habilitar ${singular}?`}</h2>
+        <p className={ui.confirmText}>Vas a {confirmacionEstado.activo ? "desactivar" : "habilitar"} <strong>{confirmacionEstado.nombre}</strong>. {confirmacionEstado.activo ? "Dejará de estar disponible para nuevos registros; la información histórica se conservará." : "Volverá a estar disponible para nuevos registros."}</p>
+        <footer className={ui.confirmActions}><button className={cn("catalog-manager-cancel", ui.cancelButton)} type="button" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button><button className={cn("catalog-manager-save", ui.saveButton, confirmacionEstado.activo && ui.destructiveButton)} type="button" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button></footer>
       </section>
     </div>}
   </section>;

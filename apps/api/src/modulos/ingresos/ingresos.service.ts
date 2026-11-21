@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gt, gte, ilike, inArray, isNull, lte, not, or, sql } from "drizzle-orm";
-import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosMototaxis, movimientosMototaxisVentas, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, unidadesMototaxis, modelosMototaxis, transportistas } from "@magina/database";
+import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosModelosMototaxis, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, modelosMototaxis, transportistas } from "@magina/database";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { consultarIdentidadPeru } from "../../utilidades/consulta-identidad-peru";
@@ -12,7 +12,9 @@ import { analizarEstadoComprobante, validarElegibilidadReintento } from "./compr
 import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
-type Linea = { tipo?: unknown; presentacionId?: unknown; mototaxiUnidadId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
+import { bloquearModelos, moverSaldoModelo, precioVigenteModelo } from "../mototaxis/inventario-modelos";
+
+type Linea = { tipo?: unknown; presentacionId?: unknown; listaPrecioCodigo?: unknown; precioEsperado?: unknown; mototaxiModeloId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
 type DatosIngreso = { idempotencyKey?: unknown; fecha?: unknown; tipoComprobante?: unknown; ordenServicioId?: unknown; cotizacionId?: unknown; clienteId?: unknown; clienteDireccion?: unknown; clienteTipoDocumento?: unknown; clienteNumeroDocumento?: unknown; clienteNombre?: unknown; medioPago?: unknown; condicionPago?: unknown; fechaVencimientoPago?: unknown; importePagoInicial?: unknown; cuotasPago?: unknown; observacion?: unknown; detalles?: unknown };
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const mediosPagoPorCuenta = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" } as const;
@@ -36,6 +38,7 @@ function numero(valor: unknown, campo: string, escala: number, minimo: number) {
 }
 const uuidValido = (valor: unknown) => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
 const redondear = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
+const obtenerRegimenTributario = () => process.env.REGIMEN_TRIBUTARIO?.trim() || "NRUS";
 const diasEntreFechas = (desde: string, hasta: string) => Math.round((Date.parse(`${hasta}T00:00:00.000Z`) - Date.parse(`${desde}T00:00:00.000Z`)) / 86_400_000);
 const validarFecha = (fecha: string, nombre: string) => {
   const parseada = new Date(`${fecha}T00:00:00.000Z`);
@@ -190,12 +193,13 @@ export class ServicioIngresos {
 
   async listarCotizaciones(busquedaEntrada?: string) {
     const busqueda = busquedaEntrada?.trim();
+    const aplicaIgv = obtenerRegimenTributario() !== "NRUS";
     const filas = await db.select({ cotizacion: cotizaciones, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno, razonSocial: personas.razonSocial, ingresoEstado: ingresos.estado, ingresoTipoComprobante: ingresos.tipoComprobante })
       .from(cotizaciones).leftJoin(personas, eq(cotizaciones.clienteId, personas.id))
       .leftJoin(ingresos, eq(cotizaciones.ingresoId, ingresos.id))
       .where(busqueda ? or(ilike(cotizaciones.codigo, `%${busqueda}%`), ilike(personas.nombres, `%${busqueda}%`), ilike(personas.razonSocial, `%${busqueda}%`)) : undefined)
       .orderBy(desc(cotizaciones.creadoEn)).limit(200);
-    return filas.map(({ cotizacion, ...cliente }) => ({ ...cotizacion, clienteNombre: cliente.razonSocial ?? ([cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") || null), ingresoEstado: cliente.ingresoEstado, ingresoTipoComprobante: cliente.ingresoTipoComprobante }));
+    return filas.map(({ cotizacion, ...cliente }) => ({ ...cotizacion, aplicaIgv, clienteNombre: cliente.razonSocial ?? ([cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") || null), ingresoEstado: cliente.ingresoEstado, ingresoTipoComprobante: cliente.ingresoTipoComprobante }));
   }
 
   async crearCotizacion(valor: unknown, usuarioId: string) {
@@ -217,7 +221,40 @@ export class ServicioIngresos {
     const [cotizacion] = await db.insert(cotizaciones).values({ id, codigo: codigoCotizacion, clienteId: cliente?.id ?? null,
       detalles, observacion: texto(datos.observacion, "La observación", 2000), fecha,
       vigenteHasta: texto(datos.vigenteHasta, "La vigencia", 10), claveEmision: randomUUID(), usuarioId }).returning();
-    return cotizacion;
+    return { ...cotizacion, aplicaIgv: obtenerRegimenTributario() !== "NRUS" };
+  }
+
+  async actualizarCotizacion(id: string, valor: unknown) {
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos de actualización no son válidos.");
+    const [actual] = await db.select().from(cotizaciones).where(eq(cotizaciones.id, id)).limit(1);
+    if (!actual) throw new NotFoundException("No se encontró la cotización.");
+    if (actual.ingresoId || !["BORRADOR", "ENVIADA", "ACEPTADA"].includes(actual.estado)) throw new ConflictException("Esta cotización ya no admite cambios.");
+
+    const datos = valor as Record<string, unknown>;
+    let clienteId = actual.clienteId;
+    if (datos.clienteId !== undefined) {
+      if (datos.clienteId === null || datos.clienteId === "") clienteId = null;
+      else {
+        if (!uuidValido(datos.clienteId)) throw new BadRequestException("El cliente seleccionado no es válido.");
+        clienteId = datos.clienteId as string;
+        if (clienteId !== actual.clienteId) {
+          const [cliente] = await db.select({ id: clientes.personaId }).from(clientes).where(and(eq(clientes.personaId, clienteId), eq(clientes.activo, true))).limit(1);
+          if (!cliente) throw new NotFoundException("El cliente seleccionado no está activo.");
+        }
+      }
+    }
+    const detalles = datos.detalles === undefined ? actual.detalles : validarDetallesGestion(datos.detalles, false);
+    const observacion = datos.observacion === undefined ? actual.observacion : texto(datos.observacion, "La observación", 2000);
+    const vigenteHasta = datos.vigenteHasta === undefined ? actual.vigenteHasta : texto(datos.vigenteHasta, "La vigencia", 10);
+    if (vigenteHasta) {
+      const fecha = new Date(`${vigenteHasta}T00:00:00.000Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(vigenteHasta) || Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== vigenteHasta) throw new BadRequestException("La fecha de vigencia no es válida.");
+      if (vigenteHasta < actual.fecha) throw new BadRequestException("La fecha de vigencia no puede ser anterior a la emisión.");
+    }
+    const [cotizacion] = await db.update(cotizaciones).set({ clienteId, detalles, observacion, vigenteHasta, actualizadoEn: new Date() })
+      .where(and(eq(cotizaciones.id, id), isNull(cotizaciones.ingresoId), inArray(cotizaciones.estado, ["BORRADOR", "ENVIADA", "ACEPTADA"]))).returning();
+    if (!cotizacion) throw new ConflictException("La cotización cambió o fue convertida mientras la actualizabas. Recarga e inténtalo otra vez.");
+    return { ...cotizacion, aplicaIgv: obtenerRegimenTributario() !== "NRUS" };
   }
 
   async cambiarEstadoCotizacion(id: string, valor: unknown) {
@@ -273,33 +310,66 @@ export class ServicioIngresos {
       .from(ubigeosPeru).orderBy(asc(ubigeosPeru.departamento), asc(ubigeosPeru.provincia), asc(ubigeosPeru.distrito));
   }
 
+  private codigoDocumentoParaGuia() {
+    const serie = sql`${ingresos.datosNubefact}->'solicitud'->>'serie'`;
+    const numero = sql`${ingresos.datosNubefact}->'solicitud'->>'numero'`;
+    return sql<string>`case
+      when nullif(${serie}, '') is not null and ${numero} ~ '^[0-9]+$'
+        then ${serie} || '-' || lpad(${numero}, greatest(6, length(${numero})), '0')
+      else ${ingresos.codigo}
+    end`;
+  }
+
   private condicionDocumentoParaGuia() {
     return and(
       or(and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"]), eq(ingresos.estado, "EMITIDO")), and(eq(ingresos.tipoComprobante, "NOTA_VENTA"), eq(ingresos.estado, "REGISTRADO"))),
       not(isNull(ingresos.clienteId)),
+      exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle).where(and(
+        eq(ingresosDetalle.ingresoId, ingresos.id), inArray(ingresosDetalle.tipo, ["PRODUCTO", "MOTOTAXI"]),
+      ))),
       exists(db.select({ id: clientes.personaId }).from(clientes).innerJoin(personas, eq(clientes.personaId, personas.id)).where(and(eq(clientes.personaId, ingresos.clienteId), eq(clientes.activo, true), eq(personas.activo, true)))),
       sql`coalesce(${ingresos.datosNubefact}->'anulacion'->>'estado', '') NOT IN ('PENDIENTE', 'ANULADO')`,
     );
   }
 
-  async buscarDocumentosParaGuia(busquedaEntrada?: string) {
+  async buscarDocumentosParaGuia(busquedaEntrada?: string, tipo?: string) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
+    if (busqueda.length === 1) return [];
+    if (tipo && tipo !== "BOLETA" && tipo !== "FACTURA" && tipo !== "NOTA_VENTA") {
+      throw new BadRequestException("Selecciona un tipo de documento válido.");
+    }
     const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
-    const condicion = and(this.condicionDocumentoParaGuia(), busqueda ? or(
-      ilike(ingresos.codigo, coincidencia), ilike(ingresos.clienteNombre, coincidencia), ilike(ingresos.clienteNumeroDocumento, coincidencia),
-      exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle).where(and(eq(ingresosDetalle.ingresoId, ingresos.id), or(ilike(ingresosDetalle.descripcion, coincidencia), ilike(ingresosDetalle.codigoProducto, coincidencia))))),
-    ) : undefined);
-    const filas = await db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, estado: ingresos.estado, clienteNombre: ingresos.clienteNombre, clienteNumeroDocumento: ingresos.clienteNumeroDocumento, total: ingresos.total })
-      .from(ingresos).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(30);
-    return filas;
+    const codigo = this.codigoDocumentoParaGuia();
+    const numeracion = /^([a-z][a-z0-9]{1,3})\s*-\s*0*(\d+)$/i.exec(busqueda);
+    const codigoNormalizado = numeracion && `${numeracion[1]}-${numeracion[2].padStart(6, "0")}`;
+    const condicion = and(
+      this.condicionDocumentoParaGuia(),
+      tipo ? eq(ingresos.tipoComprobante, tipo) : undefined,
+      busqueda ? or(
+        ilike(codigo, coincidencia), ilike(ingresos.codigo, coincidencia),
+        codigoNormalizado ? ilike(codigo, codigoNormalizado) : undefined,
+        ilike(ingresos.clienteNombre, coincidencia), ilike(ingresos.clienteNumeroDocumento, coincidencia),
+        exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle).where(and(
+          eq(ingresosDetalle.ingresoId, ingresos.id), inArray(ingresosDetalle.tipo, ["PRODUCTO", "MOTOTAXI"]),
+          or(ilike(ingresosDetalle.descripcion, coincidencia), ilike(ingresosDetalle.codigoProducto, coincidencia)),
+        ))),
+      ) : undefined,
+    );
+    return db.select({ id: ingresos.id, codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, estado: ingresos.estado, clienteNombre: ingresos.clienteNombre, clienteNumeroDocumento: ingresos.clienteNumeroDocumento, total: ingresos.total })
+      .from(ingresos).where(condicion)
+      .orderBy(
+        ...(busqueda ? [desc(sql`lower(${codigo}) = lower(${codigoNormalizado ?? busqueda})`)] : []),
+        desc(ingresos.fecha), desc(ingresos.creadoEn), desc(ingresos.id),
+      )
+      .limit(busqueda ? 30 : 10);
   }
 
   async obtenerDocumentoParaGuia(idEntrada: string) {
     if (!uuidValido(idEntrada)) throw new BadRequestException("Selecciona un comprobante válido.");
     const condicion = and(eq(ingresos.id, idEntrada), eq(clientes.activo, true), eq(personas.activo, true), this.condicionDocumentoParaGuia());
-    const [documento] = await db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, clienteId: ingresos.clienteId, clienteNombre: personas.razonSocial, clienteNombres: personas.nombres, clienteApellidoPaterno: personas.apellidoPaterno, clienteApellidoMaterno: personas.apellidoMaterno, clienteTipoDocumento: tiposDocumento.codigo, clienteNumeroDocumento: personas.numeroDocumento, clienteDireccionFiscal: clientes.direccionFiscal, clienteDireccionEntrega: clientes.direccionEntrega })
+    const [documento] = await db.select({ id: ingresos.id, codigo: this.codigoDocumentoParaGuia(), fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, clienteId: ingresos.clienteId, clienteNombre: personas.razonSocial, clienteNombres: personas.nombres, clienteApellidoPaterno: personas.apellidoPaterno, clienteApellidoMaterno: personas.apellidoMaterno, clienteTipoDocumento: tiposDocumento.codigo, clienteNumeroDocumento: personas.numeroDocumento, clienteDireccionFiscal: clientes.direccionFiscal, clienteDireccionEntrega: clientes.direccionEntrega })
       .from(ingresos).innerJoin(clientes, eq(ingresos.clienteId, clientes.personaId)).innerJoin(personas, eq(clientes.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(condicion).limit(1);
-    if (!documento || !documento.clienteId) throw new NotFoundException("No se encontró un comprobante emitido con cliente registrado para esta guía.");
+    if (!documento || !documento.clienteId) throw new NotFoundException("No se encontró un documento de venta válido con cliente registrado y bienes trasladables.");
     const detalles = await db.select({ id: ingresosDetalle.id, tipo: ingresosDetalle.tipo, codigo: ingresosDetalle.codigoProducto, descripcion: ingresosDetalle.descripcion, unidad: ingresosDetalle.unidadMedidaCodigo, cantidad: ingresosDetalle.cantidad })
       .from(ingresosDetalle).where(and(eq(ingresosDetalle.ingresoId, documento.id), inArray(ingresosDetalle.tipo, ["PRODUCTO", "MOTOTAXI"]))).orderBy(asc(ingresosDetalle.creadoEn));
     if (!detalles.length) throw new BadRequestException("El comprobante no contiene repuestos ni mototaxis trasladables.");
@@ -310,13 +380,17 @@ export class ServicioIngresos {
     const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
     const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
     const [{ total }] = await db.select({ total: count() }).from(guiasRemision);
-    const filas = await db.select().from(guiasRemision).orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
-    const items = filas.map((fila) => {
+    const filas = await db.select({ guia: guiasRemision, codigoOrigen: this.codigoDocumentoParaGuia(), tipoOrigen: ingresos.tipoComprobante })
+      .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id))
+      .orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
+    const items = filas.map(({ guia: fila, codigoOrigen, tipoOrigen }) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
       const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
       const comprobanteOrigen = datos.comprobanteOrigen && typeof datos.comprobanteOrigen === "object" ? datos.comprobanteOrigen as Record<string, unknown> : null;
       return { id: fila.id, tipo: fila.tipo, fecha: fila.fecha, codigo: `${fila.serie}-${String(fila.numero).padStart(6, "0")}`,
-        ingresoId: fila.ingresoId, comprobanteOrigen: comprobanteOrigen && typeof comprobanteOrigen.codigo === "string" ? { codigo: comprobanteOrigen.codigo, tipo: typeof comprobanteOrigen.tipo === "string" ? comprobanteOrigen.tipo : "" } : null,
+        ingresoId: fila.ingresoId, comprobanteOrigen: comprobanteOrigen && typeof comprobanteOrigen.codigo === "string"
+          ? { codigo: comprobanteOrigen.codigo, tipo: typeof comprobanteOrigen.tipo === "string" ? comprobanteOrigen.tipo : "" }
+          : codigoOrigen && tipoOrigen ? { codigo: codigoOrigen, tipo: tipoOrigen } : null,
         estado: fila.estado, detalle: typeof respuesta.sunat_description === "string" ? respuesta.sunat_description : null,
         enlacePdf: typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null,
         enlaceXml: typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null,
@@ -382,7 +456,7 @@ export class ServicioIngresos {
       numero_de_bultos: bultos, fecha_de_inicio_de_traslado: `${inicio.slice(8, 10)}-${inicio.slice(5, 7)}-${inicio.slice(0, 4)}`,
       punto_de_partida_ubigeo: partidaUbigeo, punto_de_partida_direccion: partidaDireccion,
       punto_de_partida_codigo_establecimiento_sunat: "0000", punto_de_llegada_ubigeo: llegadaUbigeo, punto_de_llegada_direccion: llegadaDireccion,
-      punto_de_llegada_codigo_establecimiento_sunat: "0000", enviar_automaticamente_al_cliente: false, formato_de_pdf: "", items,
+      punto_de_llegada_codigo_establecimiento_sunat: "0000", enviar_automaticamente_al_cliente: false, formato_de_pdf: "A4", items,
     };
     if (tipo === "REMITENTE") {
       solicitud.motivo_de_traslado = requerido("motivoTraslado", "El motivo del traslado", 2);
@@ -431,7 +505,8 @@ export class ServicioIngresos {
     }).returning({ numero: nubefactCorrelativos.ultimoNumero });
     solicitud.numero = correlativo.numero;
     const id = randomUUID();
-    await db.insert(guiasRemision).values({ id, ingresoId: documentoOrigen.id, tipo, fecha, serie, numero: correlativo.numero, estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, comprobanteOrigen: { id: documentoOrigen.id, codigo: documentoOrigen.codigo, tipo: documentoOrigen.tipoComprobante } }, usuarioId });
+    const comprobanteOrigen = { id: documentoOrigen.id, codigo: documentoOrigen.codigo, tipo: documentoOrigen.tipoComprobante };
+    await db.insert(guiasRemision).values({ id, ingresoId: documentoOrigen.id, tipo, fecha, serie, numero: correlativo.numero, estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, comprobanteOrigen }, usuarioId });
     let respuesta: Response;
     try { respuesta = await fetch(process.env.NUBEFACT_RUTA!.trim(), { method: "POST", headers: { Authorization: process.env.NUBEFACT_TOKEN!.trim(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(solicitud), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) }); }
     catch { return { id, tipo, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, estado: "NUBEFACT_PENDIENTE", mensaje: "No hubo respuesta. Consulta el estado antes de volver a emitir." }; }
@@ -439,7 +514,7 @@ export class ServicioIngresos {
     try { const json: unknown = await respuesta.json(); if (json && typeof json === "object" && !Array.isArray(json)) cuerpo = json as Record<string, unknown>; } catch { cuerpo = { error: "NubeFact no devolvió una respuesta válida." }; }
     const error = cuerpo.errors ?? cuerpo.error ?? cuerpo.mensaje;
     const rechazado = !respuesta.ok || Boolean(error);
-    await db.update(guiasRemision).set({ estado: rechazado ? "ERROR_NUBEFACT" : "PENDIENTE_SUNAT", datosNubefact: { solicitud, respuesta: cuerpo } }).where(eq(guiasRemision.id, id));
+    await db.update(guiasRemision).set({ estado: rechazado ? "ERROR_NUBEFACT" : "PENDIENTE_SUNAT", datosNubefact: { solicitud, comprobanteOrigen, respuesta: cuerpo } }).where(eq(guiasRemision.id, id));
     return { id, tipo, codigo: `${serie}-${String(correlativo.numero).padStart(6, "0")}`, estado: rechazado ? "ERROR_NUBEFACT" : "PENDIENTE_SUNAT", mensaje: typeof error === "string" ? error : null };
   }
 
@@ -474,8 +549,24 @@ export class ServicioIngresos {
 
   constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
 
-  private async actualizarAnulacionIngreso(id: string, datos: Record<string, unknown>, anulacion: Record<string, unknown>, estado: string) {
-    await db.update(ingresos).set({ estado: estado === "ANULACION_PENDIENTE" ? "EMITIDO" : estado, datosNubefact: { ...datos, anulacion } }).where(eq(ingresos.id, id));
+  private async actualizarAnulacionIngreso(id: string, datos: Record<string, unknown>, anulacion: Record<string, unknown>, estado: string, usuarioId: string) {
+    await db.transaction(async (tx) => {
+      const [venta] = await tx.select({ estado: ingresos.estado }).from(ingresos).where(eq(ingresos.id, id)).for("update");
+      if (!venta || (venta.estado === "ANULADO" && estado !== "ANULADO")) return;
+      if (estado === "ANULADO" && venta.estado !== "ANULADO") {
+        const movimientos = await tx.select({
+          id: ingresosDetalle.id, modeloId: movimientosModelosMototaxis.modeloId,
+          cantidadAnterior: movimientosModelosMototaxis.cantidadAnterior, cantidadFinal: movimientosModelosMototaxis.cantidadFinal,
+        }).from(ingresosDetalle).innerJoin(movimientosModelosMototaxis, and(
+          eq(movimientosModelosMototaxis.origenId, ingresosDetalle.id), eq(movimientosModelosMototaxis.tipo, "VENTA"),
+        )).where(eq(ingresosDetalle.ingresoId, id)).orderBy(asc(movimientosModelosMototaxis.modeloId), asc(ingresosDetalle.id));
+        if (movimientos.length) await bloquearModelos(tx, [...new Set(movimientos.map((item) => item.modeloId))]);
+        for (const item of movimientos) {
+          await moverSaldoModelo(tx, { modeloId: item.modeloId, tipo: "ANULACION_VENTA", origenId: item.id, diferencia: item.cantidadAnterior - item.cantidadFinal, usuarioId });
+        }
+      }
+      await tx.update(ingresos).set({ estado: estado === "ANULACION_PENDIENTE" ? "EMITIDO" : estado, datosNubefact: { ...datos, anulacion } }).where(eq(ingresos.id, id));
+    });
   }
 
   private async actualizarAnulacionNota(id: string, datos: Record<string, unknown>, anulacion: Record<string, unknown>, estado: string) {
@@ -563,10 +654,10 @@ export class ServicioIngresos {
     const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
     if (typeof solicitud.serie !== "string" || !Number.isInteger(Number(solicitud.numero))) throw new BadRequestException("La venta no conserva una serie y número NubeFact válidos.");
     return this.enviarAnulacion(venta.tipoComprobante as "BOLETA" | "FACTURA", solicitud.serie, Number(solicitud.numero), venta.fecha, "INGRESO", venta.id, datos, (entrada as Record<string, unknown>).motivo, usuarioId,
-      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado));
+      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado, usuarioId));
   }
 
-  async consultarAnulacionIngreso(idEntrada: string) {
+  async consultarAnulacionIngreso(idEntrada: string, usuarioId: string) {
     if (!uuidValido(idEntrada)) throw new BadRequestException("El comprobante no es válido.");
     const [venta] = await db.select().from(ingresos).where(eq(ingresos.id, idEntrada)).limit(1);
     if (!venta) throw new NotFoundException("No se encontró la venta.");
@@ -574,7 +665,7 @@ export class ServicioIngresos {
     const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
     if (typeof solicitud.serie !== "string" || !Number.isInteger(Number(solicitud.numero))) throw new BadRequestException("El comprobante no conserva una numeración válida.");
     return this.consultarAnulacion(venta.tipoComprobante as "BOLETA" | "FACTURA", solicitud.serie, Number(solicitud.numero), venta.id, datos,
-      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado));
+      (anulacion, estado) => this.actualizarAnulacionIngreso(venta.id, datos, anulacion, estado, usuarioId));
   }
 
   async anularNota(ingresoId: string, notaId: string, entrada: unknown, usuarioId: string) {
@@ -690,7 +781,7 @@ export class ServicioIngresos {
     return { estadoProveedor: analisis.estadoProveedor, detalleProveedor: analisis.detalleProveedor, respuestaHttp: respuesta.status, consultadoEn: consultaComprobante.consultadoEn };
   }
 
-  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string }) {
+  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string; tipoDocumento?: string; medioPago?: string }) {
     const tipoVenta = filtros.tipoVenta === "MOTOTAXIS" ? "MOTOTAXIS" : filtros.tipoVenta === "REPUESTOS" ? "REPUESTOS" : null;
     if (!tipoVenta) throw new BadRequestException("Selecciona si deseas consultar ventas de repuestos o de mototaxis.");
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
@@ -700,15 +791,20 @@ export class ServicioIngresos {
     const ventaTieneMototaxi = exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle)
       .where(and(eq(ingresosDetalle.ingresoId, ingresos.id), eq(ingresosDetalle.tipo, "MOTOTAXI"))));
     const filtroTipo = tipoVenta === "MOTOTAXIS" ? ventaTieneMototaxi : not(ventaTieneMototaxi);
+    const filtroDocumento = filtros.tipoDocumento && ["BOLETA", "FACTURA", "NOTA_VENTA"].includes(filtros.tipoDocumento)
+      ? eq(ingresos.tipoComprobante, filtros.tipoDocumento as "BOLETA" | "FACTURA" | "NOTA_VENTA") : undefined;
+    const filtroMedioPago = filtros.medioPago && ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"].includes(filtros.medioPago)
+      ? eq(ingresos.medioPago, filtros.medioPago) : undefined;
     const detallesCoinciden = busqueda ? exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle)
       .where(and(eq(ingresosDetalle.ingresoId, ingresos.id), or(ilike(ingresosDetalle.descripcion, coincidencia), ilike(ingresosDetalle.codigoProducto, coincidencia))))) : undefined;
     const filtroBusqueda = busqueda ? or(ilike(ingresos.codigo, coincidencia), ilike(ingresos.clienteNombre, coincidencia),
       ilike(ingresos.clienteNumeroDocumento, coincidencia), ilike(ingresos.estado, coincidencia), detallesCoinciden) : undefined;
-    const condicion = and(filtroTipo, filtroBusqueda);
+    const condicion = and(filtroTipo, filtroDocumento, filtroMedioPago, filtroBusqueda);
     const [filas, [conteo]] = await Promise.all([
       db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante,
         clienteNombre: ingresos.clienteNombre, clienteNumeroDocumento: ingresos.clienteNumeroDocumento, medioPago: ingresos.medioPago,
-        condicionPago: ingresos.condicionPago, total: ingresos.total, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
+        condicionPago: ingresos.condicionPago, subtotal: ingresos.subtotal, igv: ingresos.igv, tasaIgv: ingresos.tasaIgv,
+        total: ingresos.total, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
         .from(ingresos).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn))
         .limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(ingresos).where(condicion),
@@ -729,7 +825,8 @@ export class ServicioIngresos {
       return { id: fila.id, codigoVenta: fila.codigo, codigoComprobante: serie && numero ? `${serie}-${String(numero).padStart(6, "0")}` : fila.codigo,
         fecha: fila.fecha, tipoComprobante: fila.tipoComprobante, clienteNombre: fila.clienteNombre,
         clienteNumeroDocumento: fila.clienteNumeroDocumento, medioPago: fila.medioPago, condicionPago: fila.condicionPago,
-        total: fila.total, estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
+        subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total,
+        estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
         estadoProveedor: estadoAnulacion === "ANULADO" ? "ANULADO" : estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "RECHAZADO" ? "BAJA_RECHAZADA" : estadoDocumento.estadoProveedor,
         detalleProveedor: estadoAnulacion ? (typeof anulacion?.detalle === "string" ? anulacion.detalle : estadoAnulacion === "PENDIENTE" ? "La comunicacion fue enviada y SUNAT aun no confirma el resultado." : null) : estadoDocumento.detalleProveedor,
         enlacePdf: enlaceArchivoLocal(datos, "PDF") ?? enlaceArchivoLocal(datos, "HTML") ?? (typeof respuesta.enlace_del_pdf === "string" ? respuesta.enlace_del_pdf : null),
@@ -788,6 +885,7 @@ export class ServicioIngresos {
     const datos = entrada as Record<string, unknown>;
     const tipo = datos.tipo === "NOTA_DEBITO" ? "NOTA_DEBITO" : datos.tipo === "NOTA_CREDITO" ? "NOTA_CREDITO" : null;
     if (!tipo) throw new BadRequestException("Selecciona nota de crédito o débito.");
+    const cuentaFinancieraId = await validarCuentaFinanciera(datos.cuentaFinancieraId, datos.medioPago, true);
     const motivoCodigo = tipo === "NOTA_CREDITO" ? 5 : 2;
     const motivo = tipo === "NOTA_CREDITO" ? "Descuento por ítem" : "Aumento de valor por ítem";
     if (!Array.isArray(datos.lineas) || datos.lineas.length === 0 || datos.lineas.length > 100) throw new BadRequestException("Selecciona uno o más productos o servicios para modificar.");
@@ -861,28 +959,28 @@ export class ServicioIngresos {
       total_gravada: totalGravada || "", total_inafecta: totalInafecta || "", total_exonerada: totalExonerada || "", total_igv: igv, total: monto,
       documento_que_se_modifica_tipo: tipoDocumento, documento_que_se_modifica_serie: origenSerie, documento_que_se_modifica_numero: origenNumero,
       tipo_de_nota_de_credito: tipo === "NOTA_CREDITO" ? motivoCodigo : "", tipo_de_nota_de_debito: tipo === "NOTA_DEBITO" ? motivoCodigo : "",
-      enviar_automaticamente_a_la_sunat: true, enviar_automaticamente_al_cliente: false,
+      enviar_automaticamente_a_la_sunat: true, enviar_automaticamente_al_cliente: false, formato_de_pdf: "A4",
       condiciones_de_pago: "", medio_de_pago: "", cancelado: true, observaciones: texto(datos.observacion, "La observación", 240) ?? "",
       items };
     const lineasOrigen = seleccionadas.map(({ detalle, monto: montoAjuste }) => ({ ingresoDetalleId: detalle.id, montoAjuste, cantidad: detalle.cantidad }));
     await db.insert(comprobantesRelacionados).values({ id, ingresoOrigenId: venta.id, tipoComprobante: tipo, codigoMotivo: motivoCodigo, motivo,
       fecha, serie: serieNota, numero: correlativo.numero, subtotal: base.toFixed(2), igv: igv.toFixed(2), total: monto.toFixed(2),
-      estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, lineasOrigen }, usuarioId });
+      estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, lineasOrigen, cuentaFinancieraId }, usuarioId });
     await db.insert(comprobantesRelacionadosDetalle).values(seleccionadas.map(({ detalle }) => ({ comprobanteRelacionadoId: id, ingresoDetalleId: detalle.id, cantidad: detalle.cantidad })));
     let respuesta: Response;
     try { respuesta = await fetch(process.env.NUBEFACT_RUTA!.trim(), { method: "POST", headers: { Authorization: process.env.NUBEFACT_TOKEN!.trim(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(solicitud), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) }); }
-    catch { await db.update(comprobantesRelacionados).set({ estado: "ERROR_NUBEFACT", datosNubefact: { solicitud, lineasOrigen, mensaje: "Sin respuesta del proveedor; confirma su estado en NubeFact antes de reintentar." } }).where(eq(comprobantesRelacionados.id, id)); throw new BadRequestException("No hubo respuesta de NubeFact. Revisa el estado antes de volver a emitir."); }
+    catch { await db.update(comprobantesRelacionados).set({ estado: "ERROR_NUBEFACT", datosNubefact: { solicitud, lineasOrigen, cuentaFinancieraId, mensaje: "Sin respuesta del proveedor; confirma su estado en NubeFact antes de reintentar." } }).where(eq(comprobantesRelacionados.id, id)); throw new BadRequestException("No hubo respuesta de NubeFact. Revisa el estado antes de volver a emitir."); }
     let cuerpo: Record<string, unknown>;
     try { const json: unknown = await respuesta.json(); cuerpo = typeof json === "object" && json !== null && !Array.isArray(json) ? json as Record<string, unknown> : {}; } catch { cuerpo = {}; }
     const errores = cuerpo.errors;
     const hayErrores = typeof errores === "string" ? errores.trim().length > 0 : Array.isArray(errores) ? errores.length > 0 : Boolean(errores);
     const aceptada = respuesta.ok && !hayErrores && (cuerpo.aceptada_por_sunat === true || (typeof cuerpo.enlace_del_pdf === "string" && !!cuerpo.enlace_del_pdf));
     await db.update(comprobantesRelacionados).set({ estado: aceptada ? "EMITIDO" : "ERROR_NUBEFACT",
-      datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen } }).where(eq(comprobantesRelacionados.id, id));
+      datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen, cuentaFinancieraId } }).where(eq(comprobantesRelacionados.id, id));
     if (!aceptada) throw new BadRequestException(typeof errores === "string" ? errores : "NubeFact no confirmó la emisión de la nota.");
     const codigoComprobante = `${serieNota}-${String(correlativo.numero).padStart(6, "0")}`;
     const archivos = await this.archivarNubeFact("COMPROBANTE_RELACIONADO", id, tipo, codigoComprobante, cuerpo);
-    await db.update(comprobantesRelacionados).set({ datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen, archivos } }).where(eq(comprobantesRelacionados.id, id));
+    await db.update(comprobantesRelacionados).set({ datosNubefact: { solicitud, respuesta: cuerpo, lineasOrigen, cuentaFinancieraId, archivos } }).where(eq(comprobantesRelacionados.id, id));
     return { id, tipoComprobante: tipo, codigoComprobante, estado: "EMITIDO", archivos };
   }
 
@@ -899,7 +997,7 @@ export class ServicioIngresos {
     const serieFactura = seriesGuardadas.find((item) => item.tipoComprobante === "FACTURA" && item.activa)?.serie ?? "";
     const seriesConfiguradas = /^B[A-Z0-9]{3}$/.test(serieBoleta);
     const serieFacturaConfigurada = /^F[A-Z0-9]{3}$/.test(serieFactura);
-    const regimenTributario = process.env.REGIMEN_TRIBUTARIO?.trim() || "NRUS";
+    const regimenTributario = obtenerRegimenTributario();
     const facturaPermitida = regimenTributario !== "NRUS";
     return { regimenTributario, credencialesConfiguradas, seriesConfiguradas, emisionHabilitada: credencialesConfiguradas && seriesConfiguradas,
       serieFacturaConfigurada, emisionFacturaHabilitada: credencialesConfiguradas && serieFacturaConfigurada && facturaPermitida };
@@ -929,15 +1027,23 @@ export class ServicioIngresos {
     if (!reglas[tipo]?.test(serie)) throw new BadRequestException("La serie no cumple el formato esperado para ese tipo de documento.");
     const correlativoTipo: Record<string, number> = { FACTURA: 1, BOLETA: 2, NOTA_CREDITO_FACTURA: 3, NOTA_CREDITO_BOLETA: 3, NOTA_DEBITO_FACTURA: 4, NOTA_DEBITO_BOLETA: 4, GUIA_REMITENTE: 5, GUIA_TRANSPORTISTA: 6 };
     const esInterna = tipo === "NOTA_VENTA" || tipo === "ORDEN_SERVICIO" || tipo === "COTIZACION";
-    const actual = await db.select().from(seriesComprobantes).where(and(eq(seriesComprobantes.tipoComprobante, tipo), eq(seriesComprobantes.activa, true))).limit(1);
-    if (actual[0] && actual[0].serie !== serie) await db.update(seriesComprobantes).set({ activa: false, actualizadoEn: new Date() }).where(eq(seriesComprobantes.id, actual[0].id));
-    await db.insert(seriesComprobantes).values({ tipoComprobante: tipo, serie, activa: true }).onConflictDoUpdate({ target: [seriesComprobantes.tipoComprobante, seriesComprobantes.serie], set: { activa: true, actualizadoEn: new Date() } });
-    if (esInterna) {
-      await db.insert(correlativosDocumentosInternos).values({ tipo, ultimoNumero }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`greatest(${correlativosDocumentosInternos.ultimoNumero}, ${ultimoNumero})` } });
-    } else {
-      await db.insert(nubefactCorrelativos).values({ serie, tipoComprobante: correlativoTipo[tipo], ultimoNumero }).onConflictDoUpdate({ target: [nubefactCorrelativos.serie, nubefactCorrelativos.tipoComprobante], set: { ultimoNumero: sql`greatest(${nubefactCorrelativos.ultimoNumero}, ${ultimoNumero})`, actualizadoEn: new Date() } });
-    }
-    return { tipoComprobante: tipo, serie, activa: true, ultimoNumero };
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('magina_series_documentos'), hashtext(${tipo}))`);
+      const ahora = new Date();
+      await tx.update(seriesComprobantes).set({ activa: false, actualizadoEn: ahora })
+        .where(and(eq(seriesComprobantes.tipoComprobante, tipo), eq(seriesComprobantes.activa, true), sql`${seriesComprobantes.serie} <> ${serie}`));
+      await tx.insert(seriesComprobantes).values({ tipoComprobante: tipo, serie, activa: true })
+        .onConflictDoUpdate({ target: [seriesComprobantes.tipoComprobante, seriesComprobantes.serie], set: { activa: true, actualizadoEn: ahora } });
+
+      const [correlativo] = esInterna
+        ? await tx.insert(correlativosDocumentosInternos).values({ tipo, ultimoNumero })
+          .onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`greatest(${correlativosDocumentosInternos.ultimoNumero}, ${ultimoNumero})` } })
+          .returning({ ultimoNumero: correlativosDocumentosInternos.ultimoNumero })
+        : await tx.insert(nubefactCorrelativos).values({ serie, tipoComprobante: correlativoTipo[tipo], ultimoNumero })
+          .onConflictDoUpdate({ target: [nubefactCorrelativos.serie, nubefactCorrelativos.tipoComprobante], set: { ultimoNumero: sql`greatest(${nubefactCorrelativos.ultimoNumero}, ${ultimoNumero})`, actualizadoEn: ahora } })
+          .returning({ ultimoNumero: nubefactCorrelativos.ultimoNumero });
+      return { tipoComprobante: tipo, serie, activa: true, ultimoNumero: correlativo.ultimoNumero };
+    });
   }
 
   private async serieActiva(tipo: string) {
@@ -980,7 +1086,7 @@ export class ServicioIngresos {
       GUIA_REMITENTE: { serie: serieGuiaRemitente, numero: numeroGuiaRemitente, codigo: formato(serieGuiaRemitente, numeroGuiaRemitente) },
       NOTA_VENTA: { serie: serieNotaVenta, numero: numeroNotaVenta, codigo: serieNotaVenta && numeroNotaVenta ? `${serieNotaVenta}-${String(numeroNotaVenta).padStart(6, "0")}` : null },
       ORDEN_SERVICIO: { serie: serieOrden, numero: numeroOrdenServicio, codigo: serieOrden && numeroOrdenServicio ? `${serieOrden}-${String(numeroOrdenServicio).padStart(6, "0")}` : null },
-      COTIZACION: { serie: serieCotizacion, numero: numeroCotizacion, codigo: serieCotizacion && numeroCotizacion ? `${serieCotizacion}-${String(numeroCotizacion).padStart(6, "0")}` : null } };
+      COTIZACION: { serie: serieCotizacion, numero: numeroCotizacion, codigo: serieCotizacion && numeroCotizacion ? `${serieCotizacion}-${String(numeroCotizacion).padStart(6, "0")}` : null, aplicaIgv: obtenerRegimenTributario() !== "NRUS" } };
   }
 
   private async recuperarPorIdempotencia(clave: string, huella: string): Promise<any | null> {
@@ -1045,7 +1151,7 @@ export class ServicioIngresos {
       enviar_automaticamente_a_la_sunat: true, enviar_automaticamente_al_cliente: false,
       ...(esFactura && venta.clienteCorreo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(venta.clienteCorreo) ? { cliente_email: venta.clienteCorreo } : {}),
       condiciones_de_pago: venta.condicionPago === "CREDITO" ? `CRÉDITO CON VENCIMIENTO ${fechaVencimiento}` : "", medio_de_pago: venta.condicionPago === "CREDITO" ? "" : ({ EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia bancaria", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as Record<string, string>)[venta.medioPago] ?? venta.medioPago,
-      cancelado: venta.condicionPago === "CONTADO", formato_de_pdf: esFactura ? "A4" : "", items, guias: [],
+      cancelado: venta.condicionPago === "CONTADO", formato_de_pdf: "A4", items, guias: [],
       venta_al_credito: venta.condicionPago === "CREDITO" ? venta.cuotasPago.map((cuota) => ({ cuota: cuota.cuota, fecha_de_pago: `${cuota.fechaDePago.slice(8, 10)}-${cuota.fechaDePago.slice(5, 7)}-${cuota.fechaDePago.slice(0, 4)}`, importe: Number(cuota.importe) })) : [],
     };
     const total = Number(venta.total);
@@ -1351,11 +1457,11 @@ export class ServicioIngresos {
     return cliente;
   }
 
-  async buscarProductos(busquedaEntrada?: string, incluirCatalogo = false, limiteEntrada?: string, escaneoExacto = false) {
+  async buscarProductos(busquedaEntrada?: string, incluirCatalogo = false, limiteEntrada?: string, escaneoExacto = false, paraVenta = false) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
     if (busqueda.length < 4 && !incluirCatalogo) return [];
-    const limiteSolicitado = Number.parseInt(limiteEntrada ?? "8", 10);
-    const limiteResultados = Number.isFinite(limiteSolicitado) ? Math.max(1, Math.min(8, limiteSolicitado)) : 8;
+    const limiteSolicitado = Number.parseInt(limiteEntrada ?? "10", 10);
+    const limiteResultados = Number.isFinite(limiteSolicitado) ? Math.max(1, Math.min(10, limiteSolicitado)) : 10;
     const textoBusqueda = normalizarTextoBusqueda(busqueda);
     const coincidencia = `%${textoBusqueda.replace(/[\\%_]/g, "\\$&")}%`;
     const codigosExactos = escaneoExacto && busqueda ? await db.selectDistinct({ productoId: productosCodigos.productoId })
@@ -1368,28 +1474,45 @@ export class ServicioIngresos {
       : undefined;
     if (escaneoExacto && codigosExactos.length === 0 && !productoPorCodigoInterno) return [];
     const productoPorCodigoExacto = codigosExactos[0]?.productoId ?? productoPorCodigoInterno;
-    const ahora = new Date();
+    const preciosDisponibles = sql`
+      from precios_productos precio
+      join tipos_listas_precio lista on lista.id = precio.tipo_lista_precio_id
+      where precio.presentacion_id = ${productosPresentaciones.id} and precio.producto_id = ${productos.id}
+        and precio.activo and lista.activo
+        and (precio.vigente_desde is null or precio.vigente_desde <= now())
+        and (precio.vigente_hasta is null or precio.vigente_hasta > now())
+    `;
+    const mejorPrecio = sql<string | null>`(
+      select precio.precio ${preciosDisponibles}
+      and lista.codigo = 'GENERAL' and precio.cantidad_minima <= 1
+      order by precio.cantidad_minima desc, precio.vigente_desde desc nulls last, precio.creado_en desc, precio.id limit 1
+    )`;
+    const tramos = sql`(
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'precio', precio.precio::text, 'cantidadMinima', precio.cantidad_minima::text,
+        'listaCodigo', lista.codigo, 'listaNombre', lista.nombre
+      ) order by precio.cantidad_minima desc, precio.vigente_desde desc nulls last, precio.creado_en desc, precio.id), '[]'::jsonb)
+      ${preciosDisponibles}
+    )`;
     return db.select({
       productoId: productos.id, codigo: productos.codigoInterno, nombre: productos.nombre, marca: marcasProductos.nombre,
       afectacionIgv: productos.afectacionIgv, afectoIgv: productos.afectoIgv, presentacionId: productosPresentaciones.id, presentacion: productosPresentaciones.nombre,
       unidadCodigo: productosPresentaciones.unidadMedidaCodigo, unidad: unidadesMedida.nombre,
-      factorAUnidadBase: productosPresentaciones.factorAUnidadBase, precio: preciosProductos.precio,
-      listaPrecioCodigo: tiposListasPrecio.codigo, listaPrecioNombre: tiposListasPrecio.nombre,
+      factorAUnidadBase: productosPresentaciones.factorAUnidadBase, precio: sql<string>`coalesce(${mejorPrecio}::text, '')`,
+      listaPrecioCodigo: sql<string>`'GENERAL'`, listaPrecioNombre: sql<string>`'General'`,
+      ...(paraVenta ? { tramos } : {}),
       stockBase: sql<string>`coalesce(${saldosStock.cantidad}, '0')`,
     }).from(productosPresentaciones)
       .innerJoin(productos, eq(productosPresentaciones.productoId, productos.id))
       .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
       .innerJoin(unidadesMedida, eq(productosPresentaciones.unidadMedidaCodigo, unidadesMedida.codigo))
-      .innerJoin(preciosProductos, and(eq(preciosProductos.presentacionId, productosPresentaciones.id), eq(preciosProductos.productoId, productos.id), eq(preciosProductos.activo, true)))
-      .innerJoin(tiposListasPrecio, and(eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id), eq(tiposListasPrecio.codigo, "GENERAL"), eq(tiposListasPrecio.activo, true)))
       .leftJoin(saldosStock, eq(saldosStock.productoId, productos.id))
-      .where(and(eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seVende, true), lte(preciosProductos.cantidadMinima, "1"),
+      .where(and(eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seVende, true), paraVenta ? undefined : sql`${mejorPrecio} is not null`,
         productoPorCodigoExacto ? and(eq(productos.id, productoPorCodigoExacto), eq(productosPresentaciones.esBase, true)) : incluirCatalogo && !busqueda ? undefined : or(contieneSinTildes(productos.nombre, coincidencia), contieneSinTildes(productos.descripcion, coincidencia), contieneSinTildes(productos.codigoInterno, coincidencia), contieneSinTildes(marcasProductos.nombre, coincidencia),
           exists(db.select({ id: productosCodigos.id }).from(productosCodigos).where(and(eq(productosCodigos.productoId, productos.id), contieneSinTildes(productosCodigos.codigo, coincidencia)))),
         ),
-        or(isNull(preciosProductos.vigenteDesde), lte(preciosProductos.vigenteDesde, ahora)),
-        or(isNull(preciosProductos.vigenteHasta), gt(preciosProductos.vigenteHasta, ahora)),
-      )).orderBy(asc(productos.nombre), asc(productosPresentaciones.esBase), desc(preciosProductos.cantidadMinima)).limit(limiteResultados);
+      )).orderBy(asc(productos.nombre), desc(productosPresentaciones.esBase), asc(productosPresentaciones.id)).limit(limiteResultados);
+
   }
 
   async buscarMototaxisVenta(busquedaEntrada?: string) {
@@ -1397,18 +1520,16 @@ export class ServicioIngresos {
     if (busqueda.length < 2) return [];
     const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
     return db.select({
-      mototaxiUnidadId: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, marca: marcasProductos.nombre,
-      modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, precioVenta: modelosMototaxis.precioVenta, vin: unidadesMototaxis.vin,
-      numeroMotor: unidadesMototaxis.numeroMotor, color: unidadesMototaxis.color,
-    }).from(unidadesMototaxis)
-      .innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id))
+      mototaxiModeloId: modelosMototaxis.id, codigo: modelosMototaxis.codigo, marca: marcasProductos.nombre,
+      modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, precioVenta: precioVigenteModelo,
+      stockDisponible: modelosMototaxis.stockDisponible,
+    }).from(modelosMototaxis)
       .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
-      .where(and(eq(unidadesMototaxis.estado, "DISPONIBLE"), or(
-        ilike(unidadesMototaxis.codigo, coincidencia), ilike(unidadesMototaxis.vin, coincidencia),
-        ilike(unidadesMototaxis.numeroMotor, coincidencia), ilike(modelosMototaxis.nombre, coincidencia), ilike(modelosMototaxis.version, coincidencia),
-        ilike(marcasProductos.nombre, coincidencia),
+      .where(and(eq(modelosMototaxis.activo, true), or(
+        ilike(modelosMototaxis.codigo, coincidencia), ilike(modelosMototaxis.nombre, coincidencia),
+        ilike(modelosMototaxis.version, coincidencia), ilike(marcasProductos.nombre, coincidencia),
       )))
-      .orderBy(desc(unidadesMototaxis.creadoEn)).limit(10);
+      .orderBy(desc(modelosMototaxis.stockDisponible), asc(modelosMototaxis.nombre), asc(modelosMototaxis.id)).limit(10);
   }
 
   async crear(valor: unknown, usuarioId: string) {
@@ -1419,7 +1540,7 @@ export class ServicioIngresos {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || Number.isNaN(fechaParseada.getTime()) || fechaParseada.toISOString().slice(0, 10) !== fecha) throw new BadRequestException("Indica una fecha válida.");
     const tipoComprobante = datos.tipoComprobante ?? "BOLETA";
     if (tipoComprobante !== "BOLETA" && tipoComprobante !== "FACTURA" && tipoComprobante !== "NOTA_VENTA") throw new BadRequestException("Selecciona boleta, factura o nota de venta interna.");
-    const regimenTributario = process.env.REGIMEN_TRIBUTARIO?.trim() || "NRUS";
+    const regimenTributario = obtenerRegimenTributario();
     if (tipoComprobante === "FACTURA" && regimenTributario === "NRUS") throw new BadRequestException("El régimen NRUS no permite emitir facturas.");
     if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha del comprobante no puede ser posterior a hoy.");
     if (tipoComprobante === "FACTURA" && diasEntreFechas(fecha, fechaActualPeru()) > 3) throw new BadRequestException("La fecha de la factura supera el plazo de envío electrónico: NubeFact debe remitirla dentro de los 3 días calendario posteriores a su emisión.");
@@ -1513,7 +1634,9 @@ export class ServicioIngresos {
         const descuento = numero(linea.descuento ?? "0", `Descuento en línea ${indice + 1}`, 2, 0);
         const afectacionIgv = linea.afectacionIgv;
         if (afectacionIgv !== "GRAVADO" && afectacionIgv !== "EXONERADO" && afectacionIgv !== "INAFECTO") throw new BadRequestException(`Selecciona el tipo de operación de la línea ${indice + 1}.`);
-        return { tipo: "PRODUCTO" as const, presentacionId: linea.presentacionId as string, cantidad, descuento, afectacionIgv, precio: precioOrden };
+        const listaPrecio = linea.listaPrecioCodigo === undefined ? "GENERAL" : texto(linea.listaPrecioCodigo, "La lista de precios", 30, true)!;
+        const precioEsperado = linea.precioEsperado === undefined ? undefined : numero(linea.precioEsperado, "El precio mostrado", 4, 0);
+        return { tipo: "PRODUCTO" as const, presentacionId: linea.presentacionId as string, cantidad, descuento, afectacionIgv, precio: precioOrden, listaPrecio, precioEsperado };
       }
       if (linea.tipo === "SERVICIO") {
         const descripcion = texto(linea.descripcion, `Descripción del servicio ${indice + 1}`, 240, true)!;
@@ -1525,14 +1648,14 @@ export class ServicioIngresos {
         if (ordenServicioVinculada && (!guardada || guardada.tipo !== "SERVICIO" || descripcion !== (guardada.descripcion ?? guardada.nombreVisible) || Math.abs(Number(guardada.cantidad) - cantidad) > 0.001 || Math.abs(Number(guardada.precioUnitario) - precio) > 0.0001 || Math.abs(Number(guardada.descuento ?? 0) - descuento) > 0.01 || guardada.afectacionIgv !== afectacionIgv)) throw new BadRequestException("El servicio no coincide con la línea registrada en la orden de servicio.");
         return { tipo: "SERVICIO" as const, descripcion, cantidad, precio, descuento, afectacionIgv: afectacionIgv as AfectacionIgv };
       }
-        if (linea.tipo === "MOTOTAXI") {
-        if (!uuidValido(linea.mototaxiUnidadId)) throw new BadRequestException(`Selecciona una unidad de mototaxi válida en la línea ${indice + 1}.`);
-        if (cantidad !== 1) throw new BadRequestException("Cada línea de mototaxi debe representar una sola unidad identificada.");
+      if (linea.tipo === "MOTOTAXI") {
+        if (!uuidValido(linea.mototaxiModeloId)) throw new BadRequestException(`Selecciona un modelo de mototaxi válido en la línea ${indice + 1}.`);
+        if (!Number.isInteger(cantidad) || cantidad > 2_147_483_647) throw new BadRequestException("Ingresa una cantidad entera de mototaxis por modelo.");
         const precio = numero(linea.precioUnitario, `Precio de mototaxi ${indice + 1}`, 2, 0.01);
         const descuento = numero(linea.descuento ?? "0", `Descuento en línea ${indice + 1}`, 2, 0);
         const afectacionIgv = linea.afectacionIgv;
         if (afectacionIgv !== "GRAVADO" && afectacionIgv !== "EXONERADO" && afectacionIgv !== "INAFECTO") throw new BadRequestException(`Selecciona el tipo de operación de la línea ${indice + 1}.`);
-        return { tipo: "MOTOTAXI" as const, mototaxiUnidadId: linea.mototaxiUnidadId, cantidad, precio, descuento, afectacionIgv };
+        return { tipo: "MOTOTAXI" as const, mototaxiModeloId: linea.mototaxiModeloId as string, cantidad, precio, descuento, afectacionIgv };
       }
       throw new BadRequestException(`El tipo de línea ${indice + 1} debe ser producto, servicio o mototaxi.`);
     });
@@ -1555,12 +1678,14 @@ export class ServicioIngresos {
         const [correlativo] = await tx.insert(correlativosDocumentosInternos).values({ tipo: "NOTA_VENTA", ultimoNumero: 1 }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } }).returning({ numero: correlativosDocumentosInternos.ultimoNumero });
         codigo = `${serieNotaVenta}-${String(correlativo.numero).padStart(6, "0")}`;
       }
+      const idsModelos = [...new Set(lineas.flatMap((linea) => linea.tipo === "MOTOTAXI" ? [linea.mototaxiModeloId] : []))];
+      if (idsModelos.length) await bloquearModelos(tx, idsModelos);
       const detallesGuardados: (typeof ingresosDetalle.$inferInsert)[] = [];
       let subtotalHeader = 0, igvHeader = 0, totalHeader = 0;
 
       for (const linea of lineas) {
         let producto: { id: string; codigoInterno: string; nombre: string; afectoIgv: boolean; afectacionIgv: AfectacionIgv; marca: string } | undefined;
-        let unidadMototaxi: { id: string; codigo: string; vin: string | null; estado: string; marca: string; modelo: string; version: string | null } | undefined;
+        let modeloMototaxi: { id: string; codigo: string } | undefined;
         let presentacion: { id: string; nombre: string; unidad: string; unidadCodigo: string; factor: string; precio: string } | undefined;
         let descripcion: string, nombrePresentacion: string | null = null, unidadCodigo: string | null = null, factor: string | null = null, cantidadBase: string | null = null;
         let precioUnitario: number, afectoIgv: boolean, afectacionIgv: AfectacionIgv;
@@ -1572,29 +1697,34 @@ export class ServicioIngresos {
           }).from(productosPresentaciones).innerJoin(productos, eq(productosPresentaciones.productoId, productos.id))
             .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id)).innerJoin(unidadesMedida, eq(productosPresentaciones.unidadMedidaCodigo, unidadesMedida.codigo))
             .innerJoin(preciosProductos, and(eq(preciosProductos.presentacionId, productosPresentaciones.id), eq(preciosProductos.productoId, productos.id), eq(preciosProductos.activo, true)))
-            .innerJoin(tiposListasPrecio, and(eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id), eq(tiposListasPrecio.codigo, "GENERAL"), eq(tiposListasPrecio.activo, true)))
+            .innerJoin(tiposListasPrecio, and(eq(preciosProductos.tipoListaPrecioId, tiposListasPrecio.id), eq(tiposListasPrecio.codigo, linea.listaPrecio), eq(tiposListasPrecio.activo, true)))
             .where(and(eq(productosPresentaciones.id, linea.presentacionId), eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seVende, true),
-              lte(preciosProductos.cantidadMinima, String(linea.cantidad)), sql`(${preciosProductos.vigenteDesde} IS NULL OR ${preciosProductos.vigenteDesde} <= now())`, sql`(${preciosProductos.vigenteHasta} IS NULL OR ${preciosProductos.vigenteHasta} > now())`)).orderBy(desc(preciosProductos.cantidadMinima)).limit(1);
+              lte(preciosProductos.cantidadMinima, String(linea.cantidad)), sql`(${preciosProductos.vigenteDesde} IS NULL OR ${preciosProductos.vigenteDesde} <= now())`, sql`(${preciosProductos.vigenteHasta} IS NULL OR ${preciosProductos.vigenteHasta} > now())`)).orderBy(desc(preciosProductos.cantidadMinima), sql`${preciosProductos.vigenteDesde} desc nulls last`, desc(preciosProductos.creadoEn), asc(preciosProductos.id)).limit(1);
           const fila = filas[0];
-          if (!fila) throw new NotFoundException("Un producto dejó de estar disponible o ya no tiene precio general vigente. Actualiza la lista y vuelve a intentar.");
+          if (!fila) throw new NotFoundException("El repuesto no está disponible o no tiene un precio vigente para la lista y cantidad seleccionadas.");
           producto = { id: fila.productoId, codigoInterno: fila.codigo, nombre: fila.nombre, afectoIgv: fila.afectoIgv, afectacionIgv: fila.afectacionIgv as AfectacionIgv, marca: fila.marca };
           presentacion = { id: fila.presentacionId, nombre: fila.presentacion, unidad: fila.unidad, unidadCodigo: fila.unidadCodigo, factor: fila.factor, precio: fila.precio };
           descripcion = fila.nombre;
           nombrePresentacion = presentacion.nombre; unidadCodigo = presentacion.unidadCodigo; factor = presentacion.factor;
+          if (linea.precioEsperado !== undefined && Number(presentacion.precio) !== linea.precioEsperado) throw new ConflictException(`El precio de ${fila.nombre} cambió. Vuelve a agregar el repuesto para actualizarlo.`);
           precioUnitario = linea.precio ?? Number(presentacion.precio); afectacionIgv = linea.afectacionIgv as AfectacionIgv; afectoIgv = afectacionIgv === "GRAVADO";
           const base = Number((linea.cantidad * Number(presentacion.factor)).toFixed(6));
           cantidadBase = base.toFixed(6);
         } else if (linea.tipo === "MOTOTAXI") {
-          const [unidad] = await tx.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, vin: unidadesMototaxis.vin, numeroMotor: unidadesMototaxis.numeroMotor, numeroChasis: unidadesMototaxis.numeroChasis, estado: unidadesMototaxis.estado,
-            marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version })
-            .from(unidadesMototaxis).innerJoin(modelosMototaxis, eq(unidadesMototaxis.modeloId, modelosMototaxis.id)).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
-            .where(eq(unidadesMototaxis.id, linea.mototaxiUnidadId as string)).for("update", { of: unidadesMototaxis }).limit(1);
-          if (!unidad) throw new NotFoundException("La mototaxi seleccionada ya no está en el inventario.");
-          if (unidad.estado !== "DISPONIBLE") throw new BadRequestException(`${unidad.marca} ${unidad.modelo} ya no está disponible para venta.`);
-          unidadMototaxi = unidad;
-          descripcion = `${unidad.marca} ${unidad.modelo}${unidad.version ? ` ${unidad.version}` : ""} · ${unidad.codigo}${tipoComprobante === "FACTURA" ? ` · VIN ${unidad.vin}${unidad.numeroMotor ? ` · Motor ${unidad.numeroMotor}` : ""}${unidad.numeroChasis ? ` · Chasis ${unidad.numeroChasis}` : ""}` : ""}`;
-          nombrePresentacion = unidad.vin ? `VIN ${unidad.vin}` : null;
-          precioUnitario = linea.precio; afectacionIgv = linea.afectacionIgv as AfectacionIgv; afectoIgv = afectacionIgv === "GRAVADO";
+          const [modelo] = await tx.select({
+            id: modelosMototaxis.id, codigo: modelosMototaxis.codigo, nombre: modelosMototaxis.nombre,
+            marca: marcasProductos.nombre, version: modelosMototaxis.version, precio: precioVigenteModelo,
+          }).from(modelosMototaxis).innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
+            .where(and(eq(modelosMototaxis.id, linea.mototaxiModeloId), eq(modelosMototaxis.activo, true)));
+          if (!modelo) throw new NotFoundException("El modelo de mototaxi ya no está disponible en el catálogo.");
+          if (modelo.precio == null) throw new BadRequestException(`Configura un precio de venta para ${modelo.marca} ${modelo.nombre}.`);
+          if (Number(modelo.precio) !== linea.precio) throw new BadRequestException(`El precio de ${modelo.marca} ${modelo.nombre} cambió. Vuelve a agregar el modelo para actualizarlo.`);
+          modeloMototaxi = modelo;
+          descripcion = [modelo.marca, modelo.nombre, modelo.version].filter(Boolean).join(" ").slice(0, 240);
+          unidadCodigo = "NIU";
+          precioUnitario = Number(modelo.precio);
+          afectacionIgv = linea.afectacionIgv as AfectacionIgv;
+          afectoIgv = afectacionIgv === "GRAVADO";
         } else {
           descripcion = linea.descripcion;
           precioUnitario = linea.precio;
@@ -1613,8 +1743,8 @@ export class ServicioIngresos {
         const totalLinea = totalLineaBase;
         if (tipoComprobante !== "NOTA_VENTA" && descripcion.length > 250) throw new BadRequestException(`La descripción de la línea ${detallesGuardados.length + 1} supera los 250 caracteres permitidos por NubeFact.`);
         subtotalHeader = redondear(subtotalHeader + subtotalLinea); igvHeader = redondear(igvHeader + igvLinea); totalHeader = redondear(totalHeader + totalLinea);
-        detallesGuardados.push({ id: randomUUID(), ingresoId: id, tipo: linea.tipo, productoId: producto?.id ?? null, mototaxiUnidadId: unidadMototaxi?.id ?? null, presentacionId: presentacion?.id ?? null,
-          codigoProducto: producto?.codigoInterno ?? null, descripcion, presentacion: nombrePresentacion, unidadMedidaCodigo: unidadCodigo,
+        detallesGuardados.push({ id: randomUUID(), ingresoId: id, tipo: linea.tipo, productoId: producto?.id ?? null, mototaxiModeloId: modeloMototaxi?.id ?? null, presentacionId: presentacion?.id ?? null,
+          codigoProducto: producto?.codigoInterno ?? modeloMototaxi?.codigo ?? null, descripcion, presentacion: nombrePresentacion, unidadMedidaCodigo: unidadCodigo,
           cantidad: linea.cantidad.toFixed(3), factorAUnidadBase: factor, cantidadBase, precioUnitario: precioUnitario.toFixed(4), descuento: descuento.toFixed(2), afectacionIgv, afectoIgv,
           subtotal: subtotalLinea.toFixed(2), igv: igvLinea.toFixed(2), total: totalLinea.toFixed(2) });
       }
@@ -1627,13 +1757,10 @@ export class ServicioIngresos {
         subtotal: subtotalHeader.toFixed(2), tasaIgv: tasaIgv.toFixed(2), igv: igvHeader.toFixed(2), total: totalHeader.toFixed(2), usuarioId, claveIdempotencia, huellaSolicitud });
       await tx.insert(ingresosDetalle).values(detallesGuardados);
       for (const detalle of detallesGuardados) {
-         if (detalle.tipo === "MOTOTAXI" && detalle.mototaxiUnidadId) {
-           const [unidad] = await tx.update(unidadesMototaxis).set({ estado: "VENDIDA" }).where(and(eq(unidadesMototaxis.id, detalle.mototaxiUnidadId), eq(unidadesMototaxis.estado, "DISPONIBLE"))).returning({ id: unidadesMototaxis.id, estado: unidadesMototaxis.estado });
-           if (!unidad) throw new BadRequestException(`La unidad ${detalle.descripcion} dejó de estar disponible. No se registró la venta.`);
-           const [movimiento] = await tx.insert(movimientosMototaxis).values({ unidadId: unidad.id, tipo: "VENTA", estadoAnterior: "DISPONIBLE", estadoNuevo: "VENDIDA", motivo: "VENTA", observacion: `Venta ${codigo}`, usuarioId }).returning({ id: movimientosMototaxis.id });
-           await tx.insert(movimientosMototaxisVentas).values({ movimientoId: movimiento.id, ventaDetalleId: detalle.id! });
-           continue;
-         }
+        if (detalle.tipo === "MOTOTAXI" && detalle.mototaxiModeloId && detalle.id) {
+          await moverSaldoModelo(tx, { modeloId: detalle.mototaxiModeloId, tipo: "VENTA", origenId: detalle.id, diferencia: -Number(detalle.cantidad), usuarioId });
+          continue;
+        }
          if (detalle.tipo !== "PRODUCTO" || !detalle.productoId || !detalle.cantidadBase) continue;
         const [saldo] = await tx.update(saldosStock).set({ cantidad: sql`${saldosStock.cantidad} - ${detalle.cantidadBase}`, actualizadoEn: new Date() })
           .where(and(eq(saldosStock.productoId, detalle.productoId), gte(saldosStock.cantidad, detalle.cantidadBase))).returning({ cantidad: saldosStock.cantidad });

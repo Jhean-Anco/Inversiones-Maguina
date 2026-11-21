@@ -8,7 +8,6 @@ import { AlertasProvider } from "../components/ui/notificacion-flotante/notifica
 import { getViewportProfile } from "../utilidades/viewport";
 import "./erp-design-system.css";
 import "./formularios-flotantes.css";
-import "./responsive-profiles.css";
 
 // Mantiene disponible el perfil de viewport para las reglas responsive compartidas.
 if (typeof window !== "undefined") {
@@ -39,6 +38,7 @@ function App() {
             <Route path="/inicio" element={<InicioPage />} />
             <Route path="/configuracion/series" element={<InicioPage />} />
             <Route path="/finanzas/cuentas" element={<InicioPage />} />
+            <Route path="/finanzas/movimientos" element={<InicioPage />} />
             <Route path="/ingresos/nuevo" element={<Navigate to="/ingresos/nuevo/repuestos" replace />} />
             <Route path="/ingresos/nuevo/repuestos" element={<InicioPage />} />
             <Route path="/ingresos/nuevo/mototaxis" element={<InicioPage />} />
@@ -51,17 +51,17 @@ function App() {
             <Route path="/reportes/ingresos" element={<InicioPage />} />
             <Route path="/clientes" element={<InicioPage />} />
             <Route path="/personas/proveedores" element={<InicioPage />} />
-            <Route path="/personas/conductores" element={<Navigate to="/ingresos/guias" replace />} />
+            <Route path="/personas/conductores" element={<InicioPage />} />
             <Route path="/inventario/categorias" element={<InicioPage />} />
             <Route path="/inventario/marcas" element={<InicioPage />} />
             <Route path="/inventario/productos" element={<InicioPage />} />
             <Route path="/inventario/precios" element={<Navigate to="/inventario/productos" replace />} />
             <Route path="/inventario/mototaxis" element={<InicioPage />} />
-            <Route path="/inventario/mototaxis/unidades" element={<InicioPage />} />
+            <Route path="/inventario/mototaxis/unidades" element={<Navigate to="/inventario/mototaxis" replace />} />
             <Route path="/mototaxis" element={<Navigate to="/inventario/mototaxis" replace />} />
             <Route path="/mototaxis/resumen" element={<Navigate to="/inventario/mototaxis" replace />} />
             <Route path="/mototaxis/modelos" element={<Navigate to="/inventario/mototaxis" replace />} />
-            <Route path="/mototaxis/unidades" element={<Navigate to="/inventario/mototaxis/unidades" replace />} />
+            <Route path="/mototaxis/unidades" element={<Navigate to="/inventario/mototaxis" replace />} />
             <Route path="/mototaxis/compras/nueva" element={<InicioPage />} />
             <Route path="/mototaxis/:seccion" element={<InicioPage />} />
             <Route path="/egresos/compras/nueva" element={<InicioPage />} />

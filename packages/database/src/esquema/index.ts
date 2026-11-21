@@ -271,6 +271,7 @@ export const modelosMototaxis = pgTable("modelos_mototaxis", {
   nombre: varchar("nombre", { length: 120 }).notNull(),
   version: varchar("version", { length: 80 }),
   precioVenta: numeric("precio_venta", { precision: 14, scale: 2 }),
+  stockDisponible: integer("stock_disponible").notNull().default(0),
   categoriaVehicular: varchar("categoria_vehicular", { length: 10 }).notNull().default("L5"),
   fabricante: varchar("fabricante", { length: 160 }),
   paisFabricacion: varchar("pais_fabricacion", { length: 100 }),
@@ -297,6 +298,37 @@ export const modelosMototaxis = pgTable("modelos_mototaxis", {
   check("modelos_mototaxis_cilindrada_ck", sql`${tabla.cilindradaCc} IS NULL OR ${tabla.cilindradaCc} > 0`),
   check("modelos_mototaxis_capacidades_ck", sql`(${tabla.capacidadAsientos} IS NULL OR ${tabla.capacidadAsientos} > 0) AND (${tabla.capacidadCargaKg} IS NULL OR ${tabla.capacidadCargaKg} > 0)`),
   check("modelos_mototaxis_precio_venta_ck", sql`${tabla.precioVenta} IS NULL OR ${tabla.precioVenta} > 0`),
+  check("modelos_mototaxis_stock_ck", sql`${tabla.stockDisponible} >= 0`),
+]);
+
+export const preciosModelosMototaxis = pgTable("precios_modelos_mototaxis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  modeloId: uuid("modelo_id").notNull().references(() => modelosMototaxis.id, { onDelete: "restrict" }),
+  precio: numeric("precio", { precision: 14, scale: 2 }).notNull(),
+  vigenteDesde: timestamp("vigente_desde", { withTimezone: true, precision: 3 }).notNull(),
+  vigenteHasta: timestamp("vigente_hasta", { withTimezone: true, precision: 3 }),
+  usuarioId: uuid("usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("precios_modelos_mototaxis_inicio_unico").on(tabla.modeloId, tabla.vigenteDesde),
+  check("precios_modelos_mototaxis_importe_ck", sql`${tabla.precio} > 0`),
+  check("precios_modelos_mototaxis_vigencia_ck", sql`${tabla.vigenteHasta} IS NULL OR ${tabla.vigenteHasta} > ${tabla.vigenteDesde}`),
+]);
+
+export const movimientosModelosMototaxis = pgTable("movimientos_modelos_mototaxis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  modeloId: uuid("modelo_id").notNull().references(() => modelosMototaxis.id, { onDelete: "restrict" }),
+  tipo: varchar("tipo", { length: 24 }).notNull(),
+  origenId: uuid("origen_id").notNull(),
+  cantidadAnterior: integer("cantidad_anterior").notNull(),
+  cantidadFinal: integer("cantidad_final").notNull(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("movimientos_modelos_mototaxis_origen_unico").on(tabla.tipo, tabla.origenId),
+  index("movimientos_modelos_mototaxis_modelo_fecha_idx").on(tabla.modeloId, tabla.creadoEn),
+  check("movimientos_modelos_mototaxis_tipo_ck", sql`${tabla.tipo} IN ('COMPRA', 'VENTA', 'AJUSTE', 'ANULACION_VENTA')`),
+  check("movimientos_modelos_mototaxis_saldo_ck", sql`${tabla.cantidadAnterior} >= 0 AND ${tabla.cantidadFinal} >= 0`),
 ]);
 
 export const cuentasFinancieras = pgTable("cuentas_financieras", {
@@ -332,12 +364,15 @@ export const comprasMototaxis = pgTable("compras_mototaxis", {
   moneda: varchar("moneda", { length: 3 }).notNull().default("PEN"),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
   observacion: text("observacion"),
+  claveIdempotencia: uuid("clave_idempotencia"),
+  huellaSolicitud: varchar("huella_solicitud", { length: 64 }),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("compras_mototaxis_proveedor_fecha_idx").on(tabla.proveedorPersonaId, tabla.fecha),
   index("compras_mototaxis_fecha_idx").on(tabla.fecha),
-  check("compras_mototaxis_documento_tipo_ck", sql`${tabla.documentoTipo} IN ('FACTURA', 'BOLETA', 'NOTA', 'OTRO')`),
+  uniqueIndex("compras_mototaxis_idempotencia_unica").on(tabla.claveIdempotencia).where(sql`${tabla.claveIdempotencia} IS NOT NULL`),
+  check("compras_mototaxis_documento_tipo_ck", sql`${tabla.documentoTipo} IN ('FACTURA', 'BOLETA', 'NOTA', 'OTRO', 'SIN_DOCUMENTO')`),
   check("compras_mototaxis_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
   check("compras_mototaxis_total_ck", sql`${tabla.total} > 0`),
 ]);
@@ -445,7 +480,8 @@ export const ajustesInventarioMototaxisDetalle = pgTable("ajustes_inventario_mot
 
 export const garantiasMototaxis = pgTable("garantias_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
-  unidadId: uuid("unidad_id").notNull().references(() => unidadesMototaxis.id, { onDelete: "restrict" }),
+  unidadId: uuid("unidad_id").references(() => unidadesMototaxis.id, { onDelete: "restrict" }),
+  compraDetalleId: uuid("compra_detalle_id").references(() => comprasMototaxisDetalle.id, { onDelete: "restrict" }),
   proveedorPersonaId: uuid("proveedor_persona_id").notNull().references(() => proveedores.personaId, { onDelete: "restrict" }),
   porcentajeProveedor: numeric("porcentaje_proveedor", { precision: 5, scale: 2 }).notNull(),
   mesesVigencia: integer("meses_vigencia").notNull(),
@@ -456,7 +492,9 @@ export const garantiasMototaxis = pgTable("garantias_mototaxis", {
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   uniqueIndex("garantias_mototaxis_unidad_unica").on(tabla.unidadId),
+  uniqueIndex("garantias_mototaxis_compra_detalle_unica").on(tabla.compraDetalleId),
   index("garantias_mototaxis_proveedor_vigencia_idx").on(tabla.proveedorPersonaId, tabla.terminaEn),
+  check("garantias_mototaxis_origen_ck", sql`num_nonnulls(${tabla.unidadId}, ${tabla.compraDetalleId}) = 1`),
   check("garantias_mototaxis_porcentaje_ck", sql`${tabla.porcentajeProveedor} IN (70, 80)`),
   check("garantias_mototaxis_meses_ck", sql`${tabla.mesesVigencia} BETWEEN 1 AND 120`),
   check("garantias_mototaxis_fechas_ck", sql`${tabla.terminaEn} >= ${tabla.iniciaEn}`),
@@ -538,6 +576,7 @@ export const preciosProductos = pgTable("precios_productos", {
   vigenteDesde: timestamp("vigente_desde", { withTimezone: true, precision: 3 }),
   vigenteHasta: timestamp("vigente_hasta", { withTimezone: true, precision: 3 }),
   activo: boolean("activo").notNull().default(true),
+  usuarioId: uuid("usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
   actualizadoEn: fechaActualizacion(),
 }, (tabla) => [
@@ -744,6 +783,8 @@ export const movimientosStock = pgTable("movimientos_stock", {
   origenId: uuid("origen_id").notNull(),
   origenDetalleId: uuid("origen_detalle_id").notNull(),
   cantidadBase: numeric("cantidad_base", { precision: 18, scale: 6 }).notNull(),
+  saldoAnterior: numeric("saldo_anterior", { precision: 18, scale: 6 }),
+  saldoFinal: numeric("saldo_final", { precision: 18, scale: 6 }),
   costoUnitarioBase: numeric("costo_unitario_base", { precision: 14, scale: 6 }).notNull(),
   sentido: varchar("sentido", { length: 10 }),
   motivo: varchar("motivo", { length: 40 }),
@@ -845,6 +886,7 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
   tipo: varchar("tipo", { length: 20 }).notNull(),
   productoId: uuid("producto_id").references(() => productos.id, { onDelete: "restrict" }),
   mototaxiUnidadId: uuid("mototaxi_unidad_id").references(() => unidadesMototaxis.id, { onDelete: "restrict" }),
+  mototaxiModeloId: uuid("mototaxi_modelo_id").references(() => modelosMototaxis.id, { onDelete: "restrict" }),
   presentacionId: uuid("presentacion_id").references(() => productosPresentaciones.id, { onDelete: "restrict" }),
   codigoProducto: varchar("codigo_producto", { length: 40 }),
   descripcion: varchar("descripcion", { length: 240 }).notNull(),
@@ -864,9 +906,10 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
 }, (tabla) => [
   index("ingresos_detalle_ingreso_idx").on(tabla.ingresoId),
   index("ingresos_detalle_producto_idx").on(tabla.productoId),
+  index("ingresos_detalle_mototaxi_modelo_idx").on(tabla.mototaxiModeloId),
   check("ingresos_detalle_tipo_ck", sql`${tabla.tipo} IN ('PRODUCTO', 'SERVICIO', 'MOTOTAXI')`),
   check("ingresos_detalle_afectacion_igv_ck", sql`${tabla.afectacionIgv} IN ('GRAVADO', 'EXONERADO', 'INAFECTO')`),
-  check("ingresos_detalle_tipo_relacion_ck", sql`(${tabla.tipo} = 'PRODUCTO' AND ${tabla.productoId} IS NOT NULL AND ${tabla.presentacionId} IS NOT NULL AND ${tabla.mototaxiUnidadId} IS NULL AND ${tabla.factorAUnidadBase} > 0 AND ${tabla.cantidadBase} > 0) OR (${tabla.tipo} = 'SERVICIO' AND ${tabla.productoId} IS NULL AND ${tabla.presentacionId} IS NULL AND ${tabla.mototaxiUnidadId} IS NULL) OR (${tabla.tipo} = 'MOTOTAXI' AND ${tabla.productoId} IS NULL AND ${tabla.presentacionId} IS NULL AND ${tabla.mototaxiUnidadId} IS NOT NULL AND ${tabla.cantidad} = 1)`),
+  check("ingresos_detalle_tipo_relacion_ck", sql`(${tabla.tipo} = 'PRODUCTO' AND ${tabla.productoId} IS NOT NULL AND ${tabla.presentacionId} IS NOT NULL AND ${tabla.mototaxiUnidadId} IS NULL AND ${tabla.mototaxiModeloId} IS NULL AND ${tabla.factorAUnidadBase} > 0 AND ${tabla.cantidadBase} > 0) OR (${tabla.tipo} = 'SERVICIO' AND ${tabla.productoId} IS NULL AND ${tabla.presentacionId} IS NULL AND ${tabla.mototaxiUnidadId} IS NULL AND ${tabla.mototaxiModeloId} IS NULL) OR (${tabla.tipo} = 'MOTOTAXI' AND ${tabla.productoId} IS NULL AND ${tabla.presentacionId} IS NULL AND ((${tabla.mototaxiUnidadId} IS NOT NULL AND ${tabla.cantidad} = 1) OR (${tabla.mototaxiUnidadId} IS NULL AND ${tabla.mototaxiModeloId} IS NOT NULL AND ${tabla.cantidad} = trunc(${tabla.cantidad}))))`),
   check("ingresos_detalle_cantidad_positiva_ck", sql`${tabla.cantidad} > 0`),
   check("ingresos_detalle_precio_no_negativo_ck", sql`${tabla.precioUnitario} >= 0`),
   check("ingresos_detalle_descuento_valido_ck", sql`${tabla.descuento} >= 0 AND ${tabla.descuento} <= round(${tabla.cantidad} * ${tabla.precioUnitario}, 2)`),

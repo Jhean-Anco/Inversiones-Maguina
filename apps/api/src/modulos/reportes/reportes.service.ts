@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
-import { db, categoriasProductos, clientes, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, movimientosStock, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida, unidadesMototaxis } from "@magina/database";
+import { db, categoriasProductos, clientes, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
 type RangoFechas = { desde: string; hasta: string };
@@ -25,7 +25,9 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, cliente: ingresos.clienteNombre, medioPago: ingresos.medioPago, estado: ingresos.estado, total: ingresos.total }).from(ingresos).where(comprobantesVenta).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(6),
       db.select({ descripcion: ingresosDetalle.descripcion, tipo: ingresosDetalle.tipo, cantidad: sql<string>`sum(${ingresosDetalle.cantidad})::numeric(16,3)`, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresosDetalle.descripcion, ingresosDetalle.tipo).orderBy(desc(sql`sum(${ingresosDetalle.total})`)).limit(5),
       db.select({ medioPago: ingresos.medioPago, operaciones: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
-      db.select({ estado: unidadesMototaxis.estado, unidades: sql<number>`count(*)::int`, costoAdquisicion: sql<string>`coalesce(sum(${unidadesMototaxis.costoAdquisicion}),0)::numeric(14,2)` }).from(unidadesMototaxis).groupBy(unidadesMototaxis.estado),
+      db.select({ id: modelosMototaxis.id, marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, unidades: modelosMototaxis.stockDisponible })
+        .from(modelosMototaxis).innerJoin(marcasProductos, eq(marcasProductos.id, modelosMototaxis.marcaId))
+        .where(gte(modelosMototaxis.stockDisponible, 1)).orderBy(desc(modelosMototaxis.stockDisponible), asc(modelosMototaxis.nombre)),
       db.select({ reclamos: sql<number>`count(*)::int`, proveedor: sql<string>`coalesce(sum(${reclamosGarantiaMototaxis.importeProveedor}),0)::numeric(14,2)`, empresa: sql<string>`coalesce(sum(${reclamosGarantiaMototaxis.importeEmpresa}),0)::numeric(14,2)` }).from(reclamosGarantiaMototaxis),
     ]);
     const dias = Array.from({ length: 7 }, (_, indice) => {
@@ -52,7 +54,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       } : {}),
       ...(puedeLeerPersonas ? { clientesActivos: Number(cartera[0]?.activos ?? 0) } : {}),
       ...(puedeLeerInventario ? { inventario: { productosActivos: Number(existencias[0]?.productos ?? 0), productosSinStock: Number(existencias[0]?.sinStock ?? 0) } } : {}),
-      ...(puedeLeerMototaxis ? { inventarioMototaxis: { unidades: mototaxis.reduce((total, fila) => total + Number(fila.unidades), 0), porEstado: mototaxis, reclamosGarantia: { cantidad: Number(garantias[0]?.reclamos ?? 0), proveedor: garantias[0]?.proveedor ?? "0.00", empresa: garantias[0]?.empresa ?? "0.00" } } } : {}),
+      ...(puedeLeerMototaxis ? { inventarioMototaxis: { unidades: mototaxis.reduce((total, fila) => total + Number(fila.unidades), 0), porModelo: mototaxis, reclamosGarantia: { cantidad: Number(garantias[0]?.reclamos ?? 0), proveedor: garantias[0]?.proveedor ?? "0.00", empresa: garantias[0]?.empresa ?? "0.00" } } } : {}),
     };
   }
 
@@ -129,7 +131,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     };
   }
 
-  async inventario(rango: RangoFechas) {
+  async inventario(rango: RangoFechas, permisos: string[] = []) {
     const inicioPeriodo = new Date(`${rango.desde}T05:00:00.000Z`);
     const finPeriodo = new Date(`${rango.hasta}T05:00:00.000Z`);
     finPeriodo.setUTCDate(finPeriodo.getUTCDate() + 1);
@@ -158,6 +160,20 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
       .leftJoin(movimientos, eq(productos.id, movimientos.productoId))
       .where(eq(productos.activo, true)).orderBy(asc(productos.nombre));
+    const puedeLeerMototaxis = permisos.includes("MOTOTAXIS.LEER");
+    const modelos = puedeLeerMototaxis ? await db.select({
+      id: modelosMototaxis.id,
+      codigo: modelosMototaxis.codigo,
+      nombre: modelosMototaxis.nombre,
+      version: modelosMototaxis.version,
+      marca: marcasProductos.nombre,
+      stockActual: modelosMototaxis.stockDisponible,
+      entradasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} in ('COMPRA', 'ANULACION_VENTA') or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} > ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadFinal} - ${movimientosModelosMototaxis.cantidadAnterior} else 0 end), 0)::int`,
+      salidasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} = 'VENTA' or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} < ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadAnterior} - ${movimientosModelosMototaxis.cantidadFinal} else 0 end), 0)::int`,
+    }).from(modelosMototaxis)
+      .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
+      .leftJoin(movimientosModelosMototaxis, and(eq(modelosMototaxis.id, movimientosModelosMototaxis.modeloId), gte(movimientosModelosMototaxis.creadoEn, inicioPeriodo), lt(movimientosModelosMototaxis.creadoEn, finPeriodo)))
+      .where(eq(modelosMototaxis.activo, true)).groupBy(modelosMototaxis.id, marcasProductos.nombre).orderBy(asc(modelosMototaxis.nombre)) : [];
     return {
       rango,
       resumen: {
@@ -167,6 +183,10 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
         productosConMovimiento: items.filter((item) => Number(item.entradasPeriodo) > 0 || Number(item.salidasPeriodo) > 0).length,
       },
       items,
+      ...(puedeLeerMototaxis ? { mototaxis: {
+        resumen: { modelos: modelos.length, modelosConStock: modelos.filter((modelo) => modelo.stockActual > 0).length, sinStock: modelos.filter((modelo) => modelo.stockActual <= 0).length, modelosConMovimiento: modelos.filter((modelo) => modelo.entradasPeriodo > 0 || modelo.salidasPeriodo > 0).length },
+        items: modelos.map((modelo) => ({ ...modelo, nombre: modelo.version ? `${modelo.nombre} ${modelo.version}` : modelo.nombre })),
+      } } : {}),
     };
   }
 }

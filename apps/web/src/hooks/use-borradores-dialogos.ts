@@ -83,7 +83,7 @@ export function useBorradoresDialogos(ruta: string, usuarioId: string | null) {
           const enviar = () => {
             formulariosEnviados.add(formulario);
             window.setTimeout(() => {
-              if (!formulario.isConnected && !formulario.querySelector('[role="alert"]')) {
+              if (!formulario.isConnected && !formulario.querySelector("[data-error-formulario]")) {
                 try { sessionStorage.removeItem(clave); } catch { /* El formulario sigue funcionando si el almacenamiento falla. */ }
               }
             }, 1200);
@@ -94,8 +94,11 @@ export function useBorradoresDialogos(ruta: string, usuarioId: string | null) {
           formularios.set(formulario, { clave, guardar, enviar });
       });
       for (const [formulario, handlers] of formularios) {
-        if (formulario.isConnected) continue;
-        if (formulariosEnviados.has(formulario) && !formulario.querySelector('[role="alert"]')) {
+        if (formulario.isConnected) {
+          if (formulario.querySelector("[data-error-formulario]")) formulariosEnviados.delete(formulario);
+          continue;
+        }
+        if (formulariosEnviados.has(formulario) && !formulario.querySelector("[data-error-formulario]")) {
           try { sessionStorage.removeItem(handlers.clave); } catch { /* El formulario sigue funcionando si el almacenamiento falla. */ }
         }
         formulario.removeEventListener("input", handlers.guardar);

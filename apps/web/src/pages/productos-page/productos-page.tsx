@@ -1,54 +1,110 @@
-import "./productos-page.css";
-import { lazy, Suspense, useEffect, useState } from "react";
-import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
+import { Eye, Printer } from "lucide-react";
+import { useRef, useState } from "react";
+import { DialogoCatalogo, monedaInventario } from "../../components/inventario/dialogo-catalogo";
 import { EtiquetaCodigoBarras } from "../../components/productos/etiqueta-codigo-barras";
+import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
+import { AccionIcono } from "../../components/ui/accion-icono";
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { BotonAccion } from "../../components/ui/boton-accion";
+import { Etiqueta } from "../../components/ui/etiqueta";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
+import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useProductos } from "../../hooks/use-productos";
-import type { Producto } from "../../services/inventario/productos.service";
+import { servicioProductos, type HistorialProducto, type Producto, type ProductoTarjeta } from "../../services/inventario/productos.service";
+import { FichaRepuesto, PreciosRepuesto } from "./producto-detalle";
 
-const PreciosProductosPage = lazy(() => import("../precios-productos-page/precios-productos-page").then((modulo) => ({ default: modulo.PreciosProductosPage })));
+type Accion = "ficha" | "precios" | "editar" | "etiqueta";
+type Dialogo =
+  | { tipo: "nuevo" }
+  | { tipo: "editar" | "etiqueta" | "precios"; producto: Producto }
+  | { tipo: "ficha"; producto: Producto; historial: HistorialProducto }
+  | { tipo: "cargando"; articulo: string; codigo: string };
 
-export function ProductosPage() {
+export function ProductosPage({ permisos }: { permisos: readonly string[] }) {
   const modulo = useProductos();
-  const [formularioAbierto, setFormularioAbierto] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<Producto | null>(null);
-  const [productoParaEtiqueta, setProductoParaEtiqueta] = useState<Producto | null>(null);
-  const [revision, setRevision] = useState(0);
+  const [dialogo, setDialogo] = useState<Dialogo | null>(null);
+  const [mensaje, setMensaje] = useState("");
+  const solicitud = useRef(0);
+  const puedeCrear = permisos.includes("INVENTARIO.CREAR");
+  const puedeEditar = permisos.includes("INVENTARIO.EDITAR");
 
-  useEffect(() => {
-    if (!formularioAbierto) return;
-    const anterior = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const escapar = (evento: KeyboardEvent) => { if (evento.key === "Escape") cerrarFormulario(); };
-    window.addEventListener("keydown", escapar);
-    return () => { document.body.style.overflow = anterior; window.removeEventListener("keydown", escapar); };
-  }, [formularioAbierto]);
-
-  function cerrarFormulario() { setFormularioAbierto(false); setProductoEditando(null); modulo.setError(""); }
-  function nuevoProducto() { modulo.setError(""); setProductoEditando(null); setFormularioAbierto(true); }
-  async function editarProducto(id: string) {
+  function cerrar() {
+    solicitud.current += 1;
+    setDialogo(null);
     modulo.setError("");
-    const completo = await modulo.consultar(id);
-    if (completo) { setProductoEditando(completo); setFormularioAbierto(true); }
   }
-  async function imprimirCodigoBarras(id: string) {
-    const completo = await modulo.consultar(id);
-    if (completo) setProductoParaEtiqueta(completo);
+
+  async function abrir(tipo: Accion, articulo: Pick<ProductoTarjeta, "id" | "nombre" | "codigoInterno">) {
+    modulo.setError("");
+    const turno = ++solicitud.current;
+    setDialogo({ tipo: "cargando", articulo: articulo.nombre, codigo: articulo.codigoInterno });
+    try {
+      const [producto, historial] = await Promise.all([
+        servicioProductos.consultar(articulo.id),
+        tipo === "ficha" ? servicioProductos.historial(articulo.id) : Promise.resolve(null),
+      ]);
+      if (turno !== solicitud.current) return;
+      if (tipo === "ficha" && historial) setDialogo({ tipo, producto, historial });
+      else if (tipo !== "ficha") setDialogo({ tipo, producto });
+    } catch (error) {
+      if (turno !== solicitud.current) return;
+      setDialogo(null);
+      modulo.setError(error instanceof Error ? error.message : "No se pudo abrir el repuesto.");
+    }
   }
+
   async function guardarProducto(datos: Parameters<typeof modulo.guardar>[0]) {
-    const guardado = await modulo.guardar(datos, productoEditando?.id);
-    if (guardado) { setRevision((actual) => actual + 1); cerrarFormulario(); }
+    const editando = dialogo?.tipo === "editar" ? dialogo.producto.id : undefined;
+    const guardado = await modulo.guardar(datos, editando);
+    if (guardado) {
+      cerrar();
+      setMensaje(editando ? "Datos del repuesto actualizados." : "Repuesto creado. Puedes configurar sus precios desde Acciones.");
+    }
     return guardado;
   }
-  async function cambiarEstado(id: string, activo: boolean) {
-    await modulo.cambiarEstado({ id, activo });
-    setRevision((actual) => actual + 1);
-  }
 
-  return <section className="repuestos-module">
-    <Suspense fallback={<div className="repuestos-module-loading" role="status">Cargando catálogo y precios…</div>}>
-      <PreciosProductosPage integrado revision={revision} alCrearProducto={nuevoProducto} alEditarProducto={editarProducto} alCambiarEstado={cambiarEstado} alImprimirCodigo={imprimirCodigoBarras} />
-    </Suspense>
-    {formularioAbierto && <ProductoFormulario catalogos={modulo.catalogos} producto={productoEditando} error={modulo.error} alCerrar={cerrarFormulario} alGuardar={guardarProducto} alCrearMarca={modulo.crearMarca} alCrearCategoria={modulo.crearCategoria} />}
-    {productoParaEtiqueta && <EtiquetaCodigoBarras producto={productoParaEtiqueta} alCerrar={() => setProductoParaEtiqueta(null)} />}
+  const formulario = dialogo?.tipo === "nuevo" || dialogo?.tipo === "editar";
+
+  return <section className="flex min-h-0 w-full flex-1 flex-col gap-3">
+    <ListadoMaestro<ProductoTarjeta> variante="tabla" titulo="Repuestos"
+      registros={modulo.productos} cargando={modulo.cargando} error={formulario ? undefined : modulo.error}
+      vacio="No hay repuestos para mostrar."
+      claseCabecera="inventario-listado-cabecera"
+      paginacion={{ modo: "remota", pagina: modulo.pagina, tamanio: modulo.porPagina, total: modulo.total, totalPaginas: modulo.totalPaginas,
+        desde: modulo.desde, hasta: modulo.hasta, alCambiarPagina: modulo.cambiarPagina, alCambiarTamanio: modulo.cambiarPorPagina }}
+      controlesCabecera={<>
+        <label className="listado-maestro-busqueda">Buscar repuesto<input type="search" value={modulo.busqueda} onChange={(e) => modulo.setBusqueda(e.target.value)} placeholder="Nombre, código o marca" /></label>
+        <label className="listado-maestro-filtro">Marca<select value={modulo.marca} onChange={(e) => modulo.setMarca(e.target.value)}><option value="">Todas</option>{modulo.catalogos.marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select></label>
+        <label className="listado-maestro-filtro">Estado<select value={modulo.estado} onChange={(e) => modulo.setEstado(e.target.value)}><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option><option value="TODOS">Todos</option></select></label>
+        {puedeCrear && <RegistrarAccionPrincipal etiqueta="Nuevo repuesto" onClick={() => { modulo.setError(""); setDialogo({ tipo: "nuevo" }); }} />}
+      </>}
+      encabezadoTabla={<tr><th>Repuesto</th><th>Marca y categoría</th><th>Existencias</th><th>Precio general</th><th>Estado</th><th>Acciones</th></tr>}
+      renderizarFila={(item) => <tr key={item.id}>
+        <td><strong className="block text-[var(--erp-ink)]">{item.nombre}</strong><small>{item.codigoInterno}</small></td>
+        <td>{item.marca}<small className="block">{item.categoria}</small></td>
+        <td className="tabular-nums">{Number(item.stockActual).toLocaleString("es-PE")} <small>{item.unidadBase}</small></td>
+        <td>{item.precioGeneral == null ? <Etiqueta compacta tono="neutral">Sin precio</Etiqueta> : <strong className="tabular-nums">{monedaInventario(item.precioGeneral)}</strong>}</td>
+        <td><Etiqueta compacta tono={item.activo ? "positiva" : "neutral"}>{item.activo ? "Activo" : "Inactivo"}</Etiqueta></td>
+        <td><div className="flex flex-wrap gap-1.5">
+          <BotonAccion etiqueta={`Ver ficha de ${item.nombre}`} tono="informativa" icono={<Eye aria-hidden="true" />} onClick={() => void abrir("ficha", item)} />
+          <BotonAccion etiqueta={`${puedeEditar ? "Configurar precios de" : "Ver precios de"} ${item.nombre}`} tono="positiva" icono={<span aria-hidden="true">S/</span>} onClick={() => void abrir("precios", item)} />
+          {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar datos de ${item.nombre}`} onClick={() => void abrir("editar", item)} />}
+          <BotonAccion etiqueta={`Imprimir código de barras de ${item.nombre}`} tono="neutral" icono={<Printer aria-hidden="true" />} onClick={() => void abrir("etiqueta", item)} />
+          {puedeEditar && <AccionIcono accion={item.activo ? "desactivar" : "activar"} etiqueta={`${item.activo ? "Desactivar" : "Activar"} ${item.nombre}`} onClick={() => {
+            if (window.confirm(item.activo ? "¿Desactivar este repuesto?" : "¿Activar este repuesto?")) void modulo.cambiarEstado(item);
+          }} />}
+        </div></td>
+      </tr>}
+    />
+    {formulario && <ProductoFormulario catalogos={modulo.catalogos} producto={dialogo.tipo === "editar" ? dialogo.producto : null} error={modulo.error} alCerrar={cerrar} alGuardar={guardarProducto} alCrearMarca={modulo.crearMarca} alCrearCategoria={modulo.crearCategoria} />}
+    {dialogo?.tipo === "cargando" && <DialogoCatalogo titulo="Repuesto" articulo={dialogo.articulo} codigo={dialogo.codigo} alCerrar={cerrar}><p role="status">Cargando información del repuesto…</p></DialogoCatalogo>}
+    {dialogo?.tipo === "etiqueta" && <EtiquetaCodigoBarras producto={dialogo.producto} alCerrar={cerrar} />}
+    {dialogo?.tipo === "ficha" && <FichaRepuesto producto={dialogo.producto} historial={dialogo.historial} alCerrar={cerrar}
+      alEditar={puedeEditar ? () => setDialogo({ tipo: "editar", producto: dialogo.producto }) : undefined} />}
+    {dialogo?.tipo === "precios" && <PreciosRepuesto producto={dialogo.producto} catalogos={modulo.catalogos} alCerrar={cerrar} puedeEditar={puedeEditar} alGuardar={async () => {
+      void modulo.cargarPagina();
+      return modulo.consultar(dialogo.producto.id);
+    }} />}
+    {mensaje && <NotificacionFlotante tipo="exito" mensaje={mensaje} onCerrar={() => setMensaje("")} />}
   </section>;
 }
