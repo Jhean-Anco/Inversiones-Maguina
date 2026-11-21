@@ -105,7 +105,7 @@ jobs:
       - name: Iniciar la API real para pruebas HTTP
         run: |
           node apps/api/dist/main.js > /tmp/inversiones-magina-api.log 2>&1 &
-          for intento in $(seq 1 40); do
+          for _ in $(seq 1 40); do
             if curl --fail --silent http://127.0.0.1:3000/health > /dev/null; then
               exit 0
             fi
