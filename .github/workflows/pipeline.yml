@@ -290,8 +290,13 @@ jobs:
     if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     needs: [quality, images]
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     steps:
+      - name: Checkout para verificar los resultados de CI
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Exigir todas las comprobaciones requeridas
         env:
           QUALITY_RESULT: ${{ needs.quality.result }}
