@@ -11,6 +11,7 @@ import { lineaServicioIncompleta, useOrdenServicioLineas } from "./use-orden-ser
 import { useOrdenServicioClientes } from "./use-orden-servicio-clientes";
 import type { LineaOrden } from "./types";
 import { OrdenesServicioListado } from "./ordenes-servicio-listado";
+import { importesOrden, TASA_IGV_ORDEN } from "./importes-orden";
 import { ConfirmarDescartarOrden } from "./confirmar-descartar-orden";
 import "../nuevo-ingreso-page/nuevo-ingreso-page.css";
 import "./ordenes-servicio-page.css";
@@ -21,7 +22,7 @@ const fechaLegible = (fecha: string) => new Intl.DateTimeFormat("es-PE", { dateS
 const soles = (monto: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(Number.isFinite(monto) ? monto : 0);
 const nombreCliente = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const estadosOrden: Record<OrdenServicio["estado"], string> = { ABIERTA: "Abierta", EN_PROCESO: "En proceso", ESPERANDO_REPUESTOS: "Esperando repuestos", COMPLETADA: "Completada", EMITIENDO: "Emitiendo", FACTURADA: "Facturada", ANULADA: "Anulada" };
-const totalOrden = (lineas: LineaOrden[]) => lineas.reduce((total, linea) => total + Math.max(0, Math.round((Math.round(Number(linea.cantidad || 0) * Number(linea.precioUnitario || 0) * 100) / 100 - Number(linea.descuento || 0)) * 100) / 100), 0);
+const totalOrden = (lineas: LineaOrden[]) => importesOrden(lineas).total;
 type EstadoFormularioOrden = {
   fechaRecepcion: string;
   fechaAcabado: string;
@@ -211,7 +212,8 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
 
   function imprimirOrden(orden: OrdenServicio, formato: "A4" | "TICKET") {
     const detalles = orden.detalles as LineaOrden[];
-    imprimirDocumento({ tipo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: fechaLegible(orden.fechaRecepcion), fechaAcabado: orden.fechaAcabado ? fechaLegible(orden.fechaAcabado) : undefined, cliente: orden.clienteNombre, vehiculo: orden.vehiculoPlaca, estado: estadosOrden[orden.estado], motivo: orden.motivo, adelanto: soles(Number(orden.adelanto)), lineas: detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: linea.nombreVisible || linea.descripcion || "Servicio", cantidad: String(cantidad), precio: soles(precio), total: soles(cantidad * precio - Number(linea.descuento ?? 0)) }; }), total: soles(totalOrden(detalles)) }, formato, { alError: notificarError });
+    const importes = importesOrden(detalles);
+    imprimirDocumento({ tipo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: fechaLegible(orden.fechaRecepcion), fechaAcabado: orden.fechaAcabado ? fechaLegible(orden.fechaAcabado) : undefined, cliente: orden.clienteNombre, vehiculo: orden.vehiculoPlaca, estado: estadosOrden[orden.estado], motivo: orden.motivo, adelanto: soles(Number(orden.adelanto)), lineas: detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: linea.nombreVisible || linea.descripcion || "Servicio", cantidad: String(cantidad), precio: soles(precio), total: soles(Math.max(0, cantidad * precio - Number(linea.descuento ?? 0))) }; }), subtotal: soles(importes.subtotal), igv: soles(importes.igv), tasaIgv: TASA_IGV_ORDEN, total: soles(importes.total) }, formato, { alError: notificarError });
   }
 
   if (!enFormulario) return <>
@@ -228,6 +230,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       onEditar={abrirOrden}
       formatearFecha={fechaLegible}
       formatearTotal={(lineas) => soles(totalOrden(lineas))}
+      formatearDesglose={(lineas) => { const importes = importesOrden(lineas); return `Base ${soles(importes.subtotal)} · IGV ${soles(importes.igv)}`; }}
       etiquetaEstado={(orden) => estadosOrden[orden.estado]}
     />
   </>;
@@ -278,6 +281,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
         onCancelar: cancelarFormulario,
       }}
       formatearSoles={soles}
+      importes={importesOrden(lineas)}
     />
     {confirmarCancelacion && <ConfirmarDescartarOrden onSeguirEditando={() => setConfirmarCancelacion(false)} onDescartar={descartarFormulario} />}
     {clientesForm.mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={clientesForm.registrarCliente} onCancelar={() => clientesForm.setMostrarFormularioCliente(false)} />, document.body)}

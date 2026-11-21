@@ -14,6 +14,7 @@ type OrdenServicioRowProps = {
   fecha: string;
   estado: string;
   total: string;
+  desglose: string;
   puedeCrear: boolean;
   menuDocumento: ReactNode;
   formatearFecha: (fecha: string) => string;
@@ -24,7 +25,7 @@ type OrdenServicioRowProps = {
 
 const telefonoParaLlamar = (telefono: string) => telefono.trim().replace(/[^+\d]/g, "");
 
-export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menuDocumento, formatearFecha, alImprimirA4, alImprimirTicket, alEditar }: OrdenServicioRowProps) {
+export function OrdenServicioRow({ orden, fecha, estado, total, desglose, puedeCrear, menuDocumento, formatearFecha, alImprimirA4, alImprimirTicket, alEditar }: OrdenServicioRowProps) {
   return (
     <tr>
       <td className="[font-variant-numeric:tabular-nums] text-[#506b87]">{fecha}</td>
@@ -32,7 +33,7 @@ export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menu
       <td><strong className={`block ${c.clientName}`}>Vehículo</strong><small className={`block ${c.minorText}`}>{orden.vehiculoPlaca || "Sin identificador"}</small></td>
       <td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}><strong className={`block ${c.clientName}`}>{orden.clienteNombre}</strong></td>
       <td><Etiqueta tono={["COMPLETADA", "FACTURADA"].includes(orden.estado) ? "positiva" : orden.estado === "ANULADA" ? "peligro" : "advertencia"}>{estado}</Etiqueta></td>
-      <td className={`${c.number} ${c.total}`}>{total}</td>
+      <td className={`${c.number} ${c.total}`}><strong className="block">{total}</strong><small className="ordenes-row-caption">{desglose}</small></td>
       <td><div className={`${c.rowActions} ordenes-row-actions`}>
         {orden.estado !== "FACTURADA" && orden.estado !== "ANULADA" && <AccionIcono accion="editar" etiqueta={`Editar orden ${orden.codigo}`} confirmacion={{ titulo: "¿Editar esta orden de servicio?", descripcion: `Vas a abrir ${orden.codigo} para revisar sus datos. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar orden" }} onClick={alEditar} />}
         <BotonImprimir etiqueta={`Imprimir orden ${orden.codigo}`} tono="neutral" alImprimirA4={alImprimirA4} alImprimirTicket={alImprimirTicket} />

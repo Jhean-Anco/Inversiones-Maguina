@@ -73,9 +73,10 @@ type OrdenServicioEditorProps = {
     onCancelar: () => void;
   };
   formatearSoles: (monto: number) => string;
+  importes: { subtotal: number; igv: number; total: number };
 };
 
-export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo, cliente, detalle, pago, formatearSoles }: OrdenServicioEditorProps) {
+export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo, cliente, detalle, pago, formatearSoles, importes }: OrdenServicioEditorProps) {
   return <div className="venta-page is-data-step ordenes-servicio-page">
     {alert.message && <NotificacionFlotante mensaje={alert.message} onCerrar={alert.onClose} />}
     <form className="venta-layout is-data-step" onSubmit={onSubmit}>
@@ -128,6 +129,11 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
                 <label className="venta-observation-card ordenes-reason-card">Motivo de ingreso (opcional)<textarea aria-label="Motivo de ingreso (opcional)" value={pago.motivo} maxLength={2000} rows={3} onChange={(evento) => pago.onMotivo(evento.target.value)} placeholder="Describe por qué ingresa el vehículo al taller" /></label>
                 <div className="venta-checkout-actions ordenes-checkout-actions">
                   <div className="venta-checkout-total">
+                    <div className="ordenes-tax-breakdown" aria-label="Desglose de importes de la orden">
+                      <div><span>Subtotal sin IGV</span><strong>{formatearSoles(importes.subtotal)}</strong></div>
+                      <div><span>IGV (18%)</span><strong>{formatearSoles(importes.igv)}</strong></div>
+                      <div className="ordenes-tax-total"><span>Total de la orden</span><strong>{formatearSoles(importes.total)}</strong></div>
+                    </div>
                     <label className="venta-checkout-amount ordenes-advance-amount"><span>Monto de adelanto recibido</span><input type="number" min="0" step="0.01" max={pago.maximoAdelanto} value={pago.adelanto} onChange={(evento) => pago.onAdelanto(evento.target.value)} /></label>
                     <SelectorCuentaFinanciera value={pago.cuentaId} medioActual={pago.medio} etiqueta="Cuenta donde se recibe el adelanto" required={Number(pago.adelanto) > 0} onChange={pago.onCuenta} />
                   </div>
