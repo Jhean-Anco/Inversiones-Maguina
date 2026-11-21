@@ -1,7 +1,6 @@
-import { useEffect, useId, useRef } from "react";
 import { ArrowDownLeft, ArrowRight, ArrowUpRight } from "lucide-react";
+import { DialogoConfirmacion } from "../../components/ui/confirmar-edicion";
 import type { NotaRelacionada, VentaListado } from "../../services/ingresos.service";
-import "./nota-ajuste.css";
 
 type Props = {
   venta: VentaListado;
@@ -11,53 +10,27 @@ type Props = {
 };
 
 export function DialogoInicioNota({ venta, tipo, onCancelar, onContinuar }: Props) {
-  const dialogoRef = useRef<HTMLDialogElement>(null);
-  const id = useId();
   const esCredito = tipo === "NOTA_CREDITO";
   const Icono = esCredito ? ArrowDownLeft : ArrowUpRight;
+  const nombreNota = esCredito ? "crédito" : "débito";
+  const documentoOrigen = venta.tipoComprobante === "BOLETA" ? "Boleta" : "Factura";
 
-  useEffect(() => {
-    const dialogo = dialogoRef.current;
-    dialogo?.showModal();
-    return () => dialogo?.close();
-  }, []);
-
-  function cerrar(accion: () => void) {
-    dialogoRef.current?.close();
-    accion();
-  }
-
-  return (
-    <dialog
-      ref={dialogoRef}
-      className="nota-inicio"
-      data-tipo={esCredito ? "credito" : "debito"}
-      aria-labelledby={`${id}-titulo`}
-      aria-describedby={`${id}-uso ${id}-emision`}
-      onCancel={(evento) => { evento.preventDefault(); cerrar(onCancelar); }}
-    >
-      <header className="nota-inicio-cabecera">
-        <span className="nota-tipo-icono"><Icono size={22} aria-hidden="true" /></span>
-        <h2 id={`${id}-titulo`}>Crear nota de {esCredito ? "crédito" : "débito"}</h2>
-      </header>
-      <div className="nota-inicio-contenido">
-        <div className="nota-inicio-origen">
-          <span>{venta.tipoComprobante === "BOLETA" ? "Boleta" : "Factura"} de origen</span>
-          <strong>{venta.codigoComprobante}</strong>
-        </div>
-        <p id={`${id}-uso`}>
-          {esCredito
-            ? "Úsala para reducir el precio de uno o más ítems del comprobante. Indicarás el descuento y la cuenta desde la que se devuelve la diferencia."
-            : "Úsala para aumentar el precio de uno o más ítems del comprobante. Indicarás el aumento y la cuenta en la que ingresa la diferencia."}
-        </p>
-        <p id={`${id}-emision`} className="nota-inicio-aclaracion">La nota se emitirá al completar el formulario y pulsar Continuar.</p>
-      </div>
-      <footer className="nota-acciones">
-        <button className="nota-boton" type="button" autoFocus onClick={() => cerrar(onCancelar)}>Cancelar</button>
-        <button className="nota-boton nota-boton-primario" type="button" onClick={() => cerrar(onContinuar)}>
-          Abrir formulario <ArrowRight size={17} aria-hidden="true" />
-        </button>
-      </footer>
-    </dialog>
-  );
+  return <DialogoConfirmacion
+    titulo={`¿Crear nota de ${nombreNota}?`}
+    descripcion={<>
+      <span className="mb-3 block rounded-[10px] border border-[#e1eaf1] bg-[#f5f8fb] px-3 py-2 text-[12px] text-[#60778e]">
+        {documentoOrigen} de origen <strong className="float-right font-extrabold text-[#173b60]">{venta.codigoComprobante}</strong>
+      </span>
+      {esCredito
+        ? <>Se usará para reducir el precio del comprobante y registrar la devolución desde la cuenta que elijas.</>
+        : <>Se usará para aumentar el precio del comprobante y registrar el ingreso de la diferencia en la cuenta que elijas.</>}
+      <span className="mt-2 block text-[12px]">Al abrir el formulario todavía podrás revisar los importes. La nota se emitirá al completar el formulario y pulsar Continuar.</span>
+    </>}
+    etiquetaCancelar="Cancelar"
+    etiquetaConfirmar="Abrir formulario"
+    icono={<Icono size={21} strokeWidth={2.1} />}
+    iconoAccion={<ArrowRight size={15} aria-hidden="true" />}
+    onCancelar={onCancelar}
+    onConfirmar={onContinuar}
+  />;
 }

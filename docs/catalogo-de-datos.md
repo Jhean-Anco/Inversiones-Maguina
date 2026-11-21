@@ -167,6 +167,7 @@ Restricciones e indices declarados:
 | `subtotal` | `numeric` | NOT NULL | - | - | - |
 | `igv` | `numeric` | NOT NULL | - | - | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
+| `cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `estado` | `varchar` | NOT NULL | - | - | - |
 | `inventario_devuelto` | `boolean` | NOT NULL | - | yes | - |
 | `huella_solicitud` | `varchar` | NULL | - | - | - |
@@ -176,6 +177,7 @@ Restricciones e indices declarados:
 Restricciones e indices declarados:
 
 - INDEX `comprobantes_relacionados_origen_idx`
+- INDEX `comprobantes_relacionados_cuenta_fecha_idx`
 - UNIQUE INDEX `comprobantes_relacionados_serie_numero_unico`
 - UNIQUE INDEX `comprobantes_relacionados_huella_uq`
 - CHECK `comprobantes_relacionados_tipo_ck`

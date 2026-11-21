@@ -978,6 +978,7 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   subtotal: numeric("subtotal", { precision: 14, scale: 2 }).notNull(),
   igv: numeric("igv", { precision: 14, scale: 2 }).notNull(),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
+  cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   estado: varchar("estado", { length: 24 }).notNull(),
   inventarioDevuelto: boolean("inventario_devuelto").notNull().default(false),
   huellaSolicitud: varchar("huella_solicitud", { length: 64 }),
@@ -986,6 +987,7 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("comprobantes_relacionados_origen_idx").on(tabla.ingresoOrigenId, tabla.creadoEn),
+  index("comprobantes_relacionados_cuenta_fecha_idx").on(tabla.cuentaFinancieraId, tabla.fecha),
   uniqueIndex("comprobantes_relacionados_serie_numero_unico").on(tabla.tipoComprobante, tabla.serie, tabla.numero),
   uniqueIndex("comprobantes_relacionados_huella_uq").on(tabla.ingresoOrigenId, tabla.huellaSolicitud).where(sql`${tabla.huellaSolicitud} IS NOT NULL`),
   check("comprobantes_relacionados_tipo_ck", sql`${tabla.tipoComprobante} IN ('NOTA_CREDITO', 'NOTA_DEBITO')`),

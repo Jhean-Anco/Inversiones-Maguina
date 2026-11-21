@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { db, cuentasFinancieras } from "@magina/database";
+import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
 const tiposCuenta = ["EFECTIVO", "BANCO", "BILLETERA", "TARJETA"] as const;
 const monedas = ["PEN", "USD", "EUR"] as const;
@@ -52,6 +53,8 @@ export class ServicioFinanzas {
   }
 
   async resumenDelMes() {
+    const hasta = fechaActualPeru();
+    const desde = `${hasta.slice(0, 7)}-01`;
     const cuentas = await this.listar();
     const movimientos = await db.execute(sql`
       SELECT cuenta_id,
@@ -62,11 +65,11 @@ export class ServicioFinanzas {
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
-        UNION ALL SELECT CASE WHEN datos_nubefact->>'cuentaFinancieraId' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (datos_nubefact->>'cuentaFinancieraId')::uuid ELSE NULL::uuid END,
+        UNION ALL SELECT cuenta_financiera_id,
           CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
           FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
       ) AS pagos
-      WHERE cuenta_id IS NOT NULL AND fecha >= date_trunc('month', current_date)::date AND fecha <= current_date
+      WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
       GROUP BY cuenta_id
     `) as unknown as Array<{ cuenta_id: string; ingresos: string; egresos: string }>;
     const porCuenta = new Map(movimientos.map((movimiento) => [movimiento.cuenta_id, movimiento]));
@@ -77,7 +80,7 @@ export class ServicioFinanzas {
       return { id: cuenta.id, tipo: cuenta.tipo, nombre: cuenta.nombre, entidad: cuenta.entidad, moneda: cuenta.moneda,
         activa: cuenta.activa, ingresosMes: ingresos.toFixed(2), egresosMes: egresos.toFixed(2), netoMes: (ingresos - egresos).toFixed(2) };
     });
-    return { periodo: new Date().toISOString().slice(0, 7), items };
+    return { periodo: hasta.slice(0, 7), items };
   }
 
   async movimientosPorPeriodo(periodoEntrada: string, fechaEntrada: string) {
@@ -112,7 +115,7 @@ export class ServicioFinanzas {
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
-          UNION ALL SELECT CASE WHEN datos_nubefact->>'cuentaFinancieraId' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (datos_nubefact->>'cuentaFinancieraId')::uuid ELSE NULL::uuid END,
+          UNION ALL SELECT cuenta_financiera_id,
             CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
             FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
         ) AS pagos

@@ -965,7 +965,7 @@ export class ServicioIngresos {
     const lineasOrigen = seleccionadas.map(({ detalle, monto: montoAjuste }) => ({ ingresoDetalleId: detalle.id, montoAjuste, cantidad: detalle.cantidad }));
     await db.insert(comprobantesRelacionados).values({ id, ingresoOrigenId: venta.id, tipoComprobante: tipo, codigoMotivo: motivoCodigo, motivo,
       fecha, serie: serieNota, numero: correlativo.numero, subtotal: base.toFixed(2), igv: igv.toFixed(2), total: monto.toFixed(2),
-      estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, lineasOrigen, cuentaFinancieraId }, usuarioId });
+      cuentaFinancieraId, estado: "NUBEFACT_PENDIENTE", datosNubefact: { solicitud, lineasOrigen, cuentaFinancieraId }, usuarioId });
     await db.insert(comprobantesRelacionadosDetalle).values(seleccionadas.map(({ detalle }) => ({ comprobanteRelacionadoId: id, ingresoDetalleId: detalle.id, cantidad: detalle.cantidad })));
     let respuesta: Response;
     try { respuesta = await fetch(process.env.NUBEFACT_RUTA!.trim(), { method: "POST", headers: { Authorization: process.env.NUBEFACT_TOKEN!.trim(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(solicitud), signal: AbortSignal.timeout(validarConfiguracionEntorno().timeoutNubefactMs) }); }

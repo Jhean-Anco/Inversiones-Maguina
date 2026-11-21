@@ -1,17 +1,19 @@
-import { cloneElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactElement } from "react";
+import { cloneElement, useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CircleHelp, Pencil } from "lucide-react";
 
-type DialogoConfirmarEdicionProps = {
+export type DialogoConfirmacionProps = {
   titulo: string;
-  descripcion: string;
+  descripcion: ReactNode;
   etiquetaCancelar: string;
   etiquetaConfirmar: string;
   onCancelar: () => void;
   onConfirmar: () => void;
+  icono?: ReactNode;
+  iconoAccion?: ReactNode;
 };
 
-function DialogoConfirmarEdicion({ titulo, descripcion, etiquetaCancelar, etiquetaConfirmar, onCancelar, onConfirmar }: DialogoConfirmarEdicionProps) {
+export function DialogoConfirmacion({ titulo, descripcion, etiquetaCancelar, etiquetaConfirmar, onCancelar, onConfirmar, icono = <Pencil size={19} strokeWidth={2.1} />, iconoAccion = <Pencil size={15} aria-hidden="true" /> }: DialogoConfirmacionProps) {
   const id = useId();
   const dialogoRef = useRef<HTMLElement>(null);
   const cancelarRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +52,7 @@ function DialogoConfirmarEdicion({ titulo, descripcion, etiquetaCancelar, etique
   return createPortal(
     <div className="fixed inset-0 z-[13000] grid place-items-center bg-[#071a2d9c] p-5 backdrop-blur-[3px] mobile-portrait:items-end mobile-portrait:p-0" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onCancelar(); }}>
       <section ref={dialogoRef} className="grid w-[min(460px,100%)] grid-cols-[48px_minmax(0,1fr)] items-start gap-x-4 gap-y-0 rounded-[18px] border border-[#d9e4ed] bg-[linear-gradient(180deg,#ffffff_0%,#fafdff_100%)] p-6 text-[#183b59] shadow-[0_26px_80px_#071a2d45,0_4px_14px_#071a2d12] mobile-portrait:w-full mobile-portrait:rounded-b-none mobile-portrait:rounded-t-[20px] mobile-portrait:p-5" role="alertdialog" aria-modal="true" aria-labelledby={`${id}-titulo`} aria-describedby={`${id}-descripcion`}>
-        <span className="grid h-12 w-12 place-items-center rounded-[14px] border border-[#d6e7f3] bg-[linear-gradient(145deg,#f2f8fc,#e6f0f7)] text-[#1c5f8a]" aria-hidden="true"><Pencil size={19} strokeWidth={2.1} /></span>
+        <span className="grid h-12 w-12 place-items-center rounded-[14px] border border-[#d6e7f3] bg-[linear-gradient(145deg,#f2f8fc,#e6f0f7)] text-[#1c5f8a]" aria-hidden="true">{icono}</span>
         <div className="pt-0.5">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dbe7f1] bg-[#f2f7fb] px-2 py-1 text-[10px] font-bold text-[#416783]"><CircleHelp size={12} aria-hidden="true" />Confirmación</span>
           <h2 id={`${id}-titulo`} className="mb-1 mt-2 text-[17px] font-extrabold leading-[1.25] text-[#153b60]">{titulo}</h2>
@@ -58,7 +60,7 @@ function DialogoConfirmarEdicion({ titulo, descripcion, etiquetaCancelar, etique
         </div>
         <footer className="col-span-full mt-6 flex justify-end gap-2.5 mobile-portrait:flex-col-reverse">
           <button ref={cancelarRef} className="min-h-10 rounded-[10px] border border-[#d7e1e9] bg-white px-4 text-[12px] font-bold text-[#47647d] transition-colors hover:bg-[#f4f7fa] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#85accb] mobile-portrait:w-full" type="button" onClick={onCancelar}>{etiquetaCancelar}</button>
-          <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#174b78] bg-[linear-gradient(145deg,#205d8d,#123f69)] px-4 text-[12px] font-bold text-white shadow-[0_3px_9px_#174b7829,inset_0_1px_0_#ffffff30] transition-[filter,transform,box-shadow] hover:-translate-y-px hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#85accb] mobile-portrait:w-full" type="button" onClick={onConfirmar}><Pencil size={15} aria-hidden="true" />{etiquetaConfirmar}</button>
+          <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#174b78] bg-[linear-gradient(145deg,#205d8d,#123f69)] px-4 text-[12px] font-bold text-white shadow-[0_3px_9px_#174b7829,inset_0_1px_0_#ffffff30] transition-[filter,transform,box-shadow] hover:-translate-y-px hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#85accb] mobile-portrait:w-full" type="button" onClick={onConfirmar}>{iconoAccion}{etiquetaConfirmar}</button>
         </footer>
       </section>
     </div>,
@@ -83,6 +85,6 @@ export function BotonEditarConfirmacion({ children, titulo, descripcion, etiquet
   };
   return <>
     {cloneElement(children, { onClick: () => setAbierto(true) })}
-    {abierto && <DialogoConfirmarEdicion titulo={titulo} descripcion={descripcion} etiquetaCancelar={etiquetaCancelar} etiquetaConfirmar={etiquetaConfirmar} onCancelar={() => setAbierto(false)} onConfirmar={confirmar} />}
+    {abierto && <DialogoConfirmacion titulo={titulo} descripcion={descripcion} etiquetaCancelar={etiquetaCancelar} etiquetaConfirmar={etiquetaConfirmar} onCancelar={() => setAbierto(false)} onConfirmar={confirmar} />}
   </>;
 }
