@@ -12,7 +12,7 @@ Cambios en esta propuesta local:
 - Se usa el conjunto API con cobertura una sola vez; el build, TypeScript, E2E, migraciones, Gitleaks, CodeQL, `pnpm audit`, Trivy, Docker Compose y persistencia siguen siendo controles bloqueantes.
 - La publicación requiere el guard de PR fusionado y que la validación post-merge de `quality` también haya terminado bien. El despliegue necesita una publicación exitosa y conserva la verificación SHA, los controles de salud y la restauración de imágenes.
 - El servicio productivo `migrate` aplica Drizzle al iniciar el despliegue. Se retiró `clean-uploads.mjs` de ese comando: antes borraba imágenes y adjuntos persistentes en cada despliegue. El script continúa disponible y su prueba solo lo ejecuta sobre archivos temporales.
-- El guard de migraciones rechaza ediciones de migraciones históricas y varias operaciones destructivas habituales. Es una detección por patrones, no un analizador SQL completo; los cambios de esquema requieren revisión de compatibilidad y estrategia expand-contract.
+- El guard de migraciones rechaza ediciones de migraciones históricas y operaciones destructivas sin reemplazo. Permite sustituir una restricción solo cuando la misma migración vuelve a crearla con el mismo nombre, y relajar `NOT NULL` solo cuando añade una nueva restricción de integridad a esa tabla. Es una detección por patrones, no un analizador SQL completo; los cambios de esquema requieren revisión de compatibilidad y estrategia expand-contract.
 - `release-promotion.yml` crea una rama determinista `release/<12 caracteres SHA>` desde el SHA exacto y abre un PR a `main`. La rama estable evita abrir candidatos repetidos para el mismo commit.
 
 ## Inventario de workflows

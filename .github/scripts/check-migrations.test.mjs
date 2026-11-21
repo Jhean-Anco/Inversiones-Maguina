@@ -22,6 +22,39 @@ test("bloquea operaciones destructivas en nuevas migraciones", () => {
   assert.match(findings.join("\n"), /operación potencialmente destructiva/);
 });
 
+test("permite reemplazar una restricción en la misma migración", () => {
+  const path = "packages/database/migrations/0190_reemplazo_restriccion.sql";
+  const findings = inspectMigrationChanges(
+    [{ status: "A", path }],
+    new Map([[path, [
+      'ALTER TABLE "ingresos_detalle" DROP CONSTRAINT "ingresos_detalle_tipo_relacion_ck";',
+      'ALTER TABLE "ingresos_detalle" ADD CONSTRAINT "ingresos_detalle_tipo_relacion_ck" CHECK ("tipo" IN (\'PRODUCTO\', \'SERVICIO\', \'MOTOTAXI\'));',
+    ]]]),
+  );
+  assert.deepEqual(findings, []);
+});
+
+test("sigue bloqueando la eliminación de una restricción sin reemplazo", () => {
+  const path = "packages/database/migrations/0190_eliminar_restriccion.sql";
+  const findings = inspectMigrationChanges(
+    [{ status: "A", path }],
+    new Map([[path, ['ALTER TABLE "ingresos_detalle" DROP CONSTRAINT "ingresos_detalle_tipo_relacion_ck";']]]),
+  );
+  assert.match(findings.join("\n"), /operación potencialmente destructiva/);
+});
+
+test("permite relajar NOT NULL si la migración añade una restricción de integridad", () => {
+  const path = "packages/database/migrations/0190_garantia_por_compra.sql";
+  const findings = inspectMigrationChanges(
+    [{ status: "A", path }],
+    new Map([[path, [
+      'ALTER TABLE "garantias_mototaxis" ALTER COLUMN "unidad_id" DROP NOT NULL;',
+      'ALTER TABLE "garantias_mototaxis" ADD CONSTRAINT "garantias_origen_ck" CHECK (num_nonnulls("unidad_id", "compra_detalle_id") = 1);',
+    ]]]),
+  );
+  assert.deepEqual(findings, []);
+});
+
 test("detecta cambios destructivos partidos en varias líneas y conserva el número original", () => {
   const path = "packages/database/migrations/0190_risky_change.sql";
   const findings = inspectMigrationChanges(

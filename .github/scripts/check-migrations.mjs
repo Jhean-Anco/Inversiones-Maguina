@@ -27,6 +27,26 @@ export function inspectMigrationChanges(nameStatus, addedLines) {
     );
     const sql = lines.map(({ text }) => /^\s*--/.test(text) ? "" : text).join("\n");
     const riskyLines = new Set();
+    const riskasReemplazadas = new Set();
+
+    for (const match of sql.matchAll(/\bALTER\s+TABLE\s+"?([\w]+)"?\s+DROP\s+CONSTRAINT\s+"?([\w]+)"?/gi)) {
+      const tabla = match[1];
+      const restriccion = match[2];
+      const equivalente = new RegExp(`\\bALTER\\s+TABLE\\s+"?${tabla}"?\\s+ADD\\s+CONSTRAINT\\s+"?${restriccion}"?\\b`, "i");
+      if (equivalente.test(sql)) {
+        const lineOffset = sql.slice(0, match.index).split("\n").length - 1;
+        riskasReemplazadas.add(lines[lineOffset]?.line ?? lineOffset + 1);
+      }
+    }
+
+    for (const match of sql.matchAll(/\bALTER\s+TABLE\s+"?([\w]+)"?\s+ALTER\s+COLUMN\s+"?[\w]+"?\s+DROP\s+NOT\s+NULL\b/gi)) {
+      const tabla = match[1];
+      const nuevaValidacion = new RegExp(`\\bALTER\\s+TABLE\\s+"?${tabla}"?\\s+ADD\\s+CONSTRAINT\\b`, "i");
+      if (nuevaValidacion.test(sql)) {
+        const lineOffset = sql.slice(0, match.index).split("\n").length - 1;
+        riskasReemplazadas.add(lines[lineOffset]?.line ?? lineOffset + 1);
+      }
+    }
 
     for (const pattern of riskyStatements) {
       pattern.lastIndex = 0;
@@ -37,7 +57,7 @@ export function inspectMigrationChanges(nameStatus, addedLines) {
       }
     }
 
-    for (const lineNumber of [...riskyLines].sort((a, b) => a - b)) {
+    for (const lineNumber of [...riskyLines].filter((line) => !riskasReemplazadas.has(line)).sort((a, b) => a - b)) {
       findings.push(`${entry.path}:${lineNumber}: operación potencialmente destructiva; use migración expand-contract y revisión manual.`);
     }
   }
