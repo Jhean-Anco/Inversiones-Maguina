@@ -617,6 +617,30 @@
   align-items: end;
   gap: 12px;
 }
+.ordenes-tax-breakdown {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid #dce6ef;
+  border-radius: 9px;
+  background: #f7f9fc;
+  color: #536b82;
+  font-size: 12px;
+}
+.ordenes-tax-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ordenes-tax-breakdown strong { color: #173c67; font-variant-numeric: tabular-nums; }
+.ordenes-tax-breakdown .ordenes-tax-total {
+  margin-top: 3px;
+  padding-top: 7px;
+  border-top: 1px solid #d5e0ec;
+  color: #173c67;
+  font-weight: 800;
+}
 .ordenes-advanoe-amount {
   min-width: 0;
 }

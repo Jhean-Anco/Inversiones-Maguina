@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { CreditCard } from "lucide-react";
-import { FlujoChart, VentasMensualesChart } from "./dashboard-charts";
+import { FlujoChart, FlujoFinancieroChart, VentasMensualesChart } from "./dashboard-charts";
 import type { ImportesGrafico, ModoDesgloseGrafico, PuntoIngresos } from "./dashboard-chart-types";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioDashboard, type ResumenGerencial } from "../../services/dashboard.service";
 import { servicioReportes, type FiltroReporte, type ReporteIngresos } from "../../services/reportes.service";
-import { servicioFinanzas, type CuentaFinanciera } from "../../services/finanzas.service";
+import { servicioFinanzas, type FlujoFinanciero, type PeriodoFlujoFinanciero } from "../../services/finanzas.service";
 
 const soles = (valor: string | number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", maximumFractionDigits: 2 }).format(Number(valor) || 0);
 const etiquetaFechaPunto = (valor: string) => new Date(`${valor.length === 7 ? `${valor}-01` : valor}T00:00:00`).toLocaleDateString("es-PE", valor.length === 7 ? { month: "long", year: "numeric" } : { day: "numeric", month: "short" });
@@ -102,10 +102,11 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
   const [errorReporte, setErrorReporte] = useState("");
   const [solicitudReporte, setSolicitudReporte] = useState(0);
   const puedeVerFinanzas = permisos.includes("FINANZAS.LEER");
-  const [resumenFinanciero, setResumenFinanciero] = useState<CuentaFinanciera[] | null>(null);
+  const [flujoFinanciero, setFlujoFinanciero] = useState<FlujoFinanciero | null>(null);
   const [cargandoFinanzas, setCargandoFinanzas] = useState(puedeVerFinanzas);
   const [errorFinanzas, setErrorFinanzas] = useState("");
   const [solicitudFinanzas, setSolicitudFinanzas] = useState(0);
+  const [periodoFlujo, setPeriodoFlujo] = useState<PeriodoFlujoFinanciero>("MES");
 
   useEffect(() => {
     if (datosInicioValidos) return;
@@ -121,11 +122,12 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
     let vigente = true;
     setCargandoFinanzas(true);
     setErrorFinanzas("");
-    void servicioFinanzas.resumen().then((datos) => { if (vigente) setResumenFinanciero(datos.items); })
+    setFlujoFinanciero(null);
+    void servicioFinanzas.flujo(periodoFlujo).then((datos) => { if (vigente) setFlujoFinanciero(datos); })
       .catch((problema: unknown) => { if (vigente) setErrorFinanzas(problema instanceof Error ? problema.message : "No se pudo cargar el flujo financiero del mes."); })
       .finally(() => { if (vigente) setCargandoFinanzas(false); });
     return () => { vigente = false; };
-  }, [puedeVerFinanzas, solicitudFinanzas]);
+  }, [puedeVerFinanzas, solicitudFinanzas, periodoFlujo]);
 
   useEffect(() => {
     if (!puedeVerIngresos) { setCargandoReporte(false); return; }
@@ -160,18 +162,18 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
   if (otrasMototaxis) datosInventarioMototaxis.push({ nombre: "Otros modelos", importe: otrasMototaxis, color: "#8069bd" });
   const totalMototaxis = resumen?.inventarioMototaxis?.unidades ?? 0;
   const sinVentasEsteMes = datosMedios.length === 0;
-  const totalesFinancieros = (resumenFinanciero ?? []).reduce<Record<string, { ingresos: number; egresos: number; neto: number }>>((totales, cuenta) => {
-    const moneda = cuenta.moneda;
-    const total = totales[moneda] ?? { ingresos: 0, egresos: 0, neto: 0 };
-    total.ingresos += Number(cuenta.ingresosMes ?? 0);
-    total.egresos += Number(cuenta.egresosMes ?? 0);
-    total.neto += Number(cuenta.netoMes ?? 0);
-    totales[moneda] = total;
+  type MonedaFinanciera = FlujoFinanciero["monedas"][number];
+  const totalesFinancieros = (flujoFinanciero?.items ?? []).reduce<Record<MonedaFinanciera, { ingresos: number; egresos: number; neto: number }>>((totales, item) => {
+    const total = totales[item.moneda] ?? { ingresos: 0, egresos: 0, neto: 0 };
+    total.ingresos += Number(item.ingresos);
+    total.egresos += Number(item.egresos);
+    total.neto += Number(item.neto);
+    totales[item.moneda] = total;
     return totales;
-  }, {});
-  const simboloMoneda = (moneda: string) => moneda === "PEN" ? "S/" : moneda === "USD" ? "US$" : "€";
-  const monedasFinancieras = ["PEN", "USD", "EUR"].filter((moneda) => totalesFinancieros[moneda]);
+  }, {} as Record<MonedaFinanciera, { ingresos: number; egresos: number; neto: number }>);
+  const monedasFinancieras: MonedaFinanciera[] = flujoFinanciero?.monedas.length ? flujoFinanciero.monedas : ["PEN"];
   const metricasFinancieras = [{ clave: "ingresos", titulo: "Ingresos" }, { clave: "egresos", titulo: "Egresos" }, { clave: "neto", titulo: "Ingreso neto" }] as const;
+  const simboloMoneda = (moneda: MonedaFinanciera) => moneda === "PEN" ? "S/" : moneda === "USD" ? "US$" : "€";
   const datosDonut = sinVentasEsteMes ? datosInventario : datosMedios;
   const totalDonut = sinVentasEsteMes ? datosInventario.reduce((total, item) => total + item.importe, 0) : pagosTotal;
 
@@ -199,14 +201,21 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
     {error && <NotificacionFlotante mensaje={error} />}
     {cargando ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Preparando el panel del negocio...</span></div> : resumen && <>
       {puedeVerFinanzas && <article className={`${estilosDashboard.panel} inicio-panel inicio-finance-summary col-span-full before:bg-[linear-gradient(90deg,#258a79,#0b376a)]`}>
-        <header className={`${estilosDashboard.heading} inicio-panel-heading`}><div><span className={`${estilosDashboard.kicker} inicio-panel-kicker`}>FLUJO FINANCIERO DEL MES</span><h2>Entradas, egresos e ingreso neto</h2><p>Movimientos registrados en las cuentas. Los importes se presentan por moneda.</p></div></header>
-        {errorFinanzas ? <div className={`${estilosDashboard.chartEmpty} inicio-chart-empty`}><span>{errorFinanzas}</span><button type="button" onClick={() => setSolicitudFinanzas((actual) => actual + 1)}>Actualizar flujo financiero</button></div> : cargandoFinanzas ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Cargando movimientos de las cuentas...</span></div> : <div className="grid grid-cols-3 gap-3 mobile-portrait:grid-cols-1">
-          {metricasFinancieras.map(({ clave, titulo }) => <div key={clave} className="grid min-h-[94px] content-center gap-2 rounded-[13px] border border-[#e1eaf0] bg-[linear-gradient(150deg,#fff,#f7fafc)] px-4 py-3">
-            <span className="text-[11px] font-bold text-[#60778e]">{titulo}</span>
-            {monedasFinancieras.length ? monedasFinancieras.map((moneda) => <strong key={moneda} className={`text-[19px] font-extrabold tabular-nums ${clave === "neto" && totalesFinancieros[moneda][clave] < 0 ? "text-[#b83b4b]" : "text-[#153b60]"}`}>
-              {simboloMoneda(moneda)} {totalesFinancieros[moneda][clave].toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<small className="ml-1 text-[10px] font-bold text-[#8293a5]">{moneda}</small>
-            </strong>) : <strong className="text-[19px] font-extrabold tabular-nums text-[#153b60]">S/ 0.00</strong>}
-          </div>)}
+        <header className={`${estilosDashboard.heading} inicio-panel-heading`}><div><span className={`${estilosDashboard.kicker} inicio-panel-kicker`}>FLUJO FINANCIERO</span><h2>Entradas, egresos e ingreso neto</h2><p>{periodoFlujo === "DIA" ? "Movimientos diarios de los últimos siete días." : periodoFlujo === "SEMANA" ? "Movimientos semanales de las últimas ocho semanas." : "Movimientos mensuales de los últimos doce meses."} Los importes se presentan por moneda.</p></div><div className="inicio-sales-chart-tools"><div className="inicio-sales-view-toggle" role="group" aria-label="Periodo del flujo financiero">
+          <button type="button" className={periodoFlujo === "DIA" ? "is-active" : ""} aria-pressed={periodoFlujo === "DIA"} onClick={() => setPeriodoFlujo("DIA")}>Diaria</button>
+          <button type="button" className={periodoFlujo === "SEMANA" ? "is-active" : ""} aria-pressed={periodoFlujo === "SEMANA"} onClick={() => setPeriodoFlujo("SEMANA")}>Semanal</button>
+          <button type="button" className={periodoFlujo === "MES" ? "is-active" : ""} aria-pressed={periodoFlujo === "MES"} onClick={() => setPeriodoFlujo("MES")}>Mensual</button>
+        </div></div></header>
+        {errorFinanzas ? <div className={`${estilosDashboard.chartEmpty} inicio-chart-empty`}><span>{errorFinanzas}</span><button type="button" onClick={() => setSolicitudFinanzas((actual) => actual + 1)}>Actualizar flujo financiero</button></div> : cargandoFinanzas || !flujoFinanciero ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Cargando movimientos de las cuentas...</span></div> : <div className="grid gap-4">
+          <div className="grid grid-cols-3 gap-3 mobile-portrait:grid-cols-1">
+            {metricasFinancieras.map(({ clave, titulo }) => <div key={clave} className="grid min-h-[94px] content-center gap-2 rounded-[13px] border border-[#e1eaf0] bg-[linear-gradient(150deg,#fff,#f7fafc)] px-4 py-3">
+              <span className="text-[11px] font-bold text-[#60778e]">{titulo}</span>
+              {monedasFinancieras.map((moneda) => <strong key={moneda} className={`text-[19px] font-extrabold tabular-nums ${clave === "neto" && (totalesFinancieros[moneda]?.neto ?? 0) < 0 ? "text-[#b83b4b]" : "text-[#153b60]"}`}>
+                {simboloMoneda(moneda)} {(totalesFinancieros[moneda]?.[clave] ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<small className="ml-1 text-[10px] font-bold text-[#8293a5]">{moneda}</small>
+              </strong>)}
+            </div>)}
+          </div>
+          <FlujoFinancieroChart datos={flujoFinanciero} />
         </div>}
       </article>}
       {!puedeVerIngresos ? <div className={`${estilosDashboard.chartEmpty} inicio-chart-empty`}>Tu usuario no tiene permiso para consultar los reportes de ventas.</div> : errorReporte ? <>
