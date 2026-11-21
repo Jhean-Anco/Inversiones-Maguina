@@ -454,6 +454,15 @@ test("las notas de crédito y débito mueven la cuenta seleccionada y el resumen
     const [detalle] = await db.select().from(esquema.ingresosDetalle).where(eq(esquema.ingresosDetalle.ingresoId, venta.id));
     assert.ok(detalle);
     const finanzas = new ServicioFinanzas();
+    const emitirNota = (tipo: "NOTA_CREDITO" | "NOTA_DEBITO", lineas: unknown[], medioPago = "EFECTIVO") =>
+      servicio.emitirNota(venta.id, { tipo, cuentaFinancieraId: cuentaId, medioPago, lineas }, usuarioId);
+    await assert.rejects(emitirNota("NOTA_CREDITO", []), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", [null]), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", Array.from({ length: 101 }, () => ({ detalleId: detalle.id, monto: "1.00" }))), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", [{ detalleId: detalle.id, monto: "1.00" }, { detalleId: detalle.id, monto: "1.00" }]), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", [{ detalleId: randomUUID(), monto: "1.00" }]), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", [{ detalleId: detalle.id, monto: "999.00" }]), BadRequestException);
+    await assert.rejects(emitirNota("NOTA_CREDITO", [], "TRANSFERENCIA"), BadRequestException);
     const resumenInicial = await finanzas.resumenDelMes();
     const cuentaInicial = resumenInicial.items.find((item) => item.id === cuentaId);
     assert.ok(cuentaInicial);
