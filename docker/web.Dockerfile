@@ -14,7 +14,7 @@ ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 RUN pnpm --filter @magina/web build
 
-FROM nginx:1.30.6-alpine3.24 AS web
+FROM nginx:1.30.7-alpine3.24 AS web
 ARG BUILD_SHA=local
 RUN apk upgrade --no-cache && rm -rf /var/cache/apk/*
 LABEL org.opencontainers.image.revision=${BUILD_SHA}
