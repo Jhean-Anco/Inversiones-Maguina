@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 
 type EstadoMenu = { id: string | null; fase: "cerrado" | "abriendo" | "abierto" | "cerrando"; siguiente: string | null };
 
@@ -6,6 +6,16 @@ const estadoCerrado: EstadoMenu = { id: null, fase: "cerrado", siguiente: null }
 let estado: EstadoMenu = estadoCerrado;
 let temporizador: number | undefined;
 const suscriptores = new Set<() => void>();
+const raices = new Map<string, RefObject<HTMLElement | null>>();
+let suscriptoresExterior = 0;
+
+function alPresionarFuera(evento: PointerEvent) {
+  const id = estado.id;
+  if (!id || estado.fase === "cerrado") return;
+  const raiz = raices.get(id)?.current;
+  const objetivo = evento.target;
+  if (raiz && objetivo instanceof Node && !raiz.contains(objetivo)) cerrarMenu(id);
+}
 
 function publicar(nuevo: EstadoMenu) {
   estado = nuevo;
@@ -73,13 +83,18 @@ function cerrarMenu(id: string) {
 
 export function useMenuAccionExclusivo(id: string) {
   const actual = useSyncExternalStore(suscribirse, () => estado, () => estadoCerrado);
+  const raizRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
+    raices.set(id, raizRef);
+    if (suscriptoresExterior++ === 0) document.addEventListener("pointerdown", alPresionarFuera, true);
     const alPresionarTecla = (evento: KeyboardEvent) => {
       if (evento.key === "Escape") cerrarMenu(id);
     };
     window.addEventListener("keydown", alPresionarTecla);
     return () => {
       window.removeEventListener("keydown", alPresionarTecla);
+      raices.delete(id);
+      if (--suscriptoresExterior === 0) document.removeEventListener("pointerdown", alPresionarFuera, true);
       if (estado.id === id) {
         cerrarTemporizador();
         publicar(estadoCerrado);
@@ -90,6 +105,7 @@ export function useMenuAccionExclusivo(id: string) {
     abierto: actual.id === id && actual.fase !== "cerrando",
     presente: actual.id === id,
     fase: actual.id === id ? actual.fase : "cerrado",
+    raizRef,
     alternar: () => alternarMenu(id),
     cerrar: () => cerrarMenu(id),
   } as const;

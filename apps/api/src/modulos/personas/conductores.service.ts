@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, or } from "drizzle-orm";
 import { conductores, db, personas, tiposDocumento, tiposPersona } from "@magina/database";
 
 function texto(valor: unknown, etiqueta: string, maximo: number, requerido = false) {
@@ -13,6 +13,26 @@ function texto(valor: unknown, etiqueta: string, maximo: number, requerido = fal
 
 @Injectable()
 export class ServicioConductores {
+  async actualizar(id: string, valor: unknown) {
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || !valor || typeof valor !== "object" || Array.isArray(valor)) {
+      throw new BadRequestException("Selecciona un conductor válido.");
+    }
+    const datos = valor as Record<string, unknown>;
+    const numeroLicencia = texto(datos.numeroLicencia, "El número de licencia", 10, true)!.toLocaleUpperCase("es-PE");
+    const telefono = texto(datos.telefono, "El teléfono", 30);
+    try {
+      const [conductor] = await db.update(conductores).set({ numeroLicencia, telefono })
+        .where(and(eq(conductores.personaId, id), eq(conductores.activo, true)))
+        .returning({ id: conductores.personaId, numeroLicencia: conductores.numeroLicencia, telefono: conductores.telefono });
+      if (!conductor) throw new NotFoundException("No se encontró el conductor.");
+      return conductor;
+    } catch (error) {
+      const causa = error as { code?: string; cause?: { code?: string } };
+      if (causa.code === "23505" || causa.cause?.code === "23505") throw new ConflictException("La licencia ya está registrada.");
+      throw error;
+    }
+  }
+
   async listar(busqueda = "") {
     const q = busqueda.trim().slice(0, 100);
     const filas = await db.select({ id: personas.id, tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento,

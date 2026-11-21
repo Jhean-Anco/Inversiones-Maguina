@@ -1,19 +1,17 @@
 import { solicitarApi } from "../api-cliente";
-import { subirImagenCatalogo, type TipoImagenCatalogo } from "./imagenes.service";
 
 export type UsoMarca = "REPUESTOS" | "MOTOTAXIS" | "AMBOS";
-export type RegistroCatalogo = { id: string; nombre: string; rutaImagen: string | null; activo: boolean; uso?: UsoMarca };
+export type RegistroCatalogo = { id: string; nombre: string; activo: boolean; uso?: UsoMarca };
 export type CategoriaCatalogo = RegistroCatalogo & { creadoEn?: string };
 export type MarcaCatalogo = RegistroCatalogo & { uso: UsoMarca };
 
 export type ServicioCatalogo<T extends RegistroCatalogo> = {
   listar(): Promise<T[]>;
   guardar(datos: { nombre: string; id?: string; uso?: UsoMarca }): Promise<T>;
-  subirImagen(id: string, imagen: File): Promise<void>;
   cambiarEstado(registro: T): Promise<void>;
 };
 
-function crearServicioCatalogo<T extends RegistroCatalogo>(ruta: string, tipoImagen: TipoImagenCatalogo): ServicioCatalogo<T> {
+function crearServicioCatalogo<T extends RegistroCatalogo>(ruta: string): ServicioCatalogo<T> {
   return {
     listar: () => solicitarApi<T[]>(ruta),
     guardar({ nombre, id, uso }) {
@@ -23,7 +21,6 @@ function crearServicioCatalogo<T extends RegistroCatalogo>(ruta: string, tipoIma
         body: JSON.stringify({ nombre, ...(uso ? { uso } : {}) }),
       });
     },
-    subirImagen: (id, imagen) => subirImagenCatalogo(tipoImagen, id, imagen),
     async cambiarEstado(registro) {
       await solicitarApi<unknown>(`${ruta}/${registro.id}`, {
         method: "PATCH",
@@ -34,5 +31,5 @@ function crearServicioCatalogo<T extends RegistroCatalogo>(ruta: string, tipoIma
   };
 }
 
-export const servicioCategorias = crearServicioCatalogo<CategoriaCatalogo>("/inventario/categorias", "categorias");
-export const servicioMarcas = crearServicioCatalogo<MarcaCatalogo>("/inventario/marcas", "marcas");
+export const servicioCategorias = crearServicioCatalogo<CategoriaCatalogo>("/inventario/categorias");
+export const servicioMarcas = crearServicioCatalogo<MarcaCatalogo>("/inventario/marcas");

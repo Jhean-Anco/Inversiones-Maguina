@@ -78,7 +78,6 @@ Restricciones e indices declarados:
 | `id` | `uuid` | NULL | PK | yes | - |
 | `nombre` | `varchar` | NOT NULL | - | - | - |
 | `descripcion` | `varchar` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -120,12 +119,15 @@ Restricciones e indices declarados:
 | `moneda` | `varchar` | NOT NULL | - | yes | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
 | `observacion` | `text` | NULL | - | - | - |
+| `clave_idempotencia` | `uuid` | NULL | - | - | - |
+| `huella_solicitud` | `varchar` | NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 Restricciones e indices declarados:
 
 - INDEX `compras_mototaxis_proveedor_fecha_idx`
 - INDEX `compras_mototaxis_fecha_idx`
+- UNIQUE INDEX `compras_mototaxis_idempotencia_unica`
 - CHECK `compras_mototaxis_documento_tipo_ck`
 - CHECK `compras_mototaxis_moneda_ck`
 - CHECK `compras_mototaxis_total_ck`
@@ -394,9 +396,6 @@ Restricciones e indices declarados:
 | `proveedor_direccion` | `varchar` | NULL | - | - | - |
 | `observacion` | `text` | NULL | - | - | - |
 | `total_documento` | `numeric` | NULL | - | - | - |
-| `evidencia_ruta` | `varchar` | NULL | - | - | - |
-| `evidencia_nombre` | `varchar` | NULL | - | - | - |
-| `evidencia_mime` | `varchar` | NULL | - | - | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
@@ -474,7 +473,8 @@ Restricciones e indices declarados:
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
-| `unidad_id` | `uuid` | NOT NULL | FK | - | unidadesMototaxis.id |
+| `unidad_id` | `uuid` | NULL | FK | - | unidadesMototaxis.id |
+| `compra_detalle_id` | `uuid` | NULL | FK | - | comprasMototaxisDetalle.id |
 | `proveedor_persona_id` | `uuid` | NOT NULL | FK | - | proveedores.personaId |
 | `porcentaje_proveedor` | `numeric` | NOT NULL | - | - | - |
 | `meses_vigencia` | `integer` | NOT NULL | - | - | - |
@@ -486,7 +486,9 @@ Restricciones e indices declarados:
 Restricciones e indices declarados:
 
 - UNIQUE INDEX `garantias_mototaxis_unidad_unica`
+- UNIQUE INDEX `garantias_mototaxis_compra_detalle_unica`
 - INDEX `garantias_mototaxis_proveedor_vigencia_idx`
+- CHECK `garantias_mototaxis_origen_ck`
 - CHECK `garantias_mototaxis_porcentaje_ck`
 - CHECK `garantias_mototaxis_meses_ck`
 - CHECK `garantias_mototaxis_fechas_ck`
@@ -514,22 +516,6 @@ Restricciones e indices declarados:
 - UNIQUE INDEX `guias_remision_correlativo_unico`
 - CHECK `guias_remision_tipo_ck`
 - CHECK `guias_remision_numero_ck`
-
-
-### `imagenes_mototaxis`
-
-| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
-|---|---|---|---|---|---|
-| `id` | `uuid` | NULL | PK | yes | - |
-| `unidad_id` | `uuid` | NOT NULL | FK | - | unidadesMototaxis.id |
-| `archivo_id` | `uuid` | NOT NULL | FK, UNIQUE | - | archivosLocales.id |
-| `orden` | `integer` | NOT NULL | - | - | - |
-| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
-Restricciones e indices declarados:
-
-- UNIQUE INDEX `imagenes_mototaxis_unidad_orden_unico`
-- INDEX `imagenes_mototaxis_unidad_idx`
-- CHECK `imagenes_mototaxis_orden_ck`
 
 
 ### `ingresos`
@@ -587,6 +573,7 @@ Restricciones e indices declarados:
 | `tipo` | `varchar` | NOT NULL | - | - | - |
 | `producto_id` | `uuid` | NULL | FK | - | productos.id |
 | `mototaxi_unidad_id` | `uuid` | NULL | FK | - | unidadesMototaxis.id |
+| `mototaxi_modelo_id` | `uuid` | NULL | FK | - | modelosMototaxis.id |
 | `presentacion_id` | `uuid` | NULL | FK | - | productosPresentaciones.id |
 | `codigo_producto` | `varchar` | NULL | - | - | - |
 | `descripcion` | `varchar` | NOT NULL | - | - | - |
@@ -607,6 +594,7 @@ Restricciones e indices declarados:
 
 - INDEX `ingresos_detalle_ingreso_idx`
 - INDEX `ingresos_detalle_producto_idx`
+- INDEX `ingresos_detalle_mototaxi_modelo_idx`
 - CHECK `ingresos_detalle_tipo_ck`
 - CHECK `ingresos_detalle_afectacion_igv_ck`
 - CHECK `ingresos_detalle_tipo_relacion_ck`
@@ -650,7 +638,6 @@ Restricciones e indices declarados:
 | `nombre` | `varchar` | NOT NULL | - | - | - |
 | `uso` | `varchar` | NOT NULL | - | yes | - |
 | `descripcion` | `varchar` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -670,6 +657,7 @@ Restricciones e indices declarados:
 | `nombre` | `varchar` | NOT NULL | - | - | - |
 | `version` | `varchar` | NULL | - | - | - |
 | `precio_venta` | `numeric` | NULL | - | - | - |
+| `stock_disponible` | `integer` | NOT NULL | - | yes | - |
 | `categoria_vehicular` | `varchar` | NOT NULL | - | yes | - |
 | `fabricante` | `varchar` | NULL | - | - | - |
 | `pais_fabricacion` | `varchar` | NULL | - | - | - |
@@ -686,7 +674,6 @@ Restricciones e indices declarados:
 | `capacidad_asientos` | `integer` | NULL | - | - | - |
 | `capacidad_carga_kg` | `numeric` | NULL | - | - | - |
 | `especificaciones_adicionales` | `text` | NULL | - | - | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
@@ -698,6 +685,27 @@ Restricciones e indices declarados:
 - CHECK `modelos_mototaxis_cilindrada_ck`
 - CHECK `modelos_mototaxis_capacidades_ck`
 - CHECK `modelos_mototaxis_precio_venta_ck`
+- CHECK `modelos_mototaxis_stock_ck`
+
+
+### `movimientos_modelos_mototaxis`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `modelo_id` | `uuid` | NOT NULL | FK | - | modelosMototaxis.id |
+| `tipo` | `varchar` | NOT NULL | - | - | - |
+| `origen_id` | `uuid` | NOT NULL | - | - | - |
+| `cantidad_anterior` | `integer` | NOT NULL | - | - | - |
+| `cantidad_final` | `integer` | NOT NULL | - | - | - |
+| `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `movimientos_modelos_mototaxis_origen_unico`
+- INDEX `movimientos_modelos_mototaxis_modelo_fecha_idx`
+- CHECK `movimientos_modelos_mototaxis_tipo_ck`
+- CHECK `movimientos_modelos_mototaxis_saldo_ck`
 
 
 ### `movimientos_mototaxis`
@@ -738,6 +746,8 @@ Restricciones e indices declarados:
 | `origen_id` | `uuid` | NOT NULL | - | - | - |
 | `origen_detalle_id` | `uuid` | NOT NULL | - | - | - |
 | `cantidad_base` | `numeric` | NOT NULL | - | - | - |
+| `saldo_anterior` | `numeric` | NULL | - | - | - |
+| `saldo_final` | `numeric` | NULL | - | - | - |
 | `costo_unitario_base` | `numeric` | NOT NULL | - | - | - |
 | `sentido` | `varchar` | NULL | - | - | - |
 | `motivo` | `varchar` | NULL | - | - | - |
@@ -917,6 +927,24 @@ Restricciones e indices declarados:
 - INDEX `personas_documentos_persona_idx`
 
 
+### `precios_modelos_mototaxis`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `modelo_id` | `uuid` | NOT NULL | FK | - | modelosMototaxis.id |
+| `precio` | `numeric` | NOT NULL | - | - | - |
+| `vigente_desde` | `timestamp` | NOT NULL | - | - | - |
+| `vigente_hasta` | `timestamp` | NULL | - | - | - |
+| `usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `precios_modelos_mototaxis_inicio_unico`
+- CHECK `precios_modelos_mototaxis_importe_ck`
+- CHECK `precios_modelos_mototaxis_vigencia_ck`
+
+
 ### `precios_productos`
 
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
@@ -930,6 +958,7 @@ Restricciones e indices declarados:
 | `vigente_desde` | `timestamp` | NULL | - | - | - |
 | `vigente_hasta` | `timestamp` | NULL | - | - | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
+| `usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 | `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
 Restricciones e indices declarados:
@@ -954,7 +983,6 @@ Restricciones e indices declarados:
 | `stock_minimo` | `numeric` | NOT NULL | - | yes | - |
 | `afectacion_igv` | `varchar` | NOT NULL | - | yes | - |
 | `afecto_igv` | `boolean` | NOT NULL | - | yes | - |
-| `ruta_imagen` | `text` | NULL | - | - | - |
 | `ficha_tecnica` | `jsonb` | NOT NULL | - | yes | - |
 | `activo` | `boolean` | NOT NULL | - | yes | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
@@ -979,22 +1007,6 @@ Restricciones e indices declarados:
 
 - UNIQUE INDEX `productos_codigos_tipo_codigo_unico`
 - INDEX `productos_codigos_producto_idx`
-
-
-### `productos_imagenes`
-
-| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
-|---|---|---|---|---|---|
-| `id` | `uuid` | NULL | PK | yes | - |
-| `producto_id` | `uuid` | NOT NULL | FK | - | productos.id |
-| `ruta_imagen` | `text` | NOT NULL | - | - | - |
-| `orden` | `integer` | NOT NULL | - | - | - |
-| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
-Restricciones e indices declarados:
-
-- UNIQUE INDEX `productos_imagenes_producto_orden_unico`
-- INDEX `productos_imagenes_producto_idx`
-- CHECK `productos_imagenes_orden_ck`
 
 
 ### `productos_presentaciones`

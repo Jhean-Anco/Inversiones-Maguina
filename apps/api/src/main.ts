@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import cookie from "@fastify/cookie";
-import multipart from "@fastify/multipart";
 import { ModuloAplicacion } from "./modulo-aplicacion";
 import { validarConfiguracionEntorno } from "./configuracion-entorno";
 
@@ -22,7 +21,6 @@ async function iniciar() {
   );
 
   await app.register(cookie);
-  await app.register(multipart, { limits: { fileSize: 15 * 1024 * 1024, files: 1, fields: 0 } });
   app.enableCors({
     origin: configuracion.origenes,
     credentials: true,

@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequierePermiso } from "../autenticacion/permisos";
+import type { FastifyRequest } from "fastify";
+import type { UsuarioAutenticado } from "../autenticacion/usuario-actual";
 import { ServicioProductos } from "./productos.service";
 
 @Controller("inventario/productos")
@@ -19,21 +21,35 @@ export class ControladorProductos {
 
   @Get()
   @RequierePermiso("INVENTARIO.LEER")
-  listar(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) {
-    return this.productos.listar({ pagina, porPagina, busqueda });
+  listar(@Query() filtros: Parameters<ServicioProductos["listar"]>[0]) {
+    return this.productos.listar(filtros);
   }
 
   @Get("precios")
   @RequierePermiso("INVENTARIO.LEER")
-  listarPrecios(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string) {
-    return this.productos.listarPrecios({ pagina, porPagina, busqueda });
+  listarPrecios(@Query() filtros: Parameters<ServicioProductos["listarPrecios"]>[0]) {
+    return this.productos.listarPrecios(filtros);
   }
 
-  @Patch("precios/:id")
+  @Post(":id/precios")
   @RequierePermiso("INVENTARIO.EDITAR")
-  actualizarPrecio(@Param("id") id: string, @Body() datos: { precio?: unknown }) {
-    return this.productos.actualizarPrecio(id, datos?.precio);
+  configurarPrecio(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: FastifyRequest & { usuario: UsuarioAutenticado }) {
+    return this.productos.configurarPrecio(id, datos, solicitud.usuario.id);
   }
+
+  @Patch(":id/precios/:precioId")
+  @RequierePermiso("INVENTARIO.EDITAR")
+  corregirPrecio(@Param("id") id: string, @Param("precioId") precioId: string, @Body() datos: { precio?: unknown; precioAnterior?: unknown }, @Req() solicitud: FastifyRequest & { usuario: UsuarioAutenticado }) {
+    return this.productos.configurarPrecio(id, { precio: datos?.precio, precioAnterior: datos?.precioAnterior }, solicitud.usuario.id, precioId);
+  }
+
+  @Get(":id/costos-compra")
+  @RequierePermiso("INVENTARIO.LEER")
+  costosCompra(@Param("id") id: string) { return this.productos.costosCompra(id); }
+
+  @Get(":id/historial")
+  @RequierePermiso("INVENTARIO.LEER")
+  historial(@Param("id") id: string) { return this.productos.historial(id); }
 
   @Get(":id")
   @RequierePermiso("INVENTARIO.LEER")

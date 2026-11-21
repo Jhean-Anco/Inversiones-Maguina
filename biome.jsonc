@@ -1,0 +1,29 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true,
+    },
+  },
+  "tailwind": {
+    "stylesheet": "./apps/web/src/main/index.css",
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "none",
+      "correctness": {
+        "noUnusedVariables": "error",
+      },
+      "suspicious": {
+        "noDebugger": "error",
+      },
+    },
+  },
+  "formatter": {
+    "enabled": false,
+  },
+  "assist": {
+    "enabled": false,
+  },
+}

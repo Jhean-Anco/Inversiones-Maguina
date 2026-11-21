@@ -7,6 +7,8 @@ import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioIngresos } from "./modulos/ingresos/ingresos.service";
 import { ServicioEntradasStock } from "./modulos/inventario/entradas-stock.service";
+import { ServicioProductos } from "./modulos/inventario/productos.service";
+import { ServicioMovimientosStock } from "./modulos/inventario/movimientos-stock.service";
 import { ServicioMototaxis } from "./modulos/mototaxis/mototaxis.service";
 
 function validarBaseDePruebas() {
@@ -24,7 +26,6 @@ validarBaseDePruebas();
 
 type PaqueteBaseDatos = typeof import("@magina/database");
 let db: PaqueteBaseDatos["db"];
-let clientePostgres: PaqueteBaseDatos["clientePostgres"];
 let cerrarBaseDatos: PaqueteBaseDatos["cerrarBaseDatos"];
 let esquema: PaqueteBaseDatos;
 let servicio: ServicioIngresos;
@@ -47,6 +48,9 @@ const clavesVenta: string[] = [];
 const seriesFiscalesPrueba: string[] = [];
 const marcasMototaxisPrueba: string[] = [];
 const modelosMototaxisPrueba: string[] = [];
+const comprasMototaxisPrueba: string[] = [];
+const listasPrecioPrueba: string[] = [];
+let quitarProveedorPrueba = false;
 
 function fechaHoyPeru() {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
@@ -55,11 +59,11 @@ function fechaHoyPeru() {
 before(async () => {
   const modulo = await import("@magina/database");
   esquema = modulo;
-  ({ db, clientePostgres, cerrarBaseDatos } = modulo);
+  ({ db, cerrarBaseDatos } = modulo);
   servicio = new ServicioIngresos(new ServicioAlmacenamiento());
   servicioEgresos = new ServicioEgresos();
-  servicioEntradasStock = new ServicioEntradasStock(new ServicioAlmacenamiento());
-  servicioMototaxis = new ServicioMototaxis(new ServicioAlmacenamiento());
+  servicioEntradasStock = new ServicioEntradasStock();
+  servicioMototaxis = new ServicioMototaxis();
   const serieBoleta = `BQA${randomUUID().replaceAll("-", "").slice(0, 1).toUpperCase()}`;
   seriesFiscalesPrueba.push(serieBoleta);
   await servicio.guardarSerieConfigurada({ tipoComprobante: "BOLETA", serie: serieBoleta, ultimoNumero: 0 });
@@ -513,7 +517,7 @@ test("dos pagos concurrentes con la misma clave idempotente crean un solo abono"
   assert.equal(Number(pagos[0].importePagado), 60);
 });
 
-test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica unidades", async () => {
+test("el ajuste de mototaxis aplica el saldo por modelo y conserva el historial de VIN", async () => {
   const sufijo = randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase();
   const marca = await servicioMototaxis.crearMarca({ nombre: `QA Moto ${sufijo}` });
   marcasMototaxisPrueba.push(marca.id);
@@ -544,7 +548,8 @@ test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica u
   modelosMototaxisPrueba.push(modelo.id);
   assert.equal(modeloActualizado.version, "V2");
   assert.equal(modeloActualizado.coloresDisponibles.length, 2);
-  assert.equal((await servicioMototaxis.actualizarPrecioVentaModelo(modelo.id, { precioVenta: 175 })).precioVenta, "175.00");
+  assert.equal(modeloActualizado.precioVenta, null);
+  assert.equal((await servicioMototaxis.actualizarPrecioVentaModelo(modelo.id, { precioVenta: 175 }, usuarioId)).precioVenta, "175.00");
   const [disponible] = await db.insert(esquema.unidadesMototaxis).values({ codigo: `QA-MT-${sufijo}-1`, modeloId: modelo.id, vin: `VIN-QA-${sufijo}-1`, numeroMotor: `MOTOR-QA-${sufijo}-1`, costoAdquisicion: "100.00", estado: "DISPONIBLE" }).returning({ id: esquema.unidadesMototaxis.id });
   await db.insert(esquema.unidadesMototaxis).values([
     { codigo: `QA-MT-${sufijo}-2`, modeloId: modelo.id, vin: `VIN-QA-${sufijo}-2`, numeroMotor: `MOTOR-QA-${sufijo}-2`, costoAdquisicion: "100.00", estado: "FALTANTE" },
@@ -553,21 +558,19 @@ test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica u
 
   assert.ok((await servicioMototaxis.listarMarcas()).some((fila) => fila.id === marca.id));
   assert.ok((await servicioMototaxis.listarModelos(sufijo)).some((fila) => fila.id === modelo.id));
-  assert.equal((await servicioMototaxis.listarProveedores()).length, 0);
-  assert.equal((await servicioMototaxis.listarDirectorioProveedores()).total, 0);
   const analisis = await servicioMototaxis.obtenerAnalisisModelo(modelo.id);
-  assert.equal(analisis.existencias.disponibles, 1);
+  assert.equal(analisis.existencias.disponibles, 0);
   assert.equal(analisis.compras.unidades, 0);
   assert.equal(analisis.ventas.unidades, 0);
   const reconteo = await servicioMototaxis.obtenerReconteoModelo(modelo.id);
-  assert.equal(reconteo.cantidadSistema, 1);
-  assert.equal(reconteo.unidades.length, 2);
-  assert.deepEqual(await servicioMototaxis.listarAjustesInventario(), []);
+  assert.equal(reconteo.cantidadSistema, 0);
+  assert.ok(!(await servicioMototaxis.listarAjustesInventario()).some((ajuste) => ajuste.modeloId === modelo.id));
 
   const resultado = await servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: 1, motivo: "Conteo físico" }, usuarioId);
-  assert.equal(resultado.cantidadSistema, 1);
+  assert.equal(resultado.cantidadSistema, 0);
   assert.equal(resultado.cantidadContada, 1);
-  assert.equal(resultado.nuevas, 0);
+  assert.equal((await servicioMototaxis.obtenerReconteoModelo(modelo.id)).cantidadSistema, 1);
+  assert.equal((await servicio.buscarMototaxisVenta(sufijo))[0]?.stockDisponible, 1);
   const [ajuste] = await db.select().from(esquema.ajustesInventarioMototaxis).where(eq(esquema.ajustesInventarioMototaxis.id, resultado.id));
   assert.equal(ajuste.cantidadContada, 1);
   const detalles = await db.select().from(esquema.ajustesInventarioMototaxisDetalle).where(eq(esquema.ajustesInventarioMototaxisDetalle.ajusteId, resultado.id));
@@ -575,8 +578,9 @@ test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica u
   const [unidad] = await db.select({ estado: esquema.unidadesMototaxis.estado }).from(esquema.unidadesMototaxis).where(eq(esquema.unidadesMototaxis.id, disponible.id));
   assert.equal(unidad.estado, "DISPONIBLE");
   const ajustesListados = await servicioMototaxis.listarAjustesInventario();
-  assert.ok(ajustesListados.some((ajusteListado) => ajusteListado.id === resultado.id && ajusteListado.diferencias.length === 0));
+  assert.ok(ajustesListados.some((ajusteListado) => ajusteListado.id === resultado.id && ajusteListado.aplicado));
   assert.deepEqual(await servicioMototaxis.listarMovimientos(disponible.id), []);
+  await assert.rejects(servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadSistema: 0, cantidadContada: 2, motivo: "Conteo desactualizado" }, usuarioId), ConflictException);
 
   await assert.rejects(servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: -1, motivo: "Conteo inválido" }, usuarioId), BadRequestException);
   await assert.rejects(servicioMototaxis.crearAjusteInventario({ modeloId: modelo.id, cantidadContada: 1.5, motivo: "Conteo inválido" }, usuarioId), BadRequestException);
@@ -584,14 +588,117 @@ test("el ajuste de mototaxis por modelo registra solo cantidades y no modifica u
   assert.equal(ajustes.length, 1);
 });
 
+test("el repuesto existe sin precio y conserva su presentación al editar los datos", async () => {
+  const productos = new ServicioProductos();
+  const movimientos = new ServicioMovimientosStock();
+  const datos = {
+    nombre: `Repuesto catálogo ${randomUUID().slice(0, 8)}`, categoriaId, marcaId, unidadBaseCodigo: unidadCodigo,
+    afectacionIgv: "GRAVADO",
+  };
+  const nuevo = await productos.guardar(datos);
+  productoIds.push(nuevo.id);
+  const base = nuevo.presentaciones.find((item) => item.esBase);
+  assert.ok(base);
+  assert.equal(nuevo.precioGeneral, null);
+  assert.equal(Number(nuevo.stockActual), 0);
+  assert.equal(nuevo.precios.length, 0);
+  assert.equal((await productos.listar({ busqueda: nuevo.codigoInterno, precio: "PENDIENTE" })).items[0]?.id, nuevo.id);
+  const precioPendiente = (await servicio.buscarProductos(nuevo.codigoInterno, false, undefined, false, true))[0];
+  assert.deepEqual(precioPendiente?.tramos, []);
+  assert.equal((await servicio.buscarProductos(nuevo.codigoInterno)).length, 0);
+
+  const [lista] = await db.insert(esquema.tiposListasPrecio).values({ codigo: `QA-${randomUUID().slice(0, 8)}`, nombre: nuevo.nombre }).returning();
+  listasPrecioPrueba.push(lista.id);
+  const tramo = { presentacionId: base.id, tipoListaPrecioId: listaPrecioId, cantidadMinima: "1" };
+  await productos.configurarPrecio(nuevo.id, { ...tramo, precio: "15.00" }, usuarioId);
+  const fechaFutura = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  await productos.configurarPrecio(nuevo.id, { ...tramo, precio: "16.00", vigenteDesde: fechaFutura }, usuarioId);
+  await assert.rejects(productos.configurarPrecio(nuevo.id, { ...tramo, precio: "17.00", vigenteDesde: fechaFutura }, usuarioId), ConflictException);
+  await productos.configurarPrecio(nuevo.id, { ...tramo, tipoListaPrecioId: lista.id, cantidadMinima: "5", precio: "12.00" }, usuarioId);
+
+  const ajuste = await movimientos.crearAjuste({ productoId: nuevo.id, saldoEsperado: "0", cantidadContada: "9", motivo: "INVENTARIO_FISICO" }, usuarioId);
+  assert.equal(Number(ajuste.saldoFinal), 9);
+  await assert.rejects(movimientos.crearAjuste({ productoId: nuevo.id, saldoEsperado: "0", cantidadContada: "3", motivo: "INVENTARIO_FISICO" }, usuarioId), ConflictException);
+  const venta = await servicio.crear({
+    ...datosVenta(base.id, 5),
+    detalles: [{ tipo: "PRODUCTO", presentacionId: base.id, cantidad: 5, listaPrecioCodigo: lista.codigo, precioEsperado: "12.00", afectacionIgv: "GRAVADO" }],
+  }, usuarioId);
+  assert.equal(venta.total, "60.00");
+  const actualizado = await productos.guardar({ ...datos, nombre: `${datos.nombre} editado` }, nuevo.id);
+  assert.equal(Number(actualizado.stockActual), 4);
+  assert.equal(actualizado.presentaciones.find((item) => item.esBase)?.id, base.id);
+  assert.equal(actualizado.precioGeneral, "15.00");
+  assert.equal(actualizado.precios.length, 3);
+  assert.equal((await productos.historial(nuevo.id)).venta?.importe, "12.0000");
+});
+
+test("una compra repetida por modelo se recibe una sola vez y la anulación devuelve la cantidad vendida", async () => {
+  const nombre = `Modelo compra QA ${randomUUID().slice(0, 8)}`;
+  const marca = await servicioMototaxis.crearMarca({ nombre });
+  marcasMototaxisPrueba.push(marca.id);
+  const modelo = await servicioMototaxis.crearModelo({ marcaId: marca.id, nombre });
+  modelosMototaxisPrueba.push(modelo.id);
+  const proveedor = await servicioMototaxis.crearProveedor({
+    tipoDocumento: "DNI", numeroDocumento: clienteDni, nombres: "QA", apellidoPaterno: "Proveedor",
+  });
+  assert.equal(proveedor.id, clienteId);
+  quitarProveedorPrueba = true;
+  const cuentaFinancieraId = await crearCuentaEfectivo();
+  const datosCompra = {
+    claveIdempotencia: randomUUID(), proveedorPersonaId: clienteId, fecha: fechaHoyPeru(), documentoTipo: "SIN_DOCUMENTO",
+    importePagoInicial: "300.00", pagosIniciales: [{ medioPago: "EFECTIVO", cuentaFinancieraId, importePagado: "300.00" }],
+    detalles: [{ modeloId: modelo.id, cantidad: 3, costoUnitario: "100.00" }],
+  };
+  const [primera, segunda] = await Promise.all([
+    servicioMototaxis.crearCompra(datosCompra, usuarioId),
+    servicioMototaxis.crearCompra(datosCompra, usuarioId),
+  ]);
+  comprasMototaxisPrueba.push(primera.id);
+  assert.equal(primera.id, segunda.id);
+  assert.equal((await servicioMototaxis.listarGarantias()).find((item) => item.codigo === primera.codigo)?.cantidad, 3);
+  assert.equal((await servicioMototaxis.obtenerReconteoModelo(modelo.id)).cantidadSistema, 3);
+
+  const payload = {
+    ...datosBoleta(modelo.id),
+    detalles: [{ tipo: "MOTOTAXI", mototaxiModeloId: modelo.id, cantidad: 2, precioUnitario: "150.00", afectacionIgv: "GRAVADO" }],
+  };
+  await assert.rejects(servicio.crear(payload, usuarioId), BadRequestException);
+  await servicioMototaxis.actualizarPrecioVentaModelo(modelo.id, { precioVenta: "150.00" }, usuarioId);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (_url, opciones) => {
+    const solicitud = JSON.parse(String(opciones?.body));
+    if (solicitud.operacion === "generar_anulacion") return Response.json({ sunat_ticket_numero: "QA-TICKET" });
+    return Response.json({ aceptada_por_sunat: true });
+  }) as typeof fetch;
+  try {
+    const venta = await servicio.crear(payload, usuarioId);
+    assert.equal(venta.total, "300.00");
+    assert.equal((await servicioMototaxis.obtenerReconteoModelo(modelo.id)).cantidadSistema, 1);
+    const [detalle] = await db.select().from(esquema.ingresosDetalle).where(eq(esquema.ingresosDetalle.ingresoId, venta.id));
+    assert.equal(detalle.mototaxiModeloId, modelo.id);
+    assert.equal(detalle.mototaxiUnidadId, null);
+    assert.equal((await servicio.anularIngreso(venta.id, { motivo: "Anulación sintética", confirmoNoEntregado: true }, usuarioId)).estado, "ANULACION_PENDIENTE");
+    const resultados = await Promise.all([
+      servicio.consultarAnulacionIngreso(venta.id, usuarioId),
+      servicio.consultarAnulacionIngreso(venta.id, usuarioId),
+    ]);
+    assert.ok(resultados.every((item) => item.estado === "ANULADO"));
+    const ficha = await servicioMototaxis.obtenerAnalisisModelo(modelo.id);
+    assert.equal(ficha.existencias.disponibles, 3);
+    assert.equal(ficha.movimientos.filter((item) => item.tipo === "ANULACION_VENTA").length, 1);
+    assert.equal(ficha.ventas.unidades, 0);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 after(async () => {
   if (db && esquema) {
-    if (modelosMototaxisPrueba.length) {
-      await db.delete(esquema.ajustesInventarioMototaxis).where(inArray(esquema.ajustesInventarioMototaxis.modeloId, modelosMototaxisPrueba));
-      await db.delete(esquema.unidadesMototaxis).where(inArray(esquema.unidadesMototaxis.modeloId, modelosMototaxisPrueba));
-      await db.delete(esquema.modelosMototaxis).where(inArray(esquema.modelosMototaxis.id, modelosMototaxisPrueba));
+    if (comprasMototaxisPrueba.length) {
+      const detallesCompras = await db.select({ id: esquema.comprasMototaxisDetalle.id }).from(esquema.comprasMototaxisDetalle).where(inArray(esquema.comprasMototaxisDetalle.compraId, comprasMototaxisPrueba));
+      if (detallesCompras.length) await db.delete(esquema.garantiasMototaxis).where(inArray(esquema.garantiasMototaxis.compraDetalleId, detallesCompras.map((item) => item.id)));
+      await db.delete(esquema.pagosComprasMototaxis).where(inArray(esquema.pagosComprasMototaxis.compraId, comprasMototaxisPrueba));
+      await db.delete(esquema.comprasMototaxisDetalle).where(inArray(esquema.comprasMototaxisDetalle.compraId, comprasMototaxisPrueba));
+      await db.delete(esquema.comprasMototaxis).where(inArray(esquema.comprasMototaxis.id, comprasMototaxisPrueba));
     }
-    if (marcasMototaxisPrueba.length) await db.delete(esquema.marcasProductos).where(inArray(esquema.marcasProductos.id, marcasMototaxisPrueba));
     if (entradaStockIds.length) {
       await db.delete(esquema.movimientosStock).where(inArray(esquema.movimientosStock.origenId, entradaStockIds));
       await db.delete(esquema.entradasStock).where(inArray(esquema.entradasStock.id, entradaStockIds));
@@ -614,13 +721,24 @@ after(async () => {
       await db.delete(esquema.movimientosStock).where(inArray(esquema.movimientosStock.origenId, idsIngreso));
       await db.delete(esquema.ingresos).where(inArray(esquema.ingresos.id, idsIngreso));
     }
+    if (modelosMototaxisPrueba.length) {
+      await db.delete(esquema.preciosModelosMototaxis).where(inArray(esquema.preciosModelosMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.movimientosModelosMototaxis).where(inArray(esquema.movimientosModelosMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.ajustesInventarioMototaxis).where(inArray(esquema.ajustesInventarioMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.unidadesMototaxis).where(inArray(esquema.unidadesMototaxis.modeloId, modelosMototaxisPrueba));
+      await db.delete(esquema.modelosMototaxis).where(inArray(esquema.modelosMototaxis.id, modelosMototaxisPrueba));
+    }
+    if (marcasMototaxisPrueba.length) await db.delete(esquema.marcasProductos).where(inArray(esquema.marcasProductos.id, marcasMototaxisPrueba));
     if (productoIds.length) {
+      await db.delete(esquema.movimientosStock).where(inArray(esquema.movimientosStock.productoId, productoIds));
       await db.delete(esquema.saldosStock).where(inArray(esquema.saldosStock.productoId, productoIds));
       await db.delete(esquema.productos).where(inArray(esquema.productos.id, productoIds));
     }
+    if (listasPrecioPrueba.length) await db.delete(esquema.tiposListasPrecio).where(inArray(esquema.tiposListasPrecio.id, listasPrecioPrueba));
     if (categoriaId) await db.delete(esquema.categoriasProductos).where(eq(esquema.categoriasProductos.id, categoriaId));
     if (marcaId) await db.delete(esquema.marcasProductos).where(eq(esquema.marcasProductos.id, marcaId));
     if (clienteId) {
+      if (quitarProveedorPrueba) await db.delete(esquema.proveedores).where(eq(esquema.proveedores.personaId, clienteId));
       await db.delete(esquema.clientes).where(eq(esquema.clientes.personaId, clienteId));
       await db.delete(esquema.personas).where(eq(esquema.personas.id, clienteId));
     }

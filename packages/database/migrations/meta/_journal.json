@@ -1268,6 +1268,34 @@
       "when": 1794744809279,
       "tag": "0180_cotizaciones_cliente_opcional",
       "breakpoints": true
+    },
+    {
+      "idx": 181,
+      "version": "7",
+      "when": 1794889807391,
+      "tag": "0181_motionless_sharon_carter",
+      "breakpoints": true
+    },
+    {
+      "idx": 182,
+      "version": "7",
+      "when": 1795153062633,
+      "tag": "0182_inventario_modelos_precios",
+      "breakpoints": true
+    },
+    {
+      "idx": 183,
+      "version": "7",
+      "when": 1795153933171,
+      "tag": "0183_compra_mototaxis_idempotente",
+      "breakpoints": true
+    },
+    {
+      "idx": 184,
+      "version": "7",
+      "when": 1795154270290,
+      "tag": "0184_garantias_compra_por_modelo",
+      "breakpoints": true
     }
   ]
 }

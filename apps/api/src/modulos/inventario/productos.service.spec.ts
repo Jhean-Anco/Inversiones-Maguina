@@ -6,7 +6,6 @@ import { esCodigoEAN13Valido } from "./codigo-barras";
 
 const categoriaId = "00000000-0000-4000-8000-000000000001";
 const marcaId = "00000000-0000-4000-8000-000000000002";
-const listaId = "00000000-0000-4000-8000-000000000003";
 
 function validar(datosParciales: Record<string, unknown> = {}) {
   const servicio = new ServicioProductos();
@@ -20,10 +19,9 @@ function validar(datosParciales: Record<string, unknown> = {}) {
     fichaTecnica: {},
     codigos: [],
     presentaciones: [],
-    precios: [{ presentacionClave: "base", tipoListaPrecioId: listaId, precio: "12.00", cantidadMinima: "1" }],
     ...datosParciales,
   };
-  const validador = servicio as unknown as { validarDatos: (entrada: unknown) => { codigos: Array<{ tipo: string; codigo: string }>; fichaTecnica: Record<string, unknown> } };
+  const validador = servicio as unknown as { validarDatos: (entrada: unknown) => { codigos: Array<{ tipo: string; codigo: string }>; fichaTecnica: Record<string, unknown>; afectacionIgv: string; activo?: boolean } };
   return validador.validarDatos(datos);
 }
 
@@ -49,8 +47,25 @@ test("rechaza ficha técnica que no sea un objeto", () => {
   assert.throws(() => validar({ fichaTecnica: ["12V"] }), BadRequestException);
 });
 
-test("rechaza repuestos sin precio de unidad base", () => {
-  assert.throws(() => validar({ precios: [] }), /precio para la unidad base/i);
+test("normaliza ficha técnica ausente y acepta solo valores simples", () => {
+  assert.deepEqual(validar({ fichaTecnica: undefined }).fichaTecnica, {});
+  assert.deepEqual(validar({ fichaTecnica: { acabado: "  negro  ", voltaje: 12, reforzado: false, nota: null } }).fichaTecnica,
+    { acabado: "negro", voltaje: 12, reforzado: false, nota: null });
+  assert.throws(() => validar({ fichaTecnica: { peso: Number.NaN } }), /debe ser texto, número o sí\/no/i);
+  assert.throws(() => validar({ fichaTecnica: Object.fromEntries(Array.from({ length: 41 }, (_, i) => [`dato${i}`, i])) }), /hasta 40/i);
+});
+
+test("valida afectación IGV y conserva el estado explícito del producto", () => {
+  assert.equal(validar({ afectoIgv: true, activo: false }).afectacionIgv, "GRAVADO");
+  assert.equal(validar({ afectacionIgv: undefined, afectoIgv: false, activo: true }).afectacionIgv, "INAFECTO");
+  assert.equal(validar({ activo: false }).activo, false);
+  assert.throws(() => validar({ afectacionIgv: "OTRO" }), /gravado, exonerado o inafecto/i);
+});
+
+test("el catálogo conserva únicamente los datos maestros del repuesto", () => {
+  const producto = validar({ precios: [{ precio: "12.00" }], cantidad: 10 });
+  assert.equal(Object.hasOwn(producto, "precios"), false);
+  assert.equal(Object.hasOwn(producto, "cantidad"), false);
 });
 
 test("rechaza códigos externos con un tipo no permitido", () => {

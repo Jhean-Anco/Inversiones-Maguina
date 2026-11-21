@@ -62,6 +62,9 @@ export class ServicioFinanzas {
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+        UNION ALL SELECT CASE WHEN datos_nubefact->>'cuentaFinancieraId' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (datos_nubefact->>'cuentaFinancieraId')::uuid ELSE NULL::uuid END,
+          CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
+          FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
       ) AS pagos
       WHERE cuenta_id IS NOT NULL AND fecha >= date_trunc('month', current_date)::date AND fecha <= current_date
       GROUP BY cuenta_id
@@ -109,6 +112,9 @@ export class ServicioFinanzas {
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+          UNION ALL SELECT CASE WHEN datos_nubefact->>'cuentaFinancieraId' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN (datos_nubefact->>'cuentaFinancieraId')::uuid ELSE NULL::uuid END,
+            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
+            FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
         ) AS pagos
         WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
         GROUP BY cuenta_id, sentido

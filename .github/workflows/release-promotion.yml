@@ -1,0 +1,66 @@
+name: Promoción deliberada a main
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Rama auxiliar que contiene el SHA seleccionado
+        required: true
+        type: string
+        default: development
+      source_sha:
+        description: SHA completo de 40 caracteres que se desea promover
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promocion-release-${{ inputs.source_sha }}
+  cancel-in-progress: false
+
+jobs:
+  create-pull-request:
+    name: Crear candidato y Pull Request
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout del workflow desde main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version: 22.x
+      - name: Validar configuración de la GitHub App
+        env:
+          RELEASE_APP_CLIENT_ID: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+        run: |
+          if [[ -z "$RELEASE_APP_CLIENT_ID" || -z "$RELEASE_APP_PRIVATE_KEY" ]]; then
+            echo "Configura RELEASE_APP_CLIENT_ID y RELEASE_APP_PRIVATE_KEY para habilitar la promoción."
+            exit 1
+          fi
+      - name: Crear token de instalación con permisos mínimos
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.0.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Crear rama desde el SHA exacto y abrir PR
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASE_APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: node .github/scripts/promote-release.mjs

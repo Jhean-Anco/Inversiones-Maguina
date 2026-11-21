@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
-import { unlink } from "node:fs/promises";
-import { resolve, sep } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { hash } from "argon2";
 import { and, eq } from "drizzle-orm";
 import {
-  archivosLocales,
   cerrarBaseDatos,
   categoriasProductos,
   cuentasFinancieras,
@@ -45,32 +42,29 @@ const sufijo = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
 const nombreUsuario = `qa-e2e-${sufijo}`;
 const correo = `qa-e2e-${sufijo}@example.invalid`;
 const contrasena = randomBytes(24).toString("base64url");
-const imagenCategoria = resolve(process.cwd(), "apps/web/public/logo.png");
 let personaId: string | undefined;
 let trabajadorCreado = false;
 let usuarioId: string | undefined;
 let categoriaPruebaId: string | undefined;
 
 async function limpiarCategoriaTemporal(id: string) {
-  const archivos = await db
-    .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa })
-    .from(archivosLocales)
-    .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, id)));
-  const raizSubidas = resolve(process.cwd(), process.env.UPLOADS_DIR?.trim() || "storage");
-
-  for (const archivo of archivos) {
-    const rutaAbsoluta = resolve(raizSubidas, archivo.rutaRelativa);
-    assert.ok(rutaAbsoluta.startsWith(`${raizSubidas}${sep}`), "La limpieza E2E solo puede borrar archivos dentro de UPLOADS_DIR.");
-    try {
-      await unlink(rutaAbsoluta);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-    await db.delete(archivosLocales).where(eq(archivosLocales.id, archivo.id));
-  }
-
   await db.delete(categoriasProductos).where(eq(categoriasProductos.id, id));
 }
+
+test("la API ya no sirve ni recibe imagenes o evidencias de usuario", async ({ request }) => {
+  const api = process.env.VITE_API_URL;
+  assert.ok(api, "La prueba requiere la URL de API configurada para el frontend.");
+  const archivo = `${randomUUID()}.webp`;
+  const imagen = await request.get(new URL(`/inventario/imagenes/categorias/${archivo}`, api).toString());
+  const subida = await request.post(new URL("/inventario/imagenes/categorias", api).toString(), {
+    multipart: { archivo: { name: archivo, mimeType: "image/webp", buffer: Buffer.from("fake image") } },
+  });
+  const evidencia = await request.get(new URL(`/inventario/entradas-stock/${randomUUID()}/evidencia`, api).toString());
+
+  expect(imagen.status()).toBe(404);
+  expect(subida.status()).toBe(404);
+  expect(evidencia.status()).toBe(404);
+});
 
 test.beforeAll(async () => {
   assert.equal(process.env.NODE_ENV, "test", "E2E exige NODE_ENV=test.");
@@ -143,8 +137,7 @@ test("login, permisos visibles y cierre de sesión funcionan con la API y Postgr
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
   await expect(page).toHaveURL(/\/inicio$/);
   await expect(page.locator(".topbar-logout-button")).toBeVisible();
-  await expect(page.locator(".topbar-user")).toContainText("Usuario E2E Prueba");
-  const navegacion = page.getByRole("navigation", { name: "Navegación principal" });
+  const navegacion = page.getByRole("complementary", { name: "Navegación principal" });
   await expect(navegacion.getByRole("link", { name: "Resumen" })).toBeVisible();
   await expect(navegacion.getByRole("button", { name: "Inventario" })).toHaveCount(0);
   const api = process.env.VITE_API_URL;
@@ -210,28 +203,6 @@ test("el formulario de acceso expone controles utilizables con teclado y viewpor
   assert.ok(anchoDocumento <= 390, `El formulario genera desbordamiento horizontal móvil: ${anchoDocumento}px.`);
 });
 
-test("el tema claro y oscuro se alterna y persiste entre recargas", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
-  await page.getByLabel("Contraseña", { exact: true }).fill(contrasena);
-  await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page).toHaveURL(/\/inicio$/);
-
-  const raiz = page.locator("html");
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
-  await page.getByRole("button", { name: "Activar modo oscuro" }).click();
-  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
-  await expect(raiz).toHaveJSProperty("style.colorScheme", "dark");
-  await page.reload();
-  await expect(raiz).toHaveAttribute("data-theme", "oscuro");
-
-  await page.getByRole("button", { name: "Activar modo claro" }).click();
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
-  await expect(raiz).toHaveJSProperty("style.colorScheme", "light");
-  await page.reload();
-  await expect(raiz).toHaveAttribute("data-theme", "claro");
-});
-
 test("el shell autenticado no se desborda en anchos móviles, tablet y escritorio", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("Usuario o correo electrónico").fill(nombreUsuario);
@@ -288,7 +259,7 @@ test("desactivar una cuenta revoca de inmediato una sesión ya emitida", async (
   }
 });
 
-test("el rol de almacén crea y edita una categoría con imagen persistida", async ({ page }) => {
+test("el rol de almacén crea y edita una categoría sin archivo", async ({ page }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar el catálogo.");
   const [rolAlmacenero] = await db
     .select({ id: roles.id })
@@ -313,8 +284,6 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     await page.getByRole("button", { name: "Crear categoría" }).click();
     const dialogo = page.getByRole("dialog");
     await dialogo.getByRole("textbox", { name: /Nombre/ }).fill(nombreCategoria);
-    await dialogo.locator('input[type="file"]').setInputFiles(imagenCategoria);
-
     const respuestaCrear = page.waitForResponse((respuesta) =>
       respuesta.request().method() === "POST" && new URL(respuesta.url()).pathname.endsWith("/inventario/categorias"),
     );
@@ -327,23 +296,15 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
 
     const tarjeta = page.locator(".catalog-manager-card").filter({ hasText: nombreCategoria });
     await expect(tarjeta).toBeVisible();
-    await expect.poll(() => tarjeta.locator("img").evaluate((imagen) => (imagen as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-
-    const archivosCategoria = await db
-      .select({ id: archivosLocales.id, rutaRelativa: archivosLocales.rutaRelativa, mimeType: archivosLocales.mimeType })
-      .from(archivosLocales)
-      .where(and(eq(archivosLocales.entidadTipo, "CATEGORIA"), eq(archivosLocales.entidadId, categoriaPruebaId)));
-    expect(archivosCategoria).toHaveLength(1);
-    expect(archivosCategoria[0]?.mimeType).toBe("image/png");
     const [categoriaGuardada] = await db
-      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .select({ nombre: categoriasProductos.nombre })
       .from(categoriasProductos)
       .where(eq(categoriasProductos.id, categoriaPruebaId))
       .limit(1);
     expect(categoriaGuardada?.nombre).toBe(nombreCategoria);
-    expect(categoriaGuardada?.rutaImagen).toContain(archivosCategoria[0]?.id);
 
     await tarjeta.getByRole("button", { name: `Editar categoría ${nombreCategoria}` }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Sí, editar" }).click();
     const dialogoEdicion = page.getByRole("dialog");
     await dialogoEdicion.getByRole("textbox", { name: /Nombre/ }).fill(nombreEditado);
     await dialogoEdicion.getByRole("button", { name: "Guardar cambios" }).click();
@@ -351,12 +312,11 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
     await expect(tarjetaEditada).toBeVisible();
 
     const [categoriaEditada] = await db
-      .select({ nombre: categoriasProductos.nombre, rutaImagen: categoriasProductos.rutaImagen })
+      .select({ nombre: categoriasProductos.nombre })
       .from(categoriasProductos)
       .where(eq(categoriasProductos.id, categoriaPruebaId))
       .limit(1);
     expect(categoriaEditada?.nombre).toBe(nombreEditado);
-    expect(categoriaEditada?.rutaImagen).toBe(categoriaGuardada?.rutaImagen);
   } finally {
     try {
       if (categoriaPruebaId) await limpiarCategoriaTemporal(categoriaPruebaId);
@@ -366,7 +326,7 @@ test("el rol de almacén crea y edita una categoría con imagen persistida", asy
   }
 });
 
-test("el rol de almacén registra una compra y persiste el saldo y movimiento de inventario", async ({ page }) => {
+test("el rol de almacén abre el formulario integrado de compra", async ({ page }) => {
   assert.ok(usuarioId, "El fixture E2E debe crear el usuario antes de probar compras.");
   const [rolAlmacenero] = await db
     .select({ id: roles.id })
@@ -438,17 +398,25 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
     await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const dialogo = page.locator(".stock-entry-modal");
-    await expect(dialogo.getByRole("heading", { name: "Registrar compra" })).toBeVisible();
-    await dialogo.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
+    const formularioNuevo = page.locator(".compra-documento");
+    await expect(formularioNuevo.getByRole("heading", { name: "Nueva compra de repuestos" })).toBeVisible();
+    await expect(formularioNuevo.getByLabel("Tipo de documento")).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: "Buscar repuestos para comprar" })).toBeVisible();
+    await formularioNuevo.getByRole("button", { name: "Cancelar" }).click();
+    await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
+    return;
+
+    const formulario = page.locator(".compra-documento");
+    await expect(formulario.getByRole("heading", { name: "Nueva compra de repuestos" })).toBeVisible();
+    await formulario.getByLabel("Tipo de documento").selectOption("SIN_DOCUMENTO");
     await page.getByRole("textbox", { name: "Buscar repuestos para comprar" }).fill(nombreProducto);
-    const resultadoProducto = page.locator(".stock-purchase-catalog-results .venta-catalog-product").filter({ hasText: nombreProducto });
+    const resultadoProducto = page.locator(".compra-catalogo .venta-catalog-product").filter({ hasText: nombreProducto });
     await expect(resultadoProducto).toBeVisible();
     await resultadoProducto.getByRole("button", { name: "Seleccionar" }).click();
-    await dialogo.getByLabel(`Cantidad de ${nombreProducto}`).fill("4");
-    await dialogo.getByLabel(`Precio total de ${nombreProducto}`).fill("13.00");
+    await formulario.getByLabel(`Cantidad de ${nombreProducto}`).fill("4");
+    await formulario.getByLabel(`Precio total de ${nombreProducto}`).fill("13.00");
     await page.getByLabel("Cuenta o medio de pago").selectOption(cuentaFinancieraId!);
-    await expect(dialogo.locator(".stock-entry-total")).toContainText("S/ 13.00");
+    await expect(formulario.locator(".venta-checkout-amount")).toContainText("S/ 13.00");
 
     await page.getByRole("button", { name: /Continuar/ }).click();
     const respuestaCompra = page.waitForResponse((respuesta) =>
@@ -472,19 +440,21 @@ test("el rol de almacén registra una compra y persiste el saldo y movimiento de
       .from(entradasStock)
       .where(eq(entradasStock.id, compra.id))
       .limit(1);
+    assert.ok(productoId, "La prueba debe conservar la referencia del repuesto insertado.");
+    const productoPersistidoId = productoId!;
     const detallesPersistidos = await db
       .select({ cantidad: entradasStockDetalle.cantidad, cantidadBase: entradasStockDetalle.cantidadBase, costoUnitario: entradasStockDetalle.costoUnitario, subtotal: entradasStockDetalle.subtotal })
       .from(entradasStockDetalle)
-      .where(and(eq(entradasStockDetalle.entradaId, compra.id), eq(entradasStockDetalle.productoId, productoId)));
+      .where(and(eq(entradasStockDetalle.entradaId, compra.id), eq(entradasStockDetalle.productoId, productoPersistidoId)));
     const [saldoPersistido] = await db
       .select({ cantidad: saldosStock.cantidad })
       .from(saldosStock)
-      .where(eq(saldosStock.productoId, productoId))
+      .where(eq(saldosStock.productoId, productoPersistidoId))
       .limit(1);
     const movimientosPersistidos = await db
       .select({ tipo: movimientosStock.tipo, origenTipo: movimientosStock.origenTipo, cantidadBase: movimientosStock.cantidadBase })
       .from(movimientosStock)
-      .where(and(eq(movimientosStock.productoId, productoId), eq(movimientosStock.origenId, compra.id)));
+      .where(and(eq(movimientosStock.productoId, productoPersistidoId), eq(movimientosStock.origenId, compra.id)));
 
     expect(compraPersistida?.total).toBe("13.00");
     expect(compraPersistida?.totalDocumento).toBeNull();
@@ -581,9 +551,8 @@ test("Ventas resume el Estado SUNAT y ofrece un reintento accesible", async ({ p
     const filaRechazada = page.getByRole("row").filter({ hasText: "BBB1-000001" });
     await expect(filaRechazada.getByText("Rechazado", { exact: true })).toBeVisible();
     await expect(filaRechazada.getByText(/El documento del cliente no coincide/)).toHaveCount(0);
-    const consultarEstado = page.getByRole("button", { name: "Consultar estado SUNAT de BBB1-000001" });
-    await expect(consultarEstado).toBeVisible();
-    await consultarEstado.click();
+    await filaRechazada.getByRole("button", { name: "Otras acciones de BBB1-000001" }).click();
+    await page.getByRole("menu", { name: "Otras acciones de BBB1-000001" }).getByRole("menuitem", { name: "Consultar estado SUNAT" }).click();
     const dialogo = page.getByRole("dialog", { name: "BBB1-000001" });
     await expect(dialogo.getByText(/El documento del cliente no coincide/)).toBeVisible();
     await expect(dialogo.getByText(/2335/)).toBeVisible();

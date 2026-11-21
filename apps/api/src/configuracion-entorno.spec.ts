@@ -11,6 +11,7 @@ const nombres = [
   "IMAGEN_MAXIMO_BYTES",
   "UPLOADS_DIR",
   "DESCUENTO_MAXIMO_PORCENTAJE",
+  "REGIMEN_TRIBUTARIO",
   "DATABASE_URL",
   "AUTENTICACION_SECRETO",
   "NUBEFACT_RUTA",
@@ -50,6 +51,31 @@ test("valida una configuración de desarrollo con valores explícitos", () => {
   assert.equal(configuracion.puerto, 3000);
   assert.deepEqual(configuracion.origenes, ["http://localhost:5173"]);
   assert.equal(configuracion.maximoImagenBytes, 5 * 1024 * 1024);
+});
+
+test("aplica los valores predeterminados de configuración cuando son opcionales", () => {
+  configurarEntornoSeguro();
+  for (const nombre of [
+    "PORT",
+    "AUTENTICACION_DURACION_SEGUNDOS",
+    "AUTENTICACION_DURACION_RECORDAR_SEGUNDOS",
+    "NUBEFACT_TIMEOUT_MS",
+    "IMAGEN_MAXIMO_BYTES",
+    "UPLOADS_DIR",
+    "DESCUENTO_MAXIMO_PORCENTAJE",
+    "REGIMEN_TRIBUTARIO",
+  ]) {
+    delete process.env[nombre];
+  }
+
+  const configuracion = validarConfiguracionEntorno();
+  assert.equal(configuracion.puerto, 3000);
+  assert.equal(configuracion.segundosSesion, 8 * 60 * 60);
+  assert.equal(configuracion.segundosSesionRecordada, 30 * 24 * 60 * 60);
+  assert.equal(configuracion.timeoutNubefactMs, 20000);
+  assert.equal(configuracion.maximoImagenBytes, 5 * 1024 * 1024);
+  assert.equal(configuracion.carpetaSubidas.endsWith("storage"), true);
+  assert.equal(configuracion.descuentoMaximoPorcentaje, 0);
 });
 
 test("rechaza orígenes HTTP fuera de loopback", () => {

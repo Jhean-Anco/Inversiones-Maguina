@@ -1,14 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { and, asc, count, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
 import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
-import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
-import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown; importeTotal?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
@@ -38,10 +34,9 @@ function fechaValida(valor: unknown) {
 }
 @Injectable()
 export class ServicioEntradasStock {
-  constructor(private readonly almacenamiento: ServicioAlmacenamiento) {}
   async buscarProductos(busquedaEntrada?: string) {
     const busqueda = typeof busquedaEntrada === "string" ? busquedaEntrada.trim().slice(0, 100) : "";
-    if (busqueda.length < 3) return [];
+    if (busqueda.length < 4) return [];
     const coincidencia = `%${busqueda.replace(/[\\%_]/g, "\\$&")}%`;
     const filas = await db.select({
       productoId: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre,
@@ -94,7 +89,7 @@ export class ServicioEntradasStock {
       proveedorTipoPersona: entradasStock.proveedorTipoPersona, proveedorTipoDocumento: entradasStock.proveedorTipoDocumento,
       proveedorNumeroDocumento: entradasStock.proveedorNumeroDocumento, proveedorDireccion: entradasStock.proveedorDireccion,
       medioPago: entradasStock.medioPago, montoPagado: entradasStock.montoPagado, totalDocumento: entradasStock.totalDocumento,
-      observacion: entradasStock.observacion, total: entradasStock.total, evidenciaNombre: entradasStock.evidenciaNombre,
+      observacion: entradasStock.observacion, total: entradasStock.total,
       creadoEn: entradasStock.creadoEn }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
     if (!entrada) throw new NotFoundException("No se encontró la entrada de stock.");
     const [detalles, detallesDocumento] = await Promise.all([
@@ -114,22 +109,6 @@ export class ServicioEntradasStock {
     ]);
     return { ...entrada, detalles, detallesDocumento };
   }
-  async leerEvidencia(idEntrada: string) {
-    const id = uuid(idEntrada, "La entrada");
-    const [entrada] = await db.select({ ruta: entradasStock.evidenciaRuta, mime: entradasStock.evidenciaMime, nombre: entradasStock.evidenciaNombre }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
-    if (!entrada?.ruta || !entrada.mime) throw new NotFoundException("La compra no tiene evidencia adjunta.");
-    const idArchivo = entrada.ruta.match(/^\/archivos\/([0-9a-f-]{36})\/contenido$/i)?.[1];
-    if (idArchivo) {
-      const archivo = await this.almacenamiento.descargarArchivoRegistrado(idArchivo);
-      return { ...archivo, nombre: entrada.nombre ?? archivo.nombre };
-    }
-    const nombre = entrada.ruta.split("/").at(-1)!;
-    if (!/^[0-9a-f-]{36}\.(pdf|jpg|png|webp)$/.test(nombre)) throw new NotFoundException("No se encontró la evidencia.");
-    try { return { contenido: await readFile(resolve(validarConfiguracionEntorno().carpetaSubidas, "evidencias-compras", nombre)), mime: entrada.mime, nombre: entrada.nombre ?? nombre }; }
-    catch { throw new NotFoundException("No se encontró la evidencia."); }
-  }
-
-
   async crear(entrada: unknown, usuarioIdEntrada: string) {
     const usuarioId = uuid(usuarioIdEntrada, "El usuario");
     if (typeof entrada !== "object" || entrada === null || Array.isArray(entrada)) throw new BadRequestException("Los datos de la entrada no son válidos.");

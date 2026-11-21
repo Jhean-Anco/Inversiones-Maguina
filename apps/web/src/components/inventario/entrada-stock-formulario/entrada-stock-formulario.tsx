@@ -1,103 +1,132 @@
-import "./entrada-stock-formulario.css";
-import "../../../pages/nuevo-ingreso-page/nuevo-ingreso-page.css";
+﻿
 import { useState, type FormEvent } from "react";
 import type { useEntradasStock } from "../../../hooks/use-entradas-stock";
-import { SelectorCuentaFinanciera } from "../../finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
+import { CatalogoRecientes } from "../../catalogo/catalogo-recientes";
+import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../../catalogo/use-catalogo-recientes";
+import { CompraCatalogo, CompraDocumento, CompraPie, CompraRevision } from "../../documentos/compra-documento";
+import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
+import { ProveedorCompraRepuestos } from "./proveedor-compra-repuestos";
+
+const documentos = {
+  FACTURA: "Factura",
+  BOLETA: "Boleta",
+  GUIA_REMISION: "Guía de remisión",
+  NOTA: "Nota",
+  SIN_DOCUMENTO: "Sin documento",
+  OTRO: "Otro documento",
+};
 
 type ModuloEntradas = ReturnType<typeof useEntradasStock>;
-type Props = Pick<ModuloEntradas,
-  | "cerrarModal" | "guardando" | "error" | "fecha" | "setFecha" | "tipoDocumento" | "setTipoDocumento"
-  | "numeroDocumento" | "setNumeroDocumento" | "proveedor" | "setProveedor" | "observacion" | "setObservacion"
-  | "proveedorTipoPersona" | "setProveedorTipoPersona" | "proveedorTipoDocumento" | "setProveedorTipoDocumento"
-  | "proveedorNumeroDocumento" | "setProveedorNumeroDocumento" | "proveedorDireccion" | "setProveedorDireccion"
-  | "productoBusqueda" | "cambiarBusquedaProducto" | "productosEncontrados" | "buscandoProductos"
-  | "productoElegido" | "seleccionarProductoCompra" | "limpiarProductoElegido"
-  | "detalles" | "setDetalles" | "totalBorrador" | "quitarDetalle" | "guardar"
-  | "pagosCompra" | "setPagosCompra" | "agregarPagoCompra" | "quitarPagoCompra"
-> & Pick<ModuloEntradas, "proveedoresEncontrados" | "buscandoProveedores" | "proveedorNoEncontrado" | "datosProveedorEditables" | "creandoProveedor" | "setDatosProveedorEditables" | "buscarProveedor" | "abrirRegistroProveedor" | "crearProveedor" | "seleccionarProveedor"> & { alAgregarProducto: () => void; modoPagina?: boolean };
 
-export function EntradaStockFormulario({ cerrarModal, guardando, error, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, proveedor, setProveedor, proveedorTipoPersona, setProveedorTipoPersona, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento, setProveedorNumeroDocumento, proveedorDireccion, setProveedorDireccion, observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, seleccionarProductoCompra, limpiarProductoElegido, detalles, setDetalles, totalBorrador, pagosCompra, setPagosCompra, agregarPagoCompra, quitarPagoCompra, quitarDetalle, guardar, alAgregarProducto, proveedoresEncontrados, buscandoProveedores, proveedorNoEncontrado, datosProveedorEditables, creandoProveedor, setDatosProveedorEditables, buscarProveedor, abrirRegistroProveedor, crearProveedor, seleccionarProveedor, modoPagina = false }: Props) {
-  const [pasoCompra, setPasoCompra] = useState<"datos" | "revision">("datos");
+export function EntradaStockFormulario({ modulo, cerrar, alAgregarProducto }: {
+  modulo: ModuloEntradas; cerrar: () => void; alAgregarProducto: () => void;
+}) {
+  const {
+    guardando, error, setError, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento,
+    proveedor, proveedorTipoDocumento, setProveedorTipoDocumento, proveedorNumeroDocumento,
+    observacion, setObservacion, productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos,
+    productoElegido, productosRecientes, seleccionarProductoReciente, seleccionarProductoCompra, limpiarProductoElegido,
+    detalles, setDetalles, totalBorrador, pagosCompra, setPagosCompra, agregarPagoCompra, quitarPagoCompra, quitarDetalle, guardar,
+  } = modulo;
+  const [enRevision, setEnRevision] = useState(false);
+  const tituloDocumento = documentos[tipoDocumento as keyof typeof documentos] ?? tipoDocumento;
+
   function enviar(evento: FormEvent<HTMLFormElement>) {
-    if (modoPagina && pasoCompra === "datos") { evento.preventDefault(); setPasoCompra("revision"); return; }
-    void guardar(evento);
+    if (enRevision) {
+      void guardar(evento);
+      return;
+    }
+    evento.preventDefault();
+    setError("");
+    setEnRevision(true);
   }
-  return <div className={modoPagina ? "venta-page is-data-step stock-entry-page" : "catalog-modal-backdrop"} onMouseDown={(evento) => { if (!modoPagina && evento.target === evento.currentTarget && !guardando) cerrarModal(); }}>
-      <form className={`catalog-form stock-entry-form${modoPagina ? " venta-layout is-data-step stock-entry-layout" : ""}`} onSubmit={enviar}>
-      <div className={`venta-editor stock-entry-editor${modoPagina && pasoCompra === "datos" ? " is-catalog-open" : " is-review"}`}>
-        {modoPagina && pasoCompra === "datos" && <aside className="venta-catalog-sidebar stock-purchase-catalog" aria-label="Catálogo de repuestos">
-          <header><div><span>CATÁLOGO</span><h2>Buscar repuestos</h2><p>Busca en inventario y agrega lo recibido.</p></div></header>
-          <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={productoBusqueda} onChange={(evento) => cambiarBusquedaProducto(evento.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar repuestos para comprar" autoComplete="off" /></label>
-          <div className="venta-catalog-results stock-purchase-catalog-results" aria-live="polite">
-            {buscandoProductos ? <p className="venta-catalog-status">Buscando en inventario…</p> : productoElegido ? <div className="venta-catalog-empty"><strong>Repuesto seleccionado</strong><span>{productosEncontrados.find((producto) => producto.presentacionId === productoElegido)?.nombre ?? "Completa cantidad y costo en la compra."}</span><button type="button" onClick={limpiarProductoElegido}>Elegir otro</button></div> : productosEncontrados.length ? productosEncontrados.slice(0, 10).map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}><div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigoInterno} · {producto.marca}</span></div><div className="venta-catalog-product-meta"><span>{producto.presentacion}</span><span>{producto.factorAUnidadBase} {producto.unidadMedidaCodigo}</span></div><button type="button" onClick={() => seleccionarProductoCompra(producto)}>Seleccionar</button></article>) : <div className="venta-catalog-empty is-hint"><strong>{productoBusqueda.trim().length < 3 ? "Busca un repuesto" : "Sin resultados"}</strong><span>{productoBusqueda.trim().length < 3 ? "Escribe al menos 3 caracteres para buscar en inventario." : "Prueba con otro nombre o código."}</span></div>}
-          </div>
-        </aside>}
-        <section className={modoPagina ? "venta-form-paper comprobante-boleta stock-entry-modal stock-entry-inline" : "catalog-modal stock-entry-modal"} aria-labelledby="stock-entry-title">
-        <header className="stock-entry-form-head venta-form-heading">
-          <span className="stock-entry-form-icon" aria-hidden="true">↓</span>
-          <div><span className="stock-entry-form-kicker">COMPRA DE REPUESTOS</span><h2 id="stock-entry-title">{pasoCompra === "datos" ? "Registrar compra" : "Revisar compra"}</h2><p>{pasoCompra === "datos" ? "Completa el documento, proveedor y repuestos recibidos." : "Confirma los datos y costos antes de actualizar el inventario."}</p></div>
-          {!modoPagina && <button className="catalog-modal-close" type="button" aria-label="Cerrar compra" onClick={cerrarModal}>×</button>}
-        </header>
-        {pasoCompra === "datos" ? <div className="stock-entry-form-scroll venta-form-scroll">
-        {error && <div className="catalog-alert" role="alert">{error}</div>}
-        <fieldset className="stock-entry-section"><legend>Documento y proveedor</legend>
-          <div className="stock-entry-fields">
-            <label>Fecha de ingreso<input type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} required /></label>
-            <label>Tipo de documento<select value={tipoDocumento} onChange={(evento) => { const tipo = evento.target.value; setTipoDocumento(tipo); if (tipo === "FACTURA") setProveedorTipoDocumento("RUC"); }}><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="GUIA_REMISION">Guía de remisión</option><option value="NOTA">Nota</option><option value="SIN_DOCUMENTO">Sin documento</option><option value="OTRO">Otro documento</option></select></label>
-            <label className="stock-purchase-document-number">Número del documento<input value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value)} maxLength={60} placeholder={tipoDocumento === "SIN_DOCUMENTO" ? "Opcional" : "Ej. F001-00001234"} required={!['SIN_DOCUMENTO', 'OTRO'].includes(tipoDocumento)} /></label>
-            <div className="stock-provider-identity">
-              <label>Tipo de identificación<select value={proveedorTipoDocumento} onChange={(evento) => { const tipo = evento.target.value; setProveedorTipoDocumento(tipo); setDatosProveedorEditables(false); const numero = proveedorNumeroDocumento; setProveedorTipoPersona(tipo === "DNI" || (tipo === "RUC" && /^(10|15)/.test(numero)) ? "NATURAL" : tipo === "RUC" && numero.startsWith("20") ? "JURIDICA" : tipo === "EXT" ? proveedorTipoPersona || "JURIDICA" : ""); }} required={tipoDocumento !== "SIN_DOCUMENTO"}><option value="">Selecciona documento</option><option value="RUC">RUC</option><option value="DNI" disabled={tipoDocumento === "FACTURA"}>DNI</option><option value="EXT">Documento extranjero</option></select></label>
-              <label>{proveedorTipoDocumento === "EXT" ? "Documento extranjero" : `${proveedorTipoDocumento || "RUC/DNI"} del proveedor`}<input type="text" disabled={buscandoProveedores} inputMode={proveedorTipoDocumento === "EXT" ? "text" : "numeric"} pattern={proveedorTipoDocumento === "DNI" ? "[0-9]{8}" : proveedorTipoDocumento === "RUC" ? "[0-9]{11}" : proveedorTipoDocumento === "EXT" ? "[A-Za-z0-9][A-Za-z0-9 ./-]{0,99}" : "[0-9]{8,11}"} value={proveedorNumeroDocumento} onChange={(evento) => { const numero = proveedorTipoDocumento === "EXT" ? evento.target.value.replace(/[^A-Za-z0-9 ./-]/g, "").slice(0, 100) : evento.target.value.replace(/\D/g, "").slice(0, proveedorTipoDocumento === "DNI" ? 8 : 11); setProveedorNumeroDocumento(numero); setDatosProveedorEditables(false); if (proveedorTipoDocumento !== "EXT") setProveedorTipoPersona(proveedorTipoDocumento === "DNI" || (proveedorTipoDocumento === "RUC" && /^(10|15)/.test(numero)) ? "NATURAL" : proveedorTipoDocumento === "RUC" && numero.startsWith("20") ? "JURIDICA" : ""); }} maxLength={proveedorTipoDocumento === "EXT" ? 100 : proveedorTipoDocumento === "DNI" ? 8 : 11} placeholder={proveedorTipoDocumento === "DNI" ? "8 dígitos" : proveedorTipoDocumento === "EXT" ? "Pasaporte o identificación extranjera" : "11 dígitos"} required={tipoDocumento !== "SIN_DOCUMENTO"} /></label>
-              <div className="stock-provider-search-actions"><button type="button" className="stock-provider-search-button" disabled={buscandoProveedores || tipoDocumento === "SIN_DOCUMENTO"} onClick={() => void buscarProveedor()}>{buscandoProveedores ? "Buscando…" : "Buscar proveedor"}</button><button className="stock-provider-add-icon" type="button" aria-label="Agregar proveedor" title="Agregar proveedor" disabled={buscandoProveedores || tipoDocumento === "SIN_DOCUMENTO" || proveedoresEncontrados.length > 0} onClick={() => void abrirRegistroProveedor()}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button></div>
-              {proveedorNoEncontrado && <span className="stock-provider-message">No encontramos este proveedor. Usa el botón + para registrarlo.</span>}
-              {proveedoresEncontrados.length > 0 && <div className="stock-provider-results" role="listbox" aria-label="Proveedores encontrados">{proveedoresEncontrados.map((entrada) => <button type="button" role="option" aria-selected="false" key={entrada.id} onClick={() => seleccionarProveedor(entrada)}><strong>{entrada.nombre}</strong><span>{entrada.tipoDocumento === "01" ? "DNI" : entrada.tipoDocumento === "06" ? "RUC" : entrada.tipoDocumento} {entrada.numeroDocumento}</span></button>)}</div>}
-            </div>
-            {datosProveedorEditables && <><label>Nombre o razón social del proveedor<input value={proveedor} onChange={(evento) => setProveedor(evento.target.value)} maxLength={180} placeholder="Como aparece en el documento" required={tipoDocumento !== "SIN_DOCUMENTO"} /></label>
-            <label>Dirección del proveedor<input value={proveedorDireccion} onChange={(evento) => setProveedorDireccion(evento.target.value)} maxLength={250} placeholder="Como figura en la ficha RUC o el comprobante" /></label>{creandoProveedor && <button className="stock-provider-create-button" type="button" onClick={() => void crearProveedor()}>Registrar proveedor</button>}</>}
-          </div>
-        </fieldset>
-        
-        <fieldset className="stock-entry-section stock-purchase-products-section"><legend>Repuestos de la compra</legend>
-          <p className="stock-purchase-products-help">Agrega los repuestos que compraste. La cantidad y el costo actualizan el inventario disponible.</p>
-          <div className="stock-product-search">
-            <div className="stock-product-search-field">
-              <div className="stock-product-search-row">
-                <label>Buscar producto por nombre o código<input value={productoBusqueda} onChange={(evento) => cambiarBusquedaProducto(evento.target.value)} placeholder="Escribe 3 o más caracteres" autoComplete="off" aria-autocomplete="list" aria-expanded={!productoElegido && productoBusqueda.trim().length >= 3 && (buscandoProductos || productosEncontrados.length > 0)} aria-controls="stock-product-results" /></label>
-                <button className="stock-create-product" type="button" onClick={alAgregarProducto}><span className="erp-create-icon" aria-hidden="true">+</span>Agregar producto</button>
-              </div>
-              {buscandoProductos && !productoElegido && <div className="stock-product-search-message" role="status">Buscando productos…</div>}
-              {!buscandoProductos && !productoElegido && productoBusqueda.trim().length >= 3 && productosEncontrados.length === 0 && <div className="stock-product-search-message stock-product-empty-result"><span aria-live="polite">No encontramos productos con “{productoBusqueda}”.</span><button type="button" onClick={alAgregarProducto}><span aria-hidden="true">+</span> Agregar producto</button></div>}
-              {!productoElegido && productosEncontrados.length > 0 && <div className="stock-product-results" id="stock-product-results" role="listbox" aria-label="Resultados de productos">{productosEncontrados.slice(0, 10).map((producto) => <button type="button" role="option" aria-selected="false" className="stock-product-result" key={producto.presentacionId} onClick={() => seleccionarProductoCompra(producto)}>
-                <span><strong>{producto.nombre}</strong><small>{producto.codigoInterno} · {producto.marca}</small></span><span className="stock-product-result-presentation">{producto.presentacion}<small>{producto.factorAUnidadBase} {producto.unidadMedidaCodigo}</small></span>
-              </button>)}</div>}
-              {productoElegido && <div className="stock-product-selected" role="status"><span>Producto y presentación seleccionados</span><button type="button" onClick={limpiarProductoElegido}>Cambiar</button></div>}
-            </div>
-          </div>
-          {detalles.length ? <div className="stock-entry-lines-wrap"><table className="stock-entry-table"><thead><tr><th>Repuesto</th><th>Cantidad</th><th>Precio por unidad</th><th>Total de la línea</th><th></th></tr></thead><tbody>{detalles.map((detalle, indice) => <tr key={detalle.clave}>
-            <td><strong>{detalle.nombre}</strong><small>{detalle.codigo} · {detalle.presentacion} · {detalle.unidad}</small></td>
-            <td><input aria-label={`Cantidad de ${detalle.nombre}`} type="number" min="0.001" step="0.001" value={detalle.cantidad} onChange={(evento) => { const cantidad = Number(evento.target.value); setDetalles((actuales) => actuales.map((fila, index) => index === indice ? { ...fila, cantidad: evento.target.value, costoUnitario: cantidad > 0 ? (Number(fila.importeTotal) / cantidad).toFixed(4) : fila.costoUnitario } : fila)); }} /><small>{(Number(detalle.cantidad) * detalle.factor).toFixed(3)} unidades base</small></td>
-            <td>S/ {Number(detalle.costoUnitario).toFixed(4)}</td>
-            <td><label className="stock-line-total-input"><span className="sr-only">Precio total de {detalle.nombre}</span><input aria-label={`Precio total de ${detalle.nombre}`} type="number" min="0.01" step="0.01" value={detalle.importeTotal} onChange={(evento) => { const importe = Number(evento.target.value); const cantidad = Number(detalle.cantidad); setDetalles((actuales) => actuales.map((fila, index) => index === indice ? { ...fila, importeTotal: evento.target.value, costoUnitario: importe > 0 && cantidad > 0 ? (importe / cantidad).toFixed(4) : "0.0000" } : fila)); }} /></label></td>
-            <td><button className="producto-remove-row" type="button" aria-label={`Quitar ${detalle.nombre}`} onClick={() => quitarDetalle(detalle.clave)}>×</button></td>
-          </tr>)}</tbody></table></div> : <div className="stock-entry-empty-lines"><span aria-hidden="true">▤</span><strong>Aún no agregas repuestos</strong><small>Busca un repuesto, indica cuánto recibiste y el precio total de compra.</small></div>}
-          <div className="stock-entry-total"><span>Total de la compra</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div>
-          {!modoPagina && totalBorrador > 0 && <div className="stock-payment-fields">{pagosCompra.map((pago) => <div className="stock-payment-row" key={pago.clave}><SelectorCuentaFinanciera value={pago.cuentaFinancieraId} medioActual={pago.medioPago} etiqueta="Cuenta o medio de pago" onChange={(cuentaFinancieraId, medioPago) => setPagosCompra((actuales) => actuales.map((fila) => fila.clave === pago.clave ? { ...fila, cuentaFinancieraId, medioPago } : fila))} /><label>Importe (S/)<input type="number" min="0.01" step="0.01" value={pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "")} onChange={(evento) => setPagosCompra((actuales) => actuales.map((fila) => fila.clave === pago.clave ? { ...fila, importe: evento.target.value } : fila))} /></label>{pagosCompra.length > 1 && <button type="button" onClick={() => quitarPagoCompra(pago.clave)} aria-label="Quitar medio de pago">×</button>}</div>)}<button type="button" className="stock-add-payment" onClick={agregarPagoCompra}>+ Agregar otro medio de pago</button><strong className="stock-payment-total">Total: S/ {totalBorrador.toFixed(2)} · Asignado: S/ {pagosCompra.reduce((suma, pago) => suma + Number(pago.importe || (pagosCompra.length === 1 ? totalBorrador : 0)), 0).toFixed(2)}</strong></div>}
-        </fieldset>
-        </div> : <div className="stock-purchase-review">
-          {error && <div className="catalog-alert" role="alert">{error}</div>}
-          <section className="stock-purchase-review-card"><h3>Documento y proveedor</h3><div className="stock-purchase-review-grid"><div><span>Proveedor</span><strong>{proveedor || "Sin nombre registrado"}</strong><small>{proveedorTipoDocumento} {proveedorNumeroDocumento}</small></div><div><span>Fecha de ingreso</span><strong>{new Date(`${fecha}T00:00:00`).toLocaleDateString("es-PE")}</strong></div><div><span>Documento</span><strong>{tipoDocumento === "SIN_DOCUMENTO" ? "Sin documento" : tipoDocumento}</strong><small>{numeroDocumento || "Sin número"}</small></div></div></section>
-          <section className="stock-purchase-review-card"><h3>Repuestos recibidos <span>{detalles.length} {detalles.length === 1 ? "línea" : "líneas"}</span></h3>{detalles.length ? <div className="stock-purchase-review-lines">{detalles.map((detalle) => <article key={detalle.clave}><div><strong>{detalle.nombre}</strong><small>{detalle.codigo} · {detalle.presentacion}</small></div><span>{detalle.cantidad} × S/ {Number(detalle.costoUnitario).toFixed(4)}</span><strong>S/ {Number(detalle.importeTotal).toFixed(2)}</strong></article>)}</div> : <p>No hay repuestos agregados.</p>}</section>
-          <section className="stock-purchase-review-card stock-purchase-review-payment"><div><span>Total de la compra</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div><div><span>Observaciones</span><strong>{observacion || "Sin observaciones"}</strong></div></section>
-        </div>}
-        {modoPagina ? <div className={`venta-data-footer stock-entry-page-footer${pasoCompra === "revision" ? " is-review" : ""}`}>
-          {pasoCompra === "datos" ? <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones de la compra" value={observacion} onChange={(evento) => setObservacion(evento.target.value)} maxLength={2000} rows={2} placeholder="Añade una nota" /></label> : <div className="stock-purchase-review-footer-total"><span>Compra lista para registrar</span><strong>{detalles.length} {detalles.length === 1 ? "repuesto" : "repuestos"} · S/ {totalBorrador.toFixed(2)}</strong></div>}
-          <div className={`stock-entry-checkout${pasoCompra === "revision" ? " is-review" : ""}`}>
-            {pasoCompra === "datos" && <><div className="stock-entry-checkout-summary"><div><span>Total de la compra</span><strong>S/ {totalBorrador.toFixed(2)}</strong></div></div>{totalBorrador > 0 && <div className="stock-page-payments">{pagosCompra.map((pago) => <div className="stock-payment-row" key={pago.clave}><SelectorCuentaFinanciera value={pago.cuentaFinancieraId} medioActual={pago.medioPago} etiqueta="Cuenta o medio de pago" onChange={(cuentaFinancieraId, medioPago) => setPagosCompra((actuales) => actuales.map((fila) => fila.clave === pago.clave ? { ...fila, cuentaFinancieraId, medioPago } : fila))} /><label>Importe (S/)<input type="number" min="0.01" step="0.01" value={pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "")} onChange={(evento) => setPagosCompra((actuales) => actuales.map((fila) => fila.clave === pago.clave ? { ...fila, importe: evento.target.value } : fila))} /></label>{pagosCompra.length > 1 && <button type="button" onClick={() => quitarPagoCompra(pago.clave)}>×</button>}</div>)}<button type="button" className="stock-add-payment" onClick={agregarPagoCompra}>+ Agregar otro medio</button></div>}</>}
-            <div className="stock-entry-page-actions">{pasoCompra === "revision" ? <button className="catalog-cancel" type="button" disabled={guardando} onClick={() => setPasoCompra("datos")}>Volver a editar</button> : <button className="catalog-cancel" type="button" disabled={guardando} onClick={cerrarModal}>Cancelar</button>}<button className="catalog-submit" type="submit" disabled={guardando || !detalles.length}>{guardando ? "Registrando…" : pasoCompra === "datos" ? <>Continuar <span aria-hidden="true">→</span></> : "Registrar compra"}</button></div>
-          </div>
-        </div> : <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={cerrarModal}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || !detalles.length}>{guardando ? "Registrando…" : "Registrar compra"}</button></div>}
-        </section>
+
+  const etiquetaDetalle = `${detalles.length} ${detalles.length === 1 ? "línea" : "líneas"}`;
+  const catalogo = <CompraCatalogo
+    titulo="Buscar repuestos"
+    etiqueta="Buscar repuestos para comprar"
+    placeholder="Nombre o código"
+    valor={productoBusqueda}
+    alBuscar={cambiarBusquedaProducto}
+    accion={<button className="compra-secundario" type="button" onClick={alAgregarProducto}>+ Agregar producto</button>}
+  >
+    {buscandoProductos ? <p className="venta-catalog-status">Buscando en inventario…</p>
+      : productoElegido ? <div className="venta-catalog-empty">
+        <strong>Repuesto agregado al detalle</strong>
+        <button className="compra-secundario" type="button" onClick={limpiarProductoElegido}>Buscar otro</button>
       </div>
-      </form>
-  </div>;
+      : !productoBusqueda.trim() ? <CatalogoRecientes items={productosRecientes} alSeleccionar={(item) => void seleccionarProductoReciente(item)} titulo="Últimos repuestos seleccionados" etiquetaAccion="Seleccionar" />
+      : productoBusqueda.trim().length < MIN_CARACTERES_BUSQUEDA_CATALOGO ? <div className="venta-catalog-empty is-hint"><span>Escribe al menos cuatro caracteres para buscar.</span></div>
+      : productosEncontrados.length ? productosEncontrados.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}>
+        <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigoInterno} · {producto.marca}</span></div>
+        <div className="venta-catalog-product-meta"><span>{producto.presentacion}</span><span>{producto.factorAUnidadBase} {producto.unidadMedidaCodigo}</span></div>
+        <button type="button" onClick={() => seleccionarProductoCompra(producto)}>Seleccionar</button>
+      </article>)
+      : <div className="venta-catalog-empty"><strong>Sin resultados</strong><span>Prueba con otro nombre o código.</span></div>}
+  </CompraCatalogo>;
+
+  const campos = <>
+    <div className="compra-campos compra-comprobante">
+      <label>Tipo de documento
+        <select value={tipoDocumento} onChange={(evento) => {
+          const tipo = evento.target.value;
+          setTipoDocumento(tipo);
+          if (tipo === "FACTURA") setProveedorTipoDocumento("RUC");
+        }}>
+          {Object.entries(documentos).map(([valor, etiqueta]) => <option key={valor} value={valor}>{etiqueta}</option>)}
+        </select>
+      </label>
+      <label>Fecha de ingreso<input type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} required /></label>
+      <label>Número del documento
+        <input value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value)} maxLength={60}
+          placeholder={tipoDocumento === "SIN_DOCUMENTO" ? "Opcional" : "Ej. F001-00001234"} required={!["SIN_DOCUMENTO", "OTRO"].includes(tipoDocumento)} />
+      </label>
+    </div>
+    <ProveedorCompraRepuestos modulo={modulo} />
+  </>;
+
+  const detalle = detalles.length ? <div className="compra-tabla-scroll" role="region" aria-label="Detalle de repuestos" tabIndex={0}>
+    <table className="compra-tabla" role="table" aria-label="Repuestos de la compra">
+      <thead><tr><th scope="col">Descripción</th><th scope="col">Cantidad</th><th scope="col">Costo unitario</th><th scope="col">Total de línea</th><th scope="col" aria-label="Acciones" /></tr></thead>
+      <tbody>{detalles.map((fila) => <tr key={fila.clave}>
+        <td><strong>{fila.nombre}</strong><small>{fila.codigo} · {fila.presentacion}{fila.unidad && fila.unidad !== fila.presentacion ? ` · ${fila.unidad}` : ""}</small></td>
+        <td data-campo="Cantidad"><input aria-label={`Cantidad de ${fila.nombre}`} type="number" min="0.001" step="0.001" value={fila.cantidad} required onChange={(evento) => {
+          const cantidad = evento.target.value;
+          setDetalles((filas) => filas.map((item) => item.clave === fila.clave ? {
+            ...item, cantidad, costoUnitario: Number(cantidad) > 0 ? (Number(item.importeTotal) / Number(cantidad)).toFixed(4) : item.costoUnitario,
+          } : item));
+        }} /><small>{(Number(fila.cantidad) * fila.factor).toFixed(3)} unidades base</small></td>
+        <td data-campo="Costo unitario"><span className="compra-importe">S/ {Number(fila.costoUnitario).toFixed(4)}</span></td>
+        <td data-campo="Total de línea"><input aria-label={`Precio total de ${fila.nombre}`} type="number" min="0.01" step="0.01" value={fila.importeTotal} required onChange={(evento) => {
+          const importeTotal = evento.target.value;
+          setDetalles((filas) => filas.map((item) => item.clave === fila.clave ? {
+            ...item, importeTotal, costoUnitario: Number(importeTotal) > 0 && Number(item.cantidad) > 0 ? (Number(importeTotal) / Number(item.cantidad)).toFixed(4) : "0.0000",
+          } : item));
+        }} /></td>
+        <td><button className="compra-quitar" type="button" aria-label={`Quitar ${fila.nombre}`} onClick={() => quitarDetalle(fila.clave)}>×</button></td>
+      </tr>)}</tbody>
+    </table>
+  </div> : <div className="venta-empty"><strong>Agrega el primer repuesto</strong><span>Busca en el catálogo e indica la cantidad y el precio total de la línea.</span></div>;
+
+  const revision = <CompraRevision
+    proveedor={<>{proveedor || "Sin nombre registrado"}<small>{proveedorTipoDocumento} {proveedorNumeroDocumento}</small></>}
+    fecha={fecha}
+    documento={<>{tituloDocumento}{numeroDocumento && <small>{numeroDocumento}</small>}</>}
+    observacion={observacion}
+    detalle={<div className="compra-revision-lineas">{detalles.map((fila) => <article key={fila.clave}>
+      <div><strong>{fila.nombre}</strong><small>{fila.codigo} · {fila.presentacion}</small><small>{fila.cantidad} × S/ {Number(fila.costoUnitario).toFixed(4)}</small></div>
+      <strong className="compra-importe">S/ {Number(fila.importeTotal).toFixed(2)}</strong>
+    </article>)}</div>}
+  />;
+
+  return <>
+    {error && <NotificacionFlotante mensaje={error} onCerrar={() => setError("")} />}
+    <CompraDocumento titulo={enRevision ? "Revisar compra de repuestos" : "Nueva compra de repuestos"} enRevision={enRevision}
+      catalogo={catalogo} campos={campos} tituloDetalle="Repuestos de la compra" conteoDetalle={etiquetaDetalle} detalle={detalle}
+      pie={<CompraPie total={totalBorrador} observacion={observacion} alObservar={setObservacion} pagos={pagosCompra} alCambiarPagos={setPagosCompra}
+        alAgregarPago={agregarPagoCompra} alQuitarPago={quitarPagoCompra} alCancelar={cerrar} alEditar={() => setEnRevision(false)}
+        guardando={guardando} tieneDetalle={detalles.length > 0} enRevision={enRevision} />}
+      revision={revision} onSubmit={enviar}
+    />
+  </>;
 }

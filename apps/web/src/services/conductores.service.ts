@@ -11,4 +11,7 @@ export const servicioConductores = {
     return solicitarApi<PaginaConductores>(`/personas/conductores/listado?${consulta}`);
   },
   crear: (datos: DatosConductor) => solicitarApi<Conductor>("/personas/conductores", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  actualizar: (id: string, datos: { numeroLicencia: string; telefono: string }) => solicitarApi<Pick<Conductor, "id" | "numeroLicencia" | "telefono">>(`/personas/conductores/${id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos),
+  }),
 };

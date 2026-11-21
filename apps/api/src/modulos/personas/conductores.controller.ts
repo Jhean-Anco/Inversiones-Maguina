@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
-import { RequiereCualquieraPermiso } from "../autenticacion/permisos";
+import { RequiereCualquieraPermiso, RequierePermiso } from "../autenticacion/permisos";
 import { ServicioConductores } from "./conductores.service";
 
 @Controller("personas/conductores")
@@ -20,4 +20,8 @@ export class ControladorConductores {
   @Post()
   @RequiereCualquieraPermiso("PERSONAS.CREAR", "INGRESOS.CREAR")
   crear(@Body() datos: unknown) { return this.conductores.crear(datos); }
+
+  @Patch(":id")
+  @RequierePermiso("PERSONAS.EDITAR")
+  actualizar(@Param("id") id: string, @Body() datos: unknown) { return this.conductores.actualizar(id, datos); }
 }

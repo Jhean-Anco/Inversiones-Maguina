@@ -11,6 +11,8 @@ export function useProductos() {
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
+  const [estado, setEstado] = useState("ACTIVOS");
+  const [marca, setMarca] = useState("");
   const [cargando, setCargando] = useState(true);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -33,7 +35,7 @@ export function useProductos() {
     const consulta = ++consecutivoConsulta.current;
     setCargando(true);
     try {
-      const resultado = await servicioProductos.listar(paginaSolicitada, tamano, textoBusqueda);
+      const resultado = await servicioProductos.listar(paginaSolicitada, tamano, textoBusqueda, { estado, marca });
       if (consulta !== consecutivoConsulta.current) return;
       setPaginaDatos(resultado);
       if (paginaSolicitada > resultado.totalPaginas) setPagina(resultado.totalPaginas);
@@ -41,7 +43,7 @@ export function useProductos() {
     } catch (problema) {
       if (consulta === consecutivoConsulta.current) manejarError(problema, "No se pudo cargar el catálogo de productos.");
     } finally { if (consulta === consecutivoConsulta.current) setCargando(false); }
-  }, [pagina, porPagina, busqueda, manejarError]);
+  }, [pagina, porPagina, busqueda, estado, marca, manejarError]);
 
   useEffect(() => { void cargarCatalogos(); }, [cargarCatalogos]);
   useEffect(() => {
@@ -49,10 +51,10 @@ export function useProductos() {
     return () => window.clearTimeout(temporizador);
   }, [pagina, porPagina, busqueda, cargarPagina]);
 
-  const guardar = useCallback(async (datos: DatosProducto, id?: string, imagenesNuevas: File[] = [], imagenesEliminadas: string[] = []) => {
+  const guardar = useCallback(async (datos: DatosProducto, id?: string) => {
     setError(""); setGuardando(true);
     try {
-      const resultado = await servicioProductos.guardar(datos, id, imagenesNuevas, imagenesEliminadas);
+      const resultado = await servicioProductos.guardar(datos, id);
       setPagina(1);
       await cargarPagina(1, porPagina, busqueda);
       if (resultado.advertencia) setError(resultado.advertencia);
@@ -67,15 +69,15 @@ export function useProductos() {
     catch (problema) { manejarError(problema, "No se pudo cargar el detalle del producto."); return null; }
   }, [manejarError]);
 
-  const crearMarca = useCallback(async (nombre: string, imagen: File) => {
-    const resultado = await servicioProductos.crearMarca(nombre.trim(), imagen);
+  const crearMarca = useCallback(async (nombre: string) => {
+    const resultado = await servicioProductos.crearMarca(nombre.trim());
     const marca = resultado.marca;
     setCatalogos((actual) => ({ ...actual, marcas: [...actual.marcas, marca].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
     return { ...marca, advertencia: resultado.advertencia };
   }, []);
 
-  const crearCategoria = useCallback(async (nombre: string, imagen: File) => {
-    const resultado = await servicioProductos.crearCategoria(nombre.trim(), imagen);
+  const crearCategoria = useCallback(async (nombre: string) => {
+    const resultado = await servicioProductos.crearCategoria(nombre.trim());
     const categoria = resultado.categoria;
     setCatalogos((actual) => ({ ...actual, categorias: [...actual.categorias, categoria].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")) }));
     return { ...categoria, advertencia: resultado.advertencia };
@@ -95,7 +97,11 @@ export function useProductos() {
   return {
     catalogos, productos: paginaDatos.items, total: paginaDatos.total, pagina, porPagina,
     totalPaginas: paginaDatos.totalPaginas, desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0,
-    hasta: Math.min(pagina * porPagina, paginaDatos.total), busqueda, setBusqueda,
+    hasta: Math.min(pagina * porPagina, paginaDatos.total),
+    busqueda, estado, marca, cargarPagina,
+    setBusqueda: (valor: string) => { setPagina(1); setBusqueda(valor); },
+    setEstado: (valor: string) => { setPagina(1); setEstado(valor); },
+    setMarca: (valor: string) => { setPagina(1); setMarca(valor); },
     cargando: cargando || cargandoCatalogos, guardando, error, setError,
     cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, cambiarEstado,
   };

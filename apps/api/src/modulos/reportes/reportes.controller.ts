@@ -22,8 +22,12 @@ function validarRango(desde?: string, hasta?: string) {
 @UseGuards(GuardiaSesion, GuardiaPermiso)
 export class ControladorReportes {
   constructor(private readonly reportes: ServicioReportes) {}
+  @Get("ingresos/dashboard") @RequierePermiso("INGRESOS.LEER") ingresosDashboard(@Query("desde") desde?: string, @Query("hasta") hasta?: string, @Query("mesDesde") mesDesde?: string) {
+    const anual = validarRango(desde, hasta);
+    return this.reportes.ingresosDashboard(validarRango(mesDesde, anual.hasta), anual);
+  }
   @Get("ingresos") @RequierePermiso("INGRESOS.LEER") ingresos(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.ingresos(validarRango(desde, hasta)); }
   @Get("ingresos/resumen-mes") @RequierePermiso("INGRESOS.LEER") resumenIngresosMes() { return this.reportes.resumenIngresosMes(); }
-  @Get("inventario") @RequierePermiso("INVENTARIO.LEER") inventario(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.inventario(validarRango(desde, hasta)); }
+  @Get("inventario") @RequierePermiso("INVENTARIO.LEER") inventario(@UsuarioActual() usuario: UsuarioAutenticado, @Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.inventario(validarRango(desde, hasta), usuario.permisos ?? []); }
   @Get("resumen") resumen(@UsuarioActual() usuario: UsuarioAutenticado) { return this.reportes.resumenGerencial(usuario.permisos ?? []); }
 }

@@ -6,10 +6,7 @@ import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 
-type TipoComprobante = "BOLETA" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO" | "NOTA_DEBITO";
 const destino: Record<string, string> = {
-  FOTO_REPUESTO: "imagenes/repuestos", FOTO_CATEGORIA: "imagenes/categorias", FOTO_MARCA: "imagenes/marcas",
-  FOTO_MOTOTAXI: "imagenes/mototaxis", EVIDENCIA_COMPRA: "compras/evidencias",
   BOLETA: "ventas/boletas", FACTURA: "ventas/facturas", NOTA_VENTA: "ventas/notas-venta",
   NOTA_CREDITO: "ventas/notas-credito", NOTA_DEBITO: "ventas/notas-debito",
 };
@@ -57,13 +54,6 @@ export class ServicioAlmacenamiento {
     return true;
   }
 
-  async subirImagenCatalogo(tipo: "categorias" | "marcas" | "productos" | "modelos-mototaxi", id: string, nombre: string, mime: string, contenido: Buffer) {
-    const tipoArchivo = tipo === "productos" ? "FOTO_REPUESTO" : tipo === "categorias" ? "FOTO_CATEGORIA" : tipo === "modelos-mototaxi" ? "FOTO_MOTOTAXI_MODELO" : "FOTO_MARCA";
-    const entidadTipo = tipo === "productos" ? "PRODUCTO" : tipo === "categorias" ? "CATEGORIA" : tipo === "modelos-mototaxi" ? "MODELO_MOTOTAXI" : "MARCA";
-    const archivo = await this.guardarArchivo(tipoArchivo, tipoArchivo, entidadTipo, id, nombre, mime, contenido);
-    return { ...archivo, rutaImagen: archivo.ruta };
-  }
-
   async archivarDocumentosNubeFact(entidadTipo: string, entidadId: string, tipoComprobante: string, codigo: string, datos: Record<string, unknown>) {
     const tipoBase = tipoComprobante.replace(/_ANULACION$/, "");
     const campos = [
@@ -100,7 +90,7 @@ export class ServicioAlmacenamiento {
   async archivarDocumentoNotaVenta(venta: { id: string; codigo: string; fecha: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; clienteDireccion: string | null; medioPago: string; total: string; subtotal: string; igv: string; detalles: { descripcion: string; cantidad: string; precioUnitario: string; total: string }[] }) {
     const escapar = (valor: unknown) => String(valor ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
     const filas = venta.detalles.map((d) => `<tr><td>${escapar(d.descripcion)}</td><td>${escapar(d.cantidad)}</td><td>S/ ${escapar(d.precioUnitario)}</td><td>S/ ${escapar(d.total)}</td></tr>`).join("");
-    const html = `<!doctype html><html lang="es"><meta charset="utf-8"><title>Nota de venta ${escapar(venta.codigo)}</title><style>body{font:15px Arial;max-width:820px;margin:40px auto;color:#172033}table{width:100%;border-collapse:collapse;margin:24px 0}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}@media print{body{margin:0}}</style><h1>Nota de venta ${escapar(venta.codigo)}</h1><p>${escapar(venta.fecha)} · ${escapar(venta.clienteNombre || "Cliente no especificado")}</p><p>${escapar(venta.clienteNumeroDocumento || "")} · ${escapar(venta.clienteDireccion || "")}</p><table><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table><p>Subtotal S/ ${escapar(venta.subtotal)} · IGV S/ ${escapar(venta.igv)} · Total S/ ${escapar(venta.total)}</p><p>Pago: ${escapar(venta.medioPago)}</p></html>`;
+    const html = `<!doctype html><html lang="es"><meta charset="utf-8"><title>Nota de venta ${escapar(venta.codigo)}</title><style>body{font:15px Arial;max-width:820px;margin:40px auto;color:#172033}table{width:100%;border-collapse:collapse;margin:24px 0}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}.totales{width:min(100%,280px);margin-left:auto;break-inside:avoid}.totales div{display:flex;justify-content:space-between;gap:10px;padding:5px 0}.totales dd{margin:0;white-space:nowrap;font-variant-numeric:tabular-nums}.total{border-top:1px solid #ddd;font-weight:bold}@media print{body{margin:0}}</style><h1>Nota de venta ${escapar(venta.codigo)}</h1><p>${escapar(venta.fecha)} · ${escapar(venta.clienteNombre || "Cliente no especificado")}</p><p>${escapar(venta.clienteNumeroDocumento || "")} · ${escapar(venta.clienteDireccion || "")}</p><table><thead><tr><th>Descripción</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table><dl class="totales"><div><dt>Subtotal sin IGV</dt><dd>S/ ${escapar(venta.subtotal)}</dd></div><div><dt>IGV</dt><dd>S/ ${escapar(venta.igv)}</dd></div><div class="total"><dt>Total a pagar</dt><dd>S/ ${escapar(venta.total)}</dd></div></dl><p>Pago: ${escapar(venta.medioPago)}</p></html>`;
     return this.guardarArchivo("NOTA_VENTA", "NOTA_VENTA_HTML", "INGRESO", venta.id, `${venta.codigo}.html`, "text/html", Buffer.from(html));
   }
 }

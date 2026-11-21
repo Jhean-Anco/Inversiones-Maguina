@@ -1,0 +1,190 @@
+﻿.nota-ajuste {
+  --nota-espacio: clamp(14px, 2vw, 22px);
+  display: grid;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+  gap: 14px;
+  margin-inline: auto;
+  padding-inline: clamp(8px, 1vw, 14px);
+}
+
+.nota-ajuste .venta-form-paper {
+  display: flex;
+  min-width: 0;
+  max-height: calc(100dvh - 112px);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.nota-ajuste .nota-ajuste-cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 12px rgb(15 44 70 / 12%);
+}
+
+.nota-ajuste .nota-ajuste-identidad { min-width: 0; }
+.nota-ajuste .nota-ajuste-identidad h2:focus { outline: none; }
+.nota-ajuste .nota-ajuste-referencia { min-width: 145px; max-width: min(100%, 260px); overflow-wrap: anywhere; }
+.nota-ajuste .nota-ajuste-formulario { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; overflow: auto; }
+.nota-ajuste .nota-ajuste-origen { display: block; flex: 0 0 auto; }
+.nota-ajuste-datos { display: grid; grid-template-columns: minmax(0, 1.45fr) repeat(3, minmax(0, 1fr)); gap: 10px 18px; margin: 0; }
+.nota-ajuste-datos dt { color: #71849b; font-size: 11px; }
+.nota-ajuste-datos dd { margin: 4px 0 0; color: #173b60; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.nota-ajuste-detalle { flex: 0 0 auto; }
+.nota-ajuste-detalle-cabecera { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 9px 16px; margin-bottom: 12px; }
+.nota-ajuste-detalle-cabecera h3 { margin: 0; color: #173b60; font-size: 15px; font-weight: 750; }
+.nota-ajuste-ayuda { max-width: 70ch; margin: 5px 0 0; color: #60778e; font-size: 12px; line-height: 1.45; }
+.nota-ajuste-contador { flex: 0 0 auto; border-radius: 7px; padding: 5px 8px; color: #315d81; background: #edf4f9; font-size: 11px; font-weight: 700; }
+.nota-ajuste-tabla-marco { min-width: 0; max-width: 100%; overflow: auto; border: 1px solid #e2eaf2; border-radius: 9px; }
+.nota-ajuste-tabla { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; font-size: 12px; font-variant-numeric: tabular-nums; }
+.nota-ajuste-tabla th { position: sticky; top: 0; padding: 9px 10px; background: #f5f8fb; color: #71849a; font-size: 10px; font-weight: 750; text-align: left; white-space: nowrap; }
+.nota-ajuste-tabla th:not(:first-child),
+.nota-ajuste-tabla td:not(:first-child) { text-align: right; }
+.nota-ajuste-tabla td { padding: 9px 10px; border-top: 1px solid #edf1f5; color: #36516d; vertical-align: middle; white-space: nowrap; }
+.nota-ajuste-tabla td small { display: block; margin-top: 3px; color: #8293a5; font-size: 10px; }
+.nota-ajuste-articulo { width: 30%; min-width: 150px; white-space: normal !important; overflow-wrap: anywhere; }
+.nota-ajuste-incluida td { background: #f5f9fc; }
+.nota-ajuste-campo-importe { position: relative; width: min(100%, 110px); margin-inline-start: auto; }
+.nota-ajuste-campo-importe > span { position: absolute; top: 50%; left: 9px; transform: translateY(-50%); color: #60778e; font-size: 10px; pointer-events: none; }
+.nota-ajuste-campo-importe input { box-sizing: border-box; width: 100%; height: 34px; padding: 0 8px 0 25px; border: 1px solid #d8e3ed; border-radius: 7px; background: #fff; color: #173554; font: inherit; text-align: right; appearance: textfield; }
+.nota-ajuste-campo-importe input::-webkit-inner-spin-button,
+.nota-ajuste-campo-importe input::-webkit-outer-spin-button { appearance: none; }
+.nota-ajuste-campo-importe input:disabled { background: #f3f6f9; color: #9caaba; }
+.nota-ajuste-pie { flex: 0 0 auto; align-items: start !important; }
+.nota-ajuste-observacion { align-content: start; }
+.nota-ajuste-observacion textarea { min-height: 76px; }
+.nota-ajuste-cierre { min-width: 0; }
+.nota-ajuste-pago { align-items: end; }
+.nota-ajuste-pago .nota-ajuste-total { align-self: center; }
+.nota-ajuste-pago .nota-ajuste-total > span { color: #617b97; font-size: 11px; font-weight: 700; }
+.nota-ajuste-pago .nota-ajuste-total > strong { color: #0f3b68; font-size: 21px; white-space: nowrap; }
+.nota-ajuste-pago .selector-cuenta-financiera { display: grid; min-width: 0; gap: 5px; color: #355372; font-size: 11px; font-weight: 700; }
+.nota-ajuste-pago .selector-cuenta-financiera select { box-sizing: border-box; width: 100%; min-height: 38px; padding: 0 9px; border: 1px solid #d5e0ec; border-radius: 8px; background: #fff; color: #173c67; font: inherit; font-size: 12px; }
+.nota-ajuste-pago .selector-cuenta-hint { color: #60778e; font-size: 10px; font-weight: 500; }
+.nota-ajuste-pago .selector-cuenta-financiera a { text-decoration: underline; }
+.nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons .venta-clear { min-width: 86px; min-height: 42px; padding: 0 14px; border: 1px solid #d9e3ed; border-radius: 9px; background: #fff; color: #425c7a; font: inherit; font-weight: 650; cursor: pointer; }
+.nota-ajuste .nota-ajuste-cierre .venta-submit { min-height: 44px; }
+.nota-ajuste .nota-ajuste-cierre button:disabled { opacity: .58; cursor: not-allowed; }
+.nota-ajuste-error,
+.nota-ajuste-exito { grid-column: 1 / -1; margin: 0; padding: 9px 11px; border-radius: 7px; font-size: 12px; font-weight: 650; }
+.nota-ajuste-error { background: #fff1f0; color: #9c3938; }
+.nota-ajuste-exito { background: #edf8f1; color: #216b42; }
+.nota-ajuste-recargar { justify-self: start; }
+.nota-ajuste-historial { min-width: 0; overflow: hidden; border: 1px solid #dce7f1; border-radius: 12px; background: #fff; }
+.nota-ajuste-historial summary { display: flex; min-height: 48px; align-items: center; gap: 9px; padding: 9px 14px; color: #173b60; font-size: 13px; font-weight: 700; cursor: pointer; list-style: none; }
+.nota-ajuste-historial summary::-webkit-details-marker { display: none; }
+.nota-ajuste-historial summary:focus-visible { outline: 2px solid #3784bd; outline-offset: -3px; }
+.nota-ajuste-historial[open] .nota-ajuste-desplegar { transform: rotate(180deg); }
+.nota-ajuste-cantidad-notas { margin-inline-start: auto; min-width: 24px; border-radius: 5px; padding: 2px 5px; background: #f3f7fb; color: #60778e; font-size: 11px; text-align: center; }
+.nota-ajuste-lista,
+.nota-ajuste-historial > p { margin: 0 14px 14px; padding: 0; color: #60778e; font-size: 12px; }
+.nota-ajuste-lista li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #e4ebf2; padding: 10px 0; }
+.nota-ajuste-nota-info { display: grid; min-width: 0; justify-items: start; gap: 4px; overflow-wrap: anywhere; }
+.nota-ajuste-nota-info strong { color: #173b60; }
+.nota-ajuste-nota-acciones { flex-wrap: wrap; }
+.nota-inicio { color: #173554; }
+.nota-inicio::backdrop { background: rgb(13 36 59 / 58%); }
+.nota-inicio-cabecera { display: flex; align-items: center; gap: 12px; padding: 18px 22px; background: linear-gradient(112deg,#0b376a 0%,#103f72 64%,#092c53 100%); color: #fff; }
+.nota-inicio-cabecera h2 { margin: 0; font-size: 20px; line-height: 1.25; }
+.nota-inicio-contenido { display: grid; gap: 12px; padding: 18px 22px; }
+.nota-inicio-origen { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; border-radius: 8px; padding: 9px 11px; background: #f5f8fb; font-size: 12px; overflow-wrap: anywhere; }
+.nota-inicio-origen span { color: #60778e; }
+.nota-inicio-contenido p { margin: 0; font-size: 13px; line-height: 1.5; }
+.nota-inicio-contenido .nota-inicio-aclaracion { color: #60778e; font-size: 12px; }
+.nota-inicio .nota-acciones { padding: 0 22px 18px; }
+.nota-inicio .nota-boton { min-height: 42px; border-radius: 9px; font-size: 12px; }
+.nota-inicio .nota-boton-primario { border-color: #123f69; background: linear-gradient(130deg,#124778,#0b376a); color: white; }
+.nota-inicio :is(button, select, input, textarea, a):focus-visible { outline: 2px solid #3784bd; outline-offset: 2px; }
+
+@media (max-width: 820px) {
+  .nota-ajuste .venta-form-paper { max-height: calc(100dvh - 88px); overflow: hidden; }
+  .nota-ajuste .nota-ajuste-formulario { min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; }
+  .nota-ajuste-pie { grid-template-columns: 1fr; }
+  .nota-ajuste-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .nota-ajuste-tabla { display: block; min-width: 0; }
+  .nota-ajuste-tabla thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .nota-ajuste-tabla tbody { display: block; }
+  .nota-ajuste-tabla tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; padding: 8px 10px; }
+  .nota-ajuste-tabla tr + tr { border-top: 1px solid #e2eaf2; }
+  .nota-ajuste-tabla tbody td { display: block; min-width: 0; padding: 6px 0; border: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+  .nota-ajuste-articulo, .nota-ajuste-importe { grid-column: 1 / -1; }
+  .nota-ajuste-tabla td[data-etiqueta]::before { display: block; margin-bottom: 3px; color: #71849b; font-size: 10px; content: attr(data-etiqueta); }
+  .nota-ajuste-campo-importe { width: 100%; }
+  .nota-ajuste-incluida td { background: #f5f9fc; }
+}
+
+@media (max-width: 420px) {
+  .nota-ajuste-pago { grid-template-columns: 1fr; }
+  .nota-ajuste-total { display: flex; align-items: baseline; justify-content: space-between; }
+  .nota-ajuste-datos { grid-template-columns: 1fr 1fr; }
+  .nota-inicio-cabecera, .nota-inicio-contenido, .nota-inicio .nota-acciones { padding-inline: 16px; }
+}
+
+
+/* El ajuste comparte la composici?n del documento de Nueva venta. */
+.nota-ajuste .nota-ajuste-cabecera { position: sticky; top: 0; z-index: 5; flex: 0 0 auto; border-left-color: #ed2535; box-shadow: 0 4px 12px rgb(15 44 70 / 12%); }
+.nota-ajuste .nota-ajuste-origen { padding: 16px 22px 13px; background: linear-gradient(180deg, #fbfcfe, #fff); }
+.nota-ajuste-datos dt { color: #70839a; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.nota-ajuste-datos dd { color: #294762; font-size: 12px; font-weight: 650; }
+.nota-ajuste .nota-ajuste-detalle { margin: 0 22px; padding: 13px 0 17px; border-top: 1px dashed #ccd8e1; }
+.nota-ajuste .venta-form-body-heading { align-items: flex-start; margin: 0 0 10px; }
+.nota-ajuste .venta-form-body-heading h3 { color: #16334e; font-size: 15px; font-weight: 750; letter-spacing: -.015em; }
+.nota-ajuste .venta-form-body-heading .venta-product-tools > span { padding: 5px 9px; border-radius: 999px; background: #f0f4f8; color: #607387; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nota-ajuste-ayuda { margin: 5px 0 0; color: #60778e; font-size: 12px; line-height: 1.45; }
+.nota-ajuste .nota-ajuste-lineas { margin-top: 9px; overflow-x: auto; scrollbar-gutter: stable; }
+.nota-ajuste .nota-ajuste-lineas .venta-table-head,
+.nota-ajuste .nota-ajuste-lineas .venta-line { box-sizing: border-box; width: 100%; min-width: 810px; gap: clamp(5px, .8vw, 11px); }
+.nota-ajuste .nota-ajuste-lineas.is-nota-credito .venta-table-head,
+.nota-ajuste .nota-ajuste-lineas.is-nota-credito .venta-line { grid-template-columns: minmax(190px, 1.8fr) 62px minmax(95px, .8fr) minmax(100px, .9fr) minmax(118px, 1fr) minmax(126px, 1fr); }
+.nota-ajuste .nota-ajuste-lineas.is-nota-debito .venta-table-head,
+.nota-ajuste .nota-ajuste-lineas.is-nota-debito .venta-line { grid-template-columns: minmax(210px, 2fr) 68px minmax(105px, .9fr) minmax(115px, 1fr) minmax(136px, 1.1fr); }
+.nota-ajuste .nota-ajuste-lineas .venta-table-head span:not(:first-child),
+.nota-ajuste .nota-ajuste-lineas .venta-line > :not(:first-child) { text-align: right; }
+.nota-ajuste .nota-ajuste-lineas .venta-line { align-items: center; padding: 10px 4px; }
+.nota-ajuste .nota-ajuste-lineas .venta-line-name strong { overflow: visible; text-overflow: initial; white-space: normal; overflow-wrap: anywhere; }
+.nota-ajuste .nota-ajuste-cantidad-linea { color: #3d4b59; font-variant-numeric: tabular-nums; }
+.nota-ajuste .nota-ajuste-celda-monto { color: #35516d; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.nota-ajuste .nota-ajuste-celda-saldo { min-width: 0; }
+.nota-ajuste .nota-ajuste-celda-saldo strong { color: #173b60; font-size: 12px; }
+.nota-ajuste .nota-ajuste-celda-saldo small { font-size: 10px; }
+.nota-ajuste .nota-ajuste-importe { min-width: 0; }
+.nota-ajuste .nota-ajuste-campo-importe { display: block; width: min(100%, 126px); }
+.nota-ajuste .nota-ajuste-campo-importe input { height: 34px; border-color: #d8e2ee; border-radius: 6px; font: inherit; font-size: 12px; }
+.nota-ajuste .nota-ajuste-incluida { background: #f5f9fc; }
+.nota-ajuste .nota-ajuste-pie { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .95fr); align-items: stretch; gap: 14px; margin: 0; padding: 0 22px 18px; border: 0; border-radius: 0; background: transparent; }
+.nota-ajuste .nota-ajuste-observacion { align-content: start; }
+.nota-ajuste .nota-ajuste-cierre { display: grid; gap: 10px; align-content: start; }
+.nota-ajuste .nota-ajuste-pago { grid-template-columns: minmax(120px, .8fr) minmax(160px, 1.2fr); align-items: end; gap: 10px; }
+.nota-ajuste .nota-ajuste-pago .nota-ajuste-total { align-self: center; }
+.nota-ajuste .nota-ajuste-pago .nota-ajuste-total > span { color: #617b97; font-size: 11px; font-weight: 700; }
+.nota-ajuste .nota-ajuste-pago .nota-ajuste-total > strong { color: #0f3b68; font-size: 21px; }
+.nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons { display: flex; justify-content: flex-end; gap: 9px; }
+.nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons .venta-submit { width: auto; min-width: 160px; }
+.nota-ajuste .nota-ajuste-historial { margin-top: 14px; }
+.nota-ajuste .nota-ajuste-mensaje { padding: 14px 12px; border: 1px dashed #d7e1eb; border-radius: 8px; color: #60778e; }
+@media (max-width: 820px) {
+  .nota-ajuste .nota-ajuste-pie { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .nota-ajuste .nota-ajuste-cabecera { min-height: 64px; padding: 11px 14px; }
+  .nota-ajuste .nota-ajuste-origen { padding: 12px; }
+  .nota-ajuste .nota-ajuste-detalle { margin: 0 12px; padding: 11px 0 14px; }
+  .nota-ajuste .nota-ajuste-pie { padding: 0 12px 14px; }
+  .nota-ajuste .venta-form-body-heading { align-items: flex-start; flex-direction: column; }
+  .nota-ajuste .nota-ajuste-lineas .venta-table-head,
+  .nota-ajuste .nota-ajuste-lineas .venta-line { min-width: 810px; }
+  .nota-ajuste .nota-ajuste-pago { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 8px; }
+  .nota-ajuste .nota-ajuste-pago .nota-ajuste-total > strong { font-size: 16px; }
+  .nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons { display: grid; grid-template-columns: 1fr 2fr; gap: 6px; }
+  .nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons .venta-clear { min-width: 0; padding-inline: 6px; font-size: 11px; }
+  .nota-ajuste .nota-ajuste-cierre .venta-checkout-buttons .venta-submit { width: 100%; min-width: 0; padding-inline: 8px; font-size: 11px; }
+}
