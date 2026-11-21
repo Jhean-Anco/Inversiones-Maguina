@@ -1,6 +1,6 @@
 export const inventarioMototaxisClasses = {
-  page: "block box-border min-h-0 w-full min-w-0 overflow-visible text-[#16344d]",
-  catalog: "block min-h-0 min-w-0 overflow-visible",
+  page: "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden text-[#16344d]",
+  catalog: "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
   empty: "grid min-h-40 place-content-center gap-[9px] p-6 text-center text-sm text-[#76879a] mobile-portrait:p-5 [&>strong]:text-[17px] [&>strong]:text-[#234865]",
   tableWrap: "min-h-0 w-full overflow-x-auto overflow-y-clip overscroll-x-contain",
   table: "w-full min-w-[1060px] [&_th:first-child]:min-w-[300px] [&_.inventory-moto-model-status]:whitespace-nowrap",

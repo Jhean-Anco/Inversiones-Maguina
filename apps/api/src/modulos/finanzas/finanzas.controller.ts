@@ -24,6 +24,13 @@ export class ControladorFinanzas {
   @RequierePermiso("FINANZAS.LEER")
   resumen() { return this.finanzas.resumenDelMes(); }
 
+  @Get("flujo")
+  @RequierePermiso("FINANZAS.LEER")
+  flujo(@Query("periodo") periodo?: string) {
+    if (!periodo) throw new BadRequestException("Indica el periodo del flujo financiero.");
+    return this.finanzas.flujoPorPeriodo(periodo);
+  }
+
   @Get("movimientos")
   @RequierePermiso("FINANZAS.LEER")
   movimientos(@Query("periodo") periodo?: string, @Query("fecha") fecha?: string) {

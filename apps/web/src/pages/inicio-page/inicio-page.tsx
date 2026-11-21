@@ -24,6 +24,7 @@ const FinanzasPage = lazy(() => import("../finanzas-page/finanzas-page").then((m
 const ConfiguracionSeriesPage = lazy(() => import("../configuracion-series-page/configuracion-series-page").then((modulo) => ({ default: modulo.ConfiguracionSeriesPage })));
 const SIN_PERMISOS: string[] = [];
 import { useSesion } from "../../hooks/use-sesion";
+import { useViewportProfile } from "../../utilidades/use-viewport-profile";
 import { useBorradoresDialogos } from "../../hooks/use-borradores-dialogos";
 import { AccionPrincipalProvider } from "../../components/ui/accion-principal/accion-principal";
 import { catalogAdminClasses } from "../../components/catalogo/catalogo-admin-page/catalogo-admin-classes";
@@ -36,6 +37,8 @@ export function InicioPage() {
   const navegar = useNavigate();
   const ubicacion = useLocation();
   const { perfil, salir } = useSesion();
+  const perfilViewport = useViewportProfile();
+  const perfilAmplio = perfilViewport === "laptop" || perfilViewport === "tablet-landscape";
   const permisosPerfil = perfil?.permisos ?? SIN_PERMISOS;
   const cerrarMenuMovil = useCallback(() => setMenuAbierto(false), []);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -111,15 +114,16 @@ export function InicioPage() {
   }, [ubicacion.pathname]);
 
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
+  const asideContraidoEscritorio = perfilAmplio && asideContraido;
   const tituloPagina = !autorizacionResuelta ? "Cargando sesión" : accesoDenegadoActual ? "Acceso no disponible" : submoduloActivo?.nombre ?? "Resumen";
   return (
-    <main className={`erp-layout ${clasesLayoutResponsive}${asideContraido ? ` is-collapsed grid-cols-[84px_minmax(0,1fr)]${menuAbierto ? " tablet-portrait:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-cols-[minmax(0,1fr)]" : " [&.is-collapsed]:grid-cols-[84px_minmax(0,1fr)] [&.is-collapsed]:grid-rows-[minmax(0,1fr)] tablet-portrait:grid-cols-[84px_minmax(0,1fr)] tablet-portrait:grid-rows-[minmax(0,1fr)] mobile-landscape:grid-cols-[84px_minmax(0,1fr)] mobile-landscape:grid-rows-[minmax(0,1fr)] mobile-portrait:grid-cols-[84px_minmax(0,1fr)] mobile-portrait:grid-rows-[minmax(0,1fr)]"}` : ""}${autorizacionResuelta && (dashboardActivo || colapsoDashboard) ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
+    <main className={`erp-layout ${clasesLayoutResponsive}${asideContraidoEscritorio ? ` is-collapsed grid-cols-[84px_minmax(0,1fr)]${menuAbierto ? " tablet-portrait:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-cols-[minmax(0,1fr)]" : " [&.is-collapsed]:grid-cols-[84px_minmax(0,1fr)] [&.is-collapsed]:grid-rows-[minmax(0,1fr)] tablet-portrait:grid-cols-[84px_minmax(0,1fr)] tablet-portrait:grid-rows-[minmax(0,1fr)] mobile-landscape:grid-cols-[84px_minmax(0,1fr)] mobile-landscape:grid-rows-[minmax(0,1fr)] mobile-portrait:grid-cols-[84px_minmax(0,1fr)] mobile-portrait:grid-rows-[minmax(0,1fr)]"}` : ""}${autorizacionResuelta && (dashboardActivo || colapsoDashboard) ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
       <ErpAside
         moduloActivo={moduloActivo}
         submoduloActivo={submoduloActivo}
         navegacionVisible={navegacionVisible}
         dashboardActivo={dashboardActivo}
-        contraido={asideContraido}
+        contraido={asideContraidoEscritorio}
         menuMovilAbierto={menuAbierto}
         botonMenuRef={botonMenuRef}
         onContraidoChange={setAsideContraido}
@@ -127,7 +131,7 @@ export function InicioPage() {
         onNavegarResumen={() => { setColapsoDashboard(true); setMenuAbierto(false); }}
       />
 
-      <section className={`erp-main ${clasesMainResponsive}${asideContraido && !menuAbierto ? " is-collapsed tablet-portrait:[&.is-collapsed]:col-start-2 tablet-portrait:[&.is-collapsed]:row-start-1 tablet-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-landscape:[&.is-collapsed]:col-start-2 mobile-landscape:[&.is-collapsed]:row-start-1 mobile-landscape:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-portrait:[&.is-collapsed]:col-start-2 mobile-portrait:[&.is-collapsed]:row-start-1 mobile-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)]" : ""}`}>
+      <section className={`erp-main ${clasesMainResponsive}${asideContraidoEscritorio && !menuAbierto ? " is-collapsed tablet-portrait:[&.is-collapsed]:col-start-2 tablet-portrait:[&.is-collapsed]:row-start-1 tablet-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-landscape:[&.is-collapsed]:col-start-2 mobile-landscape:[&.is-collapsed]:row-start-1 mobile-landscape:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-portrait:[&.is-collapsed]:col-start-2 mobile-portrait:[&.is-collapsed]:row-start-1 mobile-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)]" : ""}`}>
         <ErpHeader
           titulo={tituloPagina}
           rutaActual={rutaActual}

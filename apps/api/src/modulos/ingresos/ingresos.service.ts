@@ -26,6 +26,16 @@ function enlaceArchivoLocal(datos: Record<string, unknown>, tipo: string) {
   return typeof archivo?.ruta === "string" ? archivo.ruta : null;
 }
 
+function respuestaActualComprobante(datos: Record<string, unknown>) {
+  const consulta = datos.consultaComprobante && typeof datos.consultaComprobante === "object"
+    ? datos.consultaComprobante as Record<string, unknown> : {};
+  const respuestaConsultada = consulta.respuesta && typeof consulta.respuesta === "object" && !Array.isArray(consulta.respuesta)
+    ? consulta.respuesta as Record<string, unknown> : null;
+  const respuestaEmision = datos.respuesta && typeof datos.respuesta === "object" && !Array.isArray(datos.respuesta)
+    ? datos.respuesta as Record<string, unknown> : {};
+  return respuestaConsultada ?? respuestaEmision;
+}
+
 function texto(valor: unknown, campo: string, maximo: number, requerido = false) {
   if (valor === undefined || valor === null || valor === "") { if (requerido) throw new BadRequestException(`${campo} es obligatorio.`); return null; }
   if (typeof valor !== "string" || valor.trim().length > maximo || (requerido && !valor.trim())) throw new BadRequestException(`${campo} no es válido.`);
@@ -577,7 +587,7 @@ export class ServicioIngresos {
     const motivo = typeof motivoEntrada === "string" ? motivoEntrada.trim() : "";
     if (!motivo || motivo.length > 100) throw new BadRequestException("El motivo de anulación es obligatorio y admite hasta 100 caracteres.");
     if (diasEntreFechas(fecha, fechaActualPeru()) > 7) throw new BadRequestException("Venció el plazo de 7 días calendario para comunicar la baja del documento a SUNAT.");
-    const respuestaAnterior = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
+    const respuestaAnterior = respuestaActualComprobante(datos);
     if (respuestaAnterior.aceptada_por_sunat !== true) throw new BadRequestException("Solo se puede comunicar la baja de un documento aceptado por SUNAT.");
     const anterior = datos.anulacion && typeof datos.anulacion === "object" ? datos.anulacion as Record<string, unknown> : null;
     if (anterior?.estado === "ANULADO") throw new BadRequestException("El documento ya figura anulado.");

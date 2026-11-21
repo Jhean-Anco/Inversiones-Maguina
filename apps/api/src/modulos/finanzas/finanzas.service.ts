@@ -62,6 +62,7 @@ export class ServicioFinanzas {
         COALESCE(SUM(importe) FILTER (WHERE sentido = 'EGRESO'), 0)::numeric(14,2)::text AS egresos
       FROM (
         SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+        UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
         UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
@@ -81,6 +82,54 @@ export class ServicioFinanzas {
         activa: cuenta.activa, ingresosMes: ingresos.toFixed(2), egresosMes: egresos.toFixed(2), netoMes: (ingresos - egresos).toFixed(2) };
     });
     return { periodo: hasta.slice(0, 7), items };
+  }
+
+  async flujoPorPeriodo(periodoEntrada: string) {
+    if (!( ["DIA", "SEMANA", "MES"] as const).includes(periodoEntrada as "DIA" | "SEMANA" | "MES")) {
+      throw new BadRequestException("Selecciona un periodo válido para el flujo financiero.");
+    }
+    const periodo = periodoEntrada as "DIA" | "SEMANA" | "MES";
+    const hasta = fechaActualPeru();
+    const fechaInicial = new Date(`${hasta}T00:00:00.000Z`);
+    if (periodo === "DIA") fechaInicial.setUTCDate(fechaInicial.getUTCDate() - 6);
+    else if (periodo === "SEMANA") {
+      fechaInicial.setUTCDate(fechaInicial.getUTCDate() - ((fechaInicial.getUTCDay() + 6) % 7) - 49);
+    } else {
+      fechaInicial.setUTCDate(1);
+      fechaInicial.setUTCMonth(fechaInicial.getUTCMonth() - 11);
+    }
+    const desde = fechaInicial.toISOString().slice(0, 10);
+    const [cuentasMonedas, filas] = await Promise.all([
+      db.selectDistinct({ moneda: cuentasFinancieras.moneda }).from(cuentasFinancieras).orderBy(asc(cuentasFinancieras.moneda)),
+      db.execute(sql`
+        SELECT cuenta.moneda,
+          to_char(CASE
+            WHEN ${periodo} = 'DIA' THEN pagos.fecha::date
+            WHEN ${periodo} = 'SEMANA' THEN date_trunc('week', pagos.fecha)::date
+            ELSE date_trunc('month', pagos.fecha)::date
+          END, 'YYYY-MM-DD') AS fecha,
+          COALESCE(SUM(pagos.importe) FILTER (WHERE pagos.sentido = 'INGRESO'), 0)::numeric(14,2)::text AS ingresos,
+          COALESCE(SUM(pagos.importe) FILTER (WHERE pagos.sentido = 'EGRESO'), 0)::numeric(14,2)::text AS egresos
+        FROM (
+          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+          UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+          UNION ALL SELECT cuenta_financiera_id,
+            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
+            FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+        ) AS pagos
+        INNER JOIN cuentas_financieras AS cuenta ON cuenta.id = pagos.cuenta_id
+        WHERE pagos.fecha >= ${desde}::date AND pagos.fecha <= ${hasta}::date
+        GROUP BY cuenta.moneda, fecha
+        ORDER BY fecha, cuenta.moneda
+      `) as unknown as Array<{ moneda: typeof monedas[number]; fecha: string; ingresos: string; egresos: string }>,
+    ]);
+    return { periodo, desde, hasta, monedas: cuentasMonedas.map((item) => item.moneda), items: filas.map((fila) => ({
+      moneda: fila.moneda, fecha: fila.fecha, ingresos: fila.ingresos, egresos: fila.egresos,
+      neto: (Number(fila.ingresos) - Number(fila.egresos)).toFixed(2),
+    })) };
   }
 
   async movimientosPorPeriodo(periodoEntrada: string, fechaEntrada: string) {
@@ -112,6 +161,7 @@ export class ServicioFinanzas {
           COALESCE(SUM(importe), 0)::numeric(14,2)::text AS importe
         FROM (
           SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+          UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
           UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis

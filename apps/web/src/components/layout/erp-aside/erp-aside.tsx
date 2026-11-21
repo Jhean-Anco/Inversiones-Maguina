@@ -29,7 +29,7 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
   const perfilViewport = useViewportProfile();
   const perfilAmplio = perfilViewport === "laptop" || perfilViewport === "tablet-landscape";
   const perfilCompacto = !perfilAmplio;
-  const asideOculto = perfilCompacto && !menuMovilAbierto && !contraido;
+  const asideOculto = perfilCompacto && !menuMovilAbierto;
   const [seccionAbierta, setSeccionAbierta] = useState<string | null>(null);
   const asideRef = useRef<HTMLElement>(null);
   const menuEstuvoAbierto = useRef(false);
@@ -112,7 +112,7 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
               to={elemento.ruta}
               aria-current={dashboardActivo ? "page" : undefined}
               title={contraido ? elemento.nombre : undefined}
-              onClick={() => { onNavegarResumen(); if (perfilAmplio) onContraidoChange(true); }}
+              onClick={() => { onNavegarResumen(); onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
             >
               <Icono nombre={elemento.icono} /><span className={asideClasses.navigationLabel}>{elemento.nombre}</span>
             </Link>
