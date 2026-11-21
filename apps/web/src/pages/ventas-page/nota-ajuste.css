@@ -88,19 +88,6 @@
 .nota-ajuste-nota-info { display: grid; min-width: 0; justify-items: start; gap: 4px; overflow-wrap: anywhere; }
 .nota-ajuste-nota-info strong { color: #173b60; }
 .nota-ajuste-nota-acciones { flex-wrap: wrap; }
-.nota-inicio { color: #173554; }
-.nota-inicio::backdrop { background: rgb(13 36 59 / 58%); }
-.nota-inicio-cabecera { display: flex; align-items: center; gap: 12px; padding: 18px 22px; background: linear-gradient(112deg,#0b376a 0%,#103f72 64%,#092c53 100%); color: #fff; }
-.nota-inicio-cabecera h2 { margin: 0; font-size: 20px; line-height: 1.25; }
-.nota-inicio-contenido { display: grid; gap: 12px; padding: 18px 22px; }
-.nota-inicio-origen { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; border-radius: 8px; padding: 9px 11px; background: #f5f8fb; font-size: 12px; overflow-wrap: anywhere; }
-.nota-inicio-origen span { color: #60778e; }
-.nota-inicio-contenido p { margin: 0; font-size: 13px; line-height: 1.5; }
-.nota-inicio-contenido .nota-inicio-aclaracion { color: #60778e; font-size: 12px; }
-.nota-inicio .nota-acciones { padding: 0 22px 18px; }
-.nota-inicio .nota-boton { min-height: 42px; border-radius: 9px; font-size: 12px; }
-.nota-inicio .nota-boton-primario { border-color: #123f69; background: linear-gradient(130deg,#124778,#0b376a); color: white; }
-.nota-inicio :is(button, select, input, textarea, a):focus-visible { outline: 2px solid #3784bd; outline-offset: 2px; }
 
 @media (max-width: 820px) {
   .nota-ajuste .venta-form-paper { max-height: calc(100dvh - 88px); overflow: hidden; }
@@ -126,7 +113,6 @@
   .nota-ajuste-pago { grid-template-columns: 1fr; }
   .nota-ajuste-total { display: flex; align-items: baseline; justify-content: space-between; }
   .nota-ajuste-datos { grid-template-columns: 1fr 1fr; }
-  .nota-inicio-cabecera, .nota-inicio-contenido, .nota-inicio .nota-acciones { padding-inline: 16px; }
 }
 
 

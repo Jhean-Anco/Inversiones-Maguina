@@ -1296,6 +1296,13 @@
       "when": 1795154270290,
       "tag": "0184_garantias_compra_por_modelo",
       "breakpoints": true
+    },
+    {
+      "idx": 185,
+      "version": "7",
+      "when": 1795272407612,
+      "tag": "0185_notas_cuenta_financiera",
+      "breakpoints": true
     }
   ]
 }

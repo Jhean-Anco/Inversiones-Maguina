@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { ServicioAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.service";
 import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioIngresos } from "./modulos/ingresos/ingresos.service";
+import { ServicioFinanzas } from "./modulos/finanzas/finanzas.service";
 import { ServicioEntradasStock } from "./modulos/inventario/entradas-stock.service";
 import { ServicioProductos } from "./modulos/inventario/productos.service";
 import { ServicioMovimientosStock } from "./modulos/inventario/movimientos-stock.service";
@@ -43,6 +44,7 @@ const productoIds: string[] = [];
 const egresoIds: string[] = [];
 const entradaStockIds: string[] = [];
 const cuentaFinancieraIds: string[] = [];
+const comprobantesRelacionadosIds: string[] = [];
 const presentacionPorProducto = new Map<string, string>();
 const clavesVenta: string[] = [];
 const seriesFiscalesPrueba: string[] = [];
@@ -441,6 +443,40 @@ test("respuesta aceptada del NubeFact simulado marca la boleta como emitida", as
   }
 });
 
+test("las notas de crédito y débito mueven la cuenta seleccionada y el resumen financiero", async () => {
+  const producto = await crearProductoConStock(2);
+  const cuentaId = await crearCuentaEfectivo();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({ aceptada_por_sunat: true })) as typeof fetch;
+
+  try {
+    const venta = await servicio.crear(datosBoleta(producto.presentacionId), usuarioId);
+    const [detalle] = await db.select().from(esquema.ingresosDetalle).where(eq(esquema.ingresosDetalle.ingresoId, venta.id));
+    assert.ok(detalle);
+    const finanzas = new ServicioFinanzas();
+    const resumenInicial = await finanzas.resumenDelMes();
+    const cuentaInicial = resumenInicial.items.find((item) => item.id === cuentaId);
+    assert.ok(cuentaInicial);
+
+    const debito = await servicio.emitirNota(venta.id, { tipo: "NOTA_DEBITO", cuentaFinancieraId: cuentaId, medioPago: "EFECTIVO", lineas: [{ detalleId: detalle.id, monto: "2.00" }] }, usuarioId);
+    const credito = await servicio.emitirNota(venta.id, { tipo: "NOTA_CREDITO", cuentaFinancieraId: cuentaId, medioPago: "EFECTIVO", lineas: [{ detalleId: detalle.id, monto: "1.00" }] }, usuarioId);
+    comprobantesRelacionadosIds.push(debito.id, credito.id);
+
+    const notasGuardadas = await db.select({ id: esquema.comprobantesRelacionados.id, cuentaFinancieraId: esquema.comprobantesRelacionados.cuentaFinancieraId })
+      .from(esquema.comprobantesRelacionados).where(inArray(esquema.comprobantesRelacionados.id, [debito.id, credito.id]));
+    assert.equal(notasGuardadas.length, 2);
+    assert.ok(notasGuardadas.every((nota) => nota.cuentaFinancieraId === cuentaId));
+
+    const cuentaFinal = (await finanzas.resumenDelMes()).items.find((item) => item.id === cuentaId);
+    assert.ok(cuentaFinal);
+    assert.equal(Number(cuentaFinal.ingresosMes) - Number(cuentaInicial.ingresosMes), 2);
+    assert.equal(Number(cuentaFinal.egresosMes) - Number(cuentaInicial.egresosMes), 1);
+    assert.equal(Number(cuentaFinal.netoMes) - Number(cuentaInicial.netoMes), 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("compra de repuestos registra el documento, actualiza saldo y genera movimiento en PostgreSQL", async () => {
   const producto = await crearProductoConStock(0);
   const cuentaId = await crearCuentaEfectivo();
@@ -706,6 +742,10 @@ after(async () => {
     if (seriesFiscalesPrueba.length) {
       await db.delete(esquema.nubefactCorrelativos).where(inArray(esquema.nubefactCorrelativos.serie, seriesFiscalesPrueba));
       await db.delete(esquema.seriesComprobantes).where(inArray(esquema.seriesComprobantes.serie, seriesFiscalesPrueba));
+    }
+    if (comprobantesRelacionadosIds.length) {
+      await db.delete(esquema.comprobantesRelacionadosDetalle).where(inArray(esquema.comprobantesRelacionadosDetalle.comprobanteRelacionadoId, comprobantesRelacionadosIds));
+      await db.delete(esquema.comprobantesRelacionados).where(inArray(esquema.comprobantesRelacionados.id, comprobantesRelacionadosIds));
     }
     if (egresoIds.length) {
       await db.delete(esquema.egresosPagos).where(inArray(esquema.egresosPagos.egresoId, egresoIds));
