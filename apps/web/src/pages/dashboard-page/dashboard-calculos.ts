@@ -1,6 +1,7 @@
-import type { FlujoIngresosDashboard } from "../../services/reportes.service";
+import type { FiltroReporte, FlujoIngresosDashboard } from "../../services/reportes.service";
 import type { FlujoFinanciero } from "../../services/finanzas.service";
 import type { ImportesGrafico, PuntoIngresos } from "./dashboard-chart-types";
+import { isoLocal } from "./dashboard-fechas";
 
 export type ClaveSerie = "total" | keyof ImportesGrafico;
 export type Comparativo = {
@@ -57,15 +58,6 @@ export function compararMesAcumulado(dias: ReadonlyArray<PuntoIngresos>, hoy: st
   const valorActual = serieActual.at(-1) ?? 0;
   const valorAnterior = serieAnterior.at(-1) ?? 0;
   return { actual: valorActual, anterior: valorAnterior, variacion: variacionPorcentual(valorActual, valorAnterior), serieActual, serieAnterior };
-}
-
-export function compararHoyConAyer(dias: ReadonlyArray<PuntoIngresos>, hoy: string) {
-  const ayer = new Date(crearFecha(hoy));
-  ayer.setUTCDate(ayer.getUTCDate() - 1);
-  const total = (fecha: string) => dias.find((dia) => dia.fecha === fecha)?.total ?? 0;
-  const valorHoy = total(hoy);
-  const valorAyer = total(aIso(ayer));
-  return { actual: valorHoy, anterior: valorAyer, variacion: variacionPorcentual(valorHoy, valorAyer) };
 }
 
 function ticketEnRango(filas: FlujoIngresosDashboard["flujoPorComprobante"], desde: string, hasta: string) {
@@ -351,4 +343,67 @@ export function construirMapaCalor(celdas: ReadonlyArray<{ dia: number; hora: nu
     }
   }
   return { horas, filas, mejor };
+}
+
+const tiposImporte = ["BOLETA", "FACTURA", "NOTA_VENTA", "NOTA_DEBITO", "ADELANTO", "PRODUCTO", "SERVICIO", "MOTOTAXI"] as const;
+const origenesIngreso = ["BOLETA", "FACTURA", "NOTA_VENTA", "NOTA_DEBITO", "ADELANTO"] as const;
+const importesVacios = () => Object.fromEntries(tiposImporte.map((tipo) => [tipo, 0])) as ImportesGrafico;
+
+/** Une las cuatro series del reporte en un punto por día del rango, con ceros en los días sin movimiento. */
+export function serieDiariaIngresos(reporte: FlujoIngresosDashboard | null, rango: FiltroReporte): PuntoIngresos[] {
+  if (!reporte) return [];
+  const porFecha = new Map<string, ImportesGrafico>();
+  const acumular = (fecha: string, clave: keyof ImportesGrafico, total: string) => {
+    const importes = porFecha.get(fecha) ?? importesVacios();
+    importes[clave] += Number(total);
+    porFecha.set(fecha, importes);
+  };
+  for (const fila of reporte.flujoPorComprobante) acumular(fila.fecha, fila.tipoComprobante, fila.total);
+  for (const fila of reporte.flujoPorNotaDebito) acumular(fila.fecha, "NOTA_DEBITO", fila.total);
+  for (const fila of reporte.flujoPorAdelanto) acumular(fila.fecha, "ADELANTO", fila.total);
+  for (const fila of reporte.flujoPorConcepto) acumular(fila.fecha, fila.tipo, fila.total);
+  const dias: PuntoIngresos[] = [];
+  const fin = new Date(`${rango.hasta}T00:00:00`);
+  for (let fecha = new Date(`${rango.desde}T00:00:00`); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
+    const iso = isoLocal(fecha);
+    const importes = porFecha.get(iso) ?? importesVacios();
+    dias.push({ fecha: iso, ...importes, total: origenesIngreso.reduce((suma, tipo) => suma + importes[tipo], 0) });
+  }
+  return dias;
+}
+
+const etiquetaMes = (anio: number, mesIndice: number) => new Date(Date.UTC(anio, mesIndice, 1)).toLocaleDateString("es-PE", { timeZone: "UTC", month: "short" }).replace(".", "");
+
+export type VentasDelMes = { clave: string; etiqueta: string; PRODUCTO: number; SERVICIO: number; MOTOTAXI: number; total: number };
+
+/** Ventas de los últimos 12 meses (el actual incluido, aún en curso) repartidas en repuestos, servicios y mototaxis. */
+export function ventasMensualesPorConcepto(dias: ReadonlyArray<PuntoIngresos>, hoy: string): VentasDelMes[] {
+  const [anio, mes] = hoy.split("-").map(Number);
+  return Array.from({ length: 12 }, (_, indice) => {
+    const fecha = new Date(Date.UTC(anio, mes - 1 - 11 + indice, 1));
+    const clave = aIso(fecha).slice(0, 7);
+    const delMes = dias.filter((dia) => dia.fecha.startsWith(clave));
+    const suma = (concepto: "PRODUCTO" | "SERVICIO" | "MOTOTAXI") => delMes.reduce((total, dia) => total + dia[concepto], 0);
+    const [repuestos, servicios, mototaxis] = [suma("PRODUCTO"), suma("SERVICIO"), suma("MOTOTAXI")];
+    const enCurso = indice === 11;
+    return { clave, etiqueta: `${etiquetaMes(fecha.getUTCFullYear(), fecha.getUTCMonth())}${enCurso ? "*" : ""}`, PRODUCTO: repuestos, SERVICIO: servicios, MOTOTAXI: mototaxis, total: repuestos + servicios + mototaxis };
+  });
+}
+
+export type FlujoDelMes = { clave: string; etiqueta: string; ingresos: number; egresos: number; neto: number };
+
+/** Ingresos y egresos de caja por mes, desde el primer mes del flujo hasta el mes en curso, en una moneda. */
+export function ingresosEgresosPorMes(flujo: FlujoFinanciero, moneda: FlujoFinanciero["monedas"][number]): FlujoDelMes[] {
+  const porClave = new Map(flujo.items.filter((item) => item.moneda === moneda).map((item) => [item.fecha.slice(0, 7), item]));
+  const [anioDesde, mesDesde] = flujo.desde.split("-").map(Number);
+  const [anioHasta, mesHasta] = flujo.hasta.split("-").map(Number);
+  const meses = (anioHasta - anioDesde) * 12 + (mesHasta - mesDesde) + 1;
+  return Array.from({ length: Math.max(meses, 0) }, (_, indice) => {
+    const fecha = new Date(Date.UTC(anioDesde, mesDesde - 1 + indice, 1));
+    const clave = aIso(fecha).slice(0, 7);
+    const item = porClave.get(clave);
+    const ingresos = Number(item?.ingresos ?? 0);
+    const egresos = Number(item?.egresos ?? 0);
+    return { clave, etiqueta: etiquetaMes(fecha.getUTCFullYear(), fecha.getUTCMonth()), ingresos, egresos, neto: ingresos - egresos };
+  });
 }

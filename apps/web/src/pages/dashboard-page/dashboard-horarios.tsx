@@ -19,7 +19,7 @@ export function MapaCalorHorarios({ horarios, soles }: { horarios: HorariosVenta
       </div>
       {!mapa ? <div className="inicio-chart-empty">Aún no hay ventas con hora confiable para mostrar.</div> : (
         <div className="overflow-x-auto overscroll-x-contain" role="region" aria-label="Mapa de calor de ventas por día y hora; desplázate horizontalmente si no cabe" tabIndex={0}>
-          <table className="w-full min-w-[520px] border-separate border-spacing-[3px] text-[10px] text-[#5a6f84]">
+          <table className="w-full min-w-[380px] border-separate border-spacing-[3px] text-[10px] text-[#5a6f84]">
             <caption className="sr-only">Ventas por día de la semana y hora. Mientras más oscura la celda, más se vendió.{mapa.mejor ? ` La mejor franja es el ${mapa.mejor.diaCompleto} de ${hora(mapa.mejor.hora)} a ${hora(mapa.mejor.hora + 1)}.` : ""}</caption>
             <thead><tr><td className="w-10" />{mapa.horas.map((valor) => <th key={valor} scope="col" className="font-bold">{valor}h</th>)}</tr></thead>
             <tbody>
@@ -42,9 +42,9 @@ export function MapaCalorHorarios({ horarios, soles }: { horarios: HorariosVenta
         {mapa?.mejor && <span>Mejor franja: <b className="text-[#244967]">{mapa.mejor.diaCompleto} de {hora(mapa.mejor.hora)} a {hora(mapa.mejor.hora + 1)}</b> ({formato(mapa.mejor.valor)})</span>}
       </div>
       <p className="m-0 text-[10px] text-[#5a6f84]">
-        Se usaron {horarios.ventasConsideradas} de {horarios.ventasVigentes} ventas de los últimos 90 días.
-        {descartadas > 0 ? " Las demás se registraron otro día distinto al de su emisión, así que su hora no refleja cuándo se vendieron." : ""}
-        {horarios.ventasConsideradas > 0 && horarios.ventasConsideradas < POCAS_VENTAS ? " Todavía hay pocas ventas para ver un patrón confiable." : ""}
+        Se usaron {horarios.ventasConsideradas} de {horarios.ventasVigentes} ventas.
+        {descartadas > 0 ? " Las demás se cargaron otro día y su hora no es fiable." : ""}
+        {horarios.ventasConsideradas > 0 && horarios.ventasConsideradas < POCAS_VENTAS ? " Aún son pocas para ver un patrón." : ""}
       </p>
     </div>
   );

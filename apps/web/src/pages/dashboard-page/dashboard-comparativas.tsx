@@ -80,9 +80,9 @@ export function RitmoDelMesChart({ ritmo, soles }: { ritmo: RitmoDelMes; soles: 
         {series.map((serie) => <span key={serie.nombre} role="listitem"><i aria-hidden="true" style={{ backgroundColor: serie.color, opacity: "punteada" in serie ? 0.55 : 1 }} />{serie.nombre}</span>)}
       </div>
       <p className="m-0 text-[10px] text-[#5a6f84]">
-        {ritmo.proyeccionCierre !== null ? <>Si el ritmo se mantiene, cerrarás en <b className="text-[#244967]">{soles(ritmo.proyeccionCierre)}</b>. </> : null}
-        {ritmo.hayMesAnterior ? <>El mes anterior cerró en <b className="text-[#244967]">{soles(ritmo.cierreMesAnterior)}</b>. </> : null}
-        {ritmo.hayAnioPasado ? <>El mismo mes del año pasado cerró en <b className="text-[#244967]">{soles(ritmo.cierreAnioPasado)}</b>.</> : null}
+        {ritmo.proyeccionCierre !== null ? <>Proyección al cierre: <b className="text-[#244967]">{soles(ritmo.proyeccionCierre)}</b> · </> : null}
+        {ritmo.hayMesAnterior ? <>Mes anterior: <b className="text-[#244967]">{soles(ritmo.cierreMesAnterior)}</b>{ritmo.hayAnioPasado ? " · " : ""}</> : null}
+        {ritmo.hayAnioPasado ? <>Año pasado: <b className="text-[#244967]">{soles(ritmo.cierreAnioPasado)}</b></> : null}
       </p>
     </div>
   );

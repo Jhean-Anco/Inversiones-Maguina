@@ -41,10 +41,10 @@ function BarraMeta({ fila, soles }: { fila: AvanceMeta; soles: Soles }) {
       </div>
       <p className="m-0 text-[10px] text-[#5a6f84]">
         {fila.meta === null ? "Sin meta definida." : <>
-          {fila.avance !== null ? `${porcentaje(fila.avance)} de la meta. ` : ""}
-          {fila.estado ? <b style={{ color: colorEstado[fila.estado] }}>{textoEstado[fila.estado]}{fila.esperado !== null ? ` frente al ritmo esperado (${formato(fila.esperado)})` : ""}.</b> : null}
+          {fila.avance !== null ? `${porcentaje(fila.avance)} de la meta · ` : ""}
+          {fila.estado ? <b style={{ color: colorEstado[fila.estado] }}>{textoEstado[fila.estado]}</b> : null}
         </>}
-        {fila.anterior !== null ? ` Mes anterior: ${formato(fila.anterior)}.` : ""}
+        {fila.anterior !== null ? ` · Mes anterior: ${formato(fila.anterior)}` : ""}
       </p>
     </div>
   );
@@ -91,7 +91,7 @@ function EditorMetas({ metas, onGuardar, onCerrar }: { metas: MetasDashboard["me
           <option value="MES">Solo este mes</option>
         </select>
       </label>
-      <p className="m-0 text-[10px] text-[#5a6f84]">Deja un campo vacío para quitar su meta. Una meta propia de un mes tiene prioridad sobre la de todos los meses.</p>
+      <p className="m-0 text-[10px] text-[#5a6f84]">Vacío quita la meta. La de un mes tiene prioridad.</p>
       {error && <p className="m-0 text-[11px] font-bold text-[#a8283b]" role="alert">{error}</p>}
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onCerrar} disabled={guardando} className="min-h-9 rounded-lg border border-[#cbd8e4] bg-white px-3 text-[11px] font-bold text-[#244967] hover:bg-[#f5f8fb] disabled:opacity-60">Cancelar</button>
@@ -106,7 +106,7 @@ export function AvanceMetasPanel({ avances, soles, metas, puedeConfigurar, onGua
   const sinMetas = avances.every((fila) => fila.meta === null);
   return (
     <div className="grid gap-4">
-      {sinMetas && !editando && <p className="m-0 rounded-xl border border-dashed border-[#cbd8e4] p-3 text-[11px] text-[#5a6f84]">Aún no hay metas definidas. {puedeConfigurar ? "Defínelas para ver qué tan cerca estás." : "Pide a un administrador de finanzas que las defina."}</p>}
+      {sinMetas && !editando && <p className="m-0 rounded-xl border border-dashed border-[#cbd8e4] p-3 text-[11px] text-[#5a6f84]">Sin metas definidas.{puedeConfigurar ? "" : " Pide a finanzas que las defina."}</p>}
       {avances.map((fila) => <BarraMeta key={fila.clave} fila={fila} soles={soles} />)}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-[#5a6f84]" role="list" aria-label="Leyenda de las barras">
         <span role="listitem"><b className="text-[#d62f4f]">▌</b> Meta</span>
