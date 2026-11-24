@@ -18,6 +18,9 @@ type ErpHeaderProps = {
   menuMovilAbierto: boolean;
   botonMenuRef: RefObject<HTMLButtonElement | null>;
   cantidadNotificaciones: number;
+  hayMasAlertasStock: boolean;
+  cargandoMasAlertasStock: boolean;
+  cargarMasAlertasStock: () => Promise<void>;
   cargandoAlertasStock: boolean;
   errorAlertasStock: string;
   alertasStockBajo: AlertaStockBajo[];
@@ -37,6 +40,9 @@ export function ErpHeader({
   menuMovilAbierto,
   botonMenuRef,
   cantidadNotificaciones,
+  hayMasAlertasStock,
+  cargandoMasAlertasStock,
+  cargarMasAlertasStock,
   cargandoAlertasStock,
   errorAlertasStock,
   alertasStockBajo,
@@ -112,11 +118,22 @@ export function ErpHeader({
             <Icono nombre="notificaciones" />
             {cantidadNotificaciones > 0 && <span className={`topbar-notification-badge ${headerClasses.notificationBadge}`} aria-hidden="true">{cantidadNotificaciones > 99 ? "99+" : cantidadNotificaciones}</span>}
           </button>
-          <section id="erp-notifications-panel" className={`topbar-popover ${headerClasses.popover}`} aria-labelledby="erp-notifications-title" aria-live="polite" hidden={!notificacionesAbiertas}>
+          <section
+            id="erp-notifications-panel"
+            className={`topbar-popover ${headerClasses.popover}`}
+            aria-labelledby="erp-notifications-title"
+            aria-live="polite"
+            hidden={!notificacionesAbiertas}
+            onScroll={(evento) => {
+              const panel = evento.currentTarget;
+              if (hayMasAlertasStock && panel.scrollHeight - panel.scrollTop - panel.clientHeight <= 120) void cargarMasAlertasStock();
+            }}
+          >
               <div className={`topbar-notification-heading ${headerClasses.popoverHeading}`}>
                 <strong id="erp-notifications-title">Notificaciones</strong>
                 <span>{cargandoAlertasStock ? "Actualizando…" : `${cantidadNotificaciones} activas`}</span>
               </div>
+              {cargandoAlertasStock && alertasStockBajo.length === 0 && seriesFaltantes.length === 0 && <div className="px-4 py-5 text-center text-xs text-[#71849b]" role="status">Cargando alertas…</div>}
               {notificacionesAbiertas && errorAlertasStock && <>
                 <NotificacionFlotante mensaje={errorAlertasStock} accion={{ etiqueta: "Reintentar", ejecutar: () => void cargarAlertasStock() }} />
                 <button className="text-sm font-semibold text-primary" type="button" onClick={() => void cargarAlertasStock()}>Reintentar carga de alertas</button>
@@ -147,6 +164,7 @@ export function ErpHeader({
                   );
                 })}
               </div>}
+              {cargandoMasAlertasStock && <div className="px-4 py-4 text-center text-xs text-[#71849b]" role="status">Cargando más alertas…</div>}
               {cantidadNotificaciones === 0 && !cargandoAlertasStock && !errorAlertasStock && <div className={`topbar-empty-notifications ${headerClasses.emptyNotifications}`}><span aria-hidden="true"><Icono nombre="notificaciones" /></span><strong>{puedeLeerInventario || puedeVerAlertasIngresos ? "Sin alertas activas" : "No tienes notificaciones disponibles"}</strong><small>{puedeLeerInventario || puedeVerAlertasIngresos ? "Te avisaremos si el inventario requiere atención o falta configurar una serie." : "Solicita acceso a inventario o ingresos para consultar alertas."}</small></div>}
           </section>
         </div>

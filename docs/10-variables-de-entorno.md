@@ -20,7 +20,6 @@
 | `DESCUENTO_MAXIMO_PORCENTAJE` | API | no | 0 | servidor | configuración |
 | `APIS_PERU_TOKEN` | API | no | vacío | servidor | secreto |
 | `UPLOADS_DIR` | API | no | `storage` | servidor | ruta interna |
-| `IMAGEN_MAXIMO_BYTES` | API | no | 5242880 | servidor | interna |
 | `VITE_API_URL` | web/build | no | vacío; ejemplo usa localhost:3000 | build/navegador | público; nunca incluir secreto |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` | PostgreSQL/Compose | dependen del perfil | magina, postgres, puertos perfil | local/servidor | contraseña secreta |
 | `API_BASE_URL`, `E2E_BASE_URL`, `CI` | pruebas | según suite | base E2E: localhost:4173 | CI/pruebas | configuración |

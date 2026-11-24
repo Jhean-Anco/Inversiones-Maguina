@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
@@ -17,6 +17,9 @@ export class ControladorMototaxis {
   @Post("marcas") @RequierePermiso("MOTOTAXIS.CREAR") crearMarca(@Body() datos: unknown) { return this.mototaxis.crearMarca(datos); }
   @Get("modelos") @RequierePermiso("MOTOTAXIS.LEER") listarModelos(@Query("busqueda") busqueda?: string, @Query("incluirInactivos") incluirInactivos?: string) { return this.mototaxis.listarModelos(busqueda, incluirInactivos === "true"); }
   @Get("modelos/:id/analisis") @RequierePermiso("MOTOTAXIS.LEER") obtenerAnalisisModelo(@Param("id") id: string) { return this.mototaxis.obtenerAnalisisModelo(id); }
+  @Get("modelos/:id/garantia") @RequierePermiso("MOTOTAXIS.LEER") obtenerGarantiaModelo(@Param("id") id: string) { return this.mototaxis.obtenerGarantiaModelo(id); }
+  @Put("modelos/:id/garantia") @RequierePermiso("MOTOTAXIS.EDITAR") guardarGarantiaModelo(@Param("id") id: string, @Body() datos: unknown) { return this.mototaxis.guardarGarantiaModelo(id, datos); }
+  @Post("ventas/:detalleId/garantia") @RequierePermiso("MOTOTAXIS.CREAR") aplicarGarantiaVenta(@Param("detalleId") detalleId: string) { return this.mototaxis.aplicarGarantiaVenta(detalleId); }
   @Post("modelos") @RequierePermiso("MOTOTAXIS.CREAR") crearModelo(@Body() datos: unknown) { return this.mototaxis.crearModelo(datos); }
   @Get("modelos/:id/precios") @RequierePermiso("MOTOTAXIS.LEER") listarPreciosModelo(@Param("id") id: string) { return this.mototaxis.listarPreciosModelo(id); }
   @Patch("modelos/:id/precio-venta") @RequierePermiso("MOTOTAXIS.EDITAR") actualizarPrecioVentaModelo(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.actualizarPrecioVentaModelo(id, datos, solicitud.usuario.id); }

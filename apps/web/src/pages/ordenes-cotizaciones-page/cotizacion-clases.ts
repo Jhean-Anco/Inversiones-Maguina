@@ -64,10 +64,10 @@ export const cotizacionClases = {
   pendingDocument: "text-[11px] font-bold text-[#9a5b00]",
   listHeader: "!items-center !gap-5 !bg-white !px-5 !pt-[14px] !pb-[17px] [&_.listado-maestro-resumen]:!text-[11px] [&_.listado-maestro-resumen]:!font-[650] [&_.listado-maestro-resumen]:!text-[#72859a] mobile-landscape:[&_.listado-maestro-resumen]:!self-end mobile-portrait:[&_.listado-maestro-resumen]:!self-end",
   listControls: "min-w-0 !items-end !gap-3",
-  listFilters: "!grid !w-full !grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(130px,.7fr))] !items-end !gap-[10px]",
+  listFilters: "!grid !w-full !grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(130px,.7fr))] !items-end !gap-[10px]",
   filterLabel: "grid min-w-0 gap-[5px] text-[11px] font-[750] text-[#365b7c]",
   filterControl: "!box-border !min-h-10 !w-full !min-w-0 !rounded-lg !border !border-[#cbd9e6] !bg-white !px-[10px] !text-xs !text-[#244562] focus:!border-[#8baecc] focus:!outline-none focus:!shadow-[0_0_0_3px_#e8f0f8]",
-  filtersMobile: "mobile-landscape:!grid-cols-2 mobile-landscape:[&>input]:!col-span-full mobile-portrait:!grid-cols-1 mobile-portrait:[&>input]:!col-start-1",
+  filtersMobile: "mobile-landscape:!grid-cols-2 mobile-landscape:[&>input]:!col-span-full mobile-portrait:!grid-cols-2 mobile-portrait:!gap-2 mobile-portrait:[&>input]:!col-span-full",
   listHeaderMobile: "mobile-landscape:!items-stretch mobile-landscape:!flex-col mobile-landscape:!gap-[9px] mobile-landscape:!p-3 mobile-portrait:!items-stretch mobile-portrait:!flex-col mobile-portrait:!gap-[9px] mobile-portrait:!p-3",
   controlsMobile: "mobile-landscape:!items-stretch mobile-portrait:!items-stretch",
 } as const;

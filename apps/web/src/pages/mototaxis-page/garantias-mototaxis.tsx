@@ -21,7 +21,7 @@ type Props = {
 
 export function GarantiasMototaxis({ garantias, reclamos, cargando, puedeCrear, puedeEditar, alActualizar }: Props) {
   const hoy = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
-  const [busqueda, setBusqueda] = useState("");
+  const [busqueda, setBusqueda] = useState(() => new URLSearchParams(window.location.search).get("modelo") ?? "");
   const [vigencia, setVigencia] = useState("");
   const [filtroReclamo, setFiltroReclamo] = useState("");
   const [ficha, setFicha] = useState<GarantiaMototaxi | null>(null);
@@ -89,7 +89,7 @@ export function GarantiasMototaxis({ garantias, reclamos, cargando, puedeCrear, 
       renderizarFila={(r) => {
         const g = porId.get(r.garantiaId);
         return <tr key={r.id}>
-          <td><strong>{g ? nombre(g) : "Mototaxi"}</strong><small className="block break-words">{r.descripcionFalla}</small></td>
+          <td><strong>{g ? nombre(g) : "Mototaxi"}</strong>{r.ventaCodigo && <small className="block">Venta {r.ventaCodigo} · {r.ventaCliente || "Cliente sin nombre"}</small>}<small className="block break-words">{r.descripcionFalla}</small></td>
           <td>{fechaInventario(r.fecha)}</td><td>{monedaInventario(r.costoTotal)}</td><td>{monedaInventario(r.importeProveedor)}</td><td>{monedaInventario(r.importeEmpresa)}</td>
           <td><Etiqueta tono={r.estado === "RESUELTO" || r.estado === "APROBADO" ? "positiva" : "neutral"}>{estados[r.estado as Estado] ?? r.estado}</Etiqueta></td>
           <td><Button variant="outline" size="sm" onClick={() => { setSeguimiento(r); setEstado(""); setResolucion(""); setError(""); }}>{puedeEditar && pasos[r.estado as Estado]?.length ? "Dar seguimiento" : "Ver reclamo"}</Button></td>

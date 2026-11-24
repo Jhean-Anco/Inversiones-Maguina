@@ -1,4 +1,4 @@
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { ModoDesgloseGrafico, PuntoIngresos, PuntoVentasMensuales } from "./dashboard-chart-types";
 import type { FlujoFinanciero } from "../../services/finanzas.service";
 
@@ -16,7 +16,24 @@ const formatoCompacto = (valor: number) =>
 
 const etiquetaPeriodoFlujo = (fecha: string, periodo: FlujoFinanciero["periodo"]) => {
   const date = new Date(`${fecha}T00:00:00.000Z`);
+  if (periodo === "SEMANA") {
+    const finSemana = new Date(date);
+    finSemana.setUTCDate(finSemana.getUTCDate() + 6);
+    const diaMes = (valor: Date) => valor.toLocaleDateString("es-PE", { timeZone: "UTC", day: "numeric", month: "short" }).replaceAll(".", "");
+    const mismoMes = date.getUTCMonth() === finSemana.getUTCMonth();
+    return mismoMes
+      ? `${date.getUTCDate()}–${diaMes(finSemana)}`
+      : `${diaMes(date)}–${diaMes(finSemana)}`;
+  }
   return date.toLocaleDateString("es-PE", { timeZone: "UTC", ...(periodo === "MES" ? { month: "short" } : { day: "numeric", month: "short" }) }).replace(".", "");
+};
+
+const rangoSemanaCompleto = (fecha: string) => {
+  const inicio = new Date(`${fecha}T00:00:00.000Z`);
+  const fin = new Date(inicio);
+  fin.setUTCDate(fin.getUTCDate() + 6);
+  const formato = (valor: Date) => valor.toLocaleDateString("es-PE", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" });
+  return `${formato(inicio)} al ${formato(fin)}`;
 };
 
 export function FlujoFinancieroChart({ datos }: { datos: FlujoFinanciero }) {
@@ -25,6 +42,7 @@ export function FlujoFinancieroChart({ datos }: { datos: FlujoFinanciero }) {
   const fechas: string[] = [];
   const inicio = new Date(`${datos.desde}T00:00:00.000Z`);
   const fin = new Date(`${datos.hasta}T00:00:00.000Z`);
+  if (datos.periodo === "MES") fin.setUTCMonth(11, 1);
   for (const cursor = new Date(inicio); cursor <= fin; ) {
     fechas.push(cursor.toISOString().slice(0, 10));
     if (datos.periodo === "DIA") cursor.setUTCDate(cursor.getUTCDate() + 1);
@@ -47,19 +65,24 @@ export function FlujoFinancieroChart({ datos }: { datos: FlujoFinanciero }) {
 
         return <section key={moneda} className={`min-w-0 rounded-[13px] border border-[#e1eaf0] bg-[linear-gradient(150deg,#fff,#f7fafc)] p-3 ${datos.monedas.length === 1 ? "md:col-span-2 xl:col-span-3" : ""}`} aria-label={`Flujo financiero en ${moneda}`}>
           <h3 className="mb-1 text-xs font-extrabold tracking-wide text-[#60778e]">{moneda}</h3>
-          <div className="h-[250px] min-w-0 [&_.recharts-cartesian-axis-tick-value]:text-[10px] [&_.recharts-tooltip-wrapper]:drop-shadow-[0_8px_18px_#17354b14] mobile-portrait:h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart accessibilityLayer data={puntos} margin={{ top: 10, right: 12, bottom: 0, left: 4 }} barCategoryGap="24%">
+          <div className="min-w-0 overflow-x-auto overscroll-x-contain" role="region" aria-label={`Gráfico financiero de ${moneda}; desplázate horizontalmente para ver todos los periodos`} tabIndex={0}>
+            <div className={`h-[250px] min-w-0 [&_.recharts-cartesian-axis-tick-value]:text-[10px] [&_.recharts-tooltip-wrapper]:drop-shadow-[0_8px_18px_#17354b14] mobile-portrait:h-[260px] ${datos.periodo === "DIA" ? "mobile-portrait:min-w-[980px] mobile-landscape:min-w-[980px]" : "mobile-portrait:min-w-[760px] mobile-landscape:min-w-[760px]"}`}>
+              <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart accessibilityLayer data={puntos} margin={{ top: 10, right: 12, bottom: 0, left: 4 }} barCategoryGap="24%">
                 <CartesianGrid vertical={false} stroke="#e9eef2" strokeDasharray="3 6" />
-                <XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: 10 }} interval="preserveStartEnd" />
+                <XAxis dataKey="etiqueta" tickLine={false} axisLine={false} tick={{ fill: "#718797", fontSize: datos.periodo === "SEMANA" ? 8 : 10 }} interval={datos.periodo === "SEMANA" ? 0 : "preserveStartEnd"} angle={datos.periodo === "SEMANA" ? -38 : 0} textAnchor={datos.periodo === "SEMANA" ? "end" : "middle"} height={datos.periodo === "SEMANA" ? 52 : 30} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={(valor) => formatoEje.format(Number(valor))} width={72} />
                 <ReferenceLine y={0} stroke="#b9c8d2" />
-                <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fecha ? etiquetaPeriodoFlujo(String(payload[0].payload.fecha), datos.periodo) : ""} formatter={(valor, nombre) => [monedaFormato.format(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} />
+                <Tooltip labelFormatter={(_, payload) => {
+                  const fecha = payload?.[0]?.payload?.fecha;
+                  return fecha ? datos.periodo === "SEMANA" ? `Semana: ${rangoSemanaCompleto(String(fecha))}` : etiquetaPeriodoFlujo(String(fecha), datos.periodo) : "";
+                }} formatter={(valor, nombre) => [monedaFormato.format(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} />
                 <Legend verticalAlign="bottom" height={28} wrapperStyle={{ fontSize: 10, color: "#60778e" }} />
                 <Bar isAnimationActive={false} dataKey="ingresos" name="Ingresos" fill="#258a79" radius={[4, 4, 0, 0]} maxBarSize={18} />
                 <Bar isAnimationActive={false} dataKey="egresos" name="Egresos" fill="#d62f4f" radius={[4, 4, 0, 0]} maxBarSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
+              </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </section>;
       })}
@@ -85,11 +108,13 @@ export function FlujoChart({ datos, modo, mensajeVacio, soles, etiquetaFecha, cl
           />
           {modo === "TOTAL" ? (
             <Line isAnimationActive={false} type="monotone" dataKey="total" name="Total" stroke="#cc3450" strokeWidth={2.8} dot={{ r: 2.5, fill: "#cc3450", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
-          ) : modo === "COMPROBANTE" ? (
+          ) : modo === "ORIGEN" ? (
             <>
               <Line isAnimationActive={false} type="monotone" dataKey="BOLETA" name="Boletas" stroke="#cc3450" strokeWidth={2.6} dot={{ r: 2.2, fill: "#cc3450", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
               <Line isAnimationActive={false} type="monotone" dataKey="FACTURA" name="Facturas" stroke="#347caf" strokeWidth={2.6} dot={{ r: 2.2, fill: "#347caf", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
               <Line isAnimationActive={false} type="monotone" dataKey="NOTA_VENTA" name="Notas de venta" stroke="#27a383" strokeWidth={2.6} dot={{ r: 2.2, fill: "#27a383", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+              <Line isAnimationActive={false} type="monotone" dataKey="NOTA_DEBITO" name="Notas de débito" stroke="#e2a541" strokeWidth={2.6} dot={{ r: 2.2, fill: "#e2a541", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+              <Line isAnimationActive={false} type="monotone" dataKey="ADELANTO" name="Adelantos" stroke="#8069bd" strokeWidth={2.6} dot={{ r: 2.2, fill: "#8069bd", strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
             </>
           ) : (
             <>
@@ -123,12 +148,14 @@ export function VentasMensualesChart({ datos, modo, mensajeVacio, soles }: Venta
           <YAxis tickLine={false} axisLine={false} tick={{ fill: "#8192a0", fontSize: 9 }} tickFormatter={formatoCompacto} width={48} />
           <Tooltip formatter={(valor, nombre) => [soles(Number(valor)), String(nombre)]} contentStyle={{ border: "1px solid #dce6ec", borderRadius: 11, boxShadow: "0 10px 24px #18395018", fontSize: 10 }} />
           {modo === "TOTAL" ? (
-            <Bar isAnimationActive={false} dataKey="total" name="Total mensual" fill="#347caf" radius={[5, 5, 0, 0]} barSize={22} />
-          ) : modo === "COMPROBANTE" ? (
+            <Bar isAnimationActive={false} dataKey="total" name="Total de ingresos" fill="#347caf" radius={[5, 5, 0, 0]} barSize={22} />
+          ) : modo === "ORIGEN" ? (
             <>
               <Bar isAnimationActive={false} dataKey="BOLETA" name="Boletas" stackId="documentos" fill="#cc3450" barSize={22} />
               <Bar isAnimationActive={false} dataKey="FACTURA" name="Facturas" stackId="documentos" fill="#347caf" barSize={22} />
               <Bar isAnimationActive={false} dataKey="NOTA_VENTA" name="Notas de venta" stackId="documentos" fill="#27a383" radius={[5, 5, 0, 0]} barSize={22} />
+              <Bar isAnimationActive={false} dataKey="NOTA_DEBITO" name="Notas de débito" stackId="documentos" fill="#e2a541" barSize={22} />
+              <Bar isAnimationActive={false} dataKey="ADELANTO" name="Adelantos" stackId="documentos" fill="#8069bd" radius={[5, 5, 0, 0]} barSize={22} />
             </>
           ) : (
             <>

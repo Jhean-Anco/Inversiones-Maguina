@@ -13,6 +13,11 @@ export type FlujoFinanciero = {
   periodo: PeriodoFlujoFinanciero; desde: string; hasta: string; monedas: CuentaFinanciera["moneda"][];
   items: Array<{ moneda: CuentaFinanciera["moneda"]; fecha: string; ingresos: string; egresos: string; neto: string }>;
 };
+/** Dinero cobrado y pagado en un rango, por concepto y moneda. */
+export type ComposicionCaja = {
+  desde: string; hasta: string; monedas: CuentaFinanciera["moneda"][];
+  items: Array<{ moneda: CuentaFinanciera["moneda"]; sentido: "INGRESO" | "EGRESO"; concepto: string; importe: string }>;
+};
 export type MovimientosCuentas = {
   periodo: PeriodoMovimientosCuenta; fecha: string; desde: string; hasta: string;
   totales: { ingresos: string; egresos: string; neto: string };
@@ -22,6 +27,7 @@ export type MovimientosCuentas = {
 export const servicioFinanzas = {
   resumen: () => solicitarApi<{ periodo: string; items: CuentaFinanciera[] }>("/finanzas/cuentas/resumen"),
   flujo: (periodo: PeriodoFlujoFinanciero) => solicitarApi<FlujoFinanciero>(`/finanzas/cuentas/flujo?periodo=${periodo}`),
+  composicion: (desde: string, hasta: string) => solicitarApi<ComposicionCaja>(`/finanzas/cuentas/composicion?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`),
   movimientos: (periodo: PeriodoMovimientosCuenta, fecha: string) => solicitarApi<MovimientosCuentas>(`/finanzas/cuentas/movimientos?periodo=${periodo}&fecha=${encodeURIComponent(fecha)}`),
   listar: () => solicitarApi<CuentaFinanciera[]>("/finanzas/cuentas"),
   opciones: () => solicitarApi<Array<Pick<CuentaFinanciera, "id" | "tipo" | "nombre" | "entidad" | "moneda" | "activa" | "numeroTarjeta">>>("/finanzas/cuentas/opciones"),

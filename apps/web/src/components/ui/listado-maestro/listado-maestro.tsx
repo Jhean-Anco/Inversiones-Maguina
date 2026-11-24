@@ -16,7 +16,7 @@ type Comun<T> = {
   titulo: string; descripcion?: string; registros: readonly T[]; cargando?: boolean; error?: string | null;
   vacio?: ReactNode; controlesCabecera?: ReactNode; paginacion: PaginacionLocal | PaginacionRemota;
   etiqueta?: string; resetKey?: string | number;
-  claseCabecera?: string; claseControlesCabecera?: string; clasePaginacion?: string;
+  claseRaiz?: string; claseCabecera?: string; claseControlesCabecera?: string; clasePaginacion?: string;
 };
 type Tabla<T> = Comun<T> & {
   variante: "tabla"; encabezadoTabla: ReactNode; renderizarFila: (registro: T) => ReactNode;
@@ -67,14 +67,14 @@ export function ListadoMaestro<T>(props: Props<T>) {
     else setPaginaLocal(Math.max(1, Math.min(nuevaPagina, totalPaginas)));
   }
 
-  return <section className={`listado-maestro is-${props.variante} ${clasesRaiz}`} aria-label={props.etiqueta ?? props.titulo} aria-description={props.descripcion}>
+  return <section className={`listado-maestro is-${props.variante} ${clasesRaiz} ${props.claseRaiz ?? ""}`} aria-label={props.etiqueta ?? props.titulo} aria-description={props.descripcion}>
     <NotificacionFlotante mensaje={props.error} />
-    <CabeceraListado total={total} desde={desde} hasta={hasta} controles={props.controlesCabecera} claseCabecera={props.claseCabecera} claseControles={props.claseControlesCabecera} />
+    <CabeceraListado controles={props.controlesCabecera} claseCabecera={props.claseCabecera} claseControles={props.claseControlesCabecera} />
     <div className={`listado-maestro-contenido ${clasesContenido}`} aria-live="polite">
       {props.cargando ? <EstadoGlobal tipo="cargando" /> : total === 0 ? <EstadoGlobal tipo="vacio">{props.error ? "No se pudieron cargar los datos." : props.vacio}</EstadoGlobal> : props.variante === "tabla" ? (
         <TablaListado encabezado={props.encabezadoTabla} filas={visibles.map(props.renderizarFila)} claseTabla={props.claseTabla} claseContenedor={props.claseContenedor} centrarCeldas={props.centrarCeldas} />
       ) : <ListaTarjetas tarjetas={visibles.map(props.renderizarTarjeta)} columnas={props.columnas} claseTarjeta={props.claseTarjeta} />}
     </div>
-    <PaginacionListado pagina={pagina} totalPaginas={totalPaginas} alCambiar={cambiarPagina} cargando={props.cargando} clase={props.clasePaginacion} />
+    <PaginacionListado pagina={pagina} totalPaginas={totalPaginas} alCambiar={cambiarPagina} total={total} desde={desde} hasta={hasta} cargando={props.cargando} clase={props.clasePaginacion} />
   </section>;
 }

@@ -1303,6 +1303,41 @@
       "when": 1795272407612,
       "tag": "0185_notas_cuenta_financiera",
       "breakpoints": true
+    },
+    {
+      "idx": 186,
+      "version": "7",
+      "when": 1795272407613,
+      "tag": "0186_reclamo_garantia_venta",
+      "breakpoints": true
+    },
+    {
+      "idx": 187,
+      "version": "7",
+      "when": 1795272407614,
+      "tag": "0187_garantias_modelo_y_venta",
+      "breakpoints": true
+    },
+    {
+      "idx": 188,
+      "version": "7",
+      "when": 1795272407615,
+      "tag": "0188_garantia_modelo_inactiva",
+      "breakpoints": true
+    },
+    {
+      "idx": 189,
+      "version": "7",
+      "when": 1795548953084,
+      "tag": "0189_retirar_fotografias",
+      "breakpoints": true
+    },
+    {
+      "idx": 190,
+      "version": "7",
+      "when": 1795552091327,
+      "tag": "0190_metas_dashboard",
+      "breakpoints": true
     }
   ]
 }

@@ -6,20 +6,23 @@ import { clasesOpcionMenu, clasesOpcionesMenu, claseRetardoOpcionDos, claseRetar
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import type { OrdenServicio } from "../../services/ingresos.service";
 
-type TipoDocumento = "BOLETA" | "FACTURA" | "NOTA_VENTA";
+export type TipoDocumentoOrden = "BOLETA" | "FACTURA" | "NOTA_VENTA";
+const documentosDisponibles: Array<{ tipo: TipoDocumentoOrden; nombre: string; icono: ReactNode }> = [
+  { tipo: "BOLETA", nombre: "Boleta de venta", icono: <ReceiptText aria-hidden="true" size={16} /> },
+  { tipo: "FACTURA", nombre: "Factura", icono: <FileText aria-hidden="true" size={16} /> },
+  { tipo: "NOTA_VENTA", nombre: "Nota de venta", icono: <FilePlus2 aria-hidden="true" size={16} /> },
+];
 
-export function SelectorDocumentoOrden({ onSeleccionar }: { onSeleccionar: (tipo: TipoDocumento) => void }) {
+export function SelectorDocumentoOrden({ onSeleccionar, tiposDisponibles }: { onSeleccionar: (tipo: TipoDocumentoOrden) => void; tiposDisponibles: TipoDocumentoOrden[] }) {
   const menu = useMenuAccionExclusivo(`emitir-${useId()}`);
-  const elegir = (tipo: TipoDocumento) => {
+  const elegir = (tipo: TipoDocumentoOrden) => {
     menu.cerrar();
     onSeleccionar(tipo);
   };
   return <span ref={menu.raizRef} className="relative inline-flex items-center">
-    <BotonAccion etiqueta="Emitir documento" tono="positiva" icono={<FileOutput aria-hidden="true" />} aria-haspopup="menu" aria-expanded={menu.abierto} onClick={menu.alternar} />
+    <BotonAccion etiqueta={tiposDisponibles.length ? "Emitir documento" : "No hay tipos de documento disponibles; configura una serie activa"} tono="positiva" icono={<FileOutput aria-hidden="true" />} disabled={!tiposDisponibles.length} aria-haspopup="menu" aria-expanded={menu.abierto} onClick={menu.alternar} />
     {menu.presente && <span className={clasesOpcionesMenu} data-menu-state={menu.fase} role="menu" aria-hidden={!menu.abierto} aria-label="Tipo de documento a emitir">
-      <button className={`${clasesOpcionMenu} ${claseRetardoOpcionUno} flex items-center gap-2`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("BOLETA")}><ReceiptText aria-hidden="true" size={16} />Boleta de venta</button>
-      <button className={`${clasesOpcionMenu} ${claseRetardoOpcionDos} flex items-center gap-2`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("FACTURA")}><FileText aria-hidden="true" size={16} />Factura</button>
-      <button className={`${clasesOpcionMenu} data-[menu-state=abriendo]:[animation-delay:70ms] data-[menu-state=cerrando]:[animation-delay:0ms] flex items-center gap-2`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("NOTA_VENTA")}><FilePlus2 aria-hidden="true" size={16} />Nota de venta</button>
+      {documentosDisponibles.filter((documento) => tiposDisponibles.includes(documento.tipo)).map((documento, indice) => <button key={documento.tipo} className={`${clasesOpcionMenu} ${indice === 0 ? claseRetardoOpcionUno : indice === 1 ? claseRetardoOpcionDos : "data-[menu-state=abriendo]:[animation-delay:70ms] data-[menu-state=cerrando]:[animation-delay:0ms]"} flex items-center gap-2`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir(documento.tipo)}>{documento.icono}{documento.nombre}</button>)}
     </span>}
   </span>;
 }

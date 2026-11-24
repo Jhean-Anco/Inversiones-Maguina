@@ -598,16 +598,27 @@
   min-width: 0;
 }
 
-.ordenes-reason-oard {
+.venta-page.is-data-step .ordenes-data-footer > .ordenes-motivo-ingreso-card {
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
-  align-self: stretch;
+  align-self: end;
+  margin-top: auto;
+  height: 100px;
+  min-height: 100px;
+  max-height: 100px;
   min-width: 0;
+  gap: 6px;
+  padding: 8px 10px;
 }
-.ordenes-reason-oard textarea {
-  min-height: 76px;
-  height: 76px;
-  max-height: 76px;
-  resize: vertical;
+.venta-page.is-data-step .ordenes-data-footer > .ordenes-motivo-ingreso-card textarea {
+  flex: 0 0 58px;
+  min-height: 58px;
+  height: 58px;
+  max-height: 58px;
+  margin-top: auto;
+  padding: 7px 9px;
+  resize: none;
 }
 .ordenes-checkout-actions {
   min-width: 0;

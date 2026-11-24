@@ -45,8 +45,10 @@ export type UnidadMototaxi = {
   numeroChasis: string | null; anioModelo: number | null; color: string | null; placa: string | null; estado: string; costoAdquisicion: string; compraDetalleId: string | null;
 };
 export type PaginaUnidadesMototaxi = { items: UnidadMototaxi[]; total: number; pagina: number; porPagina: number; totalPaginas: number; disponiblesPorColor: Array<{ modeloId: string; marca: string; modelo: string; color: string | null; cantidad: number }> };
-export type GarantiaMototaxi = { id: string; unidadId: string | null; compraDetalleId: string | null; cantidad: number; version: string | null; codigo: string; vin: string | null; marca: string; modelo: string; proveedor: string; porcentajeProveedor: string; mesesVigencia: number; iniciaEn: string; terminaEn: string; alcance: string | null; exclusiones: string | null };
-export type ReclamoGarantia = { id: string; garantiaId: string; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
+export type GarantiaMototaxi = { id: string; modeloId: string; unidadId: string | null; compraDetalleId: string | null; cantidad: number; version: string | null; codigo: string; vin: string | null; marca: string; modelo: string; proveedor: string; porcentajeProveedor: string; mesesVigencia: number; iniciaEn: string; terminaEn: string; alcance: string | null; exclusiones: string | null };
+export type GarantiaModeloMototaxi = { id: string; modeloId: string; activa: boolean; mesesVigencia: number; alcance: string; exclusiones: string | null };
+export type GarantiaVentaMototaxi = { id: string; iniciaEn: string; terminaEn: string; mesesVigencia: number; cantidad: number; alcance: string; exclusiones: string | null };
+export type ReclamoGarantia = { id: string; garantiaId: string; ingresoDetalleId?: string | null; ventaCodigo?: string | null; ventaCliente?: string | null; ventaMototaxi?: string | null; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
 export type CompraMototaxi = { id: string; codigo: string; fecha: string; documentoTipo: string; documentoNumero: string | null; moneda: string; total: string; proveedor: string; unidades: number; pagado: string; saldo: string; observacion: string | null };
 export type PagoCompraMototaxi = { id: string; fechaPago: string; importePagado: string; medioPago: string; cuentaFinancieraId: string | null; creadoEn: string };
 export type ReconteoModeloMototaxi = { modelo: { id: string; marca: string; nombre: string; version: string | null }; cantidadSistema: number };
@@ -59,6 +61,9 @@ export const servicioMototaxis = {
   modelos: (busqueda = "", incluirInactivos = false) => solicitarApi<ModeloMototaxi[]>(`/mototaxis/modelos?busqueda=${encodeURIComponent(busqueda)}&incluirInactivos=${incluirInactivos}`),
   crearModelo: (datos: Record<string, unknown>) => solicitarApi<ModeloMototaxi>("/mototaxis/modelos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   actualizarModelo: (id: string, datos: Record<string, unknown>) => solicitarApi<ModeloMototaxi>(`/mototaxis/modelos/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  garantiaModelo: (id: string) => solicitarApi<GarantiaModeloMototaxi | null>(`/mototaxis/modelos/${id}/garantia`),
+  guardarGarantiaModelo: (id: string, datos: { activa: boolean; mesesVigencia: number; alcance: string; exclusiones: string }) => solicitarApi<GarantiaModeloMototaxi>(`/mototaxis/modelos/${id}/garantia`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
+  aplicarGarantiaVenta: (detalleId: string) => solicitarApi<GarantiaVentaMototaxi>(`/mototaxis/ventas/${detalleId}/garantia`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
   preciosModelo: (id: string) => solicitarApi<PrecioModeloMototaxi[]>(`/mototaxis/modelos/${id}/precios`),
   corregirPrecioModelo: (id: string, precioId: string, precioVenta: string, precioAnterior: string) => solicitarApi<ModeloMototaxi>(`/mototaxis/modelos/${id}/precios/${precioId}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ precioVenta, precioAnterior }),

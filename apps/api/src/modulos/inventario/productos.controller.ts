@@ -17,7 +17,7 @@ export class ControladorProductos {
 
   @Get("alertas-stock-bajo")
   @RequierePermiso("INVENTARIO.LEER")
-  alertasStockBajo() { return this.productos.alertasStockBajo(); }
+  alertasStockBajo(@Query() filtros: { pagina?: string; porPagina?: string }) { return this.productos.alertasStockBajo(filtros); }
 
   @Get()
   @RequierePermiso("INVENTARIO.LEER")

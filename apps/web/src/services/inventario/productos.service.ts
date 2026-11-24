@@ -62,6 +62,7 @@ export type Producto = {
 export type ProductoTarjeta = Pick<Producto, "id" | "codigoInterno" | "nombre" | "descripcion" | "activo" | "categoriaId" | "categoria" | "marcaId" | "marca" | "unidadBaseCodigo" | "unidadBase" | "creadoEn" | "stockActual" | "stockMinimo" | "precioGeneral">;
 export type PaginaProductos = { items: ProductoTarjeta[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
 export type AlertaStockBajo = { id: string; codigo: string; nombre: string; stockActual: string; stockMinimo: string; unidad: string };
+export type PaginaAlertasStockBajo = { items: AlertaStockBajo[]; total?: number; pagina: number; porPagina: number; hayMas: boolean };
 export type DatosProducto = {
   nombre: string;
   descripcion: string | null;
@@ -93,7 +94,7 @@ export type ConfiguracionPrecio = {
 
 export const servicioProductos = {
   catalogos: () => solicitarApi<CatalogosProducto>("/inventario/productos/catalogos"),
-  alertasStockBajo: () => solicitarApi<AlertaStockBajo[]>("/inventario/productos/alertas-stock-bajo"),
+  alertasStockBajo: (pagina = 1, porPagina = 20) => solicitarApi<PaginaAlertasStockBajo>(`/inventario/productos/alertas-stock-bajo?${new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina) })}`),
   listar: (pagina: number, porPagina: number, busqueda: string, filtros: { estado?: string; marca?: string; precio?: string } = {}) => {
     const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda, ...filtros });
     return solicitarApi<PaginaProductos>(`/inventario/productos?${parametros.toString()}`);

@@ -4,6 +4,7 @@ import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequiereCualquieraPermiso, RequierePermiso } from "../autenticacion/permisos";
 import { ServicioFinanzas } from "./finanzas.service";
+import { validarRangoFechas } from "../../utilidades/validar-rango-fechas";
 
 type SolicitudAutenticada = FastifyRequest & { usuario: { id: string } };
 
@@ -30,6 +31,10 @@ export class ControladorFinanzas {
     if (!periodo) throw new BadRequestException("Indica el periodo del flujo financiero.");
     return this.finanzas.flujoPorPeriodo(periodo);
   }
+
+  @Get("composicion")
+  @RequierePermiso("FINANZAS.LEER")
+  composicion(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.finanzas.composicionDeCaja(validarRangoFechas(desde, hasta)); }
 
   @Get("movimientos")
   @RequierePermiso("FINANZAS.LEER")

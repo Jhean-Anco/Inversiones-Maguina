@@ -7,6 +7,7 @@ import { imprimirDocumento } from "../../services/impresion-documentos";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import { useOrdenesServicioListado } from "./use-ordenes-servicio-listado";
 import { OrdenServicioEditor } from "./orden-servicio-editor";
+import type { TipoDocumentoOrden } from "./orden-servicio-menu-acciones";
 import { lineaServicioIncompleta, useOrdenServicioLineas } from "./use-orden-servicio-lineas";
 import { useOrdenServicioClientes } from "./use-orden-servicio-clientes";
 import type { LineaOrden } from "./types";
@@ -66,6 +67,23 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [adelantoMedioPago, setAdelantoMedioPago] = useState("EFECTIVO");
   const [adelantoCuentaId, setAdelantoCuentaId] = useState("");
   const [estado, setEstado] = useState<OrdenServicio["estado"]>("ABIERTA");
+  const [tiposDocumentoDisponibles, setTiposDocumentoDisponibles] = useState<TipoDocumentoOrden[]>([]);
+
+  useEffect(() => {
+    if (!puedeCrear) { setTiposDocumentoDisponibles([]); return; }
+    let vigente = true;
+    void servicioIngresos.numeraciones().then((numeraciones) => {
+      if (!vigente) return;
+      setTiposDocumentoDisponibles(([
+        "BOLETA",
+        "FACTURA",
+        "NOTA_VENTA",
+      ] as const).filter((tipo) => Boolean(numeraciones[tipo].serie && numeraciones[tipo].codigo)));
+    }).catch(() => {
+      if (vigente) { setTiposDocumentoDisponibles([]); setError("No se pudieron cargar los tipos de documento configurados en la base de datos."); }
+    });
+    return () => { vigente = false; };
+  }, [puedeCrear, setError]);
 
   const nombreClienteSeleccionado = cliente ? nombreCliente(cliente) : "";
   const claveFormularioActual = claveEstadoFormulario({
@@ -230,7 +248,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       onEditar={abrirOrden}
       formatearFecha={fechaLegible}
       formatearTotal={(lineas) => soles(totalOrden(lineas))}
-      formatearDesglose={(lineas) => { const importes = importesOrden(lineas); return `Base ${soles(importes.subtotal)} · IGV ${soles(importes.igv)}`; }}
+      tiposDocumentoDisponibles={tiposDocumentoDisponibles}
       etiquetaEstado={(orden) => estadosOrden[orden.estado]}
     />
   </>;

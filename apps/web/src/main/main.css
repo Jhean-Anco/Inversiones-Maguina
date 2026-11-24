@@ -98,7 +98,6 @@
 }
 .erp-topbar {
   position: relative;
-  z-index: 1;
   border-bottom: 1px solid #e3e8ef;
   background: #fffffff5;
   box-shadow: 0 3px 14px #19395208;
