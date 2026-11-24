@@ -29,7 +29,7 @@ export function inspectMigrationChanges(nameStatus, addedLines) {
     const riskyLines = new Set();
     const riskasReemplazadas = new Set();
 
-    for (const match of sql.matchAll(/\bALTER\s+TABLE\s+"?([\w]+)"?\s+DROP\s+CONSTRAINT\s+"?([\w]+)"?/gi)) {
+    for (const match of sql.matchAll(/\bALTER\s+TABLE\s+"?([\w]+)"?\s+DROP\s+CONSTRAINT\s+(?:IF\s+EXISTS\s+)?"?([\w]+)"?/gi)) {
       const tabla = match[1];
       const restriccion = match[2];
       const equivalente = new RegExp(`\\bALTER\\s+TABLE\\s+"?${tabla}"?\\s+ADD\\s+CONSTRAINT\\s+"?${restriccion}"?\\b`, "i");

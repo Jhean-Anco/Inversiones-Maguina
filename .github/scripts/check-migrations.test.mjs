@@ -13,6 +13,18 @@ test("permite migración SQL aditiva", () => {
   assert.deepEqual(findings, []);
 });
 
+test("permite reemplazar una restriccion con DROP CONSTRAINT IF EXISTS", () => {
+  const path = "packages/database/migrations/0190_reemplazo_restriccion.sql";
+  const findings = inspectMigrationChanges(
+    [{ status: "A", path }],
+    new Map([[path, [
+      'ALTER TABLE "garantias_modelos_mototaxis" DROP CONSTRAINT IF EXISTS "garantias_modelos_mototaxis_alcance_ck";',
+      'ALTER TABLE "garantias_modelos_mototaxis" ADD CONSTRAINT "garantias_modelos_mototaxis_alcance_ck" CHECK ("activa" OR length(trim("alcance")) BETWEEN 3 AND 4000);',
+    ]]]),
+  );
+  assert.deepEqual(findings, []);
+});
+
 test("bloquea operaciones destructivas en nuevas migraciones", () => {
   const path = "packages/database/migrations/0190_risky_change.sql";
   const findings = inspectMigrationChanges(
