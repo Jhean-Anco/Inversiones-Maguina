@@ -15,96 +15,16 @@ export type Comparativo = {
 };
 
 const aIso = (fecha: Date) => fecha.toISOString().slice(0, 10);
-const crearFecha = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+const diasDelMes = (anio: number, mes: number) => new Date(Date.UTC(anio, mes, 0)).getUTCDate();
 
 export function variacionPorcentual(actual: number, anterior: number): number | null {
   if (anterior === 0) return actual === 0 ? 0 : null;
   return ((actual - anterior) / anterior) * 100;
 }
 
-/** Mes anterior acotado al mismo tramo de días transcurridos, para comparar periodos equivalentes. */
-export function tramoMesAnterior(hoy: string) {
-  const [anio, mes, dia] = hoy.split("-").map(Number);
-  const diasMesAnterior = new Date(Date.UTC(anio, mes - 1, 0)).getUTCDate();
-  const inicio = new Date(Date.UTC(anio, mes - 2, 1));
-  const fin = new Date(Date.UTC(anio, mes - 2, Math.min(dia, diasMesAnterior)));
-  return { desde: aIso(inicio), hasta: aIso(fin), dias: fin.getUTCDate() };
-}
-
-export function tramoMesActual(hoy: string) {
-  return { desde: `${hoy.slice(0, 8)}01`, hasta: hoy, dias: Number(hoy.slice(8, 10)) };
-}
-
-function acumulado(dias: ReadonlyArray<PuntoIngresos>, desde: string, cantidad: number, clave: ClaveSerie) {
-  const porFecha = new Map(dias.map((dia) => [dia.fecha, dia[clave]]));
-  const inicio = crearFecha(desde);
-  const serie: number[] = [];
-  let suma = 0;
-  for (let indice = 0; indice < cantidad; indice += 1) {
-    const fecha = new Date(inicio);
-    fecha.setUTCDate(inicio.getUTCDate() + indice);
-    suma += porFecha.get(aIso(fecha)) ?? 0;
-    serie.push(suma);
-  }
-  return serie;
-}
-
-/** Compara lo acumulado del mes en curso con el mismo tramo del mes anterior. */
-export function compararMesAcumulado(dias: ReadonlyArray<PuntoIngresos>, hoy: string, clave: ClaveSerie = "total"): Comparativo {
-  const actual = tramoMesActual(hoy);
-  const anterior = tramoMesAnterior(hoy);
-  const serieActual = acumulado(dias, actual.desde, actual.dias, clave);
-  const serieAnterior = acumulado(dias, anterior.desde, anterior.dias, clave);
-  const valorActual = serieActual.at(-1) ?? 0;
-  const valorAnterior = serieAnterior.at(-1) ?? 0;
-  return { actual: valorActual, anterior: valorAnterior, variacion: variacionPorcentual(valorActual, valorAnterior), serieActual, serieAnterior };
-}
-
-function ticketEnRango(filas: FlujoIngresosDashboard["flujoPorComprobante"], desde: string, hasta: string) {
-  let total = 0;
-  let operaciones = 0;
-  for (const fila of filas) {
-    if (fila.fecha < desde || fila.fecha > hasta) continue;
-    total += Number(fila.total);
-    operaciones += fila.ventas;
-  }
-  return operaciones > 0 ? total / operaciones : null;
-}
-
-/** Ticket promedio de boletas, facturas y notas de venta; null si no hubo operaciones. */
-export function compararTicketPromedio(reporte: FlujoIngresosDashboard, hoy: string) {
-  const actual = tramoMesActual(hoy);
-  const anterior = tramoMesAnterior(hoy);
-  const valorActual = ticketEnRango(reporte.flujoPorComprobante, actual.desde, actual.hasta);
-  const valorAnterior = ticketEnRango(reporte.flujoPorComprobante, anterior.desde, anterior.hasta);
-  return {
-    actual: valorActual,
-    anterior: valorAnterior,
-    variacion: valorActual !== null && valorAnterior !== null ? variacionPorcentual(valorActual, valorAnterior) : null,
-  };
-}
-
-export type VariacionConcepto = { clave: "PRODUCTO" | "SERVICIO" | "MOTOTAXI"; nombre: string; actual: number; anterior: number; variacion: number | null };
-const conceptos: ReadonlyArray<Pick<VariacionConcepto, "clave" | "nombre">> = [
-  { clave: "PRODUCTO", nombre: "Repuestos" },
-  { clave: "SERVICIO", nombre: "Servicios" },
-  { clave: "MOTOTAXI", nombre: "Mototaxis" },
-];
-
-export function variacionPorConcepto(dias: ReadonlyArray<PuntoIngresos>, hoy: string): VariacionConcepto[] {
-  return conceptos.map(({ clave, nombre }) => {
-    const { actual, anterior, variacion } = compararMesAcumulado(dias, hoy, clave);
-    return { clave, nombre, actual, anterior, variacion };
-  });
-}
-
-/** Saldo neto del mes en curso frente al mes anterior completo, en la moneda indicada. */
-export function compararSaldoNetoMensual(flujo: FlujoFinanciero, hoy: string, moneda: FlujoFinanciero["monedas"][number]) {
-  const claveActual = `${hoy.slice(0, 7)}-01`;
-  const [anio, mes] = hoy.split("-").map(Number);
-  const claveAnterior = aIso(new Date(Date.UTC(anio, mes - 2, 1)));
-  const neto = (clave: string) => flujo.items.filter((item) => item.moneda === moneda && item.fecha === clave).reduce((suma, item) => suma + Number(item.neto), 0);
-  return { actual: neto(claveActual), anterior: neto(claveAnterior), moneda };
+/** Saldo neto de caja (cobrado menos pagado) de una composición de caja, en una moneda. */
+export function saldoNetoDeCaja(items: ReadonlyArray<{ moneda: string; sentido: "INGRESO" | "EGRESO"; importe: string }>, moneda: string) {
+  return items.filter((item) => item.moneda === moneda).reduce((suma, item) => suma + (item.sentido === "INGRESO" ? Number(item.importe) : -Number(item.importe)), 0);
 }
 
 export type PuntoPareto = { nombre: string; tipo: string; total: number; acumulado: number };
@@ -118,57 +38,6 @@ export function construirPareto(articulos: ReadonlyArray<{ descripcion: string; 
     suma += articulo.total;
     return { ...articulo, acumulado: base > 0 ? Math.min(100, (suma / base) * 100) : 0 };
   });
-}
-
-export type PuntoRitmo = { dia: number; actual: number | null; proyeccion: number | null; anterior: number | null; anioPasado: number | null };
-export type RitmoDelMes = {
-  puntos: PuntoRitmo[];
-  acumuladoActual: number;
-  /** Proyección lineal al cierre del mes; null si pasaron muy pocos días o el mes ya terminó. */
-  proyeccionCierre: number | null;
-  cierreMesAnterior: number;
-  cierreAnioPasado: number;
-  hayMesAnterior: boolean;
-  hayAnioPasado: boolean;
-};
-
-const MINIMO_DIAS_PARA_PROYECTAR = 3;
-const diasDelMes = (anio: number, mes: number) => new Date(Date.UTC(anio, mes, 0)).getUTCDate();
-
-/** Acumulado diario de un mes completo: un valor por día del mes, null donde el mes no tiene ese día. */
-function acumuladoDelMes(totales: ReadonlyMap<string, number>, anio: number, mes: number, hastaDia: number, largo: number): Array<number | null> {
-  const prefijo = `${anio}-${String(mes).padStart(2, "0")}-`;
-  const total = diasDelMes(anio, mes);
-  let suma = 0;
-  return Array.from({ length: largo }, (_, indice) => {
-    const dia = indice + 1;
-    if (dia > total || dia > hastaDia) return null;
-    suma += totales.get(`${prefijo}${String(dia).padStart(2, "0")}`) ?? 0;
-    return suma;
-  });
-}
-
-/** Compara el acumulado del mes en curso con el mes anterior y el mismo mes del año pasado, e incluye una proyección al cierre. */
-export function construirRitmoDelMes(dias: ReadonlyArray<{ fecha: string; total: string }>, hoy: string): RitmoDelMes {
-  const [anio, mes, diaHoy] = hoy.split("-").map(Number);
-  const totales = new Map(dias.map((dia) => [dia.fecha, Number(dia.total)]));
-  const largo = diasDelMes(anio, mes);
-  const mesAnterior = mes === 1 ? { anio: anio - 1, mes: 12 } : { anio, mes: mes - 1 };
-  const actual = acumuladoDelMes(totales, anio, mes, diaHoy, largo);
-  // Los meses de comparación se acumulan completos (hasta 31 días) para que su cierre no se recorte si tienen más días que el actual.
-  const anterior = acumuladoDelMes(totales, mesAnterior.anio, mesAnterior.mes, 31, 31);
-  const anioPasado = acumuladoDelMes(totales, anio - 1, mes, 31, 31);
-  const acumuladoActual = actual[diaHoy - 1] ?? 0;
-  const proyeccionCierre = diaHoy >= MINIMO_DIAS_PARA_PROYECTAR && diaHoy < largo ? (acumuladoActual / diaHoy) * largo : null;
-  const puntos = actual.map((valor, indice): PuntoRitmo => {
-    const dia = indice + 1;
-    const proyeccion = proyeccionCierre !== null && dia >= diaHoy ? acumuladoActual + (dia - diaHoy) * (acumuladoActual / diaHoy) : null;
-    return { dia, actual: valor, proyeccion, anterior: anterior[indice], anioPasado: anioPasado[indice] };
-  });
-  const cierre = (serie: Array<number | null>) => serie.filter((valor): valor is number => valor !== null).at(-1) ?? 0;
-  const cierreMesAnterior = cierre(anterior);
-  const cierreAnioPasado = cierre(anioPasado);
-  return { puntos, acumuladoActual, proyeccionCierre, cierreMesAnterior, cierreAnioPasado, hayMesAnterior: cierreMesAnterior > 0, hayAnioPasado: cierreAnioPasado > 0 };
 }
 
 export type MargenBruto = {

@@ -3,7 +3,9 @@ import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/
 import { estilosDashboard } from "./dashboard-classes";
 import { useDashboardDatos } from "./use-dashboard-datos";
 import { IndicadoresClave } from "./dashboard-indicadores";
-import { ParetoArticulosChart, RitmoDelMesChart, VariacionPorTipoChart } from "./dashboard-comparativas";
+import { ParetoArticulosChart, RitmoChart, VariacionPorTipoChart } from "./dashboard-comparativas";
+import { etiquetaComparacion, textosPeriodo } from "./dashboard-periodos";
+import { SelectorPeriodo } from "./dashboard-selector";
 import { CascadaCajaChart, IngresosEgresosChart, MapaVentasChart, MediosPagoChart, MezclaVentasChart } from "./dashboard-composicion";
 import { AvanceMetasPanel } from "./dashboard-metas";
 import { MapaCalorHorarios } from "./dashboard-horarios";
@@ -27,23 +29,26 @@ function Panel({ rotulo, titulo, descripcion, columnas: ancho, children }: { rot
 
 export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nombre: string; rol: string; puedeVerIngresos?: boolean; permisos?: string[] }) {
   const datos = useDashboardDatos(puedeVerIngresos, permisos);
-  const { resumen, cargando, error, reporte, indicadores, ritmo, metas, cascada, ingresosEgresos, horarios } = datos;
+  const { resumen, cargando, error, reporte, indicadores, ritmo, metas, cascada, ingresosEgresos, horarios, periodo, comparar } = datos;
+  const tp = textosPeriodo(periodo);
+  const comparacion = etiquetaComparacion(periodo, comparar);
   const hayVentas = puedeVerIngresos && reporte.listo;
 
   return <section className={`${estilosDashboard.root} ${estilosDashboard.extra} inicio-dashboard`}>
     {error && <NotificacionFlotante mensaje={error} />}
-    {reporte.error && <NotificacionFlotante mensaje={reporte.error} titulo="No se pudo cargar la actividad del mes" accion={{ etiqueta: "Actualizar resumen", ejecutar: datos.reintentar }} />}
+    {reporte.error && <NotificacionFlotante mensaje={reporte.error} titulo="No se pudo cargar la actividad" accion={{ etiqueta: "Actualizar resumen", ejecutar: datos.reintentar }} />}
     {!reporte.error && datos.hayFallos && <NotificacionFlotante mensaje="Algunos gráficos no se pudieron cargar. Puedes intentarlo de nuevo." titulo="Resumen incompleto" accion={{ etiqueta: "Actualizar resumen", ejecutar: datos.reintentar }} />}
     {cargando ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Preparando el panel del negocio...</span></div> : resumen && (
       <div className={`${estilosDashboard.grid} inicio-chart-grid`}>
+        <SelectorPeriodo periodo={periodo} comparar={comparar} onPeriodo={datos.setPeriodo} onComparar={datos.setComparar} />
         <div className="col-span-full">
-          <IndicadoresClave soles={soles} ingresosMes={indicadores.ingresosMes} ticket={indicadores.ticket} saldo={indicadores.saldo} margen={indicadores.margen} mostrarMargen={indicadores.mostrarMargen} mostrarIngresos={puedeVerIngresos && !reporte.error} mostrarFinanzas={indicadores.mostrarSaldo} />
+          <IndicadoresClave soles={soles} ingresos={indicadores.ingresos} textos={{ periodo: tp.del, comparacion }} ticket={indicadores.ticket} saldo={indicadores.saldo} margen={indicadores.margen} mostrarMargen={indicadores.mostrarMargen} mostrarIngresos={puedeVerIngresos && !reporte.error} mostrarFinanzas={indicadores.mostrarSaldo} />
         </div>
         {!puedeVerIngresos && <div className={`${estilosDashboard.chartEmpty} inicio-chart-empty col-span-full`}>Tu usuario no tiene permiso para consultar los reportes de ventas.</div>}
         {puedeVerIngresos && reporte.cargando && <div className={`${estilosDashboard.loading} inicio-loading col-span-full`} role="status"><i /><span>Cargando actividad de ventas...</span></div>}
         {ritmo && (
-          <Panel rotulo="RITMO DEL MES" titulo="Ingresos acumulados del mes" descripcion="Frente al mes anterior y al año pasado." columnas={8}>
-            <RitmoDelMesChart ritmo={ritmo} soles={soles} />
+          <Panel rotulo="RITMO" titulo="Ingresos acumulados" descripcion={`Frente a ${tp.conArticulo} y al año pasado.`} columnas={8}>
+            <RitmoChart ritmo={ritmo} soles={soles} textos={{ este: tp.este, anterior: tp.anterior }} />
           </Panel>
         )}
         {metas.mostrar && (
@@ -57,7 +62,7 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
           </Panel>
         )}
         {hayVentas && (
-          <Panel rotulo="QUÉ CAMBIÓ" titulo="Variación por tipo de venta" descripcion="Este mes frente al mismo tramo del mes anterior." columnas={5}>
+          <Panel rotulo="QUÉ CAMBIÓ" titulo="Variación por tipo de venta" descripcion={`Frente a ${comparacion}, mismos días.`} columnas={5}>
             <VariacionPorTipoChart datos={datos.variacionConceptos} soles={soles} />
           </Panel>
         )}
@@ -66,18 +71,18 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
             <MezclaVentasChart meses={datos.mezclaVentas} soles={soles} />
           </Panel>
         )}
-        {hayVentas && (
-          <Panel rotulo="ESTE MES" titulo="Medios de pago" descripcion="Cómo pagaron tus clientes." columnas={4}>
+        {hayVentas && reporte.mediosListos && (
+          <Panel rotulo={tp.nombre.toUpperCase()} titulo="Medios de pago" descripcion="Cómo pagaron tus clientes." columnas={4}>
             <MediosPagoChart medios={datos.mediosPago} soles={soles} />
           </Panel>
         )}
         {datos.pareto.length > 0 && (
-          <Panel rotulo="QUÉ PRODUCTOS MANDAN" titulo="Artículos más vendidos" descripcion="Importe y % acumulado del mes." columnas={7}>
+          <Panel rotulo="QUÉ PRODUCTOS MANDAN" titulo="Artículos más vendidos" descripcion="Importe y % acumulado." columnas={7}>
             <ParetoArticulosChart datos={datos.pareto} soles={soles} />
           </Panel>
         )}
         {datos.mapaVentas.length > 0 && (
-          <Panel rotulo="QUÉ CATEGORÍAS PESAN" titulo="Composición de ventas" descripcion="Ventas del mes sin IGV." columnas={5}>
+          <Panel rotulo="QUÉ CATEGORÍAS PESAN" titulo="Composición de ventas" descripcion="Ventas sin IGV." columnas={5}>
             <MapaVentasChart teselas={datos.mapaVentas} soles={soles} />
           </Panel>
         )}

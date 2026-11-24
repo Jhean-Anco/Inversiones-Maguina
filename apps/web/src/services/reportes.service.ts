@@ -23,6 +23,8 @@ export type HorariosVentas = {
   ventasConsideradas: number;
   celdas: Array<{ dia: number; hora: number; operaciones: number; total: string }>;
 };
+/** Artículos más vendidos de un rango y el total de ventas (con IGV) de ese mismo rango. */
+export type ArticulosMasVendidos = { rango: FiltroReporte; totalVentas: string; articulos: Array<{ descripcion: string; tipo: string; cantidad: string; total: string }> };
 export type IndicadorMeta = "VENTAS_MES" | "COBRANZA" | "MARGEN";
 export type MetasDashboard = { periodo: string; metas: Record<IndicadorMeta, { valor: number; origen: "MES" | "PREDETERMINADA" } | null> };
 /** Lo vendido en un rango (con IGV) y lo que ya se cobró de esas ventas. */
@@ -46,6 +48,7 @@ export const servicioReportes = {
   },
   ingresosComparativo: (rango: FiltroReporte) => solicitarApi<ComparativoIngresos>("/reportes/ingresos/comparativo?" + parametros(rango)),
   rentabilidad: (rango: FiltroReporte) => solicitarApi<Rentabilidad>("/reportes/ingresos/rentabilidad?" + parametros(rango)),
+  articulos: (rango: FiltroReporte) => solicitarApi<ArticulosMasVendidos>("/reportes/ingresos/articulos?" + parametros(rango)),
   horarios: (rango: FiltroReporte) => solicitarApi<HorariosVentas>("/reportes/ingresos/horarios?" + parametros(rango)),
   cobranza: (rango: FiltroReporte) => solicitarApi<CobranzaPeriodo>("/reportes/ingresos/cobranza?" + parametros(rango)),
   metas: (periodo: string) => solicitarApi<MetasDashboard>(`/reportes/metas?periodo=${encodeURIComponent(periodo)}`),

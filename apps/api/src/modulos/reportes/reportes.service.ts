@@ -7,6 +7,7 @@ import { aplicarPermisosDeCosto, sumarFlujosDiarios } from "./reportes.util";
 import { consultarRentabilidad } from "./rentabilidad.consultas";
 import { consultarCobranza } from "./cobranza.consultas";
 import { consultarHorarios } from "./horarios.consultas";
+import { consultarArticulosMasVendidos } from "./articulos.consultas";
 
 /** Ventas del dashboard: boletas, facturas y notas de venta que no estén anuladas. */
 const comprobantesVenta = and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
@@ -95,6 +96,9 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     ]);
     return { rango, dias: sumarFlujosDiarios(comprobantes, notasDebito, adelantos) };
   }
+
+  /** Artículos más vendidos del rango y total de ventas del mismo rango. */
+  articulosMasVendidos(rango: RangoFechas, limite = 12) { return consultarArticulosMasVendidos(rango, limite); }
 
   /** Ventas por día de la semana y hora, para el mapa de calor. */
   horarios(rango: RangoFechas) { return consultarHorarios(rango); }

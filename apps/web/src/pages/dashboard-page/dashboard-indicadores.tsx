@@ -3,7 +3,9 @@ import type { Comparativo, MargenBruto } from "./dashboard-calculos";
 type Valor = { actual: number | null; anterior: number | null; variacion: number | null };
 type Props = {
   soles: (valor: string | number) => string;
-  ingresosMes: Comparativo | null;
+  ingresos: Comparativo | null;
+  /** Cómo se llama el periodo en los títulos ("del mes") y con qué se compara ("mes anterior"). */
+  textos: { periodo: string; comparacion: string };
   ticket: Valor | null;
   saldo: { actual: number; anterior: number; moneda: string } | null;
   /** null mientras carga; con `actual` null cuando no hay costos que mostrar. */
@@ -50,20 +52,20 @@ function Tarjeta({ titulo, valor, variacion, referencia, serie, color = "#0b376a
   );
 }
 
-export function IndicadoresClave({ soles, ingresosMes, ticket, saldo, margen, mostrarMargen, mostrarIngresos, mostrarFinanzas }: Props) {
+export function IndicadoresClave({ soles, ingresos, textos, ticket, saldo, margen, mostrarMargen, mostrarIngresos, mostrarFinanzas }: Props) {
   if (!mostrarIngresos && !mostrarFinanzas) return null;
   const margenActual = margen?.actual ?? null;
   const puntosMargen = margenActual?.porcentaje != null && margen?.anterior?.porcentaje != null ? margenActual.porcentaje - margen.anterior.porcentaje : null;
   const monedaSaldo = saldo?.moneda ?? "PEN";
   const formatoSaldo = (valor: number) => monedaSaldo === "PEN" ? soles(valor) : `${monedaSaldo} ${valor.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
-    <section className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4 mobile-portrait:grid-cols-2 mobile-portrait:gap-2.5" aria-label="Indicadores clave del mes">
+    <section className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-4 mobile-portrait:grid-cols-2 mobile-portrait:gap-2.5" aria-label="Indicadores clave">
       {mostrarIngresos && <>
-        <Tarjeta titulo="Ingresos del mes" valor={ingresosMes ? soles(ingresosMes.actual) : "…"} variacion={ingresosMes?.variacion ?? null} referencia={ingresosMes ? `vs ${soles(ingresosMes.anterior)} mes anterior` : ""} serie={ingresosMes ? { actual: ingresosMes.serieActual, anterior: ingresosMes.serieAnterior } : undefined} />
-        <Tarjeta titulo="Ticket promedio" valor={ticket?.actual != null ? soles(ticket.actual) : ticket ? "—" : "…"} variacion={ticket?.variacion ?? null} referencia={ticket?.anterior != null ? `vs ${soles(ticket.anterior)} mes anterior` : "sin ventas en el periodo previo"} />
+        <Tarjeta titulo={`Ingresos ${textos.periodo}`} valor={ingresos ? soles(ingresos.actual) : "…"} variacion={ingresos?.variacion ?? null} referencia={ingresos ? `vs ${soles(ingresos.anterior)} ${textos.comparacion}` : ""} serie={ingresos ? { actual: ingresos.serieActual, anterior: ingresos.serieAnterior } : undefined} />
+        <Tarjeta titulo="Ticket promedio" valor={ticket?.actual != null ? soles(ticket.actual) : ticket ? "—" : "…"} variacion={ticket?.variacion ?? null} referencia={ticket?.anterior != null ? `vs ${soles(ticket.anterior)} ${textos.comparacion}` : `sin ventas en ${textos.comparacion}`} />
         {mostrarMargen && (margen === null || margenActual !== null) && <Tarjeta titulo="Margen bruto" valor={margenActual?.porcentaje != null ? `${margenActual.porcentaje.toLocaleString("es-PE", { maximumFractionDigits: 1 })}%` : "…"} variacion={puntosMargen} unidad=" pt" color="#27a383" referencia={margenActual ? `sobre el ${margenActual.cobertura.toLocaleString("es-PE", { maximumFractionDigits: 0 })}% de las ventas con costo` : ""} />}
       </>}
-      {mostrarFinanzas && <Tarjeta titulo="Saldo neto del mes" colorValor={saldo ? (saldo.actual > 0 ? "#1e7f67" : saldo.actual < 0 ? "#b83b4b" : undefined) : undefined} valor={saldo ? formatoSaldo(saldo.actual) : "…"} variacion={saldo ? (saldo.anterior === 0 ? (saldo.actual === 0 ? 0 : null) : ((saldo.actual - saldo.anterior) / Math.abs(saldo.anterior)) * 100) : null} referencia={saldo ? `mes anterior (completo): ${formatoSaldo(saldo.anterior)}` : ""} />}
+      {mostrarFinanzas && <Tarjeta titulo={`Saldo neto ${textos.periodo}`} colorValor={saldo ? (saldo.actual > 0 ? "#1e7f67" : saldo.actual < 0 ? "#b83b4b" : undefined) : undefined} valor={saldo ? formatoSaldo(saldo.actual) : "…"} variacion={saldo ? (saldo.anterior === 0 ? (saldo.actual === 0 ? 0 : null) : ((saldo.actual - saldo.anterior) / Math.abs(saldo.anterior)) * 100) : null} referencia={saldo ? `vs ${formatoSaldo(saldo.anterior)} ${textos.comparacion}` : ""} />}
     </section>
   );
 }

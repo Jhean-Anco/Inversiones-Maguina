@@ -9,7 +9,7 @@ const colorPaso = (paso: PasoCascada) => paso.tipo === "inicio" ? "#0b376a" : pa
 const colores = ["#0b376a", "#347caf", "#27a383", "#8069bd", "#e2a541", "#65a4b8", "#d62f4f", "#7b8fa1"];
 
 export function CascadaCajaChart({ cascada, soles, nota }: { cascada: CascadaCaja; soles: Soles; nota?: string }) {
-  if (cascada.pasos.length <= 2 && cascada.cobrado === 0) return <div className="inicio-chart-empty">Aún no hay cobros ni pagos registrados este mes.</div>;
+  if (cascada.pasos.length <= 2 && cascada.cobrado === 0) return <div className="inicio-chart-empty">Aún no hay cobros ni pagos en este periodo.</div>;
   const datos = cascada.pasos.map((paso) => ({ ...paso, texto: `${paso.tipo === "resta" || paso.valor < 0 ? "−" : paso.tipo === "suma" ? "+" : ""}${compacto(Math.abs(paso.valor))}` }));
   const centavosPorSol = cascada.cobrado > 0 ? (cascada.saldoNeto / cascada.cobrado) * 100 : null;
   return (
@@ -30,7 +30,7 @@ export function CascadaCajaChart({ cascada, soles, nota }: { cascada: CascadaCaj
         </ResponsiveContainer>
       </div>
       <p className="m-0 text-[10px] text-[#5a6f84]">
-        {centavosPorSol === null ? null : centavosPorSol < 0 ? <>Este mes pagaste más de lo que cobraste. </> : <>De cada S/ 100 cobrados quedan <b className="text-[#244967]">S/ {centavosPorSol.toLocaleString("es-PE", { maximumFractionDigits: 0 })}</b>. </>}
+        {centavosPorSol === null ? null : centavosPorSol < 0 ? <>Pagaste más de lo que cobraste. </> : <>De cada S/ 100 cobrados quedan <b className="text-[#244967]">S/ {centavosPorSol.toLocaleString("es-PE", { maximumFractionDigits: 0 })}</b>. </>}
         {nota}
       </p>
     </div>
@@ -53,12 +53,12 @@ function Tesela({ x = 0, y = 0, width = 0, height = 0, index = 0, name = "", por
 }
 
 export function MapaVentasChart({ teselas, soles }: { teselas: TeselaVenta[]; soles: Soles }) {
-  if (!teselas.length) return <div className="inicio-chart-empty">Aún no hay ventas este mes.</div>;
+  if (!teselas.length) return <div className="inicio-chart-empty">Aún no hay ventas en este periodo.</div>;
   const datos = teselas.map((tesela) => ({ name: tesela.nombre, size: tesela.valor }));
   const porcentajes = Object.fromEntries(teselas.map((tesela) => [tesela.nombre, tesela.porcentaje]));
   return (
     <div className="grid gap-2">
-      <div className="h-[290px] mobile-portrait:h-[250px]" role="img" aria-label={`Composición de las ventas del mes: ${teselas.map((tesela) => `${tesela.nombre} ${tesela.porcentaje.toFixed(0)}%`).join(", ")}`}>
+      <div className="h-[290px] mobile-portrait:h-[250px]" role="img" aria-label={`Composición de las ventas: ${teselas.map((tesela) => `${tesela.nombre} ${tesela.porcentaje.toFixed(0)}%`).join(", ")}`}>
         <ResponsiveContainer width="100%" height="100%">
           <Treemap data={datos} dataKey="size" nameKey="name" isAnimationActive={false} content={<Tesela porcentajes={porcentajes} />}>
             <Tooltip contentStyle={estiloTooltip} formatter={(valor) => [soles(Number(valor)), "Ventas sin IGV"]} />
@@ -120,10 +120,10 @@ const coloresMedios = ["#0b376a", "#27a383", "#e2a541", "#8069bd", "#347caf", "#
 
 export function MediosPagoChart({ medios, soles }: { medios: Array<{ nombre: string; importe: number }>; soles: Soles }) {
   const total = medios.reduce((suma, medio) => suma + medio.importe, 0);
-  if (total <= 0) return <div className="inicio-chart-empty">Aún no hay ventas este mes.</div>;
+  if (total <= 0) return <div className="inicio-chart-empty">Aún no hay ventas en este periodo.</div>;
   return (
     <div className="grid justify-items-center gap-3">
-      <div className="relative aspect-square w-[min(100%,210px)]" role="img" aria-label={`Ventas del mes por medio de pago: ${medios.map((medio) => `${medio.nombre} ${((medio.importe / total) * 100).toFixed(0)}%`).join(", ")}`}>
+      <div className="relative aspect-square w-[min(100%,210px)]" role="img" aria-label={`Ventas por medio de pago: ${medios.map((medio) => `${medio.nombre} ${((medio.importe / total) * 100).toFixed(0)}%`).join(", ")}`}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie isAnimationActive={false} data={medios} dataKey="importe" nameKey="nombre" innerRadius="66%" outerRadius="94%" paddingAngle={2} stroke="none">
@@ -134,7 +134,7 @@ export function MediosPagoChart({ medios, soles }: { medios: Array<{ nombre: str
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid content-center justify-items-center gap-0.5">
           <strong className="text-[20px] font-black tabular-nums text-[#0b376a]">{compacto(total)}</strong>
-          <small className="text-[9px] font-bold text-[#5a6f84]">ventas del mes</small>
+          <small className="text-[9px] font-bold text-[#5a6f84]">ventas</small>
         </div>
       </div>
       <ul className="m-0 flex list-none flex-wrap justify-center gap-x-3 gap-y-1 p-0 text-[10px] text-[#5a6f84]">

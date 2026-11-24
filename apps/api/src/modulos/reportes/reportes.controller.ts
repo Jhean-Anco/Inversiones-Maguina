@@ -27,6 +27,7 @@ export class ControladorReportes {
     return this.reportes.rentabilidad(validarRango(desde, hasta), usuario.permisos ?? []);
   }
   @Get("ingresos/cobranza") @RequierePermiso("INGRESOS.LEER") cobranza(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.cobranza(validarRango(desde, hasta)); }
+  @Get("ingresos/articulos") @RequierePermiso("INGRESOS.LEER") articulos(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.articulosMasVendidos(validarRango(desde, hasta)); }
   @Get("ingresos/horarios") @RequierePermiso("INGRESOS.LEER") horarios(@Query("desde") desde?: string, @Query("hasta") hasta?: string) {
     const rango = validarRango(desde, hasta);
     if (diasEntreFechas(rango.desde, rango.hasta) > MAXIMO_DIAS_COMPARATIVO) throw new BadRequestException(`El rango no puede superar ${MAXIMO_DIAS_COMPARATIVO} días.`);
