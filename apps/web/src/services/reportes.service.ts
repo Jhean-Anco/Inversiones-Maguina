@@ -36,6 +36,13 @@ export type ReporteInventario = {
   items: Array<{ id: string; codigo: string; nombre: string; marca: string; categoria: string | null; unidad: string; stockActual: string; entradasPeriodo: string; salidasPeriodo: string; precioPromedioCompra: string; precioPromedioVenta: string }>;
   mototaxis?: { resumen: { modelos: number; modelosConStock: number; sinStock: number; modelosConMovimiento: number }; items: Array<{ id: string; codigo: string; nombre: string; marca: string; stockActual: number; entradasPeriodo: number; salidasPeriodo: number; precioPromedioCompra: string; precioPromedioVenta: string }> };
 };
+export type ReporteIngresos = {
+  rango: FiltroReporte;
+  linea: "TODAS" | "PRODUCTO" | "MOTOTAXI" | "SERVICIO";
+  resumen: { totalNeto: string; documentosNetos: number; ticketPromedio: string };
+  porMes: Array<{ mes: string; total: string }>;
+  porDocumento: Array<{ tipo: string; etiqueta: string; documentos: number; total: string }>
+};
 
 const parametros = ({ desde, hasta }: FiltroReporte) => new URLSearchParams({ desde, hasta }).toString();
 export const servicioReportes = {
@@ -56,4 +63,9 @@ export const servicioReportes = {
   guardarMeta: (datos: { indicador: IndicadorMeta; periodo: string | null; valor: number | null }, periodoVista: string) =>
     solicitarApi<MetasDashboard>(`/reportes/metas?periodo=${encodeURIComponent(periodoVista)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   inventario: (filtro: FiltroReporte) => solicitarApi<ReporteInventario>("/reportes/inventario?" + parametros(filtro)),
+  reporteIngresos: (filtro: FiltroReporte & { linea: "TODAS" | "PRODUCTO" | "MOTOTAXI" | "SERVICIO" }) => {
+    const query = new URLSearchParams({ desde: filtro.desde, hasta: filtro.hasta });
+    if (filtro.linea !== "TODAS") query.set("linea", filtro.linea);
+    return solicitarApi<ReporteIngresos>(`/reportes/ingresos/reporte?${query.toString()}`);
+  },
 };

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
-import { db, categoriasProductos, clientes, comprasMototaxisDetalle, comprobantesRelacionados, entradasStockDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, ordenesServicio, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
+import { db, categoriasProductos, clientes, comprasMototaxisDetalle, comprobantesRelacionados, comprobantesRelacionadosDetalle, entradasStockDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, ordenesServicio, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { consultarFlujoAdelantos, consultarFlujoNotasDebito, consultarFlujoPorComprobante, ventaVigente, type RangoFechas } from "./flujo-ingresos.consultas";
 import { aplicarPermisosDeCosto, sumarFlujosDiarios } from "./reportes.util";
@@ -61,6 +61,84 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       ...(puedeLeerPersonas ? { clientesActivos: Number(cartera[0]?.activos ?? 0) } : {}),
       ...(puedeLeerInventario ? { inventario: { productosActivos: Number(existencias[0]?.productos ?? 0), productosSinStock: Number(existencias[0]?.sinStock ?? 0) } } : {}),
       ...(puedeLeerMototaxis ? { inventarioMototaxis: { unidades: mototaxis.reduce((total, fila) => total + Number(fila.unidades), 0), porModelo: mototaxis, reclamosGarantia: { cantidad: Number(garantias[0]?.reclamos ?? 0), proveedor: garantias[0]?.proveedor ?? "0.00", empresa: garantias[0]?.empresa ?? "0.00" } } } : {}),
+    };
+  }
+
+  async reporteIngresos(rango: RangoFechas, linea?: "PRODUCTO" | "MOTOTAXI" | "SERVICIO") {
+    const filtroVentas = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesVenta,
+      ...(linea ? [eq(ingresosDetalle.tipo, linea)] : []));
+    const ventasPorMes = await db.select({
+      mes: sql<string>`to_char(date_trunc('month', ${ingresos.fecha}::date), 'YYYY-MM')`,
+      documentos: sql<number>`count(distinct ${ingresos.id})::int`,
+      total: sql<string>`coalesce(sum(${ingresosDetalle.total}), 0)::numeric(16,2)`,
+    }).from(ingresos).innerJoin(ingresosDetalle, eq(ingresosDetalle.ingresoId, ingresos.id))
+      .where(filtroVentas).groupBy(sql`date_trunc('month', ${ingresos.fecha}::date)`).orderBy(asc(sql`date_trunc('month', ${ingresos.fecha}::date)`));
+
+    const filtroNotas = and(gte(comprobantesRelacionados.fecha, rango.desde), lte(comprobantesRelacionados.fecha, rango.hasta),
+      eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]),
+      sql`${comprobantesRelacionados.datosNubefact}->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'`,
+      ...(linea ? [eq(ingresosDetalle.tipo, linea)] : []));
+    const notasPorMes = linea
+      ? await db.select({
+        mes: sql<string>`to_char(date_trunc('month', ${comprobantesRelacionados.fecha}::date), 'YYYY-MM')`,
+        documentos: sql<number>`count(distinct ${comprobantesRelacionados.id})::int`,
+        total: sql<string>`coalesce(sum((select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
+      }).from(comprobantesRelacionados)
+        .innerJoin(comprobantesRelacionadosDetalle, eq(comprobantesRelacionadosDetalle.comprobanteRelacionadoId, comprobantesRelacionados.id))
+        .innerJoin(ingresosDetalle, eq(ingresosDetalle.id, comprobantesRelacionadosDetalle.ingresoDetalleId))
+        .where(filtroNotas).groupBy(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`).orderBy(asc(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`))
+      : await db.select({
+        mes: sql<string>`to_char(date_trunc('month', ${comprobantesRelacionados.fecha}::date), 'YYYY-MM')`,
+        documentos: sql<number>`count(*)::int`,
+        total: sql<string>`coalesce(sum(${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
+      }).from(comprobantesRelacionados).where(filtroNotas)
+        .groupBy(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`).orderBy(asc(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`));
+
+    const ventasPorTipo = await db.select({
+      tipo: ingresos.tipoComprobante,
+      documentos: sql<number>`count(distinct ${ingresos.id})::int`,
+      total: sql<string>`coalesce(sum(${ingresosDetalle.total}), 0)::numeric(16,2)`,
+    }).from(ingresos).innerJoin(ingresosDetalle, eq(ingresosDetalle.ingresoId, ingresos.id))
+      .where(filtroVentas).groupBy(ingresos.tipoComprobante);
+    const notasPorTipo = linea
+      ? await db.select({
+        documentos: sql<number>`count(distinct ${comprobantesRelacionados.id})::int`,
+        total: sql<string>`coalesce(sum((select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
+      }).from(comprobantesRelacionados)
+        .innerJoin(comprobantesRelacionadosDetalle, eq(comprobantesRelacionadosDetalle.comprobanteRelacionadoId, comprobantesRelacionados.id))
+        .innerJoin(ingresosDetalle, eq(ingresosDetalle.id, comprobantesRelacionadosDetalle.ingresoDetalleId)).where(filtroNotas)
+      : await db.select({
+        documentos: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
+      }).from(comprobantesRelacionados).where(filtroNotas);
+
+    const ingresosBrutos = ventasPorTipo.reduce((suma, fila) => suma + Number(fila.total), 0);
+    const cantidadVentas = ventasPorTipo.reduce((suma, fila) => suma + Number(fila.documentos), 0);
+    const creditos = Number(notasPorTipo[0]?.total ?? 0);
+    const cantidadCreditos = Number(notasPorTipo[0]?.documentos ?? 0);
+    const totalNeto = ingresosBrutos - creditos;
+    const tipos: Record<string, { documentos: number; total: number }> = Object.fromEntries(ventasPorTipo.map((fila) => [fila.tipo, { documentos: Number(fila.documentos), total: Number(fila.total) }]));
+    const porMes = new Map<string, { ingresos: number; creditos: number }>();
+    for (const fila of ventasPorMes) porMes.set(fila.mes, { ingresos: Number(fila.total), creditos: 0 });
+    for (const fila of notasPorMes) {
+      const actual = porMes.get(fila.mes) ?? { ingresos: 0, creditos: 0 };
+      actual.creditos = Number(fila.total); porMes.set(fila.mes, actual);
+    }
+    const porDocumento = [
+      { tipo: "FACTURA", etiqueta: "Factura", documentos: tipos.FACTURA?.documentos ?? 0, total: tipos.FACTURA?.total ?? 0 },
+      { tipo: "BOLETA", etiqueta: "Boleta de venta", documentos: tipos.BOLETA?.documentos ?? 0, total: tipos.BOLETA?.total ?? 0 },
+      { tipo: "NOTA_VENTA", etiqueta: "Nota de venta", documentos: tipos.NOTA_VENTA?.documentos ?? 0, total: tipos.NOTA_VENTA?.total ?? 0 },
+      { tipo: "NOTA_CREDITO", etiqueta: "Nota de crédito", documentos: -cantidadCreditos, total: -creditos },
+    ];
+    const inicioMes = new Date(`${rango.desde.slice(0, 7)}-01T00:00:00.000Z`);
+    const finMes = new Date(`${rango.hasta.slice(0, 7)}-01T00:00:00.000Z`);
+    const meses: string[] = [];
+    for (const cursor = new Date(inicioMes); cursor <= finMes; cursor.setUTCMonth(cursor.getUTCMonth() + 1)) meses.push(cursor.toISOString().slice(0, 7));
+    return {
+      rango,
+      linea: linea ?? "TODAS",
+      resumen: { totalNeto: totalNeto.toFixed(2), documentosNetos: cantidadVentas - cantidadCreditos, ticketPromedio: cantidadVentas - cantidadCreditos > 0 ? (totalNeto / (cantidadVentas - cantidadCreditos)).toFixed(2) : "0.00" },
+      porMes: meses.map((mes) => { const datos = porMes.get(mes) ?? { ingresos: 0, creditos: 0 }; return { mes, total: (datos.ingresos - datos.creditos).toFixed(2) }; }),
+      porDocumento: porDocumento.map((fila) => ({ ...fila, total: fila.total.toFixed(2) })),
     };
   }
 
