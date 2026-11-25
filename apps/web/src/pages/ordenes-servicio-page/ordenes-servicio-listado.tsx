@@ -103,6 +103,7 @@ export function OrdenesServicioListado({
       cargando={cargando}
       error={null}
       vacio={<div className={c.empty}><strong>{hayFiltros ? "No hay órdenes para mostrar" : "Aún no hay órdenes de servicio"}</strong><span>{hayFiltros ? "Prueba con otra búsqueda o con otro estado." : "Las órdenes registradas para tus clientes aparecerán aquí."}</span></div>}
+      claseRaiz="[&_.listado-maestro-footer]:grid [&_.listado-maestro-footer]:grid-cols-[1fr_auto_1fr] [&_.listado-maestro-footer]:flex-nowrap [&_.listado-maestro-resumen]:col-start-1 [&_.listado-maestro-resumen]:justify-self-start [&_.listado-maestro-paginacion]:col-start-2 [&_.listado-maestro-paginacion]:justify-self-center"
       claseCabecera={c.header}
       claseControlesCabecera={c.controls}
       clasePaginacion={c.pagination}
