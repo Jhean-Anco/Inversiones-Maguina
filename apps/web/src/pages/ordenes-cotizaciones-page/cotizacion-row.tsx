@@ -13,6 +13,11 @@ import { nombreRelacionListadoClasses } from "../../components/ui/listado-maestr
 import { clasesOpcionMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "../../components/documentos/menu-accion-classes";
 
 const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
+const formatoFecha = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", timeZone: "UTC" });
+function fechaBreve(valor: string) {
+  const fecha = new Date(`${valor.slice(0, 10)}T00:00:00Z`);
+  return Number.isNaN(fecha.getTime()) ? valor : formatoFecha.format(fecha).replace(/\.$/, "");
+}
 
 type EstadoVisibleCotizacion = "EMITIDA" | "INACTIVA" | "ACTIVA";
 type CotizacionRowProps = {
@@ -46,7 +51,7 @@ export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenu
   return <tr className={cotizacionClases.tableRow}>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.code}`}><strong>{cotizacion.codigo}</strong><small className="cotizacion-subtitulo">Cotización</small></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnClient} ${cotizacionClases.client}`}><strong className={nombreRelacionListadoClasses}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity}`}>{cotizacion.fecha} → {cotizacion.vigenteHasta ?? "Sin fecha"}</td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity} whitespace-nowrap`} title={`${cotizacion.fecha} → ${cotizacion.vigenteHasta ?? "Sin fecha"}`}>{fechaBreve(cotizacion.fecha)} → {cotizacion.vigenteHasta ? fechaBreve(cotizacion.vigenteHasta) : "Sin fecha"}</td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><Etiqueta tono={estado === "EMITIDA" ? "informativa" : estado === "INACTIVA" ? "neutral" : "positiva"}>{estado === "EMITIDA" ? "Emitida" : estado === "INACTIVA" ? "Inactiva" : "Activa"}</Etiqueta></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal}`}>
       <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
