@@ -20,6 +20,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
   const [direccionNueva, setDireccionNueva] = useState("");
   const [errorRegistroCliente, setErrorRegistroCliente] = useState("");
   const [buscandoIdentidadNueva, setBuscandoIdentidadNueva] = useState(false);
+  const [identidadNuevaConsultada, setIdentidadNuevaConsultada] = useState(false);
 
   const longitudDocumentoBusqueda = tipoDocumentoBusqueda === "01" ? 8 : 11;
   const busquedaSinResultados = busquedaClienteEjecutada === venta.busquedaCliente.trim()
@@ -52,6 +53,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
   function abrirRegistroCliente() {
     const documentoBuscado = venta.busquedaCliente.trim();
     setTipoDocumentoNuevo(tipoDocumentoBusqueda === "01" ? "DNI" : "RUC");
+    setIdentidadNuevaConsultada(false);
     setModoCliente("nuevo");
     venta.quitarCliente();
     setMostrarRegistroCliente(true);
@@ -66,6 +68,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
     setErrorRegistroCliente("");
     try {
       const identidad = await servicioIngresos.consultarIdentidadCliente(tipoDocumentoNuevo, numeroDocumentoNuevo.trim());
+      setIdentidadNuevaConsultada(true);
       if (identidad.tipoPersona === "JURIDICA") setRazonSocialNueva(identidad.razonSocial ?? "");
       else {
         setNombresNuevo(identidad.nombres ?? "");
@@ -74,6 +77,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
       }
       setDireccionNueva(identidad.direccion ?? "");
     } catch (problema) {
+      setIdentidadNuevaConsultada(false);
       setErrorRegistroCliente(problema instanceof Error ? problema.message : "No se pudo consultar el documento en APIS Perú.");
     } finally {
       setBuscandoIdentidadNueva(false);
@@ -122,6 +126,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
   function limpiarFormularioCliente() {
     setMostrarRegistroCliente(false);
     setModoCliente("buscar");
+    setIdentidadNuevaConsultada(false);
   }
 
   return {
@@ -132,7 +137,7 @@ export function useNuevoIngresoClienteForm(venta: VentaCliente) {
     numeroDocumentoNuevo, setNumeroDocumentoNuevo, nombresNuevo, setNombresNuevo,
     apellidoPaternoNuevo, setApellidoPaternoNuevo, apellidoMaternoNuevo, setApellidoMaternoNuevo,
     razonSocialNueva, setRazonSocialNueva, direccionNueva, setDireccionNueva,
-    errorRegistroCliente, setErrorRegistroCliente, buscandoIdentidadNueva,
+    errorRegistroCliente, setErrorRegistroCliente, buscandoIdentidadNueva, identidadNuevaConsultada, setIdentidadNuevaConsultada,
     personaJuridicaNueva, documentoNuevoValido, longitudDocumentoBusqueda, busquedaSinResultados,
     ejecutarBusquedaCliente, abrirRegistroCliente, consultarIdentidadNueva, guardarClienteNuevo, seleccionarCliente,
     cambiarTipoDocumentoBusqueda, cambiarBusquedaDocumento, limpiarFormularioCliente,
