@@ -21,6 +21,10 @@ type DialogoProps = {
   enfocarAlAbrir?: RefObject<HTMLElement | null>;
   /** Clases extra para el contenedor del diálogo (p. ej. un borde de color). */
   className?: string;
+  /** Icono o logo a la izquierda del título. */
+  icono?: ReactNode;
+  /** Texto debajo del título (p. ej. nombre de un artículo y su código). */
+  subtitulo?: ReactNode;
 };
 
 const anchos: Record<AnchoDialogo, string> = {
@@ -39,7 +43,7 @@ const SELECTOR_ENFOCABLE = "a[href], button:not(:disabled), input:not(:disabled)
  * atrapa Tab y devuelve el foco al elemento anterior al cerrarse.
  * En escritorio aparece centrado; en pantallas pequeñas se convierte en hoja inferior.
  */
-export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = true, tipo = "dialogo", ancho = "md", enfocarAlAbrir, className = "" }: DialogoProps) {
+export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = true, tipo = "dialogo", ancho = "md", enfocarAlAbrir, className = "", icono, subtitulo }: DialogoProps) {
   const idTitulo = useId();
   const contenedorRef = useRef<HTMLDivElement>(null);
   const onCerrarRef = useRef(onCerrar);
@@ -107,9 +111,13 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
           <span className="h-1 w-10 rounded-sm bg-[#c5d1db]" />
         </div>
         <header className="flex items-start justify-between gap-4 border-b border-[#dbe3e9] px-6 pb-[18px] pt-[22px] max-sm:px-5">
-          <div className="min-w-0">
-            {kicker && <span className="block text-[11px] font-bold tracking-[0.08em] text-[#52697d]">{kicker}</span>}
-            <h2 id={idTitulo} className="m-0 mt-1 text-xl font-extrabold text-[#0b2545]">{titulo}</h2>
+          <div className="flex min-w-0 items-center gap-3">
+            {icono}
+            <div className="min-w-0">
+              {kicker && <span className="block text-[11px] font-bold tracking-[0.08em] text-[#52697d]">{kicker}</span>}
+              <h2 id={idTitulo} className="m-0 mt-1 text-xl font-extrabold text-[#0b2545]">{titulo}</h2>
+              {subtitulo && <div className="mt-1 text-sm text-[#52697d]">{subtitulo}</div>}
+            </div>
           </div>
           <button
             type="button"
