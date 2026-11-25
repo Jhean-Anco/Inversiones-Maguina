@@ -54,6 +54,15 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
       <td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}>
         <strong className={c.clientName}>{venta.clienteNombre || "Cliente no especificado"}</strong>
         {venta.clienteNumeroDocumento && <small className={c.minorText}>{venta.clienteNumeroDocumento}</small>}
+        {venta.mototaxis?.map((detalle) => {
+          const cantidad = Number(detalle.cantidad);
+          const cantidadTexto = Number.isFinite(cantidad)
+            ? cantidad.toLocaleString("es-PE", { maximumFractionDigits: 2 })
+            : detalle.cantidad;
+          return <small className={c.itemDetail} key={detalle.id} title={detalle.descripcion}>
+            {detalle.descripcion} · {cantidadTexto} {cantidad === 1 ? "und" : "unds"}
+          </small>;
+        })}
       </td>
       <td>
         <div className="flex flex-wrap items-center gap-1"><Etiqueta tono="marca" compacta>{medioPago(venta.medioPago)}</Etiqueta><Etiqueta tono={venta.condicionPago === "CREDITO" ? "advertencia" : "neutral"} compacta>{venta.condicionPago === "CREDITO" ? "Credito" : "Contado"}</Etiqueta></div>
