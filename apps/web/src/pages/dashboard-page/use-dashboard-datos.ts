@@ -174,7 +174,7 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
   const mediosPago = (reporte?.porMedioPago ?? []).map((pago) => ({ nombre: nombreMedioPago(pago.medioPago), importe: Number(pago.total) })).filter((pago) => pago.importe > 0);
 
   return {
-    resumen, cargando, error, hoy, puedeVerFinanzas, puedeVerCostos,
+    resumen, cargando, error, hoy, puedeVerFinanzas, puedeVerCostos, actualizando: cargandoReporte,
     periodo, setPeriodo, comparar, setComparar, rangos,
     reporte: { cargando: cargandoReporte && reporteDiario === null, error: errorReporte, listo: reporteDiario !== null, mediosListos: reporte !== null },
     hayFallos: Object.values(fallos).some(Boolean),

@@ -40,7 +40,7 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
     {!reporte.error && datos.hayFallos && <NotificacionFlotante mensaje="Algunos gráficos no se pudieron cargar. Puedes intentarlo de nuevo." titulo="Resumen incompleto" accion={{ etiqueta: "Actualizar resumen", ejecutar: datos.reintentar }} />}
     {cargando ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Preparando el panel del negocio...</span></div> : resumen && (
       <div className={`${estilosDashboard.grid} inicio-chart-grid`}>
-        <SelectorPeriodo periodo={periodo} comparar={comparar} onPeriodo={datos.setPeriodo} onComparar={datos.setComparar} />
+        <SelectorPeriodo periodo={periodo} comparar={comparar} actualizando={datos.actualizando} onPeriodo={datos.setPeriodo} onComparar={datos.setComparar} onActualizar={datos.reintentar} />
         <div className="col-span-full">
           <IndicadoresClave soles={soles} ingresos={indicadores.ingresos} textos={{ periodo: tp.del, comparacion }} ticket={indicadores.ticket} saldo={indicadores.saldo} margen={indicadores.margen} mostrarMargen={indicadores.mostrarMargen} mostrarIngresos={puedeVerIngresos && !reporte.error} mostrarFinanzas={indicadores.mostrarSaldo} />
         </div>
