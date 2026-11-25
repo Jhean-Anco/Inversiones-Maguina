@@ -1,6 +1,6 @@
 import { solicitarApi } from "./api-cliente";
 
-export type ProveedorRegistrado = { id: string; nombre: string; razonSocial: string | null; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; tipoDocumento: string; numeroDocumento: string };
+export type ProveedorRegistrado = { id: string; nombre: string; nombreComercial?: string | null; razonSocial: string | null; nombres: string | null; apellidoPaterno: string | null; apellidoMaterno: string | null; tipoDocumento: string; numeroDocumento: string };
 export type PaginaProveedores = { items: ProveedorRegistrado[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
 export type DatosProveedorNuevo = { tipoDocumento: "DNI" | "RUC"; numeroDocumento: string; razonSocial?: string; nombres?: string; apellidoPaterno?: string; apellidoMaterno?: string; nombreComercial?: string };
 

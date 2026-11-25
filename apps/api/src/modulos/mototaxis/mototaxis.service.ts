@@ -223,7 +223,7 @@ export class ServicioMototaxis {
 
   async listarProveedores(busqueda = "") {
     const q = busqueda.trim().slice(0, 100);
-    return db.select({ id: proveedores.personaId, nombre: sql<string>`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
+    return db.select({ id: proveedores.personaId, nombre: sql<string>`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`, nombreComercial: proveedores.nombreComercial,
       razonSocial: personas.razonSocial, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno,
       tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento })
       .from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id))
@@ -238,7 +238,7 @@ export class ServicioMototaxis {
     const filtroBusqueda = q ? or(ilike(personas.razonSocial, `%${q}%`), ilike(personas.nombres, `%${q}%`), ilike(personas.apellidoPaterno, `%${q}%`), ilike(personas.numeroDocumento, `%${q}%`)) : undefined;
     const condicion = and(eq(proveedores.activo, true), filtroBusqueda);
     const [{ total }] = await db.select({ total: count() }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).where(condicion);
-    const items = await db.select({ id: proveedores.personaId, nombre: sql<string>`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
+    const items = await db.select({ id: proveedores.personaId, nombre: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}), ${proveedores.nombreComercial})`, nombreComercial: proveedores.nombreComercial,
       razonSocial: personas.razonSocial, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno,
       tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento })
       .from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id))
