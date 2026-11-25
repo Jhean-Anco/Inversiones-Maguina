@@ -412,12 +412,20 @@ input[type="reset"] {
     transition-delay: 0ms !important;
   }
 
-  /* Las acciones respetan el movimiento reducido del sistema. */
+  /*
+   * El botón nuevo y el de cerrar sesión conservan su transición de expansión
+   * con movimiento reducido: sin ella el botón cambia de forma de golpe y no se
+   * ve cómo se despliega. Las reglas globales de arriba y las de main.css la
+   * dejarían en 0.01 ms, por eso llevan !important.
+   */
   .erp-accion-principal,
-  .erp-accion-principal *,
-  .topbar-logout-button,
-  .topbar-logout-button * {
-    transition-duration: 0.01ms !important;
+  .topbar-logout-button {
+    transition-duration: 1.2s !important;
+  }
+  .erp-accion-principal-icon,
+  .erp-accion-principal-label,
+  .topbar-logout-button > span {
+    transition-duration: 1.2s !important;
   }
 }
 
