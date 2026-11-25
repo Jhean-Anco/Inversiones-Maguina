@@ -1,9 +1,9 @@
 import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { cn } from "../../../lib/utils";
 import { catalogAdminClasses as ui } from "./catalogo-admin-classes";
 import { useCatalogo } from "../../../hooks/use-catalogo";
-import { useDialogoFlotante } from "../../../hooks/use-dialogo-flotante";
+import { Dialogo } from "../../ui/dialogo/dialogo";
 import { getViewportProfile } from "../../../utilidades/viewport";
 import { RegistrarAccionPrincipal } from "../../ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../ui/listado-maestro/listado-maestro";
@@ -48,7 +48,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipoMarca>("TODOS");
   const [confirmacionEstado, setConfirmacionEstado] = useState<T | null>(null);
   const [confirmandoEstado, setConfirmandoEstado] = useState(false);
-  const dialogoRef = useRef<HTMLElement>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [anchoViewport, setAnchoViewport] = useState(() => typeof window === "undefined" ? 1366 : window.innerWidth);
   const [altoViewport, setAltoViewport] = useState(() => typeof window === "undefined" ? 768 : window.innerHeight);
@@ -91,10 +90,6 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
     );
   }
 
-  useDialogoFlotante(dialogoRef, modalAbierto || Boolean(confirmacionEstado), () => {
-    if (confirmacionEstado) cerrarConfirmacionEstado();
-    else cerrarModal();
-  });
 
   async function confirmarCambioEstado() {
     if (!confirmacionEstado || confirmandoEstado) return;
@@ -139,27 +134,46 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
       claseTarjeta={cn("catalog-manager-grid catalog-admin-grid", ui.grid)}
     />
 
-    {modalAbierto && <div className={cn("catalog-manager-backdrop", ui.backdrop)} onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarModal(); }}>
-      <section ref={dialogoRef} className={cn("catalog-manager-dialog", ui.dialog)} role="dialog" aria-modal="true" aria-labelledby="catalog-manager-form-title">
-        <header className="catalog-manager-dialog-head"><div className={cn("catalog-manager-dialog-symbol", ui.dialogSymbol, esMarca && `is-brand ${ui.brandSymbol}`)}><Icono nombre={tipo}/></div><div><h2 id="catalog-manager-form-title">{registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}</h2><p>{registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}</p></div><button className={ui.closeButton} type="button" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar formulario"><Icono nombre="cerrar"/></button></header>
+    {modalAbierto && (
+      <Dialogo
+        titulo={registroEditado ? `Editar ${singular}` : `Nueva ${singular}`}
+        subtitulo={registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}
+        icono={<span className="grid size-11 place-items-center rounded-xl bg-[#eef4fa] text-[#174b78]"><Icono nombre={tipo} /></span>}
+        ancho="sm"
+        cerrable={!guardando}
+        onCerrar={cerrarModal}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={cerrarModal} disabled={guardando}>Cancelar</button>
+            <button type="submit" form="catalogo-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button>
+          </>
+        }
+      >
         {error && <NotificacionFlotante mensaje={error} />}
-        <form className={cn("catalog-manager-form", ui.form)} onSubmit={guardarRegistro}>
-          <div className={cn("catalog-manager-form-body", ui.formBody)}>
-            <label className={cn("catalog-manager-name-field", ui.nameField)}><span>Nombre<b>*</b></span><input className={ui.nameInput} autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo}/></label>
-            {esMarca && <label className={cn("catalog-manager-name-field", ui.nameField)}><span>Se usa en<b>*</b></span><select className={cn(ui.nameInput, ui.nameSelect)} value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
-          </div>
-          <footer className={cn("catalog-manager-form-actions", ui.formActions)}><button type="button" className={cn("catalog-manager-cancel", ui.cancelButton)} onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" className={cn("catalog-manager-save", ui.saveButton)} disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button></footer>
+        <form id="catalogo-form" className="grid gap-4" onSubmit={guardarRegistro}>
+          <label className="grid gap-1.5 text-xs font-bold text-[#52697d]"><span>Nombre<b className="text-[#b91e30]">*</b></span><input className="h-11 w-full rounded-xl border border-[#c5d1db] px-3 text-sm text-[#142b42]" autoFocus value={nombre} onChange={(evento) => setNombre(evento.target.value)} maxLength={100} minLength={2} required placeholder={ejemplo} /></label>
+          {esMarca && <label className="grid gap-1.5 text-xs font-bold text-[#52697d]"><span>Se usa en<b className="text-[#b91e30]">*</b></span><select className="h-11 w-full rounded-xl border border-[#c5d1db] px-3 text-sm text-[#142b42]" value={usoMarca} onChange={(evento) => setUsoMarca(evento.target.value as UsoMarca | "")} required><option value="">Elige el tipo de producto</option><option value="REPUESTOS">Repuestos</option><option value="MOTOTAXIS">Mototaxis</option><option value="AMBOS">Ambos</option></select></label>}
         </form>
-      </section>
-    </div>}
+      </Dialogo>
+    )}
 
-    {confirmacionEstado && <div className={cn("catalog-manager-backdrop", ui.backdrop)} onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrarConfirmacionEstado(); }}>
-      <section ref={dialogoRef} className={cn("catalog-manager-confirm-dialog", ui.confirmDialog)} role="dialog" aria-modal="true" aria-labelledby="catalog-manager-confirm-title">
-        <div className={cn("catalog-manager-confirm-icon", ui.confirmIcon, confirmacionEstado.activo ? `is-disable ${ui.confirmDisable}` : `is-enable ${ui.confirmEnable}`)}><Icono nombre={confirmacionEstado.activo ? "desactivar" : "activar"}/></div>
-        <h2 id="catalog-manager-confirm-title" className={ui.confirmTitle}>{confirmacionEstado.activo ? `¿Desactivar ${singular}?` : `¿Habilitar ${singular}?`}</h2>
-        <p className={ui.confirmText}>Vas a {confirmacionEstado.activo ? "desactivar" : "habilitar"} <strong>{confirmacionEstado.nombre}</strong>. {confirmacionEstado.activo ? "Dejará de estar disponible para nuevos registros; la información histórica se conservará." : "Volverá a estar disponible para nuevos registros."}</p>
-        <footer className={ui.confirmActions}><button className={cn("catalog-manager-cancel", ui.cancelButton)} type="button" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button><button className={cn("catalog-manager-save", ui.saveButton, confirmacionEstado.activo && ui.destructiveButton)} type="button" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button></footer>
-      </section>
-    </div>}
+    {confirmacionEstado && (
+      <Dialogo
+        tipo="alerta"
+        titulo={confirmacionEstado.activo ? `¿Desactivar ${singular}?` : `¿Habilitar ${singular}?`}
+        icono={<span className="grid size-11 place-items-center rounded-xl bg-[#eef4fa] text-[#174b78]"><Icono nombre={confirmacionEstado.activo ? "desactivar" : "activar"} /></span>}
+        ancho="sm"
+        cerrable={!confirmandoEstado}
+        onCerrar={cerrarConfirmacionEstado}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button>
+            <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button>
+          </>
+        }
+      >
+        <p className="m-0 text-sm leading-relaxed text-[#52697d]">Vas a {confirmacionEstado.activo ? "desactivar" : "habilitar"} <strong className="text-[#0b2545]">{confirmacionEstado.nombre}</strong>. {confirmacionEstado.activo ? "Dejará de estar disponible para nuevos registros; la información histórica se conservará." : "Volverá a estar disponible para nuevos registros."}</p>
+      </Dialogo>
+    )}
   </section>;
 }

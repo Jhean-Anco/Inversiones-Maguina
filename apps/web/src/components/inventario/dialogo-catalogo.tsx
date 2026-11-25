@@ -1,7 +1,5 @@
-import { X } from "lucide-react";
-import { useId, useRef, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
+import type { ReactNode } from "react";
+import { Dialogo } from "../ui/dialogo/dialogo";
 
 const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", minimumFractionDigits: 2 });
 const formatoFecha = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeZone: "America/Lima" });
@@ -52,31 +50,17 @@ type Props = {
 };
 
 export function DialogoCatalogo({ titulo, articulo, codigo, alCerrar, guardando, acciones, children }: Props) {
-  const id = useId();
-  const referencia = useRef<HTMLElement>(null);
-  const cerrar = () => { if (!guardando) alCerrar(); };
-  useDialogoFlotante(referencia, true, cerrar);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[180] grid place-items-center bg-[#14283d80] p-3 sm:p-6" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrar(); }}>
-      <section ref={referencia} role="dialog" aria-modal="true" aria-labelledby={id} className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[var(--erp-border)] bg-[var(--erp-surface)] text-[var(--erp-ink)] shadow-2xl">
-        <header className="inventario-dialogo-cabecera flex shrink-0 items-start justify-between gap-4 border-b border-[var(--erp-border)] px-5 py-4 sm:px-7">
-          <div className="flex min-w-0 items-center gap-3">
-            <img src="/logo.webp" alt="" className="size-11 shrink-0 rounded-lg bg-white object-contain p-1" />
-            <div className="min-w-0">
-              <h2 className="m-0 text-sm font-semibold" id={id}>{titulo}</h2>
-              <p className="m-0 break-words text-xl font-bold">{articulo}</p>
-              {codigo && <p className="m-0 mt-1 font-mono text-xs">{codigo}</p>}
-            </div>
-          </div>
-          <button type="button" aria-label="Cerrar" disabled={guardando} onClick={cerrar} className="inventario-dialogo-cerrar grid size-9 shrink-0 place-items-center rounded-lg">
-            <X size={18} aria-hidden="true" />
-          </button>
-        </header>
-        <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">{children}</div>
-        {acciones && <footer className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-[var(--erp-border)] px-5 py-3 sm:px-7">{acciones}</footer>}
-      </section>
-    </div>,
-    document.body,
+  return (
+    <Dialogo
+      titulo={titulo}
+      ancho="lg"
+      cerrable={!guardando}
+      onCerrar={alCerrar}
+      icono={<img src="/logo.webp" alt="" className="size-11 shrink-0 rounded-lg bg-white object-contain p-1" />}
+      subtitulo={<><span className="block text-xl font-bold text-[#0b2545] break-words">{articulo}</span>{codigo && <span className="mt-1 block font-mono text-xs">{codigo}</span>}</>}
+      pie={acciones}
+    >
+      {children}
+    </Dialogo>
   );
 }

@@ -1,6 +1,7 @@
 import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
 import { useRef } from "react";
 import { createPortal } from "react-dom";
+import { Dialogo } from "../../ui/dialogo/dialogo";
 import { type CatalogosProducto, type Producto } from "../../../services/inventario/productos.service";
 import { useProductoFormulario } from "../../../hooks/use-producto-formulario";
 import { ProductoCategoriaModal } from "../producto-categoria-modal/producto-categoria-modal";
@@ -32,14 +33,30 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
   const firmaDatos = JSON.stringify(Object.fromEntries(Object.entries(formulario).filter(([clave, valor]) => typeof valor !== "function" && !["guardando", "errorLocal"].includes(clave))));
   const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(formularioRef, alCerrar, formulario.modoEdicion ? "los cambios del repuesto" : "el repuesto", firmaDatos);
 
-  return createPortal(<>{dialogo}<div className="catalog-modal-backdrop producto-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.guardando) solicitarCancelacion(); }}>
-    <section className="catalog-modal producto-modal" role="dialog" aria-modal="true" aria-labelledby="producto-form-title">
+  const pieProducto = (
+    <>
+      <button className="catalog-cancel" type="button" onClick={solicitarCancelacion} disabled={formulario.guardando}>Cancelar</button>
+      <button className="catalog-submit" type="submit" form="producto-form" disabled={formulario.guardando}>{formulario.guardando ? "Guardando…" : formulario.modoEdicion ? "Guardar repuesto" : "Crear repuesto"}</button>
+    </>
+  );
+  const pieMarca = (
+    <>
+      <button className="catalog-cancel" type="button" disabled={formulario.creandoMarca} onClick={() => formulario.setMarcaModalAbierto(false)}>Cancelar</button>
+      <button className="catalog-submit" type="submit" form="marca-rapida-form" disabled={formulario.creandoMarca}>{formulario.creandoMarca ? "Guardando…" : "Guardar marca"}</button>
+    </>
+  );
+
+  return createPortal(<>{dialogo}<Dialogo
+      kicker="CATÁLOGO"
+      titulo={formulario.modoEdicion ? "Editar repuesto" : "Nuevo repuesto"}
+      ancho="lg"
+      cerrable={!formulario.guardando}
+      onCerrar={solicitarCancelacion}
+      pie={pieProducto}
+    >
+      <p className="m-0 -mt-2 text-[13px] text-[#52697d]">Identifica el repuesto y define sus presentaciones.</p>
       {!formulario.categoriaModalAbierto && !formulario.marcaModalAbierto && <NotificacionFlotante titulo={formulario.errorLocal ? "Revisa los datos del formulario" : "No se guardó el repuesto"} mensaje={formulario.errorLocal || error} />}
-      <form ref={formularioRef} className="catalog-form producto-form bg-[linear-gradient(180deg,#fff_0%,#fbfcfe_100%)]" onSubmit={formulario.guardar}>
-        <div className="catalog-form-title inventario-dialogo-cabecera">
-          <div><h2 id="producto-form-title">{formulario.modoEdicion ? "Editar repuesto" : "Nuevo repuesto"}</h2><p>Identifica el repuesto y define sus presentaciones.</p></div>
-          <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario" onClick={solicitarCancelacion}>×</button>
-        </div>
+      <form id="producto-form" ref={formularioRef} className="grid gap-5" onSubmit={formulario.guardar}>
         <div className="producto-form-scroll mobile-portrait:gap-[14px] mobile-portrait:px-[18px] mobile-portrait:py-6 mobile-portrait:[.catalog-modal.producto-modal_&]:px-[18px]">
           <fieldset className="producto-form-section mobile-portrait:p-3">
             <legend>Identificación</legend>
@@ -98,23 +115,22 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             <button type="button" className="producto-add-row" onClick={() => formulario.setFicha((actual) => [...actual, { id: globalThis.crypto?.randomUUID?.() ?? `ficha-${Date.now()}-${Math.random().toString(36).slice(2)}`, clave: "", valor: "" }])}>+ Agregar característica</button>
           </fieldset>
         </div>
-        <div className="catalog-form-actions producto-wizard-actions">
-          <button className="catalog-cancel" type="button" onClick={solicitarCancelacion} disabled={formulario.guardando}>Cancelar</button>
-          <button className="catalog-submit" type="submit" disabled={formulario.guardando}>{formulario.guardando ? "Guardando…" : formulario.modoEdicion ? "Guardar repuesto" : "Crear repuesto"}</button>
-        </div>
       </form>
-      {formulario.marcaModalAbierto && <div className="producto-brand-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !formulario.creandoMarca) formulario.setMarcaModalAbierto(false); }} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); formulario.setMarcaModalAbierto(false); } }}>
-        <section className="producto-brand-modal" role="dialog" aria-modal="true" aria-labelledby="marca-rapida-titulo">
-          <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario de marca" onClick={() => formulario.setMarcaModalAbierto(false)}>×</button>
-          <form onSubmit={(event) => { event.preventDefault(); void formulario.crearMarca(); }}>
-            <div className="catalog-form-title"><span>✦</span><div><h2 id="marca-rapida-titulo">Agregar marca</h2><p>Guarda el nombre para asociarlo al producto.</p></div></div>
-            {formulario.errorLocal && <NotificacionFlotante mensaje={formulario.errorLocal} />}
-            <label>Nombre de la marca<input autoFocus value={formulario.marcaNueva} onChange={(event) => formulario.setMarcaNueva(event.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Honda" /></label>
-            <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={formulario.creandoMarca} onClick={() => formulario.setMarcaModalAbierto(false)}>Cancelar</button><button className="catalog-submit" type="submit" disabled={formulario.creandoMarca}>{formulario.creandoMarca ? "Guardando…" : "Guardar marca"}</button></div>
+      {formulario.marcaModalAbierto && (
+        <Dialogo
+          kicker="CATÁLOGO"
+          titulo="Agregar marca"
+          ancho="sm"
+          cerrable={!formulario.creandoMarca}
+          onCerrar={() => formulario.setMarcaModalAbierto(false)}
+          pie={pieMarca}
+        >
+          <form id="marca-rapida-form" className="grid gap-4" onSubmit={(event) => { event.preventDefault(); void formulario.crearMarca(); }}>
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Nombre de la marca<input className="h-11 w-full rounded-xl border border-[#c5d1db] px-3 text-sm text-[#142b42]" autoFocus value={formulario.marcaNueva} onChange={(event) => formulario.setMarcaNueva(event.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Honda" /></label>
           </form>
-        </section>
-      </div>}
+          {formulario.errorLocal && <NotificacionFlotante mensaje={formulario.errorLocal} />}
+        </Dialogo>
+      )}
       {formulario.categoriaModalAbierto && <ProductoCategoriaModal nombre={formulario.categoriaNueva} error={formulario.errorLocal} guardando={formulario.creandoCategoria} alCambiarNombre={formulario.setCategoriaNueva} alCerrar={() => formulario.setCategoriaModalAbierto(false)} alCrear={() => { void formulario.crearCategoria(); }} />}
-    </section>
-  </div></>, document.getElementById("root") ?? document.body);
+    </Dialogo></>, document.body);
 }

@@ -1,6 +1,6 @@
 import "./mototaxis-page.css";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useNavigate } from "react-router-dom";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
@@ -171,7 +171,31 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
       totalCompra={totalCompra} pagos={pagosIniciales} setPagos={setPagosIniciales}
       alCancelar={cancelarCompra} alEditar={() => setCompraPaso("datos")} onSubmit={enviarCompra}
     />}
-    {proveedorModal && createPortal(<div className="catalog-modal-backdrop moto-modal-backdrop moto-provider-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !guardando) setProveedorModal(false); }}><form className="catalog-modal moto-modal moto-provider-dialog" role="dialog" aria-modal="true" aria-labelledby="moto-provider-title" onSubmit={(e) => void guardarProveedor(e)}><div className="moto-modal-title"><div><span className="moto-eyebrow">NUEVO PROVEEDOR</span><h2 id="moto-provider-title">Agregar proveedor</h2><p>Completa sus datos para seleccionarlo en esta compra.</p></div><button type="button" aria-label="Cerrar formulario de proveedor" onClick={() => setProveedorModal(false)}>×</button></div><div className="moto-fields"><label>Tipo de documento<select disabled={buscandoIdentidadProveedor} value={nuevoProveedor.tipoDocumento} onChange={(e) => setNuevoProveedor((p) => ({ ...p, tipoDocumento: e.target.value, numeroDocumento: "", razonSocial: "", nombres: "", apellidoPaterno: "", apellidoMaterno: "", nombreComercial: "" }))}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label><label>{nuevoProveedor.tipoDocumento} del proveedor<span className="moto-document-search"><input required disabled={buscandoIdentidadProveedor} inputMode="numeric" maxLength={nuevoProveedor.tipoDocumento === "RUC" ? 11 : 8} value={nuevoProveedor.numeroDocumento} onChange={(e) => setNuevoProveedor((p) => ({ ...p, numeroDocumento: e.target.value.replace(/\D/g, "").slice(0, p.tipoDocumento === "RUC" ? 11 : 8), razonSocial: "", nombres: "", apellidoPaterno: "", apellidoMaterno: "" }))} /><button type="button" disabled={buscandoIdentidadProveedor || nuevoProveedor.numeroDocumento.length !== (nuevoProveedor.tipoDocumento === "RUC" ? 11 : 8)} onClick={() => void buscarIdentidadProveedor()}>{buscandoIdentidadProveedor ? "Consultando…" : "Buscar"}</button></span></label>{nuevoProveedor.tipoDocumento === "RUC" && nuevoProveedor.numeroDocumento.startsWith("20") ? <label className="moto-field-wide">Razón social<input required maxLength={180} value={nuevoProveedor.razonSocial} onChange={(e) => setNuevoProveedor((p) => ({ ...p, razonSocial: e.target.value }))} /></label> : <><label>Nombres<input required maxLength={120} value={nuevoProveedor.nombres} onChange={(e) => setNuevoProveedor((p) => ({ ...p, nombres: e.target.value }))} /></label><label>Apellido paterno<input required maxLength={120} value={nuevoProveedor.apellidoPaterno} onChange={(e) => setNuevoProveedor((p) => ({ ...p, apellidoPaterno: e.target.value }))} /></label><label>Apellido materno<input maxLength={120} value={nuevoProveedor.apellidoMaterno} onChange={(e) => setNuevoProveedor((p) => ({ ...p, apellidoMaterno: e.target.value }))} /></label></>}<label className="moto-field-wide">Nombre comercial (opcional)<input maxLength={180} value={nuevoProveedor.nombreComercial} onChange={(e) => setNuevoProveedor((p) => ({ ...p, nombreComercial: e.target.value }))} /></label></div><footer><button type="button" onClick={() => setProveedorModal(false)}>Cancelar</button><button className="moto-primary" disabled={guardando || buscandoIdentidadProveedor}><span className="erp-create-icon" aria-hidden="true">+</span>Guardar y usar en esta compra</button></footer></form></div>, document.body)}
+    {proveedorModal && (
+      <Dialogo
+        kicker="NUEVO PROVEEDOR"
+        titulo="Agregar proveedor"
+        subtitulo="Completa sus datos para seleccionarlo en esta compra."
+        ancho="md"
+        cerrable={!guardando}
+        onCerrar={() => setProveedorModal(false)}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setProveedorModal(false)}>Cancelar</button>
+            <button type="submit" form="moto-provider-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando || buscandoIdentidadProveedor}><span aria-hidden="true">+</span>Guardar y usar en esta compra</button>
+          </>
+        }
+      >
+        <form id="moto-provider-form" className="grid gap-4" onSubmit={(e) => void guardarProveedor(e)}>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Tipo de documento<select className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" disabled={buscandoIdentidadProveedor} value={nuevoProveedor.tipoDocumento} onChange={(e) => setNuevoProveedor((p) => ({ ...p, tipoDocumento: e.target.value, numeroDocumento: "", razonSocial: "", nombres: "", apellidoPaterno: "", apellidoMaterno: "", nombreComercial: "" }))}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label>
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">{nuevoProveedor.tipoDocumento} del proveedor<span className="flex gap-2"><input className="h-11 min-w-0 flex-1 rounded-xl border border-[#c5d1db] px-3 text-sm" required disabled={buscandoIdentidadProveedor} inputMode="numeric" maxLength={nuevoProveedor.tipoDocumento === "RUC" ? 11 : 8} value={nuevoProveedor.numeroDocumento} onChange={(e) => setNuevoProveedor((p) => ({ ...p, numeroDocumento: e.target.value.replace(/\D/g, "").slice(0, p.tipoDocumento === "RUC" ? 11 : 8), razonSocial: "", nombres: "", apellidoPaterno: "", apellidoMaterno: "" }))} /><button type="button" className="h-11 rounded-xl border border-[#c7d8e7] bg-[#f4f8fb] px-3 text-sm font-bold text-[#174f88] disabled:opacity-50" disabled={buscandoIdentidadProveedor || nuevoProveedor.numeroDocumento.length !== (nuevoProveedor.tipoDocumento === "RUC" ? 11 : 8)} onClick={() => void buscarIdentidadProveedor()}>{buscandoIdentidadProveedor ? "Consultando…" : "Buscar"}</button></span></label>
+            {nuevoProveedor.tipoDocumento === "RUC" && nuevoProveedor.numeroDocumento.startsWith("20") ? <label className="grid gap-1.5 text-xs font-bold text-[#52697d] sm:col-span-2">Razón social<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" required maxLength={180} value={nuevoProveedor.razonSocial} onChange={(e) => setNuevoProveedor((p) => ({ ...p, razonSocial: e.target.value }))} /></label> : <><label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Nombres<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" required maxLength={120} value={nuevoProveedor.nombres} onChange={(e) => setNuevoProveedor((p) => ({ ...p, nombres: e.target.value }))} /></label><label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Apellido paterno<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" required maxLength={120} value={nuevoProveedor.apellidoPaterno} onChange={(e) => setNuevoProveedor((p) => ({ ...p, apellidoPaterno: e.target.value }))} /></label><label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Apellido materno<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" maxLength={120} value={nuevoProveedor.apellidoMaterno} onChange={(e) => setNuevoProveedor((p) => ({ ...p, apellidoMaterno: e.target.value }))} /></label></>}
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d] sm:col-span-2">Nombre comercial (opcional)<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" maxLength={180} value={nuevoProveedor.nombreComercial} onChange={(e) => setNuevoProveedor((p) => ({ ...p, nombreComercial: e.target.value }))} /></label>
+          </div>
+        </form>
+      </Dialogo>
+    )}
     {!esNuevaCompra && <section className={`mototaxis-page ${mototaxisClasses.page}`}>
     {seccion === "compras" && <ComprasMototaxisListado compras={comprasFiltradas} cargando={cargando}
       busqueda={busquedaCompras} filtroPago={filtroPagoCompra} alBuscar={setBusquedaCompras} alFiltrarPago={setFiltroPagoCompra}
@@ -179,7 +203,38 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
 
     {seccion === "garantias" && <GarantiasMototaxis garantias={garantias} reclamos={reclamos} cargando={cargando} puedeCrear={puedeCrearReclamo} puedeEditar={puedeAjustarInventario} alActualizar={cargar} />}
     {seccion === "movimientos" && <AjusteInventarioMototaxis puedeAjustar={puedeAjustarInventario} />}
-    {compraPago && <div className="catalog-modal-backdrop moto-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !guardando) setCompraPago(null); }}><form role="dialog" aria-modal="true" aria-labelledby="moto-payment-title" className="catalog-modal moto-modal" onSubmit={(e) => void guardarPago(e)}><div className="moto-modal-title"><div><h2 id="moto-payment-title">Cancelar saldo pendiente</h2><p>{compraPago.codigo} · saldo a cancelar {soles(compraPago.saldo)}</p></div><button type="button" aria-label="Cerrar formulario de pago" onClick={() => setCompraPago(null)}>×</button></div><div className="moto-fields"><label>Fecha<input type="date" required max={fechaHoy()} value={formPago.fechaPago} onChange={(e) => setFormPago((p) => ({ ...p, fechaPago: e.target.value }))} /></label><label>Saldo (S/)<input type="number" required min="0.01" max={compraPago.saldo} step="0.01" value={compraPago.saldo} readOnly /></label><SelectorCuentaFinanciera value={formPago.cuentaFinancieraId} medioActual={formPago.medioPago} onChange={(id, medio) => setFormPago((p) => ({ ...p, cuentaFinancieraId: id, medioPago: medio }))} /></div><div className="moto-payment-history"><strong>Pagos registrados</strong>{pagosCompra.map((p) => <div key={p.id}><span>{new Date(`${p.fechaPago}T00:00:00`).toLocaleDateString("es-PE")} · {p.medioPago}</span><b>{soles(p.importePagado)}</b></div>)}</div><footer><button type="button" onClick={() => setCompraPago(null)}>Cancelar</button><button className="moto-primary" disabled={guardando}><span className="erp-create-icon" aria-hidden="true">+</span>{guardando ? "Aplicando…" : "Cancelar saldo completo"}</button></footer></form></div>}
+    {compraPago && (
+      <Dialogo
+        titulo="Cancelar saldo pendiente"
+        subtitulo={`${compraPago.codigo} · saldo a cancelar ${soles(compraPago.saldo)}`}
+        ancho="md"
+        cerrable={!guardando}
+        onCerrar={() => setCompraPago(null)}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setCompraPago(null)}>Cancelar</button>
+            <button type="submit" form="moto-payment-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando}><span aria-hidden="true">+</span>{guardando ? "Aplicando…" : "Cancelar saldo completo"}</button>
+          </>
+        }
+      >
+        <form id="moto-payment-form" className="grid gap-4" onSubmit={(e) => void guardarPago(e)}>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Fecha<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" type="date" required max={fechaHoy()} value={formPago.fechaPago} onChange={(e) => setFormPago((p) => ({ ...p, fechaPago: e.target.value }))} /></label>
+            <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">Saldo (S/)<input className="h-11 rounded-xl border border-[#c5d1db] px-3 text-sm" type="number" required min="0.01" max={compraPago.saldo} step="0.01" value={compraPago.saldo} readOnly /></label>
+            <SelectorCuentaFinanciera value={formPago.cuentaFinancieraId} medioActual={formPago.medioPago} onChange={(id, medio) => setFormPago((p) => ({ ...p, cuentaFinancieraId: id, medioPago: medio }))} />
+          </div>
+          <div className="grid gap-2">
+            <strong className="text-sm text-[#0b2545]">Pagos registrados</strong>
+            {pagosCompra.map((p) => (
+              <div key={p.id} className="flex justify-between gap-3 border-t border-[#edf1f6] py-2 text-sm">
+                <span className="text-[#52697d]">{new Date(`${p.fechaPago}T00:00:00`).toLocaleDateString("es-PE")} · {p.medioPago}</span>
+                <b className="text-[#0b2545]">{soles(p.importePagado)}</b>
+              </div>
+            ))}
+          </div>
+        </form>
+      </Dialogo>
+    )}
     </section>}
     {modal && <FormularioModeloMototaxi marcas={marcas} alCerrar={() => setModal(false)} alGuardar={(modelo) => {
       setModal(false);

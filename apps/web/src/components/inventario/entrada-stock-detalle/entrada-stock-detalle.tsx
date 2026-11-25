@@ -1,17 +1,13 @@
 import type { EntradaStock } from "../../../services/inventario/entradas-stock.service";
+import { Dialogo } from "../../ui/dialogo/dialogo";
 import {
-  stockDetailCloseClasses,
   stockDetailContentClasses,
   stockDetailCountClasses,
-  stockDetailDateClasses,
   stockDetailFooterClasses,
   stockDetailFooterLabelClasses,
   stockDetailFooterTextClasses,
   stockDetailFooterTotalsClasses,
   stockDetailFooterValueClasses,
-  stockDetailHeadingClasses,
-  stockDetailHeadingCopyClasses,
-  stockDetailKickerClasses,
   stockDetailLineClasses,
   stockDetailLineTotalClasses,
   stockDetailLineTotalValueClasses,
@@ -19,7 +15,6 @@ import {
   stockDetailLinesHeadingClasses,
   stockDetailLinesKickerClasses,
   stockDetailLinesTitleClasses,
-  stockDetailModalClasses,
   stockDetailProductClasses,
   stockDetailProductMetaClasses,
   stockDetailProductNameClasses,
@@ -28,7 +23,6 @@ import {
   stockDetailSummaryLabelClasses,
   stockDetailSummaryNoteClasses,
   stockDetailSummaryValueClasses,
-  stockDetailTitleClasses,
   stockDetailTotalClasses,
   stockDetailTotalValueClasses,
 } from "./entrada-stock-detalle-classes";
@@ -52,14 +46,13 @@ export function EntradaStockDetalle({ entrada, alCerrar }: { entrada: EntradaSto
     year: "numeric",
   });
 
-  return <div className="catalog-modal-backdrop" onMouseDown={(evento) => {
-    if (evento.target === evento.currentTarget) alCerrar();
-  }}>
-    <section className={stockDetailModalClasses} role="dialog" aria-modal="true" aria-labelledby="stock-detail-title">
-      <header className={stockDetailHeadingClasses}>
-        <div className={stockDetailHeadingCopyClasses}><span className={stockDetailKickerClasses}>COMPRA DE REPUESTOS</span><h2 className={stockDetailTitleClasses} id="stock-detail-title">{entrada.codigo}</h2><p className={stockDetailDateClasses}>{fecha}</p></div>
-        <button className={stockDetailCloseClasses} type="button" aria-label="Cerrar detalle" onClick={alCerrar}>×</button>
-      </header>
+  return <Dialogo
+    kicker="COMPRA DE REPUESTOS"
+    titulo={entrada.codigo}
+    ancho="lg"
+    onCerrar={alCerrar}
+  >
+    <p className="m-0 -mt-2 text-[13px] text-[#52697d]">{fecha}</p>
       <div className={stockDetailContentClasses}>
         <div className={stockDetailSummaryClasses}>
           <div className={stockDetailSummaryItemClasses}><span className={stockDetailSummaryLabelClasses}>Proveedor</span><strong className={stockDetailSummaryValueClasses}>{entrada.proveedor || "No especificado"}</strong><small className={stockDetailSummaryNoteClasses}>{entrada.proveedorTipoDocumento && entrada.proveedorNumeroDocumento ? `${entrada.proveedorTipoDocumento}: ${entrada.proveedorNumeroDocumento}` : "Sin identificación registrada"}</small>{entrada.proveedorDireccion && <small className={stockDetailSummaryNoteClasses}>{entrada.proveedorDireccion}</small>}</div>
@@ -74,6 +67,5 @@ export function EntradaStockDetalle({ entrada, alCerrar }: { entrada: EntradaSto
         </article>)}</div>
         <footer className={stockDetailFooterClasses}><span className={stockDetailFooterTextClasses}>El stock se actualizó al registrar esta compra.</span><div className={stockDetailFooterTotalsClasses}><strong className={stockDetailFooterLabelClasses}>Total registrado</strong><b className={stockDetailFooterValueClasses}>S/ {total.toFixed(2)}</b></div></footer>
       </div>
-    </section>
-  </div>;
+  </Dialogo>;
 }

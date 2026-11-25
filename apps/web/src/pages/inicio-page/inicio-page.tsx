@@ -1,3 +1,4 @@
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ErpAside, obtenerNavegacionAside } from "../../components/layout/erp-aside/erp-aside";
@@ -43,12 +44,11 @@ export function InicioPage() {
   const cerrarMenuMovil = useCallback(() => setMenuAbierto(false), []);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [confirmarCierreSesion, setConfirmarCierreSesion] = useState(false);
-  const [asideContraido, setAsideContraido] = useState(false);
+  const [asideContraido, setAsideContraido] = useState(true);
   const [colapsoDashboard, setColapsoDashboard] = useState(false);
   const botonMenuRef = useRef<HTMLButtonElement>(null);
   const contenidoRef = useRef<HTMLDivElement>(null);
   const cancelarCierreRef = useRef<HTMLButtonElement>(null);
-  const dialogoCierreRef = useRef<HTMLDivElement>(null);
   const rutaActual = ubicacion.pathname;
   useBorradoresDialogos(rutaActual, perfil?.id ?? null);
   const {
@@ -59,26 +59,9 @@ export function InicioPage() {
   } = useAlertasInicio(permisosPerfil);
   useEffect(() => {
     if (!confirmarCierreSesion) return;
-    const focoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const restaurarScroll = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    cancelarCierreRef.current?.focus();
-    const manejarTeclado = (evento: KeyboardEvent) => {
-      if (evento.key === "Escape") { evento.preventDefault(); setConfirmarCierreSesion(false); return; }
-      if (evento.key !== "Tab") return;
-      const botones = dialogoCierreRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
-      if (!botones?.length) return;
-      const primero = botones[0];
-      const ultimo = botones[botones.length - 1];
-      if (evento.shiftKey && document.activeElement === primero) { evento.preventDefault(); ultimo.focus(); }
-      else if (!evento.shiftKey && document.activeElement === ultimo) { evento.preventDefault(); primero.focus(); }
-    };
-    window.addEventListener("keydown", manejarTeclado);
-    return () => {
-      window.removeEventListener("keydown", manejarTeclado);
-      document.body.style.overflow = restaurarScroll;
-      if (focoAnterior?.isConnected) focoAnterior.focus();
-    };
+    return () => { document.body.style.overflow = restaurarScroll; };
   }, [confirmarCierreSesion]);
   const { moduloActivo, submoduloActivo, navegacionVisible, accesoDenegado } = obtenerNavegacionAside(rutaActual, permisosPerfil);
   const autorizacionResuelta = perfil !== null;
@@ -118,7 +101,7 @@ export function InicioPage() {
   const asideContraidoEscritorio = perfilAmplio && asideContraido;
   const tituloPagina = !autorizacionResuelta ? "Cargando sesión" : accesoDenegadoActual ? "Acceso no disponible" : submoduloActivo?.nombre ?? "Resumen";
   return (
-    <main className={`erp-layout ${clasesLayoutResponsive}${asideContraidoEscritorio ? ` is-collapsed grid-cols-[84px_minmax(0,1fr)]${menuAbierto ? " tablet-portrait:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-cols-[minmax(0,1fr)]" : " [&.is-collapsed]:grid-cols-[84px_minmax(0,1fr)] [&.is-collapsed]:grid-rows-[minmax(0,1fr)] tablet-portrait:grid-cols-[84px_minmax(0,1fr)] tablet-portrait:grid-rows-[minmax(0,1fr)] mobile-landscape:grid-cols-[84px_minmax(0,1fr)] mobile-landscape:grid-rows-[minmax(0,1fr)] mobile-portrait:grid-cols-[84px_minmax(0,1fr)] mobile-portrait:grid-rows-[minmax(0,1fr)]"}` : ""}${autorizacionResuelta && (dashboardActivo || colapsoDashboard) ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
+    <main className={`erp-layout ${clasesLayoutResponsive}${asideContraidoEscritorio ? " is-collapsed" : ""}${autorizacionResuelta && (dashboardActivo || colapsoDashboard) ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
       <ErpAside
         moduloActivo={moduloActivo}
         submoduloActivo={submoduloActivo}
@@ -132,7 +115,7 @@ export function InicioPage() {
         onNavegarResumen={() => { setColapsoDashboard(true); setMenuAbierto(false); }}
       />
 
-      <section className={`erp-main ${clasesMainResponsive}${asideContraidoEscritorio && !menuAbierto ? " is-collapsed tablet-portrait:[&.is-collapsed]:col-start-2 tablet-portrait:[&.is-collapsed]:row-start-1 tablet-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-landscape:[&.is-collapsed]:col-start-2 mobile-landscape:[&.is-collapsed]:row-start-1 mobile-landscape:[&.is-collapsed]:grid-rows-[minmax(0,1fr)] mobile-portrait:[&.is-collapsed]:col-start-2 mobile-portrait:[&.is-collapsed]:row-start-1 mobile-portrait:[&.is-collapsed]:grid-rows-[minmax(0,1fr)]" : ""}`}>
+      <section className={`erp-main ${clasesMainResponsive}`}>
         <ErpHeader
           titulo={tituloPagina}
           rutaActual={rutaActual}
@@ -183,7 +166,24 @@ export function InicioPage() {
           </AccionPrincipalProvider>
         </div>
       </section>
-      {confirmarCierreSesion && <div className={`erp-logout-backdrop ${inicioClasses.logoutBackdrop}`} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setConfirmarCierreSesion(false); }}><div ref={dialogoCierreRef} className={`erp-logout-dialog ${inicioClasses.logoutDialog}`} role="alertdialog" aria-modal="true" aria-labelledby="erp-logout-title" aria-describedby="erp-logout-description"><span className={`erp-logout-symbol ${inicioClasses.logoutSymbol}`} aria-hidden="true"><Icono nombre="salir" /></span><div className={`erp-logout-copy ${inicioClasses.logoutCopy}`}><span className="erp-logout-kicker">SESIÓN ACTUAL</span><h2 id="erp-logout-title">¿Cerrar sesión?</h2><p id="erp-logout-description">Saldrás de tu cuenta en este dispositivo.</p></div><footer className={`erp-logout-footer ${inicioClasses.logoutFooter}`}><button ref={cancelarCierreRef} className="erp-logout-cancel" type="button" onClick={() => setConfirmarCierreSesion(false)}>Seguir aquí</button><button className="erp-logout-confirm" type="button" onClick={() => { setConfirmarCierreSesion(false); void salir(); }}><Icono nombre="salir" />Cerrar sesión</button></footer></div></div>}
+      {confirmarCierreSesion && (
+        <Dialogo
+          tipo="alerta"
+          ancho="sm"
+          kicker="SESIÓN ACTUAL"
+          titulo="¿Cerrar sesión?"
+          onCerrar={() => setConfirmarCierreSesion(false)}
+          enfocarAlAbrir={cancelarCierreRef}
+          pie={
+            <>
+              <button ref={cancelarCierreRef} className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" onClick={() => setConfirmarCierreSesion(false)}>Seguir aquí</button>
+              <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" type="button" onClick={() => { setConfirmarCierreSesion(false); void salir(); }}><Icono nombre="salir" />Cerrar sesión</button>
+            </>
+          }
+        >
+          <p className="m-0 text-sm leading-relaxed text-[#52697d]">Saldrás de tu cuenta en este dispositivo.</p>
+        </Dialogo>
+      )}
     </main>
   );
 }

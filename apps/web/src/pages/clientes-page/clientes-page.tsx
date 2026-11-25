@@ -1,6 +1,7 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { useConfirmarCancelacionFormulario } from "../../hooks/use-confirmar-cancelacion-formulario";
@@ -12,16 +13,6 @@ import { anchoMinimoColumnaRelacionClasses, nombreRelacionListadoClasses } from 
 
 const nombreDe = (cliente: ClienteRegistrado) => cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const etiquetaDocumento = (tipo: string) => ({ "01": "DNI", "04": "Carné de extranjería", "06": "RUC", "07": "Pasaporte" } as Record<string, string>)[tipo] ?? tipo;
-const clasesModalClientes = [
-  "overscroll-contain! [scrollbar-gutter:stable]! [body_&]:overscroll-contain!",
-  "[html[data-responsive-profile=mobile-portrait]_body_&]:max-h-[calc(100dvh-16px)]! [html[data-responsive-profile=mobile-portrait]_body_&]:p-4! [html[data-responsive-profile=mobile-portrait]_body_&]:rounded-[16px_16px_10px_10px]!",
-  "[&_button:focus-visible]:outline-[3px]! [&_button:focus-visible]:outline-[#3784bd55]! [&_button:focus-visible]:outline-offset-2!",
-  "[&_input:focus-visible]:outline-[3px]! [&_input:focus-visible]:outline-[#3784bd55]! [&_input:focus-visible]:outline-offset-2!",
-  "[&_select:focus-visible]:outline-[3px]! [&_select:focus-visible]:outline-[#3784bd55]! [&_select:focus-visible]:outline-offset-2!",
-  "[&_textarea:focus-visible]:outline-[3px]! [&_textarea:focus-visible]:outline-[#3784bd55]! [&_textarea:focus-visible]:outline-offset-2!",
-].join(" ");
-const clasesCabeceraModalClientes = "[body_&]:z-[2]! [body_&]:-top-[22px]! [body_&]:-mt-[22px]! [body_&]:[padding:20px_0_12px]! [html[data-responsive-profile=mobile-portrait]_body_&]:-top-[16px]! [html[data-responsive-profile=mobile-portrait]_body_&]:-mt-[16px]!";
-const clasesPieModalClientes = "[body_&]:sticky! [body_&]:-bottom-[24px]! [body_&]:-mr-[22px]! [body_&]:-ml-[22px]! [body_&]:-mb-[22px]! [body_&]:[padding:14px_24px_24px]! [html[data-responsive-profile=mobile-portrait]_body_&]:-bottom-[16px]! [html[data-responsive-profile=mobile-portrait]_body_&]:mx-[-16px]! [html[data-responsive-profile=mobile-portrait]_body_&]:-mb-[16px]! [html[data-responsive-profile=mobile-portrait]_body_&]:[padding:12px_16px_16px]!";
 
 export function ClientesPage({ puedeEditar = false, puedeCrear = false }: { puedeEditar?: boolean; puedeCrear?: boolean }) {
   const [busqueda, setBusqueda] = useState("");
@@ -82,7 +73,20 @@ function EditarClienteDialog({ cliente, onGuardar, onCancelar }: { cliente: Clie
   const [datos, setDatos] = useState({ nombreComercial: cliente.nombreComercial ?? "", contactoNombre: cliente.contactoNombre ?? "", correo: cliente.correo ?? "", telefono: cliente.telefono ?? "", direccion: cliente.direccion ?? "", direccionEntrega: cliente.direccionEntrega ?? "", observacion: cliente.observacion ?? "" });
   const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
   async function submit(evento: FormEvent<HTMLFormElement>) { evento.preventDefault(); setGuardando(true); const resultado = await onGuardar(datos); setGuardando(false); if (resultado) setError(resultado); }
-  return <div className="clientes-modal-backdrop overscroll-contain" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancelar(); }}><form className={`clientes-modal ${clasesModalClientes}`} role="dialog" aria-modal="true" aria-labelledby="clientes-edit-title" onSubmit={(e) => void submit(e)}><header className={clasesCabeceraModalClientes}> <div><p className="page-eyebrow">EDITANDO FICHA DEL CLIENTE</p><h2 id="clientes-edit-title">{nombreDe(cliente)}</h2><p className="clientes-edit-documento">{etiquetaDocumento(cliente.tipoDocumento)}: {cliente.numeroDocumento}</p></div><button type="button" aria-label="Cerrar" onClick={onCancelar}>×</button></header><div className="clientes-form-grid"><label className="clientes-form-wide">Nombre comercial<input value={datos.nombreComercial} maxLength={180} onChange={(e) => setDatos({ ...datos, nombreComercial: e.target.value })} /></label><label className="clientes-form-wide">Persona de contacto<input value={datos.contactoNombre} maxLength={180} onChange={(e) => setDatos({ ...datos, contactoNombre: e.target.value })} /></label><label>Teléfono<input type="tel" value={datos.telefono} maxLength={30} onChange={(e) => setDatos({ ...datos, telefono: e.target.value })} /></label><label>Correo electrónico<input type="email" value={datos.correo} maxLength={254} onChange={(e) => setDatos({ ...datos, correo: e.target.value })} /></label><label className="clientes-form-wide">Dirección fiscal<input value={datos.direccion} maxLength={240} onChange={(e) => setDatos({ ...datos, direccion: e.target.value })} /></label><label className="clientes-form-wide">Dirección de entrega<input value={datos.direccionEntrega} maxLength={240} onChange={(e) => setDatos({ ...datos, direccionEntrega: e.target.value })} /></label><label className="clientes-form-wide">Nota interna<textarea rows={3} maxLength={1000} value={datos.observacion} onChange={(e) => setDatos({ ...datos, observacion: e.target.value })} /></label></div>{error && <NotificacionFlotante mensaje={error} />}<footer className={clasesPieModalClientes}> <button className="clientes-secondary-action" type="button" onClick={onCancelar}>Cancelar</button><button className="clientes-primary-action" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cambios"}</button></footer></form></div>;
+  return <Dialogo
+      kicker="EDITANDO FICHA DEL CLIENTE"
+      titulo={nombreDe(cliente)}
+      ancho="md"
+      cerrable={!guardando}
+      onCerrar={onCancelar}
+      pie={<><button className="clientes-secondary-action" type="button" onClick={onCancelar}>Cancelar</button><button className="clientes-primary-action" type="submit" form="cliente-edit-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cambios"}</button></>}
+    >
+      <p className="m-0 -mt-2 text-[13px] text-[#52697d]">{etiquetaDocumento(cliente.tipoDocumento)}: {cliente.numeroDocumento}</p>
+      <form id="cliente-edit-form" className="grid gap-4" onSubmit={(e) => void submit(e)}>
+        <div className="clientes-form-grid"><label className="clientes-form-wide">Nombre comercial<input value={datos.nombreComercial} maxLength={180} onChange={(e) => setDatos({ ...datos, nombreComercial: e.target.value })} /></label><label className="clientes-form-wide">Persona de contacto<input value={datos.contactoNombre} maxLength={180} onChange={(e) => setDatos({ ...datos, contactoNombre: e.target.value })} /></label><label>Teléfono<input type="tel" value={datos.telefono} maxLength={30} onChange={(e) => setDatos({ ...datos, telefono: e.target.value })} /></label><label>Correo electrónico<input type="email" value={datos.correo} maxLength={254} onChange={(e) => setDatos({ ...datos, correo: e.target.value })} /></label><label className="clientes-form-wide">Dirección fiscal<input value={datos.direccion} maxLength={240} onChange={(e) => setDatos({ ...datos, direccion: e.target.value })} /></label><label className="clientes-form-wide">Dirección de entrega<input value={datos.direccionEntrega} maxLength={240} onChange={(e) => setDatos({ ...datos, direccionEntrega: e.target.value })} /></label><label className="clientes-form-wide">Nota interna<textarea rows={3} maxLength={1000} value={datos.observacion} onChange={(e) => setDatos({ ...datos, observacion: e.target.value })} /></label></div>
+      </form>
+      {error && <NotificacionFlotante mensaje={error} />}
+    </Dialogo>;
 }
 
 export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicial = "" }: { onGuardar: (datos: DatosClienteNuevo) => Promise<string | null>; onCancelar: () => void; numeroDocumentoInicial?: string }) {
@@ -121,8 +125,16 @@ export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicia
     setGuardando(false);
   }
 
-  return <>{dialogo}<div className="clientes-modal-backdrop overscroll-contain" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) solicitarCancelacion(); }}><form ref={dialogoRef} className={`clientes-modal ${clasesModalClientes}`} role="dialog" aria-modal="true" onSubmit={(e) => void submit(e)} aria-labelledby="clientes-form-title"><header className={clasesCabeceraModalClientes}> <div><p className="page-eyebrow">CARTERA COMERCIAL</p><h2 id="clientes-form-title">Registrar cliente</h2></div><button type="button" aria-label="Cerrar" onClick={solicitarCancelacion}>×</button></header>
-    <div className="clientes-form-grid">
+  return <>{dialogo}<Dialogo
+      kicker="CARTERA COMERCIAL"
+      titulo="Registrar cliente"
+      ancho="md"
+      cerrable={!guardando}
+      onCerrar={solicitarCancelacion}
+      pie={<><button className="clientes-secondary-action" type="button" onClick={solicitarCancelacion}>Cancelar</button><button className="clientes-primary-action" type="submit" form="cliente-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cliente"}</button></>}
+    >
+      <form id="cliente-form" ref={dialogoRef} className="grid gap-4" onSubmit={(e) => void submit(e)}>
+        <div className="clientes-form-grid">
       <label>Tipo de cliente<select value={tipoPersona} onChange={(e) => { const tipo = e.target.value as "NATURAL" | "JURIDICA"; setTipoPersona(tipo); setTipoDocumento(tipo === "JURIDICA" ? "RUC" : "DNI"); setNumeroDocumento(""); }}><option value="NATURAL">Persona natural</option><option value="JURIDICA">Empresa / organización</option></select></label>
       <label>Documento de identidad<select disabled={buscandoIdentidad} value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as DatosClienteNuevo["tipoDocumento"])}><option value="RUC">RUC</option>{!esJuridica && <><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></>}</select></label>
       <label className="clientes-form-wide">Número de documento<span className="clientes-document-search grid grid-cols-[minmax(0,1fr)_auto] gap-[7px]"><input required disabled={buscandoIdentidad} inputMode={tipoDocumento === "DNI" || tipoDocumento === "RUC" ? "numeric" : "text"} value={numeroDocumento} maxLength={tipoDocumento === "DNI" ? 8 : tipoDocumento === "RUC" ? 11 : 20} onChange={(e) => setNumeroDocumento(tipoDocumento === "DNI" || tipoDocumento === "RUC" ? e.target.value.replace(/\D/g, "") : e.target.value)} />{(tipoDocumento === "DNI" || tipoDocumento === "RUC") && <button className="min-w-[82px] min-h-10 border border-[#c8ded4] rounded-[8px] px-3 bg-[#edf7f1] text-[#17674f] font-[inherit] text-xs font-[750] cursor-pointer disabled:cursor-not-allowed disabled:opacity-[.55]" type="button" onClick={() => void consultarIdentidad()} disabled={buscandoIdentidad || (tipoDocumento === "DNI" ? numeroDocumento.length !== 8 : numeroDocumento.length !== 11)}>{buscandoIdentidad ? "Consultando…" : "Buscar"}</button>}</span></label>
@@ -136,5 +148,8 @@ export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicia
       <label className="clientes-form-wide">Dirección de entrega<input maxLength={240} value={direccionEntrega} onChange={(e) => setDireccionEntrega(e.target.value)} /></label>
       <label className="clientes-form-wide">Nota interna<textarea maxLength={1000} rows={3} value={observacion} onChange={(e) => setObservacion(e.target.value)} placeholder="Dato útil para futuras ventas" /></label></>}
 
-    </div>{error && <NotificacionFlotante mensaje={error} />}<footer className={clasesPieModalClientes}><button className="clientes-secondary-action" type="button" onClick={solicitarCancelacion}>Cancelar</button><button className="clientes-primary-action" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cliente"}</button></footer></form></div></>;
+    </div>
+      </form>
+      {error && <NotificacionFlotante mensaje={error} />}
+    </Dialogo></>;
 }

@@ -1,5 +1,6 @@
 import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
 import type { FormEvent } from "react";
+import { Dialogo } from "../../ui/dialogo/dialogo";
 
 type PropiedadesProductoCategoriaModal = {
   nombre: string;
@@ -17,16 +18,29 @@ export function ProductoCategoriaModal({ nombre, guardando, error, alCambiarNomb
   }
 
   return (
-    <div className="producto-brand-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) alCerrar(); }} onKeyDown={(evento) => { if (evento.key === "Escape") { evento.stopPropagation(); alCerrar(); } }}>
-      <section className="producto-brand-modal" role="dialog" aria-modal="true" aria-labelledby="categoria-rapida-titulo">
-        <button className="catalog-modal-close" type="button" aria-label="Cerrar formulario de categoría" onClick={alCerrar}>×</button>
-        <form onSubmit={manejarEnvio}>
-          <div className="catalog-form-title"><span aria-hidden="true">▦</span><div><h2 id="categoria-rapida-titulo">Agregar categoría</h2><p>Define el grupo en el catálogo.</p></div></div>
-          {error && <NotificacionFlotante mensaje={error} />}
-          <label>Nombre de la categoría<input autoFocus value={nombre} onChange={(evento) => alCambiarNombre(evento.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Frenos" /></label>
-          <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={alCerrar}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar categoría"}</button></div>
-        </form>
-      </section>
-    </div>
+    <Dialogo
+      kicker="CATÁLOGO"
+      titulo="Agregar categoría"
+      ancho="sm"
+      cerrable={!guardando}
+      onCerrar={alCerrar}
+      pie={
+        <>
+          <button className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" disabled={guardando} onClick={alCerrar}>Cancelar</button>
+          <button className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" type="submit" form="producto-categoria-form" disabled={guardando}>
+            {guardando ? "Guardando…" : "Guardar categoría"}
+          </button>
+        </>
+      }
+    >
+      <p className="m-0 -mt-2 text-[13px] text-[#52697d]">Define el grupo en el catálogo.</p>
+      <form id="producto-categoria-form" className="grid gap-4" onSubmit={manejarEnvio}>
+        <label className="grid gap-1.5 text-xs font-bold text-[#52697d]">
+          Nombre de la categoría
+          <input className="h-11 w-full rounded-xl border border-[#c5d1db] px-3 text-sm font-medium text-[#142b42]" autoFocus value={nombre} onChange={(evento) => alCambiarNombre(evento.target.value)} required minLength={2} maxLength={100} placeholder="Ej. Frenos" />
+        </label>
+      </form>
+      {error && <NotificacionFlotante mensaje={error} />}
+    </Dialogo>
   );
 }

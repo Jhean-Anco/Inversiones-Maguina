@@ -1,3 +1,4 @@
+import { Dialogo } from "../../ui/dialogo/dialogo";
 import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
 import { useRef, type FormEvent } from "react";
 import type { ModuloMovimientosStock } from "../../../hooks/use-movimientos-stock";
@@ -17,11 +18,15 @@ export function AjusteStockFormulario({ cerrarModal, guardando, error, setError,
   const formularioRef = useRef<HTMLFormElement>(null);
   const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(formularioRef, cerrarModal, "el ajuste de inventario");
   function enviar(evento: FormEvent<HTMLFormElement>) { void guardar(evento); }
-  return <>{dialogo}<div className="catalog-modal-backdrop" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) solicitarCancelacion(); }}>
-    <section className="catalog-modal stock-adjustment-modal" role="dialog" aria-modal="true" aria-labelledby="stock-adjustment-title">
-      <button className="catalog-modal-close" type="button" aria-label="Cerrar ajuste de stock" onClick={solicitarCancelacion}>×</button>
-      <form ref={formularioRef} className="catalog-form stock-adjustment-form" onSubmit={enviar}>
-        <div className="catalog-form-title"><span aria-hidden="true">±</span><div><h2 id="stock-adjustment-title">Nuevo ajuste de inventario</h2><p>Registra una corrección de stock con motivo y trazabilidad.</p></div></div>
+  return <>{dialogo}<Dialogo
+      titulo="Nuevo ajuste de inventario"
+      ancho="lg"
+      cerrable={!guardando}
+      onCerrar={solicitarCancelacion}
+      pie={<><button className="catalog-cancel" type="button" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button className="catalog-submit" type="submit" form="stock-adjustment-form" disabled={guardando || !productoElegido}>{guardando ? "Guardando…" : "Registrar ajuste"}</button></>}
+    >
+      <p className="m-0 -mt-2 text-[13px] text-[#52697d]">Registra una corrección de stock con motivo y trazabilidad.</p>
+      <form id="stock-adjustment-form" ref={formularioRef} className="grid gap-4" onSubmit={enviar}>
         <div className="stock-adjustment-scroll">
           {error && <NotificacionFlotante mensaje={error} />}
           <fieldset className="stock-entry-section"><legend>Producto</legend>
@@ -45,8 +50,6 @@ export function AjusteStockFormulario({ cerrarModal, guardando, error, setError,
           </fieldset>
           <div className="stock-adjustment-note">El ajuste quedará registrado en el historial con el usuario, motivo y fecha. No se puede retirar más stock del disponible.</div>
         </div>
-        <div className="catalog-form-actions"><button className="catalog-cancel" type="button" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button className="catalog-submit" type="submit" disabled={guardando || !productoElegido}>{guardando ? "Guardando…" : "Registrar ajuste"}</button></div>
       </form>
-    </section>
-  </div></>;
+    </Dialogo></>;
 }

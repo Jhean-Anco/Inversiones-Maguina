@@ -1,7 +1,7 @@
 export const clasesLayoutResponsive = [
-  "grid-cols-[276px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]",
-  "laptop:grid-cols-[minmax(228px,clamp(228px,19vw,276px))_minmax(0,1fr)] laptop:![transition:grid-template-columns_.85s_cubic-bezier(.2,.72,.22,1)] laptop:[&.is-collapsed]:![transition-delay:.7s] laptop:[&:not(.is-collapsed)]:![transition:grid-template-columns_.7s_cubic-bezier(.4,0,.2,1)] laptop:motion-reduce:![transition-duration:.01ms] laptop:motion-reduce:![transition-delay:0ms]",
-  "tablet-landscape:grid-cols-[238px_minmax(0,1fr)] tablet-landscape:![transition:grid-template-columns_.85s_cubic-bezier(.2,.72,.22,1)] tablet-landscape:[&.is-collapsed]:![transition-delay:.7s] tablet-landscape:[&:not(.is-collapsed)]:![transition:grid-template-columns_.7s_cubic-bezier(.4,0,.2,1)] tablet-landscape:motion-reduce:![transition-duration:.01ms] tablet-landscape:motion-reduce:![transition-delay:0ms]",
+  "grid-cols-[76px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]",
+  "laptop:grid-cols-[76px_minmax(0,1fr)]",
+  "tablet-landscape:grid-cols-[76px_minmax(0,1fr)]",
   "tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:grid-rows-[68px_minmax(0,1fr)]",
   "mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-rows-[56px_minmax(0,1fr)]",
   "mobile-portrait:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-rows-[60px_minmax(0,1fr)]",
