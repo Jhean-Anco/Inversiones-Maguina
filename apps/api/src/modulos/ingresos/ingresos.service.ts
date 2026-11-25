@@ -821,7 +821,7 @@ export class ServicioIngresos {
     return { estadoProveedor: analisis.estadoProveedor, detalleProveedor: analisis.detalleProveedor, respuestaHttp: respuesta.status, consultadoEn: consultaComprobante.consultadoEn };
   }
 
-  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string; tipoDocumento?: string; medioPago?: string; estado?: string }) {
+  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string; tipoDocumento?: string; medioPago?: string; estado?: string; conSaldo?: string }) {
     const tipoVenta = filtros.tipoVenta === "MOTOTAXIS" ? "MOTOTAXIS" : filtros.tipoVenta === "REPUESTOS" ? "REPUESTOS" : null;
     if (!tipoVenta) throw new BadRequestException("Selecciona si deseas consultar ventas de repuestos o de mototaxis.");
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
@@ -839,21 +839,32 @@ export class ServicioIngresos {
     if (filtros.estado && !estadosValidos.includes(filtros.estado as EstadoFiltroVentas)) throw new BadRequestException("Selecciona un estado de venta válido.");
     const estadoFiltro = (filtros.estado ?? "TODAS") as EstadoFiltroVentas;
     const filtroEstado = estadoFiltro !== "TODAS" ? sql`${estadoListadoVenta} = ${estadoFiltro}` : undefined;
+    const pagosPorVenta = db.select({
+      ingresoId: ingresosPagos.ingresoId,
+      importeAplicado: sql<string>`coalesce(sum(${ingresosPagos.importeAplicado}), 0)::numeric(14,2)`.as("importe_aplicado"),
+    }).from(ingresosPagos).groupBy(ingresosPagos.ingresoId).as("pagos_por_venta");
+    const saldoPendiente = sql`greatest(${ingresos.total} - coalesce(${pagosPorVenta.importeAplicado}, 0), 0)`;
+    const criterioSaldoPendiente = and(
+      inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"]), eq(ingresos.condicionPago, "CREDITO"), eq(ingresos.estado, "EMITIDO"),
+      sql`${ingresos.datosNubefact}->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'`, sql`${saldoPendiente} > 0`,
+    );
+    const filtroConSaldo = filtros.conSaldo === "true" ? criterioSaldoPendiente : undefined;
     const detallesCoinciden = busqueda ? exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle)
       .where(and(eq(ingresosDetalle.ingresoId, ingresos.id), or(ilike(ingresosDetalle.descripcion, coincidencia), ilike(ingresosDetalle.codigoProducto, coincidencia))))) : undefined;
     const filtroBusqueda = busqueda ? or(ilike(ingresos.codigo, coincidencia), ilike(ingresos.clienteNombre, coincidencia),
       ilike(ingresos.clienteNumeroDocumento, coincidencia), ilike(ingresos.estado, coincidencia), detallesCoinciden) : undefined;
     const condicionBase = and(filtroTipo, filtroDocumento, filtroMedioPago, filtroBusqueda);
-    const condicion = and(condicionBase, filtroEstado);
-    const [filas, [conteo], totalesFiltrados] = await Promise.all([
+    const condicion = and(condicionBase, filtroEstado, filtroConSaldo);
+    const [filas, [conteo], totalesFiltrados, [totalConSaldo]] = await Promise.all([
       db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante,
         clienteNombre: ingresos.clienteNombre, clienteNumeroDocumento: ingresos.clienteNumeroDocumento, medioPago: ingresos.medioPago,
         condicionPago: ingresos.condicionPago, subtotal: ingresos.subtotal, igv: ingresos.igv, tasaIgv: ingresos.tasaIgv,
-        total: ingresos.total, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
-        .from(ingresos).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn))
+        total: ingresos.total, saldoPendiente: sql<string>`${saldoPendiente}::numeric(14,2)::text`, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
+        .from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn))
         .limit(porPagina).offset((pagina - 1) * porPagina),
-      db.select({ total: count() }).from(ingresos).where(condicion),
+      db.select({ total: count() }).from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(condicion),
       db.select({ estado: estadoListadoVenta, cantidad: count() }).from(ingresos).where(condicionBase).groupBy(estadoListadoVenta),
+      db.select({ total: count() }).from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(and(condicionBase, criterioSaldoPendiente)),
     ]);
     const detallesMototaxi = tipoVenta === "MOTOTAXIS" && filas.length
       ? await db.select({ id: ingresosDetalle.id, ingresoId: ingresosDetalle.ingresoId, modeloId: ingresosDetalle.mototaxiModeloId, descripcion: ingresosDetalle.descripcion, cantidad: ingresosDetalle.cantidad,
@@ -887,7 +898,7 @@ export class ServicioIngresos {
         mototaxis: mototaxisPorVenta.get(fila.id) ?? [],
         lineasImpresion: fila.tipoComprobante === "NOTA_VENTA" ? (lineasNotaPorVenta.get(fila.id) ?? []).map(({ descripcion, cantidad, precioUnitario, total }) => ({ descripcion, cantidad, precioUnitario, total })) : undefined,
         clienteNumeroDocumento: fila.clienteNumeroDocumento, medioPago: fila.medioPago, condicionPago: fila.condicionPago,
-        subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total,
+        subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total, saldoPendiente: fila.saldoPendiente,
         estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
         estadoProveedor: estadoAnulacion === "ANULADO" ? "ANULADO" : estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "RECHAZADO" ? "BAJA_RECHAZADA" : estadoDocumento.estadoProveedor,
         detalleProveedor: estadoAnulacion ? (typeof anulacion?.detalle === "string" ? anulacion.detalle : estadoAnulacion === "PENDIENTE" ? "La comunicacion fue enviada y SUNAT aun no confirma el resultado." : null) : estadoDocumento.detalleProveedor,
@@ -897,12 +908,12 @@ export class ServicioIngresos {
       };
     });
     const total = conteo?.total ?? 0;
-    const conteos = { todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0, anuladas: 0 };
+    const conteos = { todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0, anuladas: 0, conSaldo: Number(totalConSaldo?.total ?? 0) };
     for (const fila of totalesFiltrados) {
       const propiedad = ({ EMITIDAS: "emitidas", PENDIENTES: "pendientes", RECHAZADAS: "rechazadas", ANULADAS: "anuladas" } as const)[fila.estado as Exclude<EstadoFiltroVentas, "TODAS">];
       if (propiedad) { conteos[propiedad] = Number(fila.cantidad); conteos.todas += Number(fila.cantidad); }
     }
-    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)), conteos };
+    return { items: items.map((item) => ({ ...item, saldoPendiente: item.saldoPendiente ?? "0.00" })), pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)), conteos };
   }
 
   async obtenerFuenteNota(ingresoIdEntrada: string) {

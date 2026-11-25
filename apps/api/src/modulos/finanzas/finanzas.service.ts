@@ -5,7 +5,31 @@ import { fechaActualPeru } from "../../utilidades/fecha-peru";
 
 const tiposCuenta = ["EFECTIVO", "BANCO", "BILLETERA", "TARJETA"] as const;
 const monedas = ["PEN", "USD", "EUR"] as const;
-type DatosCuenta = { tipo: typeof tiposCuenta[number]; nombre: string; entidad: string | null; titular: string | null; moneda: typeof monedas[number]; numeroCuenta: string | null; cci: string | null; numeroTarjeta: string | null; telefono: string | null; observacion: string | null };
+type DatosCuenta = { tipo: typeof tiposCuenta[number]; nombre: string; entidad: string | null; titular: string | null; moneda: typeof monedas[number]; saldoInicial: string | null; fechaSaldoInicial: string | null; numeroCuenta: string | null; cci: string | null; numeroTarjeta: string | null; telefono: string | null; observacion: string | null };
+type EstadoSaldo = "SIN_CONCILIAR" | "MONEDA_NO_COMPATIBLE" | "DIVISA_NO_COMPATIBLE" | "MOVIMIENTOS_SIN_CUENTA" | "CONCILIADO";
+const enmascararIdentificador = (cuenta: { numeroCuenta: string | null; cci: string | null; numeroTarjeta: string | null; telefono: string | null }) => {
+  const valor = cuenta.numeroCuenta || cuenta.cci || cuenta.telefono || cuenta.numeroTarjeta;
+  if (!valor) return null;
+  const digitos = valor.replace(/\D/g, "");
+  return digitos.length > 4 ? `•••• ${digitos.slice(-4)}` : valor;
+};
+
+function validarParSaldoInicial(datos: Record<string, unknown>, moneda: string) {
+  const valorSaldo = datos.saldoInicial;
+  const valorFecha = datos.fechaSaldoInicial;
+  const tieneSaldo = valorSaldo !== undefined && valorSaldo !== null && valorSaldo !== "";
+  const tieneFecha = valorFecha !== undefined && valorFecha !== null && valorFecha !== "";
+  if (tieneSaldo !== tieneFecha) throw new BadRequestException("Completa juntos el saldo inicial y la fecha de corte, o deja ambos vacíos.");
+  if (!tieneSaldo) return { saldoInicial: null, fechaSaldoInicial: null };
+  if (typeof valorSaldo !== "number" && typeof valorSaldo !== "string") throw new BadRequestException("El saldo inicial no es válido.");
+  const saldo = typeof valorSaldo === "string" && !valorSaldo.trim() ? NaN : Number(valorSaldo);
+  if (!Number.isFinite(saldo) || Math.abs(saldo) > 99_999_999_999.99 || Number(saldo.toFixed(2)) !== saldo) throw new BadRequestException("El saldo inicial debe tener hasta dos decimales.");
+  if (typeof valorFecha !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valorFecha)) throw new BadRequestException("La fecha del saldo inicial no es válida.");
+  const fecha = new Date(`${valorFecha}T00:00:00.000Z`);
+  if (Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== valorFecha || valorFecha > fechaActualPeru()) throw new BadRequestException("La fecha del saldo inicial debe ser válida y no futura.");
+  if (!(monedas as readonly string[]).includes(moneda)) throw new BadRequestException("Selecciona una moneda válida para el saldo inicial.");
+  return { saldoInicial: saldo.toFixed(2), fechaSaldoInicial: valorFecha };
+}
 
 function cadena(datos: Record<string, unknown>, campo: string, etiqueta: string, maximo: number, requerido = false) {
   const valor = datos[campo];
@@ -27,6 +51,7 @@ export function validarDatosCuentaFinanciera(datosEntrada: unknown): DatosCuenta
   const titular = cadena(datos, "titular", "el titular", 160);
   const moneda = (datos.moneda ?? "PEN") as string;
   if (!(monedas as readonly string[]).includes(moneda)) throw new BadRequestException("Selecciona una moneda válida.");
+  const saldoInicial = validarParSaldoInicial(datos, moneda);
   const numeroCuenta = cadena(datos, "numeroCuenta", "el número de cuenta", 100);
   const cci = cadena(datos, "cci", "el CCI", 100);
   const numeroTarjeta = cadena(datos, "numeroTarjeta", "los últimos cuatro dígitos", 30);
@@ -35,7 +60,7 @@ export function validarDatosCuentaFinanciera(datosEntrada: unknown): DatosCuenta
   if (tipo === "BANCO" && (!entidad || (!numeroCuenta && !cci))) throw new BadRequestException("Para una cuenta bancaria indica el banco y el número de cuenta o CCI.");
   if (tipo === "BILLETERA" && (!entidad || (!telefono && !numeroCuenta))) throw new BadRequestException("Para una billetera indica el proveedor y el número de celular o cuenta.");
   if (tipo === "TARJETA" && (!entidad || !numeroTarjeta || !/^\d{4}$/.test(numeroTarjeta))) throw new BadRequestException("Para una tarjeta indica el banco emisor y sus últimos cuatro dígitos.");
-  return { tipo, nombre, entidad, titular, moneda: moneda as DatosCuenta["moneda"], numeroCuenta, cci, numeroTarjeta, telefono, observacion };
+  return { tipo, nombre, entidad, titular, moneda: moneda as DatosCuenta["moneda"], ...saldoInicial, numeroCuenta, cci, numeroTarjeta, telefono, observacion };
 }
 
 @Injectable()
@@ -56,7 +81,7 @@ export class ServicioFinanzas {
     const hasta = fechaActualPeru();
     const desde = `${hasta.slice(0, 7)}-01`;
     const cuentas = await this.listar();
-    const movimientos = await db.execute(sql`
+    const [movimientos, saldosConciliados] = await Promise.all([db.execute(sql`
       SELECT cuenta_id,
         COALESCE(SUM(importe) FILTER (WHERE sentido = 'INGRESO'), 0)::numeric(14,2)::text AS ingresos,
         COALESCE(SUM(importe) FILTER (WHERE sentido = 'EGRESO'), 0)::numeric(14,2)::text AS egresos
@@ -72,16 +97,82 @@ export class ServicioFinanzas {
       ) AS pagos
       WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
       GROUP BY cuenta_id
-    `) as unknown as Array<{ cuenta_id: string; ingresos: string; egresos: string }>;
+    `) as unknown as Promise<Array<{ cuenta_id: string; ingresos: string; egresos: string }>>, this.obtenerSaldosConciliados()]);
     const porCuenta = new Map(movimientos.map((movimiento) => [movimiento.cuenta_id, movimiento]));
     const items = cuentas.map((cuenta) => {
       const movimiento = porCuenta.get(cuenta.id);
       const ingresos = Number(movimiento?.ingresos ?? 0);
       const egresos = Number(movimiento?.egresos ?? 0);
+      const saldo = saldosConciliados.get(cuenta.id);
       return { id: cuenta.id, tipo: cuenta.tipo, nombre: cuenta.nombre, entidad: cuenta.entidad, moneda: cuenta.moneda,
-        activa: cuenta.activa, ingresosMes: ingresos.toFixed(2), egresosMes: egresos.toFixed(2), netoMes: (ingresos - egresos).toFixed(2) };
+        identificador: enmascararIdentificador(cuenta),
+        activa: cuenta.activa, ingresosMes: ingresos.toFixed(2), egresosMes: egresos.toFixed(2), netoMes: (ingresos - egresos).toFixed(2),
+        saldoInicial: cuenta.saldoInicial, fechaSaldoInicial: cuenta.fechaSaldoInicial,
+        saldoActual: saldo?.estado === "CONCILIADO" ? saldo.saldoActual : null,
+        saldoEstado: saldo?.estado ?? "SIN_CONCILIAR", saldoMensaje: saldo?.mensaje ?? "Registra un saldo conciliado y su fecha de corte." };
     });
     return { periodo: hasta.slice(0, 7), items };
+  }
+
+  private async obtenerSaldosConciliados() {
+    const filas = await db.execute(sql`
+      WITH pagos AS (
+        SELECT pago.cuenta_financiera_id AS cuenta_id, pago.fecha_pago AS fecha,
+          pago.importe_aplicado AS importe, 'INGRESO'::text AS sentido, 'PEN'::varchar AS moneda
+        FROM ingresos_pagos pago
+        LEFT JOIN ordenes_servicio orden ON orden.ingreso_id = pago.ingreso_id
+          AND pago.observacion = ('Adelanto de la orden ' || orden.codigo)
+        WHERE orden.id IS NULL
+        UNION ALL
+        SELECT orden.adelanto_cuenta_financiera_id, orden.fecha_recepcion, orden.adelanto,
+          'INGRESO'::text, 'PEN'::varchar
+        FROM ordenes_servicio orden WHERE orden.adelanto > 0
+        UNION ALL
+        SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
+          'EGRESO'::text, egreso.moneda
+        FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id
+        UNION ALL
+        SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
+          'EGRESO'::text, 'PEN'::varchar
+        FROM pagos_entradas_stock pago
+        UNION ALL
+        SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
+          'EGRESO'::text, compra.moneda
+        FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id
+        UNION ALL
+        SELECT nota.cuenta_financiera_id, nota.fecha, nota.total,
+          CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END::text,
+          'PEN'::varchar
+        FROM comprobantes_relacionados nota
+        WHERE nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE')
+          AND nota.datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+      )
+      SELECT cuenta.id::text AS cuenta_id,
+        CASE
+          WHEN cuenta.saldo_inicial IS NULL OR cuenta.fecha_saldo_inicial IS NULL THEN 'SIN_CONCILIAR'
+          WHEN cuenta.moneda <> 'PEN' THEN 'MONEDA_NO_COMPATIBLE'
+          WHEN EXISTS (SELECT 1 FROM pagos sin_cuenta WHERE sin_cuenta.cuenta_id IS NULL AND sin_cuenta.fecha >= cuenta.fecha_saldo_inicial) THEN 'MOVIMIENTOS_SIN_CUENTA'
+          WHEN COALESCE(bool_or(pago.moneda <> 'PEN') FILTER (WHERE pago.cuenta_id IS NOT NULL), false) THEN 'DIVISA_NO_COMPATIBLE'
+          ELSE 'CONCILIADO'
+        END AS estado,
+        CASE WHEN cuenta.saldo_inicial IS NOT NULL AND cuenta.fecha_saldo_inicial IS NOT NULL
+          AND cuenta.moneda = 'PEN'
+          AND NOT EXISTS (SELECT 1 FROM pagos sin_cuenta WHERE sin_cuenta.cuenta_id IS NULL AND sin_cuenta.fecha >= cuenta.fecha_saldo_inicial)
+          AND NOT COALESCE(bool_or(pago.moneda <> 'PEN') FILTER (WHERE pago.cuenta_id IS NOT NULL), false)
+          THEN (cuenta.saldo_inicial + COALESCE(sum(CASE WHEN pago.sentido = 'INGRESO' THEN pago.importe ELSE -pago.importe END), 0))::numeric(14,2)::text
+          ELSE NULL END AS saldo_actual
+      FROM cuentas_financieras cuenta
+      LEFT JOIN pagos pago ON pago.cuenta_id = cuenta.id AND pago.fecha >= cuenta.fecha_saldo_inicial
+      GROUP BY cuenta.id, cuenta.saldo_inicial, cuenta.fecha_saldo_inicial, cuenta.moneda
+    `) as unknown as Array<{ cuenta_id: string; estado: EstadoSaldo; saldo_actual: string | null }>;
+    const mensajes: Record<EstadoSaldo, string> = {
+      SIN_CONCILIAR: "Registra un saldo conciliado y su fecha de corte.",
+      MONEDA_NO_COMPATIBLE: "El saldo actual de esta moneda no se puede calcular hasta registrar el tipo de cambio de sus movimientos.",
+      DIVISA_NO_COMPATIBLE: "Hay movimientos en moneda extranjera sin conversión registrada; el saldo no se puede calcular.",
+      MOVIMIENTOS_SIN_CUENTA: "Hay pagos desde la fecha de corte sin una cuenta asignada; concílialos antes de calcular el saldo.",
+      CONCILIADO: "Saldo inicial conciliado más movimientos registrados desde la fecha de corte.",
+    };
+    return new Map(filas.map((fila) => [fila.cuenta_id, { estado: fila.estado, saldoActual: fila.saldo_actual, mensaje: mensajes[fila.estado] }]));
   }
 
   async flujoPorPeriodo(periodoEntrada: string) {
@@ -289,9 +380,17 @@ export class ServicioFinanzas {
   async actualizar(id: string, entrada: unknown) {
     this.validarId(id);
     const datos = validarDatosCuentaFinanciera(entrada);
-    const [cuenta] = await db.update(cuentasFinancieras).set(datos).where(eq(cuentasFinancieras.id, id)).returning();
-    if (!cuenta) throw new NotFoundException("No se encontró la cuenta financiera.");
-    return cuenta;
+    return db.transaction(async (tx) => {
+      const [actual] = await tx.select({ moneda: cuentasFinancieras.moneda, saldoInicial: cuentasFinancieras.saldoInicial })
+        .from(cuentasFinancieras).where(eq(cuentasFinancieras.id, id)).for("update").limit(1);
+      if (!actual) throw new NotFoundException("No se encontró la cuenta financiera.");
+      if (actual.moneda !== datos.moneda && actual.saldoInicial !== null && datos.saldoInicial !== null) {
+        throw new BadRequestException("Al cambiar la moneda de una cuenta, limpia el saldo inicial y vuelve a conciliarlo en la nueva moneda.");
+      }
+      const [cuenta] = await tx.update(cuentasFinancieras).set(datos).where(eq(cuentasFinancieras.id, id)).returning();
+      if (!cuenta) throw new NotFoundException("No se encontró la cuenta financiera.");
+      return cuenta;
+    });
   }
 
   async cambiarEstado(id: string, entrada: unknown) {

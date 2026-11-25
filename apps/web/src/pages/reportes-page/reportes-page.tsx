@@ -10,7 +10,7 @@ import { descargarReporteInventarioPdf } from "./inventario-pdf";
 type VistaInventario = "repuestos" | "mototaxis";
 type Resultado = { tipo: "inventario"; datos: ReporteInventario };
 type FiltroExistencia = "todas" | "con-stock" | "sin-stock";
-type FilaInventario = { id: string; codigo: string; nombre: string; marca: string; categoria: string; unidad: string; stock: number; precioPromedioCompra: number; precioPromedioVenta: number };
+type FilaInventario = { id: string; codigo: string; nombre: string; marca: string; categoria: string; unidad: string; stock: number; precioPromedioCompra: number; cantidadCompraTotal: number; precioPromedioVenta: number; cantidadVendidaTotal: number; precioVentaActual?: number | null };
 
 function Indicadores({ datos }: { datos: { titulo: string; valor: string; detalle?: string }[] }) {
   return <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--erp-border)] bg-[var(--erp-border)] lg:grid-cols-4">
@@ -28,8 +28,8 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
 }) {
   const motos = vista === "mototaxis" ? datos.mototaxis : undefined;
   const registros = useMemo<FilaInventario[]>(() => (motos
-    ? motos.items.map((m) => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, marca: m.marca, categoria: "Mototaxi", unidad: "", stock: m.stockActual, precioPromedioCompra: Number(m.precioPromedioCompra) || 0, precioPromedioVenta: Number(m.precioPromedioVenta) || 0 }))
-    : datos.items.map((p) => ({ id: p.id, codigo: p.codigo, nombre: p.nombre, marca: p.marca, categoria: p.categoria || "Sin categoría", unidad: p.unidad, stock: Number(p.stockActual) || 0, precioPromedioCompra: Number(p.precioPromedioCompra) || 0, precioPromedioVenta: Number(p.precioPromedioVenta) || 0 }))), [datos.items, motos]);
+    ? motos.items.map((m) => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, marca: m.marca, categoria: "Mototaxi", unidad: "", stock: m.stockActual, precioPromedioCompra: Number(m.precioPromedioCompra) || 0, cantidadCompraTotal: Number(m.cantidadCompraTotal) || 0, precioPromedioVenta: Number(m.precioPromedioVenta) || 0, cantidadVendidaTotal: Number(m.cantidadVendidaTotal) || 0, precioVentaActual: m.precioVentaActual == null ? null : Number(m.precioVentaActual) || 0 }))
+    : datos.items.map((p) => ({ id: p.id, codigo: p.codigo, nombre: p.nombre, marca: p.marca, categoria: p.categoria || "Sin categoría", unidad: p.unidad, stock: Number(p.stockActual) || 0, precioPromedioCompra: Number(p.precioPromedioCompra) || 0, cantidadCompraTotal: Number(p.cantidadCompraTotal) || 0, precioPromedioVenta: Number(p.precioPromedioVenta) || 0, cantidadVendidaTotal: 0 }))), [datos.items, motos]);
   const visibles = useMemo(() => {
     const consulta = busqueda.trim().toLocaleLowerCase("es-PE");
     return registros.filter((item) => {
@@ -38,28 +38,39 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
     });
   }, [busqueda, existencia, registros]);
   const precioPromedioCompras = useMemo(() => {
-    const conCosto = registros.filter((item) => item.precioPromedioCompra > 0);
-    return conCosto.length ? conCosto.reduce((total, item) => total + item.precioPromedioCompra, 0) / conCosto.length : 0;
+    const conCosto = registros.filter((item) => item.precioPromedioCompra > 0 && item.cantidadCompraTotal > 0);
+    const cantidad = conCosto.reduce((total, item) => total + item.cantidadCompraTotal, 0);
+    return cantidad > 0 ? conCosto.reduce((total, item) => total + item.precioPromedioCompra * item.cantidadCompraTotal, 0) / cantidad : 0;
   }, [registros]);
+  const precioVigentes = motos ? registros.filter((item) => item.precioVentaActual != null && item.precioVentaActual > 0 && item.cantidadVendidaTotal > 0) : [];
+  const cantidadVentaVigente = precioVigentes.reduce((total, item) => total + item.cantidadVendidaTotal, 0);
+  const precioPromedioVentaVigente = cantidadVentaVigente > 0 ? precioVigentes.reduce((total, item) => total + (item.precioVentaActual ?? 0) * item.cantidadVendidaTotal, 0) / cantidadVentaVigente : 0;
   const controles = <>
     <label className="listado-maestro-busqueda">Buscar producto<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Código, nombre o marca" /></label>
     {datos.mototaxis && <label className="listado-maestro-filtro">Inventario<select value={vista} onChange={(e) => setVista(e.target.value as VistaInventario)}><option value="repuestos">Repuestos</option><option value="mototaxis">Mototaxis</option></select></label>}
     <label className="listado-maestro-filtro">Existencia<select value={existencia} onChange={(e) => setExistencia(e.target.value as FiltroExistencia)}><option value="todas">Todos</option><option value="con-stock">Con stock</option><option value="sin-stock">Sin stock</option></select></label>
     <RegistrarAccionPrincipal etiqueta="Descargar inventario en PDF" onClick={alExportar} />
   </>;
-  const columnas = motos ? ["Código", "Modelo", "Marca", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"] : ["Código", "Repuesto", "Marca", "Categoría", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"];
+  const columnas = motos ? ["Modelo", "Marca", "Existencias", "Costo promedio", "Precio vigente"] : ["Código", "Repuesto", "Marca", "Categoría", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"];
   return <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
-    <Indicadores datos={[
-      { titulo: motos ? "Modelos activos" : "Repuestos activos", valor: numero(motos?.resumen.modelos ?? datos.resumen.productos) },
-      { titulo: "Con stock", valor: numero(motos?.resumen.modelosConStock ?? datos.resumen.productosConStock) },
-      { titulo: "Sin stock", valor: numero(motos?.resumen.sinStock ?? datos.resumen.sinStock) },
+    <Indicadores datos={motos ? [
+      { titulo: "Modelos activos", valor: numero(motos.resumen.modelos), detalle: "En catálogo" },
+      { titulo: "Existencias", valor: numero(motos.resumen.unidades), detalle: "Unidades en almacén" },
+      { titulo: "Precio promedio de compras", valor: precioPromedioCompras > 0 ? soles(precioPromedioCompras) : "—" },
+      { titulo: "Precio promedio de ventas", valor: precioPromedioVentaVigente > 0 ? soles(precioPromedioVentaVigente) : "—" },
+    ] : [
+      { titulo: "Repuestos activos", valor: numero(datos.resumen.productos) },
+      { titulo: "Con stock", valor: numero(datos.resumen.productosConStock) },
+      { titulo: "Sin stock", valor: numero(datos.resumen.sinStock) },
       { titulo: "Precio prom. compras", valor: precioPromedioCompras > 0 ? soles(precioPromedioCompras) : "—" },
     ]} />
     <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
       registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
       controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
       encabezadoTabla={<tr>{columnas.map((columna) => <th key={columna}>{columna}</th>)}</tr>}
-      renderizarFila={(item) => <tr key={item.id}><td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.codigo}</span></td><td><strong>{item.nombre}</strong></td><td>{item.marca}</td>{!motos && <td>{item.categoria}</td>}<td>{numero(item.stock)}{item.unidad && ` ${item.unidad}`}</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />
+      renderizarFila={(item) => motos
+        ? <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{numero(item.stock)} unidades</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</td></tr>
+        : <tr key={item.id}><td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.codigo}</span></td><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{item.categoria}</td><td>{numero(item.stock)}{item.unidad && ` ${item.unidad}`}</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />
   </div>;
 }
 

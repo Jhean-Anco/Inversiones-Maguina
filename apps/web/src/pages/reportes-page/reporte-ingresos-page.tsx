@@ -13,14 +13,15 @@ const mostrarMes = (mes: string) => {
 
 function GraficoIngresos({ filas }: { filas: ReporteIngresos["porMes"] }) {
   const maximo = Math.max(1, ...filas.map((fila) => Number(fila.total)));
-  const barras = filas.slice(-12);
+  const barras = filas;
+  const etiquetaMes = (mes: string) => barras.length > 12 ? `${mostrarMes(mes)} ${mes.slice(2, 4)}` : mostrarMes(mes);
   return <section className="reporte-ingresos-panel" aria-labelledby="reporte-ingresos-chart-title">
     <div className="reporte-ingresos-panel-heading"><div><h2 id="reporte-ingresos-chart-title">Ingresos por mes</h2><p>Miles de soles, comprobantes aceptados.</p></div><span aria-hidden="true" className="reporte-ingresos-legend"><i />Ingresos</span></div>
-    {barras.length ? <div className="reporte-ingresos-chart" role="img" aria-label={`Ingresos netos mensuales: ${barras.map((fila) => `${mostrarMes(fila.mes)} ${soles(fila.total)}`).join(", ")}`}>
-      {barras.map((fila) => <div className="reporte-ingresos-column" key={fila.mes} title={`${mostrarMes(fila.mes)} ${soles(fila.total)}`}>
+    {barras.length ? <div className="reporte-ingresos-chart" role="img" aria-label={`Ingresos netos mensuales: ${barras.map((fila) => `${etiquetaMes(fila.mes)} ${soles(fila.total)}`).join(", ")}`}>
+      {barras.map((fila) => <div className="reporte-ingresos-column" key={fila.mes} title={`${etiquetaMes(fila.mes)} ${soles(fila.total)}`}>
         <span className="reporte-ingresos-bar-value">{numero(Number(fila.total) / 1000)} mil</span>
         <div className="reporte-ingresos-bar-track"><i style={{ height: `${Math.max(2, Number(fila.total) / maximo * 100)}%` }} /></div>
-        <span className="reporte-ingresos-month">{mostrarMes(fila.mes)}</span>
+        <span className="reporte-ingresos-month">{etiquetaMes(fila.mes)}</span>
       </div>)}
     </div> : <p className="reporte-ingresos-empty">No hay comprobantes para mostrar en este periodo.</p>}
   </section>;
@@ -51,7 +52,7 @@ export function ReporteIngresosPage() {
   }, [desde, hasta, linea, filtroValido]);
 
   const indicadores = useMemo(() => datos ? [
-    { etiqueta: "Ingresos del periodo", valor: soles(datos.resumen.totalNeto), detalle: "Neto de notas de crédito" },
+    { etiqueta: "Ingresos del periodo", valor: soles(datos.resumen.totalNeto), detalle: "Neto de notas de crédito y débito" },
     { etiqueta: "Comprobantes", valor: numero(datos.resumen.documentosNetos), detalle: "Emitidos y aceptados" },
     { etiqueta: "Ticket promedio", valor: soles(datos.resumen.ticketPromedio), detalle: "Por comprobante neto" },
   ] : [], [datos]);

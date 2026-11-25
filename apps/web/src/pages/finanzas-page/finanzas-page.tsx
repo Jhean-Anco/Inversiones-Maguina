@@ -20,10 +20,18 @@ const tipos: Array<{ valor: TipoCuentaFinanciera; nombre: string }> = [
   { valor: "TARJETA", nombre: "Tarjeta" },
 ];
 const moneda = (valor: string | number, codigo: string) => new Intl.NumberFormat("es-PE", { style: "currency", currency: codigo }).format(Number(valor) || 0);
+const cantidad = (valor: number) => new Intl.NumberFormat("es-PE", { maximumFractionDigits: 0 }).format(valor);
 const fechaLocal = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
 const fechaMovimiento = (fecha: string) => new Date(`${fecha}T00:00:00.000Z`).toLocaleDateString("es-PE", { timeZone: "UTC" });
 const etiquetaTipo = (tipo: TipoCuentaFinanciera) => tipos.find((item) => item.valor === tipo)?.nombre ?? tipo;
-const inicial = (): DatosCuentaFinanciera => ({ tipo: "EFECTIVO", nombre: "", entidad: "", titular: "", moneda: "PEN", numeroCuenta: "", cci: "", numeroTarjeta: "", telefono: "", observacion: "" });
+const identificadorCuenta = (cuenta: CuentaFinanciera) => {
+  if (cuenta.identificador !== undefined) return cuenta.identificador || "—";
+  const valor = cuenta.numeroCuenta || cuenta.cci || cuenta.telefono || cuenta.numeroTarjeta;
+  if (!valor) return "—";
+  const digitos = valor.replace(/\D/g, "");
+  return digitos.length > 4 ? `•••• ${digitos.slice(-4)}` : valor;
+};
+const inicial = (): DatosCuentaFinanciera => ({ tipo: "EFECTIVO", nombre: "", entidad: "", titular: "", moneda: "PEN", saldoInicial: "", fechaSaldoInicial: "", numeroCuenta: "", cci: "", numeroTarjeta: "", telefono: "", observacion: "" });
 
 const estilo = {
   page: "grid gap-[18px] py-2 pb-7 text-[var(--erp-ink,#14345a)]",
@@ -110,7 +118,7 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
 
   function editar(cuenta: CuentaFinanciera) {
     setEditando(cuenta.id);
-    setFormulario({ tipo: cuenta.tipo, nombre: cuenta.nombre, entidad: cuenta.entidad ?? "", titular: cuenta.titular ?? "", moneda: cuenta.moneda, numeroCuenta: cuenta.numeroCuenta ?? "", cci: cuenta.cci ?? "", numeroTarjeta: cuenta.numeroTarjeta ?? "", telefono: cuenta.telefono ?? "", observacion: cuenta.observacion ?? "" });
+    setFormulario({ tipo: cuenta.tipo, nombre: cuenta.nombre, entidad: cuenta.entidad ?? "", titular: cuenta.titular ?? "", moneda: cuenta.moneda, saldoInicial: cuenta.saldoInicial ?? "", fechaSaldoInicial: cuenta.fechaSaldoInicial ?? "", numeroCuenta: cuenta.numeroCuenta ?? "", cci: cuenta.cci ?? "", numeroTarjeta: cuenta.numeroTarjeta ?? "", telefono: cuenta.telefono ?? "", observacion: cuenta.observacion ?? "" });
     setAbierto(true);
   }
 
@@ -135,6 +143,14 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
     (!estado || (estado === "ACTIVA") === cuenta.activa) &&
     [cuenta.nombre, cuenta.entidad, etiquetaTipo(cuenta.tipo)].filter(Boolean).join(" ").toLocaleLowerCase("es-PE").includes(busqueda.trim().toLocaleLowerCase("es-PE")),
   );
+  const monedasSaldo = [...new Set(items.filter((cuenta) => cuenta.activa).map((cuenta) => cuenta.moneda))].sort();
+  const totalesSaldo = monedasSaldo.map((codigo) => {
+    const cuentasMoneda = items.filter((cuenta) => cuenta.activa && cuenta.moneda === codigo);
+    const conciliadas = cuentasMoneda.every((cuenta) => cuenta.saldoEstado === "CONCILIADO" && cuenta.saldoActual !== null && cuenta.saldoActual !== undefined);
+    return { codigo, cuentas: cuentasMoneda.length, saldo: conciliadas ? cuentasMoneda.reduce((suma, cuenta) => suma + Number(cuenta.saldoActual), 0) : null,
+      pendientes: cuentasMoneda.filter((cuenta) => cuenta.saldoEstado !== "CONCILIADO").length };
+  });
+  const cuentasActivas = items.filter((cuenta) => cuenta.activa).length;
 
   return <section className={`${estilo.page} finanzas-page`}>
     {vista === "movimientos" && <section className={estilo.flowPanel}>
@@ -146,7 +162,13 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
         <p className={estilo.flowNote}>El gráfico resume pagos registrados con una cuenta asignada; no representa el saldo bancario disponible si no se ha ingresado un saldo inicial.</p>
       </>}
     </section>}
-    {vista === "cuentas" && <ListadoMaestro<CuentaFinanciera> variante="tabla" titulo="Cuentas y medios de pago"
+    {vista === "cuentas" && <>
+    <dl className="finanzas-saldos-resumen" aria-label="Resumen de saldos calculados">
+      <div className="finanzas-saldo-metrica"><dt>Cuentas activas</dt><dd>{cantidad(cuentasActivas)}</dd><small>De {cantidad(items.length)} cuentas registradas</small></div>
+      {totalesSaldo.map(({ codigo, cuentas, saldo, pendientes }) => <div className="finanzas-saldo-metrica" key={codigo}><dt>Saldo total · {codigo}</dt><dd>{saldo === null ? "No disponible" : moneda(saldo, codigo)}</dd><small>{saldo === null ? `${cantidad(pendientes)} de ${cantidad(cuentas)} sin conciliar` : `${cantidad(cuentas)} cuentas calculadas desde su corte`}</small></div>)}
+    </dl>
+    <p className="finanzas-saldos-nota">El saldo se calcula desde la fecha de corte con los cobros y pagos registrados en el ERP. Las transferencias entre cuentas no se registran en este módulo y no están incluidas.</p>
+    <ListadoMaestro<CuentaFinanciera> variante="tabla" titulo="Cuentas y medios de pago"
       registros={cuentasVisibles} paginacion={{ modo: "local" }} resetKey={`${busqueda}|${estado}`} cargando={cargando} error={errorCarga || undefined}
       vacio="No hay cuentas para mostrar."
       controlesCabecera={<>
@@ -154,17 +176,20 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
         <label className="listado-maestro-filtro">Estado<select value={estado} onChange={(e) => setEstado(e.target.value)}><option value="">Todas</option><option value="ACTIVA">Activas</option><option value="INACTIVA">Inactivas</option></select></label>
         {puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}
       </>}
-      encabezadoTabla={<tr><th>Cuenta</th><th>Tipo</th><th>Estado</th><th>Entradas del mes</th><th>Salidas del mes</th>{puedeAdministrar && <th>Acciones</th>}</tr>}
+      encabezadoTabla={<tr><th>Cuenta</th><th>Número</th><th>Moneda</th><th>Tipo</th><th>Estado</th><th>Saldo calculado</th><th>Entradas del mes</th><th>Salidas del mes</th>{puedeAdministrar && <th>Acciones</th>}</tr>}
       renderizarFila={(cuenta) => <tr key={cuenta.id}>
         <td><strong>{cuenta.nombre}</strong>{cuenta.entidad && <small className="block">{cuenta.entidad}</small>}</td>
+        <td className="finanzas-cuenta-numero">{identificadorCuenta(cuenta)}</td><td>{cuenta.moneda}</td>
         <td>{etiquetaTipo(cuenta.tipo)}</td><td><Etiqueta compacta tono={cuenta.activa ? "positiva" : "neutral"}>{cuenta.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
+        <td className="finanzas-saldo-celda">{cuenta.saldoEstado === "CONCILIADO" && cuenta.saldoActual !== null && cuenta.saldoActual !== undefined ? <strong>{moneda(cuenta.saldoActual, cuenta.moneda)}</strong> : <span title={cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}>No conciliado<small className="block">{cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}</small></span>}</td>
         <td>{moneda(cuenta.ingresosMes ?? 0, cuenta.moneda)}</td><td>{moneda(cuenta.egresosMes ?? 0, cuenta.moneda)}</td>
         {puedeAdministrar && <td><div className="flex flex-wrap gap-1.5">
           <AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} />
           <AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} />
         </div></td>}
       </tr>}
-    />}
+    />
+    </>}
     {vista === "cuentas" && abierto && <DialogoCatalogo titulo={editando ? "Editar cuenta financiera" : "Crear cuenta financiera"} articulo={formulario.nombre || etiquetaTipo(formulario.tipo)} codigo="" guardando={guardando} alCerrar={() => setAbierto(false)}
       acciones={<><Button variant="outline" disabled={guardando} onClick={() => setAbierto(false)}>Cancelar</Button><Button type="submit" form="finanzas-cuenta-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cuenta"}</Button></>}>
       <form id="finanzas-cuenta-form" onSubmit={(evento) => void guardar(evento)}>
@@ -177,6 +202,11 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
       {formulario.tipo === "BILLETERA" && <label className={estilo.field}>Número de celular o cuenta<input required maxLength={30} value={formulario.telefono ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, telefono: evento.target.value }))} /></label>}
       {formulario.tipo === "TARJETA" && <label className={estilo.field}>Últimos cuatro dígitos<input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={formulario.numeroTarjeta ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, numeroTarjeta: evento.target.value.replace(/\D/g, "").slice(0, 4) }))} /></label>}
       <label className={estilo.field}>Moneda<select value={formulario.moneda} onChange={(evento) => setFormulario((actual) => ({ ...actual, moneda: evento.target.value as DatosCuentaFinanciera["moneda"] }))}><option value="PEN">Soles (PEN)</option></select><small>Los flujos actuales se registran en soles. Se habilitarán otras monedas cuando el sistema gestione tipo de cambio.</small></label>
+      <div className="finanzas-saldo-inicial-grid">
+        <label className={estilo.field}>Saldo inicial conciliado<input aria-describedby="finanzas-saldo-inicial-ayuda" type="number" step="0.01" value={formulario.saldoInicial ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, saldoInicial: evento.target.value }))} placeholder="Opcional" /></label>
+        <label className={estilo.field}>Fecha del saldo inicial<input aria-describedby="finanzas-saldo-inicial-ayuda" type="date" max={fechaLocal()} value={formulario.fechaSaldoInicial ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, fechaSaldoInicial: evento.target.value }))} /></label>
+        <p id="finanzas-saldo-inicial-ayuda" className="finanzas-saldo-inicial-ayuda">Completa ambos campos para conciliar. El importe corresponde al saldo al inicio de la fecha elegida; desde ese día se suman solo los cobros y pagos asociados a esta cuenta. Si falta una asignación o aparece un movimiento en otra moneda, el saldo quedará como no conciliado.</p>
+      </div>
       <label className={estilo.field}>Observación<textarea maxLength={1000} value={formulario.observacion ?? ""} onChange={(evento) => setFormulario((actual) => ({ ...actual, observacion: evento.target.value }))} /></label>
       </div>
       </form>

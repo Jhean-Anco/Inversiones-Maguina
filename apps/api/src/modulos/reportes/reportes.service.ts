@@ -8,6 +8,7 @@ import { consultarRentabilidad } from "./rentabilidad.consultas";
 import { consultarCobranza } from "./cobranza.consultas";
 import { consultarHorarios } from "./horarios.consultas";
 import { consultarArticulosMasVendidos } from "./articulos.consultas";
+import { precioVigenteModelo } from "../mototaxis/inventario-modelos";
 
 /** Ventas del dashboard: boletas, facturas y notas de venta que no estén anuladas. */
 const comprobantesVenta = and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
@@ -80,14 +81,15 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       .where(filtroVentas).groupBy(sql`date_trunc('month', ${ingresos.fecha}::date)`).orderBy(asc(sql`date_trunc('month', ${ingresos.fecha}::date)`));
 
     const filtroNotas = and(gte(comprobantesRelacionados.fecha, rango.desde), lte(comprobantesRelacionados.fecha, rango.hasta),
-      eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]),
+      inArray(comprobantesRelacionados.tipoComprobante, ["NOTA_CREDITO", "NOTA_DEBITO"]), inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]),
       sql`${comprobantesRelacionados.datosNubefact}->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'`,
       ...(linea ? [eq(ingresosDetalle.tipo, linea)] : []));
+    const signoNota = sql<number>`case when ${comprobantesRelacionados.tipoComprobante} = 'NOTA_CREDITO' then -1 else 1 end`;
     const notasPorMes = linea
       ? await db.select({
         mes: sql<string>`to_char(date_trunc('month', ${comprobantesRelacionados.fecha}::date), 'YYYY-MM')`,
         documentos: sql<number>`count(distinct ${comprobantesRelacionados.id})::int`,
-        total: sql<string>`coalesce(sum((select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
+        total: sql<string>`coalesce(sum(${signoNota} * (select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
       }).from(comprobantesRelacionados)
         .innerJoin(comprobantesRelacionadosDetalle, eq(comprobantesRelacionadosDetalle.comprobanteRelacionadoId, comprobantesRelacionados.id))
         .innerJoin(ingresosDetalle, eq(ingresosDetalle.id, comprobantesRelacionadosDetalle.ingresoDetalleId))
@@ -95,7 +97,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       : await db.select({
         mes: sql<string>`to_char(date_trunc('month', ${comprobantesRelacionados.fecha}::date), 'YYYY-MM')`,
         documentos: sql<number>`count(*)::int`,
-        total: sql<string>`coalesce(sum(${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
+        total: sql<string>`coalesce(sum(${signoNota} * ${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
       }).from(comprobantesRelacionados).where(filtroNotas)
         .groupBy(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`).orderBy(asc(sql`date_trunc('month', ${comprobantesRelacionados.fecha}::date)`));
 
@@ -107,32 +109,38 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       .where(filtroVentas).groupBy(ingresos.tipoComprobante);
     const notasPorTipo = linea
       ? await db.select({
+        tipo: comprobantesRelacionados.tipoComprobante,
         documentos: sql<number>`count(distinct ${comprobantesRelacionados.id})::int`,
-        total: sql<string>`coalesce(sum((select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
+        total: sql<string>`coalesce(sum(${signoNota} * (select coalesce(sum((item.valor->>'montoAjuste')::numeric), 0) from jsonb_array_elements(coalesce(${comprobantesRelacionados.datosNubefact}->'lineasOrigen', '[]'::jsonb)) as item(valor) where item.valor->>'ingresoDetalleId' = ${ingresosDetalle.id}::text)), 0)::numeric(16,2)`,
       }).from(comprobantesRelacionados)
         .innerJoin(comprobantesRelacionadosDetalle, eq(comprobantesRelacionadosDetalle.comprobanteRelacionadoId, comprobantesRelacionados.id))
-        .innerJoin(ingresosDetalle, eq(ingresosDetalle.id, comprobantesRelacionadosDetalle.ingresoDetalleId)).where(filtroNotas)
+        .innerJoin(ingresosDetalle, eq(ingresosDetalle.id, comprobantesRelacionadosDetalle.ingresoDetalleId)).where(filtroNotas).groupBy(comprobantesRelacionados.tipoComprobante)
       : await db.select({
-        documentos: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
-      }).from(comprobantesRelacionados).where(filtroNotas);
+        tipo: comprobantesRelacionados.tipoComprobante, documentos: sql<number>`count(*)::int`,
+        total: sql<string>`coalesce(sum(${signoNota} * ${comprobantesRelacionados.total}), 0)::numeric(16,2)`,
+      }).from(comprobantesRelacionados).where(filtroNotas).groupBy(comprobantesRelacionados.tipoComprobante);
 
     const ingresosBrutos = ventasPorTipo.reduce((suma, fila) => suma + Number(fila.total), 0);
     const cantidadVentas = ventasPorTipo.reduce((suma, fila) => suma + Number(fila.documentos), 0);
-    const creditos = Number(notasPorTipo[0]?.total ?? 0);
-    const cantidadCreditos = Number(notasPorTipo[0]?.documentos ?? 0);
-    const totalNeto = ingresosBrutos - creditos;
+    const notasPorTipoMapa = new Map(notasPorTipo.map((fila) => [fila.tipo, fila]));
+    const creditos = Math.abs(Number(notasPorTipoMapa.get("NOTA_CREDITO")?.total ?? 0));
+    const cantidadCreditos = Number(notasPorTipoMapa.get("NOTA_CREDITO")?.documentos ?? 0);
+    const debitos = Number(notasPorTipoMapa.get("NOTA_DEBITO")?.total ?? 0);
+    const cantidadDebitos = Number(notasPorTipoMapa.get("NOTA_DEBITO")?.documentos ?? 0);
+    const totalNeto = ingresosBrutos - creditos + debitos;
     const tipos: Record<string, { documentos: number; total: number }> = Object.fromEntries(ventasPorTipo.map((fila) => [fila.tipo, { documentos: Number(fila.documentos), total: Number(fila.total) }]));
-    const porMes = new Map<string, { ingresos: number; creditos: number }>();
-    for (const fila of ventasPorMes) porMes.set(fila.mes, { ingresos: Number(fila.total), creditos: 0 });
+    const porMes = new Map<string, { ingresos: number; ajustes: number }>();
+    for (const fila of ventasPorMes) porMes.set(fila.mes, { ingresos: Number(fila.total), ajustes: 0 });
     for (const fila of notasPorMes) {
-      const actual = porMes.get(fila.mes) ?? { ingresos: 0, creditos: 0 };
-      actual.creditos = Number(fila.total); porMes.set(fila.mes, actual);
+      const actual = porMes.get(fila.mes) ?? { ingresos: 0, ajustes: 0 };
+      actual.ajustes = Number(fila.total); porMes.set(fila.mes, actual);
     }
     const porDocumento = [
       { tipo: "FACTURA", etiqueta: "Factura", documentos: tipos.FACTURA?.documentos ?? 0, total: tipos.FACTURA?.total ?? 0 },
       { tipo: "BOLETA", etiqueta: "Boleta de venta", documentos: tipos.BOLETA?.documentos ?? 0, total: tipos.BOLETA?.total ?? 0 },
       { tipo: "NOTA_VENTA", etiqueta: "Nota de venta", documentos: tipos.NOTA_VENTA?.documentos ?? 0, total: tipos.NOTA_VENTA?.total ?? 0 },
       { tipo: "NOTA_CREDITO", etiqueta: "Nota de crédito", documentos: -cantidadCreditos, total: -creditos },
+      { tipo: "NOTA_DEBITO", etiqueta: "Nota de débito", documentos: cantidadDebitos, total: debitos },
     ];
     const inicioMes = new Date(`${rango.desde.slice(0, 7)}-01T00:00:00.000Z`);
     const finMes = new Date(`${rango.hasta.slice(0, 7)}-01T00:00:00.000Z`);
@@ -141,8 +149,8 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     return {
       rango,
       linea: linea ?? "TODAS",
-      resumen: { totalNeto: totalNeto.toFixed(2), documentosNetos: cantidadVentas - cantidadCreditos, ticketPromedio: cantidadVentas - cantidadCreditos > 0 ? (totalNeto / (cantidadVentas - cantidadCreditos)).toFixed(2) : "0.00" },
-      porMes: meses.map((mes) => { const datos = porMes.get(mes) ?? { ingresos: 0, creditos: 0 }; return { mes, total: (datos.ingresos - datos.creditos).toFixed(2) }; }),
+      resumen: { totalNeto: totalNeto.toFixed(2), documentosNetos: cantidadVentas - cantidadCreditos + cantidadDebitos, ticketPromedio: cantidadVentas - cantidadCreditos + cantidadDebitos > 0 ? (totalNeto / (cantidadVentas - cantidadCreditos + cantidadDebitos)).toFixed(2) : "0.00" },
+      porMes: meses.map((mes) => { const datos = porMes.get(mes) ?? { ingresos: 0, ajustes: 0 }; return { mes, total: (datos.ingresos + datos.ajustes).toFixed(2) }; }),
       porDocumento: porDocumento.map((fila) => ({ ...fila, total: fila.total.toFixed(2) })),
     };
   }
@@ -209,6 +217,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     const promediosCompra = db.select({
       productoId: entradasStockDetalle.productoId,
       precio: sql<string>`coalesce(sum(${entradasStockDetalle.subtotal}) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
+      cantidad: sql<string>`coalesce(sum(${entradasStockDetalle.cantidadBase}), 0)::numeric(18,3)`.as("cantidad_compra_total"),
     }).from(entradasStockDetalle).groupBy(entradasStockDetalle.productoId).as("promedios_compra_producto");
     const promediosVenta = db.select({
       productoId: ingresosDetalle.productoId,
@@ -227,6 +236,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       entradasPeriodo: sql<string>`coalesce(${movimientos.entradas}, 0)::numeric(18,3)`,
       salidasPeriodo: sql<string>`coalesce(${movimientos.salidas}, 0)::numeric(18,3)`,
       precioPromedioCompra: sql<string>`coalesce(${promediosCompra.precio}, 0)::numeric(18,6)`,
+      cantidadCompraTotal: sql<string>`coalesce(${promediosCompra.cantidad}, 0)::numeric(18,3)`,
       precioPromedioVenta: sql<string>`coalesce(${promediosVenta.precio}, 0)::numeric(18,6)`,
     }).from(productos)
       .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
@@ -242,10 +252,12 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     const promediosCompraMototaxi = db.select({
       modeloId: comprasMototaxisDetalle.modeloId,
       precio: sql<string>`coalesce(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / nullif(sum(${comprasMototaxisDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
+      cantidad: sql<string>`coalesce(sum(${comprasMototaxisDetalle.cantidad}), 0)::numeric(18,3)`.as("cantidad_compra_total"),
     }).from(comprasMototaxisDetalle).groupBy(comprasMototaxisDetalle.modeloId).as("promedios_compra_mototaxi");
     const promediosVentaMototaxi = db.select({
       modeloId: ingresosDetalle.mototaxiModeloId,
       precio: sql<string>`coalesce(sum(${ingresosDetalle.total}) / nullif(sum(${ingresosDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_venta"),
+      cantidad: sql<string>`coalesce(sum(${ingresosDetalle.cantidad}), 0)::numeric(18,3)`.as("cantidad_vendida_total"),
     }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
       .where(and(eq(ingresosDetalle.tipo, "MOTOTAXI"), sql`${ingresos.estado} <> 'ANULADO'`))
       .groupBy(ingresosDetalle.mototaxiModeloId).as("promedios_venta_mototaxi");
@@ -256,6 +268,9 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       version: modelosMototaxis.version,
       marca: marcasProductos.nombre,
       stockActual: modelosMototaxis.stockDisponible,
+      precioVentaActual: precioVigenteModelo,
+      cantidadCompraTotal: sql<string>`coalesce(${promediosCompraMototaxi.cantidad}, 0)::numeric(18,3)`,
+      cantidadVendidaTotal: sql<string>`coalesce(${promediosVentaMototaxi.cantidad}, 0)::numeric(18,3)`,
       entradasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} in ('COMPRA', 'ANULACION_VENTA') or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} > ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadFinal} - ${movimientosModelosMototaxis.cantidadAnterior} else 0 end), 0)::int`,
       salidasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} = 'VENTA' or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} < ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadAnterior} - ${movimientosModelosMototaxis.cantidadFinal} else 0 end), 0)::int`,
       precioPromedioCompra: sql<string>`coalesce(${promediosCompraMototaxi.precio}, 0)::numeric(18,6)`,
@@ -265,7 +280,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       .leftJoin(movimientosModelosMototaxis, and(eq(modelosMototaxis.id, movimientosModelosMototaxis.modeloId), gte(movimientosModelosMototaxis.creadoEn, inicioPeriodo), lt(movimientosModelosMototaxis.creadoEn, finPeriodo)))
       .leftJoin(promediosCompraMototaxi, eq(modelosMototaxis.id, promediosCompraMototaxi.modeloId))
       .leftJoin(promediosVentaMototaxi, eq(modelosMototaxis.id, promediosVentaMototaxi.modeloId))
-      .where(eq(modelosMototaxis.activo, true)).groupBy(modelosMototaxis.id, marcasProductos.nombre).orderBy(asc(modelosMototaxis.nombre)) : [];
+      .where(eq(modelosMototaxis.activo, true)).groupBy(modelosMototaxis.id, marcasProductos.nombre, promediosCompraMototaxi.precio, promediosCompraMototaxi.cantidad, promediosVentaMototaxi.precio, promediosVentaMototaxi.cantidad).orderBy(asc(modelosMototaxis.nombre)) : [];
     return {
       rango,
       resumen: {
@@ -276,7 +291,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       },
       items,
       ...(puedeLeerMototaxis ? { mototaxis: {
-        resumen: { modelos: modelos.length, modelosConStock: modelos.filter((modelo) => modelo.stockActual > 0).length, sinStock: modelos.filter((modelo) => modelo.stockActual <= 0).length, modelosConMovimiento: modelos.filter((modelo) => modelo.entradasPeriodo > 0 || modelo.salidasPeriodo > 0).length },
+        resumen: { modelos: modelos.length, unidades: modelos.reduce((total, modelo) => total + modelo.stockActual, 0), modelosConStock: modelos.filter((modelo) => modelo.stockActual > 0).length, sinStock: modelos.filter((modelo) => modelo.stockActual <= 0).length, modelosConMovimiento: modelos.filter((modelo) => modelo.entradasPeriodo > 0 || modelo.salidasPeriodo > 0).length },
         items: modelos.map((modelo) => ({ ...modelo, nombre: modelo.version ? `${modelo.nombre} ${modelo.version}` : modelo.nombre })),
       } } : {}),
     };

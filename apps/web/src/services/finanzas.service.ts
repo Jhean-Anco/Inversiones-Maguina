@@ -1,12 +1,14 @@
 import { solicitarApi } from "./api-cliente";
 
 export type TipoCuentaFinanciera = "EFECTIVO" | "BANCO" | "BILLETERA" | "TARJETA";
+export type EstadoSaldoCuenta = "SIN_CONCILIAR" | "MONEDA_NO_COMPATIBLE" | "DIVISA_NO_COMPATIBLE" | "MOVIMIENTOS_SIN_CUENTA" | "CONCILIADO";
 export type CuentaFinanciera = {
-  id: string; tipo: TipoCuentaFinanciera; nombre: string; entidad: string | null; titular: string | null;
+  id: string; tipo: TipoCuentaFinanciera; nombre: string; entidad: string | null; titular: string | null; identificador?: string | null;
   moneda: "PEN" | "USD" | "EUR"; numeroCuenta: string | null; cci: string | null; numeroTarjeta: string | null;
   telefono: string | null; observacion: string | null; activa: boolean; ingresosMes?: string; egresosMes?: string; netoMes?: string;
+  saldoInicial?: string | null; fechaSaldoInicial?: string | null; saldoActual?: string | null; saldoEstado?: EstadoSaldoCuenta; saldoMensaje?: string;
 };
-export type DatosCuentaFinanciera = Omit<CuentaFinanciera, "id" | "activa" | "ingresosMes" | "egresosMes" | "netoMes">;
+export type DatosCuentaFinanciera = Omit<CuentaFinanciera, "id" | "activa" | "ingresosMes" | "egresosMes" | "netoMes" | "saldoActual" | "saldoEstado" | "saldoMensaje"> & { saldoInicial: string | null; fechaSaldoInicial: string | null };
 export type PeriodoMovimientosCuenta = "DIA" | "MES" | "ANIO";
 export type PeriodoFlujoFinanciero = "DIA" | "SEMANA" | "MES";
 export type FlujoFinanciero = {
