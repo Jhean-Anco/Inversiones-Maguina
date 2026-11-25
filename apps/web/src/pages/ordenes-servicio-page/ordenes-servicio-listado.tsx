@@ -22,6 +22,7 @@ type OrdenesServicioListadoProps = {
   onEditar: (orden: OrdenServicio) => void;
   formatearFecha: (fecha: string) => string;
   formatearTotal: (lineas: LineaOrden[]) => string;
+  formatearDesglose: (lineas: LineaOrden[]) => string;
   etiquetaEstado: (orden: OrdenServicio) => string;
 };
 
@@ -51,6 +52,7 @@ export function OrdenesServicioListado({
   onEditar,
   formatearFecha,
   formatearTotal,
+  formatearDesglose,
   etiquetaEstado,
 }: OrdenesServicioListadoProps) {
   const [filtro, setFiltro] = useState<FiltroEstado>("TODAS");
@@ -118,6 +120,7 @@ export function OrdenesServicioListado({
         fecha={formatearFecha(orden.fechaRecepcion)}
         estado={etiquetaEstado(orden)}
         total={formatearTotal(orden.detalles as LineaOrden[])}
+        desglose={formatearDesglose(orden.detalles as LineaOrden[])}
         puedeCrear={puedeCrear}
         menuDocumento={<SelectorDocumentoOrden tiposDisponibles={tiposDocumentoDisponibles} onSeleccionar={(tipo) => onEmitir(orden, tipo)} />}
         formatearFecha={formatearFecha}

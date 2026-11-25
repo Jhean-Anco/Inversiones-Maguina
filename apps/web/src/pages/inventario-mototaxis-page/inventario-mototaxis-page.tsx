@@ -88,6 +88,7 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
           <label className="listado-maestro-busqueda">Buscar modelo<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, marca o código" /></label>
           <label className="listado-maestro-filtro">Marca<select value={marcaFiltro} onChange={(e) => setMarcaFiltro(e.target.value)}><option value="">Todas</option>{marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select></label>
           <label className="listado-maestro-filtro">Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option><option value="TODOS">Todos</option></select></label>
+          <Link className="inline-flex h-[42px] shrink-0 items-center rounded-md border border-[var(--erp-border)] px-3 text-xs font-semibold text-[var(--erp-ink)] no-underline hover:bg-[var(--erp-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2" to="/mototaxis/garantias">Garantías</Link>
           {puedeCrear && <RegistrarAccionPrincipal onClick={abrirNuevo} etiqueta="Nuevo modelo de mototaxi" />}
         </>}
         paginacion={{ modo: "local" }} resetKey={`${busqueda}|${filtroEstado}|${marcaFiltro}`}
