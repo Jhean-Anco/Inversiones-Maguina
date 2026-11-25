@@ -205,7 +205,7 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
           {puedeAdministrar && <td><div className="flex flex-wrap gap-1.5"><AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} /><AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} /></div></td>}
         </tr>} />}
     </>}
-    {vista === "cuentas" && abierto && <DialogoCatalogo titulo={editando ? "Editar cuenta financiera" : "Crear cuenta financiera"} articulo={formulario.nombre || etiquetaTipo(formulario.tipo)} codigo="" guardando={guardando} alCerrar={() => setAbierto(false)}
+    {vista === "cuentas" && abierto && <DialogoCatalogo titulo={editando ? "Editar cuenta financiera" : "Crear cuenta financiera"} articulo={formulario.nombre || etiquetaTipo(formulario.tipo)} codigo="" guardando={guardando} pantallaCompletaMovil alCerrar={() => setAbierto(false)}
       acciones={<><Button variant="outline" disabled={guardando} onClick={() => setAbierto(false)}>Cancelar</Button><Button type="submit" form="finanzas-cuenta-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cuenta"}</Button></>}>
       <form id="finanzas-cuenta-form" onSubmit={(evento) => void guardar(evento)}>
       <div className={estilo.formFields}>
