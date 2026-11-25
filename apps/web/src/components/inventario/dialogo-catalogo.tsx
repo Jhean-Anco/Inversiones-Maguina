@@ -45,15 +45,17 @@ type Props = {
   codigo: string;
   alCerrar: () => void;
   guardando?: boolean;
+  pantallaCompletaMovil?: boolean;
   acciones?: ReactNode;
   children: ReactNode;
 };
 
-export function DialogoCatalogo({ titulo, articulo, codigo, alCerrar, guardando, acciones, children }: Props) {
+export function DialogoCatalogo({ titulo, articulo, codigo, alCerrar, guardando, pantallaCompletaMovil, acciones, children }: Props) {
   return (
     <Dialogo
       titulo={titulo}
       ancho="lg"
+      pantallaCompletaMovil={pantallaCompletaMovil}
       cerrable={!guardando}
       onCerrar={alCerrar}
       icono={<img src="/logo.webp" alt="" className="size-11 shrink-0 rounded-lg bg-white object-contain p-1" />}

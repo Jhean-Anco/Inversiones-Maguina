@@ -3,6 +3,7 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioReportes, type ReporteIngresos } from "../../services/reportes.service";
 import { hoy, numero, primerDiaMes, soles } from "./reportes-formatters";
 import "./reporte-ingresos-page.css";
+import { useViewportProfile } from "../../utilidades/use-viewport-profile";
 
 type Linea = "TODAS" | "PRODUCTO" | "MOTOTAXI" | "SERVICIO";
 const NOMBRES_MES = new Intl.DateTimeFormat("es-PE", { month: "short", timeZone: "UTC" });
@@ -28,6 +29,8 @@ function GraficoIngresos({ filas }: { filas: ReporteIngresos["porMes"] }) {
 }
 
 export function ReporteIngresosPage() {
+  const perfilViewport = useViewportProfile();
+  const esMovil = perfilViewport === "mobile-portrait" || perfilViewport === "mobile-landscape";
   const [desde, setDesde] = useState(primerDiaMes);
   const [hasta, setHasta] = useState(hoy);
   const [linea, setLinea] = useState<Linea>("TODAS");
@@ -73,9 +76,13 @@ export function ReporteIngresosPage() {
       <GraficoIngresos filas={datos.porMes} />
       <section className="reporte-ingresos-panel" aria-labelledby="reporte-ingresos-doc-title">
         <div className="reporte-ingresos-panel-heading"><h2 id="reporte-ingresos-doc-title">Tipo de documento</h2><span>Importes en soles</span></div>
-        <div className="reporte-ingresos-table-wrap"><table className="reporte-ingresos-table"><thead><tr><th>Tipo de documento</th><th>Cantidad</th><th>Importe</th></tr></thead>
-          <tbody>{datos.porDocumento.map((fila) => <tr key={fila.tipo}><th scope="row">{fila.etiqueta}</th><td>{numero(fila.documentos)}</td><td className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</td></tr>)}</tbody>
-        </table></div>
+        {esMovil
+          ? <div className="reporte-ingresos-doc-cards">{datos.porDocumento.map((fila) => <article className="reporte-ingresos-doc-card" key={fila.tipo}>
+            <h3>{fila.etiqueta}</h3><div><span>Cantidad</span><strong>{numero(fila.documentos)}</strong></div><div><span>Importe</span><strong className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</strong></div>
+          </article>)}</div>
+          : <div className="reporte-ingresos-table-wrap"><table className="reporte-ingresos-table"><thead><tr><th>Tipo de documento</th><th>Cantidad</th><th>Importe</th></tr></thead>
+            <tbody>{datos.porDocumento.map((fila) => <tr key={fila.tipo}><th scope="row">{fila.etiqueta}</th><td>{numero(fila.documentos)}</td><td className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</td></tr>)}</tbody>
+          </table></div>}
       </section>
     </div>}
   </section>;
