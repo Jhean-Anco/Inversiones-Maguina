@@ -173,27 +173,37 @@ export function FinanzasPage({ puedeAdministrar, vista }: { puedeAdministrar: bo
       {totalesSaldo.map(({ codigo, cuentas, saldo, pendientes }) => <div className="finanzas-saldo-metrica" key={codigo}><dt>Saldo total · {codigo}</dt><dd>{saldo === null ? "No disponible" : moneda(saldo, codigo)}</dd><small>{saldo === null ? `${cantidad(pendientes)} de ${cantidad(cuentas)} sin conciliar` : `${cantidad(cuentas)} cuentas calculadas desde su corte`}</small></div>)}
     </dl>
     <p className="finanzas-saldos-nota">El saldo se calcula desde la fecha de corte con los cobros y pagos registrados en el ERP. Las transferencias entre cuentas no se registran en este módulo y no están incluidas.</p>
-    <ListadoMaestro<CuentaFinanciera> variante="tabla" titulo="Cuentas y medios de pago"
-      registros={cuentasVisibles} paginacion={{ modo: "local" }} resetKey={`${busqueda}|${estado}`} cargando={cargando} error={errorCarga || undefined}
-      vacio="No hay cuentas para mostrar."
-      controlesCabecera={<>
-        <label className="listado-maestro-busqueda">Buscar cuenta<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, entidad o tipo" /></label>
-        <label className="listado-maestro-filtro">Estado<select value={estado} onChange={(e) => setEstado(e.target.value)}><option value="">Todas</option><option value="ACTIVA">Activas</option><option value="INACTIVA">Inactivas</option></select></label>
-        {puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}
-      </>}
-      encabezadoTabla={<tr><th>Cuenta</th><th>Número</th><th>Moneda</th><th>Tipo</th><th>Estado</th><th>Saldo calculado</th><th>Entradas del mes</th><th>Salidas del mes</th>{puedeAdministrar && <th>Acciones</th>}</tr>}
-      renderizarFila={(cuenta) => <tr key={cuenta.id}>
-        <td><strong>{cuenta.nombre}</strong>{cuenta.entidad && <small className="block">{cuenta.entidad}</small>}</td>
-        <td className="finanzas-cuenta-numero">{identificadorCuenta(cuenta)}</td><td>{cuenta.moneda}</td>
-        <td>{etiquetaTipo(cuenta.tipo)}</td><td><Etiqueta compacta tono={cuenta.activa ? "positiva" : "neutral"}>{cuenta.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
-        <td className="finanzas-saldo-celda">{cuenta.saldoEstado === "CONCILIADO" && cuenta.saldoActual !== null && cuenta.saldoActual !== undefined ? <strong>{moneda(cuenta.saldoActual, cuenta.moneda)}</strong> : <span title={cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}>No conciliado<small className="block">{cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}</small></span>}</td>
-        <td>{moneda(cuenta.ingresosMes ?? 0, cuenta.moneda)}</td><td>{moneda(cuenta.egresosMes ?? 0, cuenta.moneda)}</td>
-        {puedeAdministrar && <td><div className="flex flex-wrap gap-1.5">
-          <AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} />
-          <AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} />
-        </div></td>}
-      </tr>}
-    />
+    {esMovil
+      ? <ListadoMaestro<CuentaFinanciera> variante="tarjetas" columnas={1} titulo="Cuentas y medios de pago"
+        registros={cuentasVisibles} paginacion={{ modo: "local" }} resetKey={`${busqueda}|${estado}`} cargando={cargando} error={errorCarga || undefined}
+        vacio="No hay cuentas para mostrar."
+        controlesCabecera={<>
+          <label className="listado-maestro-busqueda">Buscar cuenta<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, entidad o tipo" /></label>
+          <label className="listado-maestro-filtro">Estado<select value={estado} onChange={(e) => setEstado(e.target.value)}><option value="">Todas</option><option value="ACTIVA">Activas</option><option value="INACTIVA">Inactivas</option></select></label>
+          {puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}
+        </>}
+        renderizarTarjeta={(cuenta) => <article key={cuenta.id} className="grid gap-3 rounded-xl border border-[var(--erp-border)] bg-[var(--erp-surface)] p-4">
+          <header className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><h3 className="m-0 break-words text-base font-bold text-[var(--erp-ink,#172033)]">{cuenta.nombre}</h3>{cuenta.entidad && <p className="m-0 mt-1 text-sm text-[var(--erp-ink-muted,#718797)]">{cuenta.entidad}</p>}</div><Etiqueta compacta tono={cuenta.activa ? "positiva" : "neutral"}>{cuenta.activa ? "Activa" : "Inactiva"}</Etiqueta></header>
+          <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[var(--erp-border)] pt-3 text-sm"><div><dt className="text-xs text-[var(--erp-ink-muted,#718797)]">Número</dt><dd className="m-0 break-all font-medium">{identificadorCuenta(cuenta)}</dd></div><div><dt className="text-xs text-[var(--erp-ink-muted,#718797)]">Moneda</dt><dd className="m-0 font-medium">{cuenta.moneda}</dd></div><div><dt className="text-xs text-[var(--erp-ink-muted,#718797)]">Tipo</dt><dd className="m-0 font-medium">{etiquetaTipo(cuenta.tipo)}</dd></div><div><dt className="text-xs text-[var(--erp-ink-muted,#718797)]">Saldo disponible</dt><dd className="m-0 font-semibold tabular-nums">{cuenta.saldoEstado === "CONCILIADO" && cuenta.saldoActual !== null && cuenta.saldoActual !== undefined ? moneda(cuenta.saldoActual, cuenta.moneda) : <span title={cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}>No conciliado</span>}</dd></div></dl>
+          {puedeAdministrar && <div className="flex flex-wrap gap-1.5 border-t border-[var(--erp-border)] pt-2"><AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} /><AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} /></div>}
+        </article>} />
+      : <ListadoMaestro<CuentaFinanciera> variante="tabla" titulo="Cuentas y medios de pago"
+        registros={cuentasVisibles} paginacion={{ modo: "local" }} resetKey={`${busqueda}|${estado}`} cargando={cargando} error={errorCarga || undefined}
+        vacio="No hay cuentas para mostrar."
+        controlesCabecera={<>
+          <label className="listado-maestro-busqueda">Buscar cuenta<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, entidad o tipo" /></label>
+          <label className="listado-maestro-filtro">Estado<select value={estado} onChange={(e) => setEstado(e.target.value)}><option value="">Todas</option><option value="ACTIVA">Activas</option><option value="INACTIVA">Inactivas</option></select></label>
+          {puedeAdministrar && <RegistrarAccionPrincipal etiqueta="Crear cuenta financiera" onClick={() => { setEditando(null); setFormulario(inicial()); setAbierto(true); }} />}
+        </>}
+        encabezadoTabla={<tr><th>Cuenta</th><th>Número</th><th>Moneda</th><th>Tipo</th><th>Estado</th><th>Saldo calculado</th><th>Entradas del mes</th><th>Salidas del mes</th>{puedeAdministrar && <th>Acciones</th>}</tr>}
+        renderizarFila={(cuenta) => <tr key={cuenta.id}>
+          <td><strong>{cuenta.nombre}</strong>{cuenta.entidad && <small className="block">{cuenta.entidad}</small>}</td>
+          <td className="finanzas-cuenta-numero">{identificadorCuenta(cuenta)}</td><td>{cuenta.moneda}</td>
+          <td>{etiquetaTipo(cuenta.tipo)}</td><td><Etiqueta compacta tono={cuenta.activa ? "positiva" : "neutral"}>{cuenta.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
+          <td className="finanzas-saldo-celda">{cuenta.saldoEstado === "CONCILIADO" && cuenta.saldoActual !== null && cuenta.saldoActual !== undefined ? <strong>{moneda(cuenta.saldoActual, cuenta.moneda)}</strong> : <span title={cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}>No conciliado<small className="block">{cuenta.saldoMensaje ?? "Registra saldo inicial y fecha de corte."}</small></span>}</td>
+          <td>{moneda(cuenta.ingresosMes ?? 0, cuenta.moneda)}</td><td>{moneda(cuenta.egresosMes ?? 0, cuenta.moneda)}</td>
+          {puedeAdministrar && <td><div className="flex flex-wrap gap-1.5"><AccionIcono accion="editar" etiqueta={`Editar cuenta ${cuenta.nombre}`} onClick={() => editar(cuenta)} /><AccionIcono accion={cuenta.activa ? "desactivar" : "activar"} etiqueta={`${cuenta.activa ? "Desactivar" : "Activar"} cuenta ${cuenta.nombre}`} onClick={() => void alternarEstado(cuenta)} /></div></td>}
+        </tr>} />}
     </>}
     {vista === "cuentas" && abierto && <DialogoCatalogo titulo={editando ? "Editar cuenta financiera" : "Crear cuenta financiera"} articulo={formulario.nombre || etiquetaTipo(formulario.tipo)} codigo="" guardando={guardando} alCerrar={() => setAbierto(false)}
       acciones={<><Button variant="outline" disabled={guardando} onClick={() => setAbierto(false)}>Cancelar</Button><Button type="submit" form="finanzas-cuenta-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar cuenta"}</Button></>}>

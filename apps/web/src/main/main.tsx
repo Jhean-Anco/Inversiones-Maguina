@@ -11,13 +11,9 @@ import "./formularios-flotantes.css";
 
 // Mantiene disponible el perfil de viewport para las reglas responsive compartidas.
 if (typeof window !== "undefined") {
-  let frame = 0;
   const actualizarPerfilResponsive = () => {
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(() => {
-      const { innerWidth: width, innerHeight: height } = window;
-      document.documentElement.dataset.responsiveProfile = getViewportProfile(width, height);
-    });
+    const { innerWidth: width, innerHeight: height } = window;
+    document.documentElement.dataset.responsiveProfile = getViewportProfile(width, height);
   };
 
   actualizarPerfilResponsive();
