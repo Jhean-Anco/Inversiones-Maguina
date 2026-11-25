@@ -75,7 +75,32 @@ export function ProductosPage({ permisos }: { permisos: readonly string[] }) {
       controlesCabecera={<>
         <label className="listado-maestro-busqueda">Buscar repuesto<input type="search" value={modulo.busqueda} onChange={(e) => modulo.setBusqueda(e.target.value)} placeholder="Nombre, código o marca" /></label>
         <label className="listado-maestro-filtro">Marca<select value={modulo.marca} onChange={(e) => modulo.setMarca(e.target.value)}><option value="">Todas</option>{modulo.catalogos.marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select></label>
-        <label className="listado-maestro-filtro">Estado<select value={modulo.estado} onChange={(e) => modulo.setEstado(e.target.value)}><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option><option value="TODOS">Todos</option></select></label>
+        <label className="listado-maestro-filtro">Precio<select value={modulo.precio} onChange={(e) => modulo.setPrecio(e.target.value)}><option value="TODOS">Todos</option><option value="VIGENTE">Vigente</option><option value="PENDIENTE">Pendiente</option></select></label>
+        <div className="producto-stock-filtros" role="group" aria-label="Filtrar repuestos por estado">
+          {([
+            ["TODOS", "Todos", modulo.conteosEstado.todos],
+            ["ACTIVOS", "Activos", modulo.conteosEstado.activos],
+            ["INACTIVOS", "Inactivos", modulo.conteosEstado.inactivos],
+            ["STOCK_BAJO", "Stock bajo", modulo.conteosEstado.stockBajo],
+          ] as const).map(([valor, etiqueta, cantidad]) => {
+            const seleccionado = modulo.estado === valor;
+            return <button key={valor} type="button" className={`producto-stock-filtro${seleccionado ? " is-active" : ""}`} aria-pressed={seleccionado} onClick={() => modulo.setEstado(valor)}>
+              <span>{etiqueta}</span><strong>{cantidad}</strong>
+            </button>;
+          })}
+        </div>
+        <div className="producto-stock-filtros" role="group" aria-label="Filtrar repuestos por existencia">
+          {([
+            ["TODOS", "Todos", modulo.conteosStock.todos],
+            ["CON_STOCK", "Con stock", modulo.conteosStock.conStock],
+            ["SIN_STOCK", "Sin stock", modulo.conteosStock.sinStock],
+          ] as const).map(([valor, etiqueta, cantidad]) => {
+            const seleccionado = modulo.existencia === valor;
+            return <button key={valor} type="button" className={`producto-stock-filtro${seleccionado ? " is-active" : ""}`} aria-pressed={seleccionado} onClick={() => modulo.setExistencia(valor)}>
+              <span>{etiqueta}</span><strong>{cantidad}</strong>
+            </button>;
+          })}
+        </div>
         {puedeCrear && <RegistrarAccionPrincipal etiqueta="Nuevo repuesto" onClick={() => { modulo.setError(""); setDialogo({ tipo: "nuevo" }); }} />}
       </>}
       encabezadoTabla={<tr><th>Repuesto</th><th>Marca y categoría</th><th>Existencias</th><th>Precio general</th><th>Estado</th><th>Acciones</th></tr>}

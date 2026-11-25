@@ -7,12 +7,14 @@ import { servicioProductos, type CatalogosProducto, type DatosProducto, type Pag
 export function useProductos() {
   const navegar = useNavigate();
   const [catalogos, setCatalogos] = useState<CatalogosProducto>({ categorias: [], marcas: [], unidadesMedida: [], tiposListasPrecio: [] });
-  const [paginaDatos, setPaginaDatos] = useState<PaginaProductos>(() => ({ items: [], total: 0, pagina: 1, porPagina: tamanioTablaInicial(), totalPaginas: 1 }));
+  const [paginaDatos, setPaginaDatos] = useState<PaginaProductos>(() => ({ items: [], total: 0, pagina: 1, porPagina: tamanioTablaInicial(), totalPaginas: 1, conteosStock: { todos: 0, conStock: 0, sinStock: 0 }, conteosEstado: { todos: 0, activos: 0, inactivos: 0, stockBajo: 0 } }));
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState("ACTIVOS");
+  const [estado, setEstado] = useState("TODOS");
   const [marca, setMarca] = useState("");
+  const [precio, setPrecio] = useState("TODOS");
+  const [existencia, setExistencia] = useState("TODOS");
   const [cargando, setCargando] = useState(true);
   const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -35,7 +37,7 @@ export function useProductos() {
     const consulta = ++consecutivoConsulta.current;
     setCargando(true);
     try {
-      const resultado = await servicioProductos.listar(paginaSolicitada, tamano, textoBusqueda, { estado, marca });
+      const resultado = await servicioProductos.listar(paginaSolicitada, tamano, textoBusqueda, { estado, marca, precio, existencia });
       if (consulta !== consecutivoConsulta.current) return;
       setPaginaDatos(resultado);
       if (paginaSolicitada > resultado.totalPaginas) setPagina(resultado.totalPaginas);
@@ -43,7 +45,7 @@ export function useProductos() {
     } catch (problema) {
       if (consulta === consecutivoConsulta.current) manejarError(problema, "No se pudo cargar el catálogo de productos.");
     } finally { if (consulta === consecutivoConsulta.current) setCargando(false); }
-  }, [pagina, porPagina, busqueda, estado, marca, manejarError]);
+  }, [pagina, porPagina, busqueda, estado, marca, precio, existencia, manejarError]);
 
   useEffect(() => { void cargarCatalogos(); }, [cargarCatalogos]);
   useEffect(() => {
@@ -96,12 +98,15 @@ export function useProductos() {
 
   return {
     catalogos, productos: paginaDatos.items, total: paginaDatos.total, pagina, porPagina,
+    conteosStock: paginaDatos.conteosStock, conteosEstado: paginaDatos.conteosEstado,
     totalPaginas: paginaDatos.totalPaginas, desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0,
     hasta: Math.min(pagina * porPagina, paginaDatos.total),
-    busqueda, estado, marca, cargarPagina,
+    busqueda, estado, marca, precio, existencia, cargarPagina,
     setBusqueda: (valor: string) => { setPagina(1); setBusqueda(valor); },
     setEstado: (valor: string) => { setPagina(1); setEstado(valor); },
     setMarca: (valor: string) => { setPagina(1); setMarca(valor); },
+    setPrecio: (valor: string) => { setPagina(1); setPrecio(valor); },
+    setExistencia: (valor: string) => { setPagina(1); setExistencia(valor); },
     cargando: cargando || cargandoCatalogos, guardando, error, setError,
     cambiarPagina: setPagina, cambiarPorPagina, guardar, consultar, crearMarca, crearCategoria, cambiarEstado,
   };

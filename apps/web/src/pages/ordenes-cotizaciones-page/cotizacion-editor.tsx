@@ -1,5 +1,6 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import type { KeyboardEvent } from "react";
+import { formularioDocumentoClases } from "../../components/documentos/formulario-documento-clases";
 import { DesgloseImportes } from "../../components/ingresos/desglose-importes";
 import type { ClienteRegistrado, ProductoParaIngreso } from "../../services/ingresos.service";
 import { importeLineaCotizacion, type calcularTotalesCotizacion } from "./gestion-utils";
@@ -62,13 +63,7 @@ const LIMITE_OBSERVACION = 2000;
 const formatoFechaLarga = (fecha: string) => new Date(`${fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
 const diasEntre = (desde: string, hasta: string) => Math.round((new Date(`${hasta}T00:00:00`).getTime() - new Date(`${desde}T00:00:00`).getTime()) / 86_400_000);
 
-const tarjeta = "flex flex-col gap-5 rounded-2xl border border-[#dbe3e9] bg-white p-6 shadow-[0_8px_24px_rgba(15,42,66,.06)]";
-const paso = "grid h-7 w-7 flex-none place-items-center rounded-full bg-[#0b2545] text-[13px] font-bold text-white";
-const titulo = "m-0 text-[17px] font-bold text-[#0b2545]";
-const campo = "box-border h-[46px] w-full min-w-0 rounded-[10px] border border-[#c5d1db] bg-white px-3.5 text-sm text-[#142b42] outline-none focus:border-[#2878b9] focus:shadow-[0_0_0_3px_#2878b933] disabled:bg-[#f3f6f9]";
-const etiquetaCampo = "grid gap-1.5 text-xs font-semibold text-[#3d566e]";
-const botonSecundario = "inline-flex h-[46px] items-center justify-center gap-2 rounded-[10px] border border-[#c5d1db] bg-white px-4 text-sm font-semibold text-[#27445f] transition-colors hover:bg-[#f5f9fd] disabled:cursor-not-allowed disabled:opacity-60";
-const botonPrincipal = "inline-flex h-[50px] w-full items-center justify-center gap-2.5 rounded-xl border border-[#b91e30] bg-[linear-gradient(145deg,#d92c40,#bb1d30)] px-5 text-[15px] font-bold text-white shadow-[0_7px_20px_rgba(140,26,43,.25)] disabled:cursor-not-allowed disabled:opacity-60";
+const { tarjeta, resumen, paso, titulo, campo, etiquetaCampo, botonSecundario, botonPrincipal } = formularioDocumentoClases;
 const cuadriculaDetalle = "grid grid-cols-[minmax(0,1fr)_84px_124px_112px_120px_36px] items-center gap-3";
 
 export function CotizacionEditor({ productos, buscandoProductos, productosRecientes, onAgregarProductoReciente, busquedaProducto, onBusquedaProductoChange, onAgregarProducto, dinero, fechaEmision, consultandoSerie, errorConsultaSerie, codigoPrevisualizado, cliente, clienteInicialId = null, clienteInicialNombre = null, nombreCliente, tipoDocumentoBusqueda, onTipoDocumentoBusquedaChange, clienteBusqueda, onClienteBusquedaChange, clienteBusquedaConsultada, onBuscarCliente, onKeyDownBusquedaCliente, buscandoClientes, clientes, onSeleccionarCliente, onLimpiarCliente, onAgregarCliente, vigenteHasta, onVigenteHastaChange, lineas, onAgregarServicio, onActualizarLinea, onEliminarLinea, observacion, onObservacionChange, totales, onCerrar, onGuardar, guardando, editando }: CotizacionEditorProps) {
@@ -192,7 +187,7 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
         </section>
       </div>
 
-      <aside className="flex flex-col gap-5 rounded-2xl border border-[#dbe3e9] bg-white p-6 shadow-[0_8px_24px_rgba(15,42,66,.06)] xl:sticky xl:top-6" aria-label="Resumen de la cotización">
+      <aside className={resumen} aria-label="Resumen de la cotización">
         <h3 className={titulo}>Resumen de la cotización</h3>
         <DesgloseImportes {...totales} destacado />
         <div className="flex flex-col gap-2.5 rounded-xl border border-[#edf1f5] bg-[#f7f9fb] p-4 text-[13px]">

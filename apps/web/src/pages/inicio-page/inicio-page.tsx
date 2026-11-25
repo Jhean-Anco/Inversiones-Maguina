@@ -100,7 +100,7 @@ export function InicioPage() {
 
   const rolPrincipal = perfil?.roles[0] ?? "Usuario";
   const asideContraidoEscritorio = perfilAmplio && asideContraido;
-  const tituloPagina = !autorizacionResuelta ? "Cargando sesión" : accesoDenegadoActual ? "Acceso no disponible" : submoduloActivo?.nombre ?? "Resumen";
+  const tituloPagina = !autorizacionResuelta ? "Cargando sesión" : accesoDenegadoActual ? "Acceso no disponible" : rutaActual === "/reportes/ingresos" ? "Reporte de ingresos" : submoduloActivo?.nombre ?? "Resumen";
   return (
     <main className={`erp-layout ${clasesLayoutResponsive}${asideContraidoEscritorio ? " is-collapsed" : ""}${autorizacionResuelta && (dashboardActivo || colapsoDashboard) ? " is-dashboard" : ""}${menuAbierto ? " menu-open" : ""}`}>
       <ErpAside

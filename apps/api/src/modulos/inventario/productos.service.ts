@@ -102,14 +102,13 @@ export class ServicioProductos {
     return { items: itemsConSiguiente.slice(0, porPagina), total: resumen?.total, pagina, porPagina, hayMas };
   }
 
-  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estado?: string; marca?: string; precio?: string }) {
+  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estado?: string; marca?: string; precio?: string; existencia?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
     const tamano = Number.parseInt(filtros.porPagina ?? "10", 10);
     const porPagina = [4, 6, 8, 10].includes(tamano) ? tamano : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
-    const condicion = and(
-      filtros.estado === "ACTIVOS" ? eq(productos.activo, true) : filtros.estado === "INACTIVOS" ? eq(productos.activo, false) : undefined,
+    const condicionFiltros = and(
       filtros.marca ? eq(marcasProductos.id, uuid(filtros.marca, "La marca")) : undefined,
       filtros.precio === "PENDIENTE" ? sql`${precioGeneralBase} is null` : filtros.precio === "VIGENTE" ? sql`${precioGeneralBase} is not null` : undefined,
       coincidencia ? or(
@@ -120,7 +119,17 @@ export class ServicioProductos {
       exists(db.select({ id: productosCodigos.id }).from(productosCodigos).where(and(eq(productosCodigos.productoId, productos.id), ilike(productosCodigos.codigo, coincidencia)))),
     ) : undefined);
 
-    const [items, [total]] = await Promise.all([
+    const stockActual = sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`;
+    const bajoStock = or(lte(stockActual, "0"), and(gt(productos.stockMinimo, "0"), lte(stockActual, productos.stockMinimo)));
+    const condicionEstado = filtros.estado === "ACTIVOS" ? eq(productos.activo, true)
+      : filtros.estado === "INACTIVOS" ? eq(productos.activo, false)
+      : filtros.estado === "STOCK_BAJO" ? and(eq(productos.activo, true), bajoStock) : undefined;
+    const existencia = filtros.existencia === "CON_STOCK" || filtros.existencia === "SIN_STOCK" ? filtros.existencia : "TODOS";
+    const condicionExistencia = existencia === "CON_STOCK" ? gt(stockActual, "0")
+      : existencia === "SIN_STOCK" ? lte(stockActual, "0") : undefined;
+    const condicion = and(condicionFiltros, condicionEstado, condicionExistencia);
+
+    const [items, [total], [conteosStock], [conteosEstado]] = await Promise.all([
       db.select({
         id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre, descripcion: productos.descripcion,
         activo: productos.activo, creadoEn: productos.creadoEn, precioGeneral: precioGeneralBase,
@@ -135,10 +144,43 @@ export class ServicioProductos {
         .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
         .where(condicion).orderBy(asc(productos.nombre), asc(productos.id)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(productos)
-        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id)).where(condicion),
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
+        .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId)).where(condicion),
+      db.select({
+        todos: count(),
+        conStock: sql<number>`count(*) filter (where ${stockActual} > 0)::int`,
+        sinStock: sql<number>`count(*) filter (where ${stockActual} <= 0)::int`,
+      }).from(productos)
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
+        .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId)).where(and(condicionFiltros, condicionEstado)),
+      db.select({
+        todos: count(),
+        activos: sql<number>`count(*) filter (where ${productos.activo})::int`,
+        inactivos: sql<number>`count(*) filter (where not ${productos.activo})::int`,
+        stockBajo: sql<number>`count(*) filter (where ${productos.activo} and ${bajoStock})::int`,
+      }).from(productos)
+        .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
+        .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId)).where(condicionFiltros),
     ]);
     const totalRegistros = total?.total ?? 0;
-    return { items, total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
+    return {
+      items,
+      total: totalRegistros,
+      pagina,
+      porPagina,
+      totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)),
+      conteosStock: {
+        todos: Number(conteosStock?.todos ?? 0),
+        conStock: Number(conteosStock?.conStock ?? 0),
+        sinStock: Number(conteosStock?.sinStock ?? 0),
+      },
+      conteosEstado: {
+        todos: Number(conteosEstado?.todos ?? 0),
+        activos: Number(conteosEstado?.activos ?? 0),
+        inactivos: Number(conteosEstado?.inactivos ?? 0),
+        stockBajo: Number(conteosEstado?.stockBajo ?? 0),
+      },
+    };
   }
 
   async listarPrecios(filtros: { pagina?: string; porPagina?: string; busqueda?: string; marca?: string; lista?: string; vigencia?: string }) {

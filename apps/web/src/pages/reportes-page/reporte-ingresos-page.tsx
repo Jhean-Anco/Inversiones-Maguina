@@ -74,8 +74,8 @@ export function ReporteIngresosPage() {
     {!cargando && datos && <div className="reporte-ingresos-content">
       <dl className="reporte-ingresos-kpis">{indicadores.map((item) => <div key={item.etiqueta}><dt>{item.etiqueta}</dt><dd>{item.valor}</dd><small>{item.detalle}</small></div>)}</dl>
       <GraficoIngresos filas={datos.porMes} />
-      <section className="reporte-ingresos-panel" aria-labelledby="reporte-ingresos-doc-title">
-        <div className="reporte-ingresos-panel-heading"><h2 id="reporte-ingresos-doc-title">Tipo de documento</h2><span>Importes en soles</span></div>
+      <section className="reporte-ingresos-panel reporte-ingresos-documentos" aria-label="Tipo de documento">
+        <div className="reporte-ingresos-panel-heading reporte-ingresos-documentos-heading"><h2 id="reporte-ingresos-doc-title">Tipo de documento</h2><span>Importes en soles</span></div>
         {esMovil
           ? <div className="reporte-ingresos-doc-cards">{datos.porDocumento.map((fila) => <article className="reporte-ingresos-doc-card" key={fila.tipo}>
             <h3>{fila.etiqueta}</h3><div><span>Cantidad</span><strong>{numero(fila.documentos)}</strong></div><div><span>Importe</span><strong className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</strong></div>
