@@ -3785,8 +3785,8 @@
 }
 .venta-client-detail-dialog {
   display: grid;
-  gap: 18px;
-  width: min(100%, 660px);
+  gap: 14px;
+  width: min(100%, 720px);
   max-height: min(92svh, 780px);
   overflow: auto;
   padding: 22px;
@@ -3800,6 +3800,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e7edf3;
 }
 .venta-client-detail-dialog > header small {
   color: #647d97;
@@ -3822,6 +3824,54 @@
   font-size: 21px;
   cursor: pointer;
 }
+.venta-client-profile {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 13px;
+  padding: 4px 0 2px;
+}
+.venta-client-profile-avatar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border-radius: 12px;
+  background: #0b376a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.venta-client-profile-identity {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+.venta-client-profile-identity > strong {
+  overflow-wrap: anywhere;
+  color: #153653;
+  font-size: 14px;
+  font-weight: 750;
+}
+.venta-client-profile-tags {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.venta-client-profile-tags > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 1px solid #dce6ef;
+  border-radius: 7px;
+  padding: 4px 8px;
+  background: #f2f6f9;
+  color: #35536f;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
 .venta-client-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3838,10 +3888,10 @@
   font-weight: 700;
 }
 .venta-client-detail-grid > div {
-  border: 1px solid #e6edf3;
-  border-radius: 9px;
-  padding: 10px 12px;
-  background: #fbfcfd;
+  border: 1px solid #e9eef3;
+  border-radius: 11px;
+  padding: 12px 13px;
+  background: #f7f9fb;
 }
 .venta-client-detail-grid > div small {
   color: #7f8fa0;

@@ -25,7 +25,13 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
     direccionEntrega: cliente.direccionEntrega ?? "",
     observacion: cliente.observacion ?? "",
   });
-  const nombre = cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
+  const nombre = cliente.tipoPersona === "JURIDICA"
+    ? cliente.razonSocial || cliente.nombreComercial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ")
+    : [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") || cliente.nombreComercial || cliente.razonSocial || "Cliente";
+  const nombreIdentidad = cliente.razonSocial || cliente.nombreComercial || nombre;
+  const iniciales = nombreIdentidad.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toLocaleUpperCase("es-PE")).join("") || "CL";
+  const documentos = cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }];
+  const nombreDocumento = (tipo: string) => ({ "01": "DNI", "04": "CE", "06": "RUC", "07": "Pasaporte" } as Record<string, string>)[tipo] ?? tipo;
 
   function editarCampo(campo: keyof DatosEdicionCliente, valor: string) {
     setDatos((actual) => ({ ...actual, [campo]: valor }));
@@ -48,8 +54,18 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
     <div className="venta-client-detail-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onClose(); }}>
       <section className="venta-client-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="venta-client-detail-title">
         <header><div><small>FICHA DE CLIENTE</small><h2 id="venta-client-detail-title">{nombre}</h2></div><button type="button" aria-label="Cerrar detalle" onClick={onClose}>×</button></header>
+        <div className="venta-client-profile">
+          <span className="venta-client-profile-avatar" aria-hidden="true">{iniciales}</span>
+          <div className="venta-client-profile-identity">
+            <strong>{cliente.nombreComercial || cliente.razonSocial || nombre}</strong>
+            <div className="venta-client-profile-tags">
+              <span>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Persona natural"}</span>
+              {documentos.map((documento) => <span key={`${documento.tipoDocumento}:${documento.numeroDocumento}`}>{nombreDocumento(documento.tipoDocumento)} {documento.numeroDocumento}</span>)}
+            </div>
+          </div>
+        </div>
         <div className="venta-client-detail-grid mobile-portrait:grid-cols-1">
-          <div><small>Documento</small><strong>{cliente.numeroDocumento}</strong></div>
+          <div><small>Documento</small><strong>{documentos.map((documento) => `${nombreDocumento(documento.tipoDocumento)} ${documento.numeroDocumento}`).join(" · ")}</strong></div>
           <div><small>Tipo de persona</small><strong>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Persona natural"}</strong></div>
           {editando ? <>
             <label>Nombre comercial<input value={datos.nombreComercial} maxLength={180} onChange={(evento) => editarCampo("nombreComercial", evento.target.value)} /></label>
