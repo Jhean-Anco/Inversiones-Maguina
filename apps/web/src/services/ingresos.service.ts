@@ -23,7 +23,9 @@ export type NotaRelacionada = { id: string; tipoComprobante: "NOTA_CREDITO" | "N
 export type ResultadoAnulacion = { estado: "ANULADO" | "ANULACION_PENDIENTE" | "RECHAZADO"; motivo?: string; detalle?: string | null; ticket?: string | null; mensaje?: string };
 export type LineaFuenteNota = { id: string; tipo: "PRODUCTO" | "SERVICIO" | "MOTOTAXI"; codigo: string | null; descripcion: string; cantidad: string; unidad: string | null; precioUnitario: string; subtotal: string; igv: string; total: string; afectacionIgv: "GRAVADO" | "EXONERADO" | "INAFECTO"; creditoAplicado: string; saldoParaCredito: string };
 export type FuenteNota = { id: string; codigo: string; tipoComprobante: "BOLETA" | "FACTURA"; fecha: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; total: string; moneda: "PEN"; lineas: LineaFuenteNota[] };
-export type PaginaVentas = { items: VentaListado[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
+export type EstadoFiltroVenta = "TODAS" | "EMITIDAS" | "PENDIENTES" | "RECHAZADAS" | "ANULADAS";
+export type ConteosVentas = { todas: number; emitidas: number; pendientes: number; rechazadas: number; anuladas: number };
+export type PaginaVentas = { items: VentaListado[]; pagina: number; porPagina: number; total: number; totalPaginas: number; conteos?: ConteosVentas };
 export type EstadoNubefact = { regimenTributario: "NRUS" | "RER" | "RMT" | "GENERAL"; credencialesConfiguradas: boolean; seriesConfiguradas: boolean; emisionHabilitada: boolean; serieFacturaConfigurada: boolean; emisionFacturaHabilitada: boolean };
 export type GuiaRemision = { id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; fecha: string; codigo: string; ingresoId?: string | null; comprobanteOrigen?: { codigo: string; tipo: string } | null; estado: string; detalle: string | null; enlacePdf: string | null; enlaceXml: string | null; enlaceCdr: string | null };
 export type UbigeoPeru = { codigo: string; departamento: string; provincia: string; distrito: string };
@@ -73,8 +75,8 @@ export const servicioIngresos = {
   actualizarCotizacion(id: string, datos: Record<string, unknown>) { return solicitarApi<Cotizacion>(`/ingresos/cotizaciones/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
   cambiarEstadoCotizacion(id: string, estado: string) { return solicitarApi<Cotizacion>(`/ingresos/cotizaciones/${encodeURIComponent(id)}/estado`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ estado }) }); },
   convertirCotizacion(id: string, datos: { tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; medioPago: string }) { return solicitarApi<{ cotizacionId: string; ingreso: IngresoCreado }>(`/ingresos/cotizaciones/${encodeURIComponent(id)}/convertir`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
-  listarVentas(tipoVenta: "REPUESTOS" | "MOTOTAXIS", pagina = 1, porPagina = 10, busqueda = "", tipoDocumento = "", medioPago = "") {
-    const consulta = new URLSearchParams({ tipoVenta, pagina: String(pagina), porPagina: String(porPagina), busqueda, tipoDocumento, medioPago });
+  listarVentas(tipoVenta: "REPUESTOS" | "MOTOTAXIS", pagina = 1, porPagina = 10, busqueda = "", tipoDocumento = "", medioPago = "", estado: EstadoFiltroVenta = "TODAS") {
+    const consulta = new URLSearchParams({ tipoVenta, pagina: String(pagina), porPagina: String(porPagina), busqueda, tipoDocumento, medioPago, estado });
     return solicitarApi<PaginaVentas>(`/ingresos?${consulta}`);
   },
   reintentarEmision(ingresoId: string) {

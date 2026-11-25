@@ -5,7 +5,7 @@ import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/a
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { ErrorApi } from "../../services/api-cliente";
-import { servicioIngresos, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
+import { servicioIngresos, type EstadoFiltroVenta, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
 import { VentaRow } from "./venta-row";
 import type { DocumentoAnulacion } from "./ventas-types";
 import { DialogoRechazo } from "./dialogo-rechazo";
@@ -28,6 +28,8 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   const [busqueda, setBusqueda] = useState("");
   const [tipoDocumento, setTipoDocumento] = useState("");
   const [medioPago, setMedioPago] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltroVenta>("TODAS");
+  const [conteos, setConteos] = useState<{ todas: number; emitidas: number; pendientes: number; rechazadas: number; anuladas: number } | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [ventaSeleccionada, setVentaSeleccionada] = useState<VentaListado | null>(null);
@@ -62,9 +64,9 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     let vigente = true;
     const temporizador = window.setTimeout(() => {
       setCargando(true);
-      void servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago).then((resultado) => {
+      void servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro).then((resultado) => {
         if (!vigente) return;
-        setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError("");
+        setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setConteos(resultado.conteos ?? null); setError("");
       }).catch((problema: unknown) => {
         if (!vigente) return;
         if (problema instanceof ErrorApi && problema.estado === 401) { navegar("/login", { replace: true }); return; }
@@ -72,7 +74,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       }).finally(() => { if (vigente) setCargando(false); });
     }, busqueda ? 220 : 0);
     return () => { vigente = false; window.clearTimeout(temporizador); };
-  }, [tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, navegar, revisionGarantias]);
+  }, [tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, navegar, revisionGarantias]);
 
   useEffect(() => {
     if (!ventaSeleccionada) return;
@@ -103,8 +105,8 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     setConsultandoRechazo(true); setErrorReintento("");
     try {
       const resultado = await servicioIngresos.consultarEstadoComprobante(ventaRechazada.id);
-      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago);
-      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
+      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas); setConteos(actualizado.conteos ?? null);
       const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
       if (resultado.estadoProveedor === "ACEPTADO_SUNAT") {
         setVentaRechazada(null);
@@ -128,8 +130,8 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     setGuardandoReintento(true); setErrorReintento("");
     try {
       const resultado = await servicioIngresos.reintentarEmision(ventaRechazada.id);
-      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago);
-      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
+      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas); setConteos(actualizado.conteos ?? null);
       const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
       if (ventaActualizada?.estadoProveedor === "RECHAZADO_SUNAT") {
         setVentaRechazada(ventaActualizada);
@@ -155,8 +157,8 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
         : documentoAnulacion.esNota ? await servicioIngresos.anularNota(documentoAnulacion.ingresoId, documentoAnulacion.documentoId, motivoAnulacion, confirmoNoEntregado) : await servicioIngresos.anularIngreso(documentoAnulacion.ingresoId, motivoAnulacion, confirmoNoEntregado);
       setDocumentoAnulacion({ ...documentoAnulacion, pendiente: resultado.estado === "ANULACION_PENDIENTE" });
       setErrorAnulacion(resultado.estado === "ANULADO" ? "La baja fue aceptada por SUNAT." : resultado.estado === "ANULACION_PENDIENTE" ? resultado.mensaje || "La comunicación sigue pendiente de respuesta de SUNAT. Consulta nuevamente más tarde." : resultado.detalle || "NubeFact rechazó la comunicación de baja.");
-      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago);
-      setVentas(actualizado.items);
+      const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro);
+      setVentas(actualizado.items); setConteos(actualizado.conteos ?? null);
       if (documentoAnulacion.esNota) {
         setFuenteNota(null);
         setCargandoFuente(true);
@@ -204,6 +206,14 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
         <label className={`${ventasClasses.search} listado-maestro-busqueda-icono`}><svg className={ventasClasses.searchIcon} viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg><input className={ventasClasses.searchInput} type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label>
         <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] font-bold uppercase tracking-[.06em] text-[#687e96]">Tipo de documento<select className="h-11 rounded-xl border border-[#d8e3ee] bg-white px-3 text-[13px] font-medium normal-case tracking-normal text-[#173554]" value={tipoDocumento} onChange={(evento) => { setPagina(1); setTipoDocumento(evento.target.value); }}><option value="">Todos los documentos</option><option value="BOLETA">Boleta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
         <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] font-bold uppercase tracking-[.06em] text-[#687e96]">Medio de pago<select className="h-11 rounded-xl border border-[#d8e3ee] bg-white px-3 text-[13px] font-medium normal-case tracking-normal text-[#173554]" value={medioPago} onChange={(evento) => { setPagina(1); setMedioPago(evento.target.value); }}><option value="">Todos los medios</option><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_DIGITAL">Billetera digital</option><option value="OTRO">Otro</option></select></label>
+        {conteos && <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-label="Filtrar ventas por estado">
+          {([
+            ["TODAS", "Todas", conteos.todas], ["EMITIDAS", "Emitidas", conteos.emitidas], ["PENDIENTES", "Pendientes", conteos.pendientes],
+            ["RECHAZADAS", "Rechazadas", conteos.rechazadas], ["ANULADAS", "Anuladas", conteos.anuladas],
+          ] as const).map(([estado, etiqueta, cantidad]) => <button key={estado} type="button" aria-pressed={estadoFiltro === estado}
+            className={`flex min-h-[52px] items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${estadoFiltro === estado ? "border-[#8eb0cf] bg-[#edf5fc] text-[#174f7c]" : "border-[#e1e8ef] bg-white text-[#52697d] hover:bg-[#f6f9fc]"}`}
+            onClick={() => { setPagina(1); setEstadoFiltro(estado); }}><span className="text-xs font-semibold">{etiqueta}</span><strong className="text-lg tabular-nums">{cantidad.toLocaleString("es-PE")}</strong></button>)}
+        </div>}
       </>}
       paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
       encabezadoTabla={encabezadoVentas}
