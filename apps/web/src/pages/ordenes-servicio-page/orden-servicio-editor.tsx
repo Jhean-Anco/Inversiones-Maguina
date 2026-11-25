@@ -126,7 +126,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
             formatearSoles={formatearSoles}
             footer={(
               <div className="venta-data-footer ordenes-data-footer">
-                <label className="venta-observation-card ordenes-reason-card">Motivo de ingreso (opcional)<textarea aria-label="Motivo de ingreso (opcional)" value={pago.motivo} maxLength={2000} rows={3} onChange={(evento) => pago.onMotivo(evento.target.value)} placeholder="Describe por qué ingresa el vehículo al taller" /></label>
+                <label className="venta-observation-card ordenes-motivo-ingreso-card">Motivo de ingreso (opcional)<textarea aria-label="Motivo de ingreso (opcional)" value={pago.motivo} maxLength={2000} rows={3} onChange={(evento) => pago.onMotivo(evento.target.value)} placeholder="Describe por qué ingresa el vehículo al taller" /></label>
                 <div className="venta-checkout-actions ordenes-checkout-actions">
                   <div className="venta-checkout-total">
                     <div className="ordenes-tax-breakdown" aria-label="Desglose de importes de la orden">

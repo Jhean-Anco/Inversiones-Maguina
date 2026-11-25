@@ -1,6 +1,7 @@
 ﻿
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type { useEntradasStock } from "../../../hooks/use-entradas-stock";
+import { useConfirmarCancelacionFormulario } from "../../../hooks/use-confirmar-cancelacion-formulario";
 import { CatalogoRecientes } from "../../catalogo/catalogo-recientes";
 import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../../catalogo/use-catalogo-recientes";
 import { CompraCatalogo, CompraDocumento, CompraPie, CompraRevision } from "../../documentos/compra-documento";
@@ -29,6 +30,9 @@ export function EntradaStockFormulario({ modulo, cerrar, alAgregarProducto }: {
     detalles, setDetalles, totalBorrador, pagosCompra, setPagosCompra, agregarPagoCompra, quitarPagoCompra, quitarDetalle, guardar,
   } = modulo;
   const [enRevision, setEnRevision] = useState(false);
+  const firmaDatos = JSON.stringify({ fecha, tipoDocumento, numeroDocumento, proveedor, proveedorTipoDocumento, proveedorNumeroDocumento, observacion, detalles, pagosCompra });
+  const formularioRef = useRef<HTMLFormElement>(null);
+  const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(formularioRef, cerrar, "la compra de repuestos", firmaDatos);
   const tituloDocumento = documentos[tipoDocumento as keyof typeof documentos] ?? tipoDocumento;
 
   function enviar(evento: FormEvent<HTMLFormElement>) {
@@ -120,11 +124,12 @@ export function EntradaStockFormulario({ modulo, cerrar, alAgregarProducto }: {
   />;
 
   return <>
+    {dialogo}
     {error && <NotificacionFlotante mensaje={error} onCerrar={() => setError("")} />}
     <CompraDocumento titulo={enRevision ? "Revisar compra de repuestos" : "Nueva compra de repuestos"} enRevision={enRevision}
       catalogo={catalogo} campos={campos} tituloDetalle="Repuestos de la compra" conteoDetalle={etiquetaDetalle} detalle={detalle}
       pie={<CompraPie total={totalBorrador} observacion={observacion} alObservar={setObservacion} pagos={pagosCompra} alCambiarPagos={setPagosCompra}
-        alAgregarPago={agregarPagoCompra} alQuitarPago={quitarPagoCompra} alCancelar={cerrar} alEditar={() => setEnRevision(false)}
+        alAgregarPago={agregarPagoCompra} alQuitarPago={quitarPagoCompra} alCancelar={solicitarCancelacion} alEditar={() => setEnRevision(false)}
         guardando={guardando} tieneDetalle={detalles.length > 0} enRevision={enRevision} />}
       revision={revision} onSubmit={enviar}
     />

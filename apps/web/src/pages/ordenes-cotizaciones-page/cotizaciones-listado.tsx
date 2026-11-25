@@ -40,7 +40,7 @@ export function CotizacionesListado({ controlesCabecera, cotizaciones, cargando,
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnValidity}`}>Vigencia</th>
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnClient}`}>Cliente</th>
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnStatus}`}>Estado</th>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnTotal}`}>Importes</th>
+        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnTotal}`}>Total</th>
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnActions}`}>Acciones</th>
       </tr>
     )}

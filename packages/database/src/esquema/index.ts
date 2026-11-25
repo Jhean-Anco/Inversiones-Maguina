@@ -301,6 +301,22 @@ export const modelosMototaxis = pgTable("modelos_mototaxis", {
   check("modelos_mototaxis_stock_ck", sql`${tabla.stockDisponible} >= 0`),
 ]);
 
+export const garantiasModelosMototaxis = pgTable("garantias_modelos_mototaxis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  modeloId: uuid("modelo_id").notNull().references(() => modelosMototaxis.id, { onDelete: "restrict" }),
+  activa: boolean("activa").notNull().default(true),
+  mesesVigencia: integer("meses_vigencia").notNull(),
+  alcance: text("alcance").notNull(),
+  exclusiones: text("exclusiones"),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  uniqueIndex("garantias_modelos_mototaxis_modelo_unico").on(tabla.modeloId),
+  check("garantias_modelos_mototaxis_meses_ck", sql`${tabla.mesesVigencia} BETWEEN 1 AND 120`),
+  check("garantias_modelos_mototaxis_alcance_ck", sql`(NOT ${tabla.activa} AND length(trim(${tabla.alcance})) = 0) OR length(trim(${tabla.alcance})) BETWEEN 3 AND 4000`),
+  check("garantias_modelos_mototaxis_exclusiones_ck", sql`${tabla.exclusiones} IS NULL OR length(${tabla.exclusiones}) <= 4000`),
+]);
+
 export const preciosModelosMototaxis = pgTable("precios_modelos_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
   modeloId: uuid("modelo_id").notNull().references(() => modelosMototaxis.id, { onDelete: "restrict" }),
@@ -503,6 +519,7 @@ export const garantiasMototaxis = pgTable("garantias_mototaxis", {
 export const reclamosGarantiaMototaxis = pgTable("reclamos_garantia_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
   garantiaId: uuid("garantia_id").notNull().references(() => garantiasMototaxis.id, { onDelete: "restrict" }),
+  ingresoDetalleId: uuid("ingreso_detalle_id").references(() => ingresosDetalle.id, { onDelete: "restrict" }),
   fecha: date("fecha").notNull(),
   descripcionFalla: text("descripcion_falla").notNull(),
   costoTotal: numeric("costo_total", { precision: 14, scale: 2 }).notNull(),
@@ -515,6 +532,7 @@ export const reclamosGarantiaMototaxis = pgTable("reclamos_garantia_mototaxis", 
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("reclamos_garantia_mototaxis_estado_fecha_idx").on(tabla.estado, tabla.fecha),
+  index("reclamos_garantia_mototaxis_ingreso_detalle_idx").on(tabla.ingresoDetalleId),
   check("reclamos_garantia_mototaxis_costos_ck", sql`${tabla.costoTotal} >= 0 AND ${tabla.importeProveedor} >= 0 AND ${tabla.importeEmpresa} >= 0 AND ${tabla.importeProveedor} + ${tabla.importeEmpresa} = ${tabla.costoTotal}`),
   check("reclamos_garantia_mototaxis_porcentaje_ck", sql`${tabla.porcentajeProveedorAplicado} IN (70, 80)`),
   check("reclamos_garantia_mototaxis_estado_ck", sql`${tabla.estado} IN ('ABIERTO', 'ENVIADO', 'APROBADO', 'RECHAZADO', 'RESUELTO')`),
@@ -916,6 +934,25 @@ export const ingresosDetalle = pgTable("ingresos_detalle", {
   check("ingresos_detalle_totales_no_negativos_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} >= 0`),
 ]);
 
+export const garantiasVentasMototaxis = pgTable("garantias_ventas_mototaxis", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ingresoDetalleId: uuid("ingreso_detalle_id").notNull().references(() => ingresosDetalle.id, { onDelete: "restrict" }),
+  garantiaModeloId: uuid("garantia_modelo_id").notNull().references(() => garantiasModelosMototaxis.id, { onDelete: "restrict" }),
+  cantidad: integer("cantidad").notNull(),
+  mesesVigencia: integer("meses_vigencia").notNull(),
+  iniciaEn: date("inicia_en").notNull(),
+  terminaEn: date("termina_en").notNull(),
+  alcance: text("alcance").notNull(),
+  exclusiones: text("exclusiones"),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("garantias_ventas_mototaxis_detalle_unico").on(tabla.ingresoDetalleId),
+  index("garantias_ventas_mototaxis_fin_idx").on(tabla.terminaEn),
+  check("garantias_ventas_mototaxis_cantidad_ck", sql`${tabla.cantidad} > 0`),
+  check("garantias_ventas_mototaxis_meses_ck", sql`${tabla.mesesVigencia} BETWEEN 1 AND 120`),
+  check("garantias_ventas_mototaxis_fechas_ck", sql`${tabla.terminaEn} >= ${tabla.iniciaEn}`),
+]);
+
 export const ordenesServicio = pgTable("ordenes_servicio", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigo: varchar("codigo", { length: 24 }).notNull().unique(),
@@ -1043,6 +1080,25 @@ export const nubefactCorrelativos = pgTable("nubefact_correlativos", {
   primaryKey({ columns: [tabla.serie, tabla.tipoComprobante] }),
   check("nubefact_correlativos_tipo_ck", sql`${tabla.tipoComprobante} IN (1, 2, 3, 4, 5, 6)`),
   check("nubefact_correlativos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
+]);
+
+/**
+ * Metas del dashboard de inicio. `periodo` (AAAA-MM) fija la meta de un mes; sin periodo es la meta predeterminada
+ * para todos los meses que no tengan una propia. VENTAS_MES va en soles; COBRANZA y MARGEN, en porcentaje.
+ */
+export const metasDashboard = pgTable("metas_dashboard", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  indicador: varchar("indicador", { length: 20 }).notNull(),
+  periodo: varchar("periodo", { length: 7 }),
+  valor: numeric("valor", { precision: 14, scale: 2 }).notNull(),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  uniqueIndex("metas_dashboard_indicador_periodo_uq").on(tabla.indicador, sql`coalesce(${tabla.periodo}, '')`),
+  check("metas_dashboard_indicador_ck", sql`${tabla.indicador} IN ('VENTAS_MES', 'COBRANZA', 'MARGEN')`),
+  check("metas_dashboard_periodo_ck", sql`${tabla.periodo} IS NULL OR ${tabla.periodo} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`),
+  check("metas_dashboard_valor_ck", sql`${tabla.valor} > 0 AND (${tabla.indicador} = 'VENTAS_MES' OR ${tabla.valor} <= 100)`),
 ]);
 
 export const seriesComprobantes = pgTable("series_comprobantes", {

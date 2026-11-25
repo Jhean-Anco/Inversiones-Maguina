@@ -1,6 +1,31 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { inspectMigrationChanges } from "./check-migrations.mjs";
+import { inspectMigrationChanges, isApprovedDestructiveMigration } from "./check-migrations.mjs";
+
+test("acepta solo el contenido exacto de la migración destructiva autorizada y etiquetada", () => {
+  assert.equal(isApprovedDestructiveMigration({
+    findings: ["packages/database/migrations/0189_retirar_fotografias.sql:8: operación potencialmente destructiva"],
+    approvalLabel: "true",
+    migrationPaths: ["packages/database/migrations/0189_retirar_fotografias.sql"],
+    migrationBlob: "80d56760b1a015715a05b090dd77e42e48e36b69",
+  }), true);
+});
+
+test("mantiene bloqueadas migraciones destructivas sin aprobación externa o con cambios al contenido aprobado", () => {
+  const base = {
+    findings: ["packages/database/migrations/0189_retirar_fotografias.sql:8: operación potencialmente destructiva"],
+    approvalLabel: "true",
+    migrationPaths: ["packages/database/migrations/0189_retirar_fotografias.sql"],
+    migrationBlob: "80d56760b1a015715a05b090dd77e42e48e36b69",
+  };
+  assert.equal(isApprovedDestructiveMigration({ ...base, approvalLabel: "false" }), false);
+  assert.equal(isApprovedDestructiveMigration({ ...base, migrationBlob: "changed" }), false);
+  assert.equal(isApprovedDestructiveMigration({ ...base, migrationPaths: [...base.migrationPaths, "0191_other.sql"] }), false);
+  assert.equal(isApprovedDestructiveMigration({
+    ...base,
+    findings: ["packages/database/migrations/0191_other.sql:1: operación potencialmente destructiva"],
+  }), false);
+});
 
 test("permite migración SQL aditiva", () => {
   const findings = inspectMigrationChanges(
@@ -8,6 +33,18 @@ test("permite migración SQL aditiva", () => {
     new Map([["packages/database/migrations/0190_safe_change.sql", [
       'ALTER TABLE "clientes" ADD COLUMN "alias" varchar(120);',
       'CREATE INDEX "clientes_alias_idx" ON "clientes" ("alias");',
+    ]]]),
+  );
+  assert.deepEqual(findings, []);
+});
+
+test("permite reemplazar una restriccion con DROP CONSTRAINT IF EXISTS", () => {
+  const path = "packages/database/migrations/0190_reemplazo_restriccion.sql";
+  const findings = inspectMigrationChanges(
+    [{ status: "A", path }],
+    new Map([[path, [
+      'ALTER TABLE "garantias_modelos_mototaxis" DROP CONSTRAINT IF EXISTS "garantias_modelos_mototaxis_alcance_ck";',
+      'ALTER TABLE "garantias_modelos_mototaxis" ADD CONSTRAINT "garantias_modelos_mototaxis_alcance_ck" CHECK ("activa" OR length(trim("alcance")) BETWEEN 3 AND 4000);',
     ]]]),
   );
   assert.deepEqual(findings, []);

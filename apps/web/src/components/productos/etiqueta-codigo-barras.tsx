@@ -22,20 +22,77 @@ function CodigoBarras({ codigo }: { codigo: string }) {
   const patron = patronEan13(codigo);
   if (!patron) return <p className="max-w-[42ch] text-[13px] leading-[1.5] text-[#a33e34]">El código guardado no tiene formato EAN-13. Edita el repuesto y genera un nuevo código antes de imprimir.</p>;
   const guardas = new Set([0, 1, 2, 45, 46, 47, 48, 49, 92, 93, 94]);
-  return <svg className="block h-auto w-[min(300px,100%)] overflow-visible fill-black [&_text]:fill-[#111] [&_text]:font-[Arial,sans-serif] [&_text]:text-[7px] [&_text]:tracking-[.5px] print:w-[44mm] print:max-h-[21mm]" viewBox="0 0 111 76" role="img" aria-label={`Código de barras ${codigo}`}>
-    <title>{`Código de barras ${codigo}`}</title>
+  return <svg className="barcode-print-svg block h-auto w-[min(300px,100%)] overflow-visible fill-black" viewBox="0 0 111 60" preserveAspectRatio="none" role="img" aria-label="Código de barras">
     {[...patron].flatMap((bit, indice) => bit === "1" ? [<rect key={indice} x={indice + 8} y="0" width="1" height={guardas.has(indice) ? 58 : 48} />] : [])}
-    <text x="55.5" y="72" textAnchor="middle">{codigo}</text>
   </svg>;
 }
 
 export function EtiquetaCodigoBarras({ producto, alCerrar }: { producto: Producto; alCerrar: () => void }) {
   const codigo = producto.codigos.find((item) => item.tipo === "BARRAS" || item.tipo === "GTIN")?.codigo ?? "";
-  return createPortal(<div className="fixed inset-0 z-[13010] grid place-items-center bg-[#081a2db8] p-5 backdrop-blur-[3px] print:static print:block print:bg-white print:p-0 print:backdrop-blur-0" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) alCerrar(); }}>
+  const importeGeneral = producto.precioGeneral === null ? null : Number(producto.precioGeneral);
+  const precioGeneral = importeGeneral !== null && Number.isFinite(importeGeneral)
+    ? new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", minimumFractionDigits: 2 }).format(importeGeneral)
+    : "Sin precio";
+  function imprimirEtiqueta() {
+    const etiqueta = document.querySelector<HTMLElement>(".barcode-print-label");
+    if (!etiqueta) return;
+
+    const etiquetaImprimible = etiqueta.cloneNode(true) as HTMLElement;
+    const codigoImprimible = etiquetaImprimible.querySelector<SVGSVGElement>(".barcode-print-svg");
+    codigoImprimible?.setAttribute("viewBox", "0 0 111 60");
+
+    const marcoImpresion = document.createElement("iframe");
+    marcoImpresion.title = "Vista de impresión de etiqueta";
+    marcoImpresion.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;z-index:-1";
+    document.body.append(marcoImpresion);
+
+    const documentoImpresion = marcoImpresion.contentDocument;
+    const ventanaImpresion = marcoImpresion.contentWindow;
+    if (!documentoImpresion || !ventanaImpresion) {
+      marcoImpresion.remove();
+      return;
+    }
+
+    documentoImpresion.open();
+    documentoImpresion.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Etiqueta de repuesto</title><style>
+      @page{size:40mm 20mm;margin:0}
+      *{box-sizing:border-box}
+      html,body{width:40mm;height:20mm;margin:0;padding:0;overflow:hidden;background:#fff}
+      body{font-family:Arial,sans-serif;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .barcode-print-label{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;width:40mm!important;height:20mm!important;min-height:20mm!important;max-height:20mm!important;gap:.5mm!important;margin:0!important;padding:0 1mm!important;overflow:hidden!important;border:0!important;border-radius:0!important;background:#fff!important;color:#000!important}
+      .barcode-print-name,.barcode-print-price{display:block!important;width:38mm!important;max-width:38mm!important;height:2.5mm!important;overflow:hidden!important;text-align:center!important;color:#000!important}
+      .barcode-print-name{font:600 6pt/2.5mm Arial,sans-serif!important;white-space:nowrap!important;text-overflow:ellipsis!important}
+      .barcode-print-price{font:700 6.5pt/2.5mm Arial,sans-serif!important;white-space:nowrap!important}
+      .barcode-print-svg{display:block!important;flex:none!important;width:38mm!important;height:13mm!important;max-height:13mm!important;overflow:hidden!important;fill:#000!important}
+      .barcode-print-svg rect{fill:#000!important}
+    </style></head><body>${etiquetaImprimible.outerHTML}</body></html>`);
+    documentoImpresion.close();
+
+    let impresionIniciada = false;
+    let impresionLimpia = false;
+    const limpiarImpresion = () => {
+      if (impresionLimpia) return;
+      impresionLimpia = true;
+      marcoImpresion.remove();
+      window.removeEventListener("focus", limpiarImpresion);
+    };
+    const iniciarImpresion = () => {
+      if (impresionIniciada || !marcoImpresion.isConnected) return;
+      impresionIniciada = true;
+      window.addEventListener("focus", limpiarImpresion, { once: true });
+      ventanaImpresion.addEventListener("afterprint", limpiarImpresion, { once: true });
+      ventanaImpresion.focus();
+      ventanaImpresion.print();
+    };
+    marcoImpresion.addEventListener("load", iniciarImpresion, { once: true });
+    window.setTimeout(iniciarImpresion, 150);
+  }
+
+  return createPortal(<div className="barcode-print-portal fixed inset-0 z-[13010] grid place-items-center bg-[#081a2db8] p-5 backdrop-blur-[3px]" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) alCerrar(); }}>
     <section className="grid w-[min(520px,100%)] gap-[18px] rounded-2xl border border-[#dce6ef] bg-white p-[22px] text-[#193753] shadow-[0_24px_70px_#071a2d40] print:block print:w-auto print:rounded-none print:border-0 print:p-0 print:shadow-none" role="dialog" aria-modal="true" aria-labelledby="barcode-print-title">
       <header className="flex items-center justify-between gap-3 [&_span]:text-[10px] [&_span]:font-extrabold [&_span]:tracking-[.12em] [&_span]:text-[#71869a] [&_h2]:mb-0 [&_h2]:mt-1 [&_h2]:text-xl [&_button]:h-9 [&_button]:w-9 [&_button]:cursor-pointer [&_button]:rounded-[9px] [&_button]:border [&_button]:border-[#dce6ef] [&_button]:bg-white [&_button]:text-[22px] [&_button]:text-[#37526b] print:hidden"><div><span>ETIQUETA DE REPUESTO</span><h2 id="barcode-print-title">Imprimir código de barras</h2></div><button type="button" aria-label="Cerrar" onClick={alCerrar}>×</button></header>
-      <div className="barcode-print-label grid min-h-[150px] justify-items-center gap-1.5 rounded-xl border border-dashed border-[#b9c8d5] bg-white p-[18px] text-center text-black print:fixed print:inset-0 print:content-center print:gap-[1mm] print:min-h-0 print:rounded-none print:border-0 print:p-0"><strong className="max-w-[40ch] text-sm">{producto.nombre}</strong><CodigoBarras codigo={codigo} /></div>
-      <footer className="flex items-center justify-end gap-3 [&_button]:min-h-10 [&_button]:cursor-pointer [&_button]:rounded-[9px] [&_button]:border [&_button]:border-[#d6e0e8] [&_button]:bg-white [&_button]:px-[14px] [&_button]:text-xs [&_button]:font-bold [&_button]:text-[#35516a] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_button:last-child]:border-[#155b9c] [&_button:last-child]:bg-[#155b9c] [&_button:last-child]:text-white print:hidden"><button type="button" onClick={alCerrar}>Cerrar</button><button type="button" disabled={!patronEan13(codigo)} onClick={() => window.print()}>Imprimir etiqueta</button></footer>
+      <div className="barcode-print-label grid min-h-[150px] justify-items-center gap-1.5 rounded-xl border border-dashed border-[#b9c8d5] bg-white p-[18px] text-center text-black"><strong className="barcode-print-name">{producto.nombre}</strong><CodigoBarras codigo={codigo} /><span className="barcode-print-price">Precio {precioGeneral}</span></div>
+      <footer className="grid gap-2 print:hidden"><p className="m-0 text-right text-xs text-[#71869a]">En la ventana de impresión, selecciona la impresora Xprinter XP-420B y el tamaño 40 × 20 mm.</p><div className="flex items-center justify-end gap-3 [&_button]:min-h-10 [&_button]:cursor-pointer [&_button]:rounded-[9px] [&_button]:border [&_button]:border-[#d6e0e8] [&_button]:bg-white [&_button]:px-[14px] [&_button]:text-xs [&_button]:font-bold [&_button]:text-[#35516a] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_button:last-child]:border-[#155b9c] [&_button:last-child]:bg-[#155b9c] [&_button:last-child]:text-white"><button type="button" onClick={alCerrar}>Cerrar</button><button type="button" disabled={!patronEan13(codigo)} onClick={imprimirEtiqueta}>Imprimir etiqueta</button></div></footer>
     </section>
   </div>, document.body);
 }

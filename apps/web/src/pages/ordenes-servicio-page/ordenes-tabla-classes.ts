@@ -10,7 +10,7 @@ export const ordenesListadoClasses = {
   message: "mx-5 mt-[14px] mb-0 rounded-lg bg-[#fff1f0] px-3 py-[10px] text-xs text-[#9c3938]",
   table: "w-full min-w-0 border-collapse text-left text-[12px] leading-[1.45] text-[#52697d] [html[data-responsive-profile='mobile-landscape']_&]:min-w-[900px] [html[data-responsive-profile='mobile-portrait']_&]:min-w-[900px] [&_th]:h-11 [&_th]:border-y [&_th]:border-[#e8eef4] [&_th]:bg-[#f3f7fb] [&_th]:px-[14px] [&_th]:text-[10px] [&_th]:font-extrabold [&_th]:tracking-[.085em] [&_th]:text-[#687e96] [&_th]:uppercase [&_th]:whitespace-nowrap [&_td]:h-[68px] [&_td]:border-t [&_td]:border-[#e9eff5] [&_td]:px-[15px] [&_td]:py-[10px] [&_td]:align-middle [&_td]:text-[#52697d] [&_td]:whitespace-nowrap [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-[140ms] [&_tbody_tr:hover]:bg-[#f7faff] [&_td:first-child]:text-[#506b87] [&_td:first-child]:[font-variant-numeric:tabular-nums] [&_td:nth-child(2)]:min-w-[110px] [&_td:nth-child(2)]:font-[650] [&_td:nth-child(2)]:text-[#31577c] [&_td:nth-child(3)]:min-w-[110px] [&_td:nth-child(4)]:min-w-[110px]",
   tableScroll: "min-w-0 overflow-x-auto",
-  number: "text-right [font-variant-numeric:tabular-nums]",
+  number: "text-center [font-variant-numeric:tabular-nums]",
   total: "font-extrabold text-[#173b65]",
   documentCode: "text-[12px] tracking-[.01em] text-[#173d68]",
   clientName: `${nombreRelacionListadoClasses} max-w-[280px]`,

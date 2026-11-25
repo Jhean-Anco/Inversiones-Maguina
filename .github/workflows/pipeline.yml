@@ -93,6 +93,8 @@ jobs:
       - name: Probar guardas de promoción, migraciones y publicación
         run: node --test .github/scripts/check-migrations.test.mjs .github/scripts/check-quality-gate.test.mjs .github/scripts/promote-release.test.mjs .github/scripts/verify-main-release.test.mjs
       - name: Bloquear cambios históricos y migraciones destructivas
+        env:
+          MIGRATION_DESTRUCTIVE_APPROVED: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'migracion-destructiva-aprobada') }}
         run: node .github/scripts/check-migrations.mjs origin/main
       - name: Typecheck de workspaces
         run: pnpm typecheck

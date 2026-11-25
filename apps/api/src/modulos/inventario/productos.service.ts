@@ -70,20 +70,36 @@ export class ServicioProductos {
     return { categorias, marcas, unidadesMedida: unidades, tiposListasPrecio: listas };
   }
 
-  async alertasStockBajo() {
+  async alertasStockBajo(filtros: { pagina?: string; porPagina?: string } = {}) {
+    const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
+    const tamanoSolicitado = Number.parseInt(filtros.porPagina ?? "20", 10);
+    const porPagina = Number.isFinite(tamanoSolicitado) ? Math.min(50, Math.max(1, tamanoSolicitado)) : 20;
     const stockActual = sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`;
-    return db.select({
-      id: productos.id,
-      codigo: productos.codigoInterno,
-      nombre: productos.nombre,
-      stockActual,
-      stockMinimo: productos.stockMinimo,
-      unidad: unidadesMedida.nombre,
-    }).from(productos)
-      .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
-      .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
-      .where(and(eq(productos.activo, true), or(lte(stockActual, "0"), and(gt(productos.stockMinimo, "0"), lte(stockActual, productos.stockMinimo)))))
-      .orderBy(asc(sql`${stockActual} / nullif(${productos.stockMinimo}, 0)`), asc(productos.nombre));
+    const condicion = and(eq(productos.activo, true), or(lte(stockActual, "0"), and(gt(productos.stockMinimo, "0"), lte(stockActual, productos.stockMinimo))));
+    const [itemsConSiguiente, resumen] = await Promise.all([
+      db.select({
+        id: productos.id,
+        codigo: productos.codigoInterno,
+        nombre: productos.nombre,
+        stockActual,
+        stockMinimo: productos.stockMinimo,
+        unidad: unidadesMedida.nombre,
+      }).from(productos)
+        .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
+        .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
+        .where(condicion)
+        .orderBy(asc(sql`${stockActual} / nullif(${productos.stockMinimo}, 0)`), asc(productos.nombre), asc(productos.id))
+        .limit(porPagina + 1)
+        .offset((pagina - 1) * porPagina),
+      pagina === 1
+        ? db.select({ total: count() }).from(productos)
+            .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
+            .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
+            .where(condicion).then(([resumen]) => resumen ?? null)
+        : Promise.resolve(null),
+    ]);
+    const hayMas = itemsConSiguiente.length > porPagina;
+    return { items: itemsConSiguiente.slice(0, porPagina), total: resumen?.total, pagina, porPagina, hayMas };
   }
 
   async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estado?: string; marca?: string; precio?: string }) {

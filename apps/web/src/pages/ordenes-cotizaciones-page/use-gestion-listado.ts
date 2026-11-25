@@ -26,7 +26,6 @@ export function useGestionListado() {
   const navegar = useNavigate();
   const [registrosCotizacion, setRegistrosCotizacion] = useState<Cotizacion[]>([]);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstadoCotizacion, setFiltroEstadoCotizacion] = useState("TODAS");
   const [filtroVigenciaDesde, setFiltroVigenciaDesde] = useState("");
   const [filtroVigenciaHasta, setFiltroVigenciaHasta] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -52,8 +51,7 @@ export function useGestionListado() {
   const estadoVisibleCotizacion = useCallback((cotizacion: Cotizacion): EstadoVisibleCotizacion => documentoCotizacionCompletado(cotizacion) ? "EMITIDA" : cotizacion.estado === "ANULADA" || cotizacion.estado === "RECHAZADA" || Boolean(cotizacion.vigenteHasta && cotizacion.vigenteHasta < hoy()) ? "INACTIVA" : "ACTIVA", [documentoCotizacionCompletado]);
   const cotizacionesFiltradas = registrosCotizacion.filter((cotizacion) => {
     const fecha = cotizacion.vigenteHasta ?? "";
-    return (filtroEstadoCotizacion === "TODAS" || estadoVisibleCotizacion(cotizacion) === filtroEstadoCotizacion)
-      && (!filtroVigenciaDesde || fecha >= filtroVigenciaDesde)
+    return (!filtroVigenciaDesde || fecha >= filtroVigenciaDesde)
       && (!filtroVigenciaHasta || (fecha && fecha <= filtroVigenciaHasta));
   }).sort(compararCotizaciones);
 
@@ -61,8 +59,6 @@ export function useGestionListado() {
     cotizacionesFiltradas,
     busqueda,
     setBusqueda,
-    filtroEstadoCotizacion,
-    setFiltroEstadoCotizacion,
     filtroVigenciaDesde,
     setFiltroVigenciaDesde,
     filtroVigenciaHasta,

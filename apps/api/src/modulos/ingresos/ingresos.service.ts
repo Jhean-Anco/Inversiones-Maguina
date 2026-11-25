@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gt, gte, ilike, inArray, isNull, lte, not, or, sql } from "drizzle-orm";
-import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosModelosMototaxis, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, modelosMototaxis, transportistas } from "@magina/database";
+import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, garantiasVentasMototaxis, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosModelosMototaxis, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, modelosMototaxis, transportistas } from "@magina/database";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { consultarIdentidadPeru } from "../../utilidades/consulta-identidad-peru";
@@ -819,6 +819,20 @@ export class ServicioIngresos {
         .limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(ingresos).where(condicion),
     ]);
+    const detallesMototaxi = tipoVenta === "MOTOTAXIS" && filas.length
+      ? await db.select({ id: ingresosDetalle.id, ingresoId: ingresosDetalle.ingresoId, modeloId: ingresosDetalle.mototaxiModeloId, descripcion: ingresosDetalle.descripcion, cantidad: ingresosDetalle.cantidad,
+        garantiaAplicada: { id: garantiasVentasMototaxis.id, iniciaEn: garantiasVentasMototaxis.iniciaEn, terminaEn: garantiasVentasMototaxis.terminaEn, mesesVigencia: garantiasVentasMototaxis.mesesVigencia, cantidad: garantiasVentasMototaxis.cantidad, alcance: garantiasVentasMototaxis.alcance, exclusiones: garantiasVentasMototaxis.exclusiones } })
+        .from(ingresosDetalle).leftJoin(garantiasVentasMototaxis, eq(garantiasVentasMototaxis.ingresoDetalleId, ingresosDetalle.id)).where(and(inArray(ingresosDetalle.ingresoId, filas.map((fila) => fila.id)), eq(ingresosDetalle.tipo, "MOTOTAXI")))
+      : [];
+    const idsNotasVenta = filas.filter((fila) => fila.tipoComprobante === "NOTA_VENTA").map((fila) => fila.id);
+    const lineasImpresionNota = idsNotasVenta.length
+      ? await db.select({ id: ingresosDetalle.id, ingresoId: ingresosDetalle.ingresoId, descripcion: ingresosDetalle.descripcion, cantidad: ingresosDetalle.cantidad, precioUnitario: ingresosDetalle.precioUnitario, total: ingresosDetalle.total })
+        .from(ingresosDetalle).where(inArray(ingresosDetalle.ingresoId, idsNotasVenta)).orderBy(asc(ingresosDetalle.creadoEn))
+      : [];
+    const lineasNotaPorVenta = new Map<string, typeof lineasImpresionNota>();
+    for (const linea of lineasImpresionNota) lineasNotaPorVenta.set(linea.ingresoId, [...(lineasNotaPorVenta.get(linea.ingresoId) ?? []), linea]);
+    const mototaxisPorVenta = new Map<string, typeof detallesMototaxi>();
+    for (const detalle of detallesMototaxi) mototaxisPorVenta.set(detalle.ingresoId, [...(mototaxisPorVenta.get(detalle.ingresoId) ?? []), { ...detalle, garantiaAplicada: detalle.garantiaAplicada?.id ? detalle.garantiaAplicada : null }]);
     const items = filas.map((fila) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
       const solicitud = datos.solicitud && typeof datos.solicitud === "object" ? datos.solicitud as Record<string, unknown> : {};
@@ -834,6 +848,8 @@ export class ServicioIngresos {
       const estadoAnulacion = typeof anulacion?.estado === "string" ? anulacion.estado : null;
       return { id: fila.id, codigoVenta: fila.codigo, codigoComprobante: serie && numero ? `${serie}-${String(numero).padStart(6, "0")}` : fila.codigo,
         fecha: fila.fecha, tipoComprobante: fila.tipoComprobante, clienteNombre: fila.clienteNombre,
+        mototaxis: mototaxisPorVenta.get(fila.id) ?? [],
+        lineasImpresion: fila.tipoComprobante === "NOTA_VENTA" ? (lineasNotaPorVenta.get(fila.id) ?? []).map(({ descripcion, cantidad, precioUnitario, total }) => ({ descripcion, cantidad, precioUnitario, total })) : undefined,
         clienteNumeroDocumento: fila.clienteNumeroDocumento, medioPago: fila.medioPago, condicionPago: fila.condicionPago,
         subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total,
         estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,

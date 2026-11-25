@@ -8,7 +8,6 @@ const nombres = [
   "AUTENTICACION_DURACION_SEGUNDOS",
   "AUTENTICACION_DURACION_RECORDAR_SEGUNDOS",
   "NUBEFACT_TIMEOUT_MS",
-  "IMAGEN_MAXIMO_BYTES",
   "UPLOADS_DIR",
   "DESCUENTO_MAXIMO_PORCENTAJE",
   "REGIMEN_TRIBUTARIO",
@@ -28,7 +27,6 @@ function configurarEntornoSeguro() {
     AUTENTICACION_DURACION_SEGUNDOS: "28800",
     AUTENTICACION_DURACION_RECORDAR_SEGUNDOS: "2592000",
     NUBEFACT_TIMEOUT_MS: "20000",
-    IMAGEN_MAXIMO_BYTES: "5242880",
     UPLOADS_DIR: "storage",
     DESCUENTO_MAXIMO_PORCENTAJE: "0",
     DATABASE_URL: "postgres://ci:ci-only@127.0.0.1:5432/magina",
@@ -50,7 +48,6 @@ test("valida una configuración de desarrollo con valores explícitos", () => {
   const configuracion = validarConfiguracionEntorno();
   assert.equal(configuracion.puerto, 3000);
   assert.deepEqual(configuracion.origenes, ["http://localhost:5173"]);
-  assert.equal(configuracion.maximoImagenBytes, 5 * 1024 * 1024);
 });
 
 test("aplica los valores predeterminados de configuración cuando son opcionales", () => {
@@ -60,7 +57,6 @@ test("aplica los valores predeterminados de configuración cuando son opcionales
     "AUTENTICACION_DURACION_SEGUNDOS",
     "AUTENTICACION_DURACION_RECORDAR_SEGUNDOS",
     "NUBEFACT_TIMEOUT_MS",
-    "IMAGEN_MAXIMO_BYTES",
     "UPLOADS_DIR",
     "DESCUENTO_MAXIMO_PORCENTAJE",
     "REGIMEN_TRIBUTARIO",
@@ -73,7 +69,6 @@ test("aplica los valores predeterminados de configuración cuando son opcionales
   assert.equal(configuracion.segundosSesion, 8 * 60 * 60);
   assert.equal(configuracion.segundosSesionRecordada, 30 * 24 * 60 * 60);
   assert.equal(configuracion.timeoutNubefactMs, 20000);
-  assert.equal(configuracion.maximoImagenBytes, 5 * 1024 * 1024);
   assert.equal(configuracion.carpetaSubidas.endsWith("storage"), true);
   assert.equal(configuracion.descuentoMaximoPorcentaje, 0);
 });

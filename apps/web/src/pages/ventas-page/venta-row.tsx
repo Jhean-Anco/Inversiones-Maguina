@@ -1,16 +1,19 @@
-﻿import { Ban, MoreVertical, RefreshCw } from "lucide-react";
+import { Ban, FileCheck, FileCode, MoreVertical, RefreshCw, ShieldCheck } from "lucide-react";
 import { useId } from "react";
 import { clasesOpcionMenu, clasesOpcionesMenu } from "../../components/documentos/menu-accion-classes";
+import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
-import { DesgloseImportes } from "../../components/ingresos/desglose-importes";
 import { BotonAccion } from "../../components/ui/boton-accion";
 import { Etiqueta } from "../../components/ui/etiqueta";
+import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { imprimirDocumento } from "../../services/impresion-documentos";
 import type { VentaListado } from "../../services/ingresos.service";
 import { DocumentoEnlaces } from "./documento-enlaces";
-import { comprobante, estadoSunat, fecha, medioPago } from "./ventas-formatters";
+import { comprobante, estadoSunat, fecha, medioPago, soles } from "./ventas-formatters";
 import type { DocumentoAnulacion } from "./ventas-types";
 import { ventasClasses as c } from "./ventas-classes";
 import { anchoMinimoColumnaRelacionClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
+import { urlApi } from "../../services/api-cliente";
 
 type VentaRowProps = {
   venta: VentaListado;
@@ -19,15 +22,27 @@ type VentaRowProps = {
   onConsultarEstado: (venta: VentaListado) => void;
   onEmitirNota: (venta: VentaListado, tipo: "NOTA_CREDITO" | "NOTA_DEBITO") => void;
   onAnular: (documento: DocumentoAnulacion) => void;
+  onAplicarGarantia?: (venta: VentaListado) => void;
 };
 
-export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEstado, onEmitirNota, onAnular }: VentaRowProps) {
+export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEstado, onEmitirNota, onAnular, onAplicarGarantia }: VentaRowProps) {
+  const { error: notificarError } = useAlertas();
   const estadoFiscal = estadoSunat(venta);
   const menu = useMenuAccionExclusivo(`mas-venta-${useId()}`);
   const puedeConsultar = ["RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO", "ERROR_SUNAT", "ERROR_NUBEFACT", "ERROR_EMISION", "NUBEFACT_PENDIENTE"].includes(venta.estadoProveedor);
   const puedeEmitirNota = puedeEmitirNotas && venta.estado === "EMITIDO" && venta.tipoComprobante !== "NOTA_VENTA";
   const puedeAnularVenta = puedeAnular && venta.tipoComprobante !== "NOTA_VENTA" && (venta.estado === "ANULACION_PENDIENTE" || (venta.estado === "EMITIDO" && venta.estadoProveedor === "ACEPTADO_SUNAT"));
-  const tieneOtrasAcciones = Boolean(venta.enlaceXml || venta.enlaceCdr || (venta.enlacePdf && !venta.enlacePdf.startsWith("/")) || puedeConsultar);
+  const tieneOtrasAcciones = Boolean(venta.enlaceXml || venta.enlaceCdr || puedeConsultar);
+  const imprimirNotaVenta = (formato: "A4" | "TICKET") => imprimirDocumento({
+    tipo: "NOTA DE VENTA",
+    codigo: venta.codigoComprobante,
+    fecha: fecha(venta.fecha),
+    cliente: venta.clienteNombre,
+    documentoCliente: venta.clienteNumeroDocumento,
+    estado: "Registrada",
+    lineas: (venta.lineasImpresion ?? []).map((linea) => ({ descripcion: linea.descripcion, cantidad: linea.cantidad, precio: soles(linea.precioUnitario), total: soles(linea.total) })),
+    total: soles(venta.total),
+  }, formato, { alError: notificarError });
 
   return (
     <tr>
@@ -41,11 +56,14 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
       <td>
         <div className="flex flex-wrap items-center gap-1"><Etiqueta tono="marca" compacta>{medioPago(venta.medioPago)}</Etiqueta><Etiqueta tono={venta.condicionPago === "CREDITO" ? "advertencia" : "neutral"} compacta>{venta.condicionPago === "CREDITO" ? "Credito" : "Contado"}</Etiqueta></div>
       </td>
-      <td className="min-w-[150px]"><DesgloseImportes subtotal={venta.subtotal} igv={venta.igv} tasaIgv={Number(venta.igv) > 0 ? Number(venta.tasaIgv) : undefined} total={venta.total} /></td>
+      <td className="min-w-[150px]"><strong className="block whitespace-nowrap text-center font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
       <td><Etiqueta tono={estadoFiscal === "Rechazado" ? "peligro" : estadoFiscal === "Emitido" ? "positiva" : "advertencia"}>{estadoFiscal}</Etiqueta></td>
       <td>
         <div className={c.rowActions}>
-          <DocumentoEnlaces pdf={venta.enlacePdf} xml={null} cdr={null} codigo={venta.codigoComprobante} whatsapp={false} />
+          {venta.tipoComprobante === "NOTA_VENTA"
+            ? <BotonImprimir etiqueta={`Imprimir nota de venta ${venta.codigoComprobante}`} alImprimirA4={() => imprimirNotaVenta("A4")} alImprimirTicket={() => imprimirNotaVenta("TICKET")} />
+            : <DocumentoEnlaces pdf={venta.enlacePdf} xml={null} cdr={null} codigo={venta.codigoComprobante} whatsapp={false} />}
+          {onAplicarGarantia && venta.estado === "EMITIDO" && (venta.mototaxis?.length ?? 0) > 0 && <BotonAccion tono="advertencia" etiqueta={`Aplicar garantía a la venta ${venta.codigoComprobante}`} onClick={() => onAplicarGarantia(venta)} icono={<ShieldCheck aria-hidden="true" size={16} />} />}
           {puedeEmitirNota && (
             <>
               <BotonAccion tono="informativa" etiqueta={`Emitir nota de cr\u00e9dito para ${venta.codigoComprobante}`} onClick={() => onEmitirNota(venta, "NOTA_CREDITO")} icono={<span className="text-[11px] font-[850] tracking-[-.025em]" aria-hidden="true">NC</span>} />
@@ -65,8 +83,8 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
               const destino = evento.target as HTMLElement;
               if (destino.closest('[role="menuitem"]')) menu.cerrar();
             }}>
-              <DocumentoEnlaces pdf={null} xml={venta.enlaceXml} cdr={venta.enlaceCdr} codigo={venta.codigoComprobante} mostrarPdf={false} whatsapp={false} />
-              {venta.enlacePdf && !venta.enlacePdf.startsWith("/") && <DocumentoEnlaces pdf={venta.enlacePdf} xml={null} cdr={null} codigo={venta.codigoComprobante} mostrarPdf={false} />}
+              {venta.enlaceXml && <a className={`${clasesOpcionMenu} no-underline`} href={venta.enlaceXml.startsWith("/") ? urlApi(venta.enlaceXml) : venta.enlaceXml} target="_blank" rel="noreferrer" role="menuitem"><FileCode aria-hidden="true" size={16} />Descargar XML</a>}
+              {venta.enlaceCdr && <a className={`${clasesOpcionMenu} no-underline`} href={venta.enlaceCdr.startsWith("/") ? urlApi(venta.enlaceCdr) : venta.enlaceCdr} target="_blank" rel="noreferrer" role="menuitem"><FileCheck aria-hidden="true" size={16} />Ver constancia SUNAT</a>}
               {puedeConsultar && <button className={`${clasesOpcionMenu} flex items-center gap-2`} type="button" role="menuitem" onClick={() => onConsultarEstado(venta)}><RefreshCw aria-hidden="true" size={16} />Consultar estado SUNAT</button>}
             </div>}
           </span>}

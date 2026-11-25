@@ -29,7 +29,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
   const { error: notificarError } = useAlertas();
   const navegar = useNavigate();
   const listado = useGestionListado();
-  const { cotizacionesFiltradas, busqueda, setBusqueda, filtroEstadoCotizacion, setFiltroEstadoCotizacion, filtroVigenciaDesde, setFiltroVigenciaDesde, filtroVigenciaHasta, setFiltroVigenciaHasta, cargando, error, setError, cargar, documentoCotizacionCompletado, estadoVisibleCotizacion } = listado;
+  const { cotizacionesFiltradas, busqueda, setBusqueda, filtroVigenciaDesde, setFiltroVigenciaDesde, filtroVigenciaHasta, setFiltroVigenciaHasta, cargando, error, setError, cargar, documentoCotizacionCompletado, estadoVisibleCotizacion } = listado;
   const clientesGestion = useGestionCliente({ setError, nombreCliente });
   const lineasGestion = useLineasGestion({ setError });
   const { cliente, setCliente, clienteBusqueda, setClienteBusqueda, clienteBusquedaConsultada, setClienteBusquedaConsultada, tipoDocumentoBusqueda, setTipoDocumentoBusqueda, cambiarTipoDocumentoBusqueda, cambiarBusquedaClienteCotizacion, buscandoClientes, clientes, setClientes, mostrarFormularioCliente, setMostrarFormularioCliente, ejecutarBusquedaCliente, registrarYSeleccionarCliente, seleccionarClienteCotizacion, limpiarClienteCotizacion, manejarEnterBusquedaCliente } = clientesGestion;
@@ -173,7 +173,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
     imprimirCotizacion(guardada, "A4", ventana, clienteNombreImpresion);
   }
 
-  const listadoVistaProps = { busqueda, setBusqueda, filtroEstado: filtroEstadoCotizacion, setFiltroEstado: setFiltroEstadoCotizacion, desde: filtroVigenciaDesde, setDesde: setFiltroVigenciaDesde, hasta: filtroVigenciaHasta, setHasta: setFiltroVigenciaHasta, cotizaciones: cotizacionesFiltradas, cargando, estadoVisible: estadoVisibleCotizacion, documentoCompletado: documentoCotizacionCompletado, mensajeWhatsApp: (cotizacion: Cotizacion) => crearMensajeWhatsApp(cotizacion, dinero), imprimir: imprimirCotizacion, prepararDocumento: abrirVentaCotizacion, puedeCrear, editar: editarCotizacion };
+  const listadoVistaProps = { busqueda, setBusqueda, desde: filtroVigenciaDesde, setDesde: setFiltroVigenciaDesde, hasta: filtroVigenciaHasta, setHasta: setFiltroVigenciaHasta, cotizaciones: cotizacionesFiltradas, cargando, estadoVisible: estadoVisibleCotizacion, documentoCompletado: documentoCotizacionCompletado, mensajeWhatsApp: (cotizacion: Cotizacion) => crearMensajeWhatsApp(cotizacion, dinero), imprimir: imprimirCotizacion, prepararDocumento: abrirVentaCotizacion, puedeCrear, editar: editarCotizacion };
 
   return <section className={`gestion-ingresos-page ${cotizacionClases.pageShared} is-cotizaciones ${cotizacionClases.page}${mostrarFormulario ? " is-editing" : ""}`}>
     {error && <NotificacionFlotante mensaje={error} />}

@@ -2,6 +2,7 @@ import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/
 import { useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
+import { useConfirmarCancelacionFormulario } from "../../hooks/use-confirmar-cancelacion-formulario";
 import { cn } from "../../lib/utils";
 import { COLORES_ADICIONALES_MOTOTAXI, COLORES_RAPIDOS_MOTOTAXI, etiquetaColorMototaxi, hexColorMototaxi, servicioMototaxis, type MarcaMototaxi, type ModeloMototaxi } from "../../services/mototaxis.service";
 import { inventarioMototaxisClasses as c } from "./inventario-mototaxis-page-classes";
@@ -28,7 +29,8 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const modalRef = useRef<HTMLFormElement>(null);
-  useDialogoFlotante(modalRef, true, () => { if (!guardando) alCerrar(); });
+  const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(modalRef, alCerrar, modelo ? "los cambios del modelo" : "el modelo de mototaxi", JSON.stringify(datos));
+  useDialogoFlotante(modalRef, true, () => { if (!guardando) solicitarCancelacion(); });
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -56,8 +58,8 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
     ? [...datos.coloresDisponibles, ...COLORES_RAPIDOS_MOTOTAXI, ...COLORES_ADICIONALES_MOTOTAXI]
     : [...datos.coloresDisponibles.filter(esColorRapido), ...COLORES_RAPIDOS_MOTOTAXI];
   const coloresEnPaleta = candidatosColorPaleta.filter((color, indice, colores) => colores.findIndex((candidato) => etiquetaColorMototaxi(candidato).toLocaleLowerCase("es-PE") === etiquetaColorMototaxi(color).toLocaleLowerCase("es-PE")) === indice);
-  return createPortal(<div className={cn("inventory-moto-modal-backdrop", c.backdrop)} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) alCerrar(); }}><form className={cn("inventory-moto-modal inventory-moto-modal-redesign", c.modal, c.redesignModal)} ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="inventory-moto-modal-title" onSubmit={(evento) => void guardar(evento)}>
-      <header className="inventory-moto-dialog-head inventario-dialogo-cabecera"><div className={cn("inventory-moto-brand-lockup", c.brandLockup)}><div><h2 id="inventory-moto-modal-title">{modelo ? "Editar modelo" : "Nuevo modelo de mototaxi"}</h2><p>Registra el modelo y sus características técnicas.</p></div></div><button type="button" aria-label="Cerrar ficha" onClick={() => { if (!guardando) alCerrar(); }}>×</button></header>
+  return createPortal(<>{dialogo}<div className={cn("inventory-moto-modal-backdrop", c.backdrop)} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) solicitarCancelacion(); }}><form className={cn("inventory-moto-modal inventory-moto-modal-redesign", c.modal, c.redesignModal)} ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="inventory-moto-modal-title" onSubmit={(evento) => void guardar(evento)}>
+      <header className="inventory-moto-dialog-head inventario-dialogo-cabecera"><div className={cn("inventory-moto-brand-lockup", c.brandLockup)}><div><span className="block text-[10px] font-extrabold uppercase tracking-[.14em] text-white/75">Catálogo de mototaxis</span><h2 id="inventory-moto-modal-title">{modelo ? "Editar modelo" : "Nueva mototaxi · modelo"}</h2><p>Completa los datos generales, técnicos y de fabricación.</p></div></div><button type="button" aria-label="Cerrar ficha" onClick={() => { if (!guardando) solicitarCancelacion(); }}>×</button></header>
       {error && <NotificacionFlotante mensaje={error} />}
       <div className={cn("inventory-moto-dialog-content", c.dialogContent)}>
         <div className={cn("inventory-moto-technical-fields", c.technicalFields)}>
@@ -79,17 +81,17 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
             <label>Carga máxima<div className={cn("inventory-moto-input-unit", c.inputUnit)}><input type="number" min="0.01" max="99999999.99" step="0.01" inputMode="decimal" value={datos.capacidadCargaKg} onChange={(e) => setDatos((actual) => ({ ...actual, capacidadCargaKg: e.target.value }))} /><span>kg</span></div></label>
           </div></section>
           <section className={cn("inventory-moto-field-group inventory-moto-colors-group", c.fieldGroup)}><header><div><h3>Colores disponibles</h3><p>Selecciona los tonos que manejas para este modelo.</p></div></header><div className={cn("inventory-moto-color-grid", c.colorGrid)}>{coloresEnPaleta.map((color) => { const seleccionado = datos.coloresDisponibles.some((actual) => actual.toLocaleLowerCase("es-PE") === color.toLocaleLowerCase("es-PE")); const limiteAlcanzado = datos.coloresDisponibles.length >= 24 && !seleccionado; return <button key={color} type="button" disabled={limiteAlcanzado} className={cn("inventory-moto-color-option", c.colorOption, seleccionado && "is-selected")} aria-pressed={seleccionado} onClick={() => alternarColor(color)}><span className={cn("inventory-moto-color-dot", c.colorDot)} aria-hidden="true" style={{ backgroundColor: hexColorMototaxi(color) }} />{etiquetaColorMototaxi(color)}</button>; })}</div><button className={cn("inventory-moto-color-more", c.colorMore)} type="button" aria-expanded={mostrarMasColores} onClick={() => setMostrarMasColores((actual) => !actual)}>{mostrarMasColores ? "Ver menos" : `Ver más${coloresAdicionalesActivos ? ` · ${coloresAdicionalesActivos} activos` : ""}`}</button><small>{datos.coloresDisponibles.length} de 24 tonos seleccionados. Pulsa un tono para activarlo o quitarlo.</small>{datos.coloresDisponibles.length >= 24 && <small className={cn("inventory-moto-color-limit", c.colorLimit)}>Límite alcanzado. Desactiva un tono para elegir otro.</small>}</section>
-          <details className="rounded-lg border border-[var(--erp-border)] p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Especificaciones adicionales</summary>
-            <div className={cn("inventory-moto-form-grid mt-3", c.technicalGrid)}>
+          <section className={cn("inventory-moto-field-group", c.fieldGroup)}><header><div><h3>Fabricación y datos adicionales</h3><p>Completa el origen y otros detalles que identifican al modelo.</p></div></header>
+            <div className={cn("inventory-moto-form-grid", c.technicalGrid)}>
               <label>Fabricante<input maxLength={160} value={datos.fabricante} onChange={(e) => setDatos((actual) => ({ ...actual, fabricante: e.target.value }))} /></label>
               <label>País de fabricación<input maxLength={100} value={datos.paisFabricacion} onChange={(e) => setDatos((actual) => ({ ...actual, paisFabricacion: e.target.value }))} /></label>
               <label>Marca del motor<input maxLength={100} value={datos.marcaMotor} onChange={(e) => setDatos((actual) => ({ ...actual, marcaMotor: e.target.value }))} /></label>
               <label>Modelo del motor<input maxLength={100} value={datos.modeloMotor} onChange={(e) => setDatos((actual) => ({ ...actual, modeloMotor: e.target.value }))} /></label>
+              <label className="col-span-full">Especificaciones adicionales<textarea maxLength={2000} rows={3} value={datos.especificacionesAdicionales} onChange={(e) => setDatos((actual) => ({ ...actual, especificacionesAdicionales: e.target.value }))} placeholder="Otros datos técnicos del modelo" /></label>
             </div>
-          </details>
+          </section>
         </div>
       </div>
-      <footer className={cn("inventory-moto-dialog-actions", c.dialogActions)}><button type="button" disabled={guardando} onClick={() => alCerrar()}>Cancelar</button><button className={cn("inventory-moto-save", c.saveButton)} type="submit" disabled={guardando}>{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></footer>
-    </form></div>, document.body);
+      <footer className={cn("inventory-moto-dialog-actions", c.dialogActions)}><button type="button" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button className={cn("inventory-moto-save", c.saveButton)} type="submit" disabled={guardando}>{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></footer>
+    </form></div></>, document.body);
 }

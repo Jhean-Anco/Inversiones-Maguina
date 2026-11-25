@@ -1,33 +1,40 @@
-import { BadRequestException, Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Put, Query, UseGuards } from "@nestjs/common";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequierePermiso } from "../autenticacion/permisos";
 import { UsuarioActual, type UsuarioAutenticado } from "../autenticacion/usuario-actual";
 import { ServicioReportes } from "./reportes.service";
+import { ServicioMetas } from "./metas.service";
+import { diasEntreFechas } from "./reportes.util";
+import { validarRangoFechas as validarRango } from "../../utilidades/validar-rango-fechas";
 
-function validarRango(desde?: string, hasta?: string) {
-  const fecha = (valor: string | undefined, nombre: string) => {
-    if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw new BadRequestException(`La fecha ${nombre} no es válida.`);
-    const parseada = new Date(`${valor}T00:00:00.000Z`);
-    if (Number.isNaN(parseada.getTime()) || parseada.toISOString().slice(0, 10) !== valor) throw new BadRequestException(`La fecha ${nombre} no es válida.`);
-    return valor;
-  };
-  const inicio = fecha(desde, "desde");
-  const fin = fecha(hasta, "hasta");
-  if (inicio > fin) throw new BadRequestException("La fecha desde no puede ser posterior a la fecha hasta.");
-  return { desde: inicio, hasta: fin };
-}
+const MAXIMO_DIAS_COMPARATIVO = 800;
 
 @Controller("reportes")
 @UseGuards(GuardiaSesion, GuardiaPermiso)
 export class ControladorReportes {
-  constructor(private readonly reportes: ServicioReportes) {}
+  constructor(private readonly reportes: ServicioReportes, private readonly metas: ServicioMetas) {}
   @Get("ingresos/dashboard") @RequierePermiso("INGRESOS.LEER") ingresosDashboard(@Query("desde") desde?: string, @Query("hasta") hasta?: string, @Query("mesDesde") mesDesde?: string) {
     const anual = validarRango(desde, hasta);
     return this.reportes.ingresosDashboard(validarRango(mesDesde, anual.hasta), anual);
   }
-  @Get("ingresos") @RequierePermiso("INGRESOS.LEER") ingresos(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.ingresos(validarRango(desde, hasta)); }
-  @Get("ingresos/resumen-mes") @RequierePermiso("INGRESOS.LEER") resumenIngresosMes() { return this.reportes.resumenIngresosMes(); }
+  @Get("ingresos/comparativo") @RequierePermiso("INGRESOS.LEER") ingresosComparativo(@Query("desde") desde?: string, @Query("hasta") hasta?: string) {
+    const rango = validarRango(desde, hasta);
+    if (diasEntreFechas(rango.desde, rango.hasta) > MAXIMO_DIAS_COMPARATIVO) throw new BadRequestException(`El rango no puede superar ${MAXIMO_DIAS_COMPARATIVO} días.`);
+    return this.reportes.ingresosComparativo(rango);
+  }
+  @Get("ingresos/rentabilidad") @RequierePermiso("INGRESOS.LEER") rentabilidad(@UsuarioActual() usuario: UsuarioAutenticado, @Query("desde") desde?: string, @Query("hasta") hasta?: string) {
+    return this.reportes.rentabilidad(validarRango(desde, hasta), usuario.permisos ?? []);
+  }
+  @Get("ingresos/cobranza") @RequierePermiso("INGRESOS.LEER") cobranza(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.cobranza(validarRango(desde, hasta)); }
+  @Get("ingresos/articulos") @RequierePermiso("INGRESOS.LEER") articulos(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.articulosMasVendidos(validarRango(desde, hasta)); }
+  @Get("ingresos/horarios") @RequierePermiso("INGRESOS.LEER") horarios(@Query("desde") desde?: string, @Query("hasta") hasta?: string) {
+    const rango = validarRango(desde, hasta);
+    if (diasEntreFechas(rango.desde, rango.hasta) > MAXIMO_DIAS_COMPARATIVO) throw new BadRequestException(`El rango no puede superar ${MAXIMO_DIAS_COMPARATIVO} días.`);
+    return this.reportes.horarios(rango);
+  }
+  @Get("metas") @RequierePermiso("INGRESOS.LEER") metasDelPeriodo(@Query("periodo") periodo?: string) { return this.metas.obtener(periodo); }
+  @Put("metas") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarMeta(@UsuarioActual() usuario: UsuarioAutenticado, @Body() datos: unknown, @Query("periodo") periodo?: string) { return this.metas.guardar(datos, usuario.id, periodo); }
   @Get("inventario") @RequierePermiso("INVENTARIO.LEER") inventario(@UsuarioActual() usuario: UsuarioAutenticado, @Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.inventario(validarRango(desde, hasta), usuario.permisos ?? []); }
   @Get("resumen") resumen(@UsuarioActual() usuario: UsuarioAutenticado) { return this.reportes.resumenGerencial(usuario.permisos ?? []); }
 }

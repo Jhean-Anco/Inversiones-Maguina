@@ -184,15 +184,6 @@ body {
   font-weight: 700;
 }
 
-/* Reglas imprescindibles para imprimir solo la etiqueta de código de barras. */
-@media print {
-  @page { size: 50mm 30mm; margin: 2mm; }
-  body * { visibility: hidden !important; }
-  .barcode-print-label,
-  .barcode-print-label * { visibility: visible !important; }
-  .barcode-print-label > strong { font-size: 8pt; }
-}
-
 .inventario-dialogo-cabecera {
   background: var(--erp-brand);
   color: #fff;

@@ -1,10 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
-import { db, categoriasProductos, clientes, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { db, categoriasProductos, clientes, comprasMototaxisDetalle, comprobantesRelacionados, entradasStockDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, ordenesServicio, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { consultarFlujoAdelantos, consultarFlujoNotasDebito, consultarFlujoPorComprobante, ventaVigente, type RangoFechas } from "./flujo-ingresos.consultas";
+import { aplicarPermisosDeCosto, sumarFlujosDiarios } from "./reportes.util";
+import { consultarRentabilidad } from "./rentabilidad.consultas";
+import { consultarCobranza } from "./cobranza.consultas";
+import { consultarHorarios } from "./horarios.consultas";
+import { consultarArticulosMasVendidos } from "./articulos.consultas";
 
-type RangoFechas = { desde: string; hasta: string };
-const comprobantesVenta = eq(ingresos.tipoComprobante, "BOLETA");
+/** Ventas del dashboard: boletas, facturas y notas de venta que no estén anuladas. */
+const comprobantesVenta = and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
 
 @Injectable()
 export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
@@ -16,14 +22,14 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     const [ventasHoy, ventasMes, notasHoy, notasMes, notasRecientes, cartera, existencias, actividadDiaria, recientes, principales, ventasPorMedioPago, mototaxis, garantias] = await Promise.all([
       db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(eq(ingresos.fecha, hoy), comprobantesVenta)),
       db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)),
-      db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(eq(ingresos.fecha, hoy), eq(ingresos.tipoComprobante, "NOTA_VENTA"))),
-      db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), eq(ingresos.tipoComprobante, "NOTA_VENTA"))),
-      db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, cliente: ingresos.clienteNombre, medioPago: ingresos.medioPago, total: ingresos.total }).from(ingresos).where(eq(ingresos.tipoComprobante, "NOTA_VENTA")).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(6),
+      db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(eq(ingresos.fecha, hoy), and(eq(ingresos.tipoComprobante, "NOTA_VENTA"), ventaVigente))),
+      db.select({ operaciones: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), and(eq(ingresos.tipoComprobante, "NOTA_VENTA"), ventaVigente))),
+      db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, cliente: ingresos.clienteNombre, medioPago: ingresos.medioPago, total: ingresos.total }).from(ingresos).where(and(eq(ingresos.tipoComprobante, "NOTA_VENTA"), ventaVigente)).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(6),
       db.select({ activos: sql<number>`count(*)::int` }).from(clientes).innerJoin(personas, eq(clientes.personaId, personas.id)).where(and(eq(clientes.activo, true), eq(personas.activo, true))),
       db.select({ productos: sql<number>`count(*)::int`, sinStock: sql<number>`count(*) filter (where coalesce(${saldosStock.cantidad}, 0) <= 0)::int` }).from(productos).leftJoin(saldosStock, eq(productos.id, saldosStock.productoId)).where(eq(productos.activo, true)),
       db.select({ fecha: ingresos.fecha, operaciones: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeGrafico), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresos.fecha).orderBy(asc(ingresos.fecha)),
       db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, cliente: ingresos.clienteNombre, medioPago: ingresos.medioPago, estado: ingresos.estado, total: ingresos.total }).from(ingresos).where(comprobantesVenta).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(6),
-      db.select({ descripcion: ingresosDetalle.descripcion, tipo: ingresosDetalle.tipo, cantidad: sql<string>`sum(${ingresosDetalle.cantidad})::numeric(16,3)`, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresosDetalle.descripcion, ingresosDetalle.tipo).orderBy(desc(sql`sum(${ingresosDetalle.total})`)).limit(5),
+      db.select({ descripcion: ingresosDetalle.descripcion, tipo: ingresosDetalle.tipo, cantidad: sql<string>`sum(${ingresosDetalle.cantidad})::numeric(16,3)`, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresosDetalle.descripcion, ingresosDetalle.tipo).orderBy(desc(sql`sum(${ingresosDetalle.total})`)).limit(12),
       db.select({ medioPago: ingresos.medioPago, operaciones: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` }).from(ingresos).where(and(gte(ingresos.fecha, desdeMes), lte(ingresos.fecha, hoy), comprobantesVenta)).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
       db.select({ id: modelosMototaxis.id, marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version, unidades: modelosMototaxis.stockDisponible })
         .from(modelosMototaxis).innerJoin(marcasProductos, eq(marcasProductos.id, modelosMototaxis.marcaId))
@@ -58,77 +64,52 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     };
   }
 
-  async resumenIngresosMes() {
-    const hasta = fechaActualPeru();
-    const desde = hasta.slice(0, 8) + "01";
-    const [resumen] = await db.select({ total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)` })
-      .from(ingresos)
-      .where(and(gte(ingresos.fecha, desde), lte(ingresos.fecha, hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])));
-    return { desde, hasta, total: resumen?.total ?? "0.00" };
-  }
-
   async ingresosDashboard(mes: RangoFechas, anual: RangoFechas) {
     const fechasMes = and(gte(ingresos.fecha, mes.desde), lte(ingresos.fecha, mes.hasta), comprobantesVenta);
     const fechasAnuales = and(gte(ingresos.fecha, anual.desde), lte(ingresos.fecha, anual.hasta));
-    const documentosAnuales = and(fechasAnuales, inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]));
-    const [porMedioPago, flujoPorComprobante, flujoPorConcepto] = await Promise.all([
+    const documentosAnuales = and(fechasAnuales, inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
+    const [porMedioPago, flujoPorComprobante, flujoPorConcepto, flujoPorNotaDebito, flujoPorAdelanto] = await Promise.all([
       db.select({ medioPago: ingresos.medioPago, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
         .from(ingresos).where(fechasMes).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
-      db.select({ fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
-        .from(ingresos).where(documentosAnuales).groupBy(ingresos.fecha, ingresos.tipoComprobante).orderBy(asc(ingresos.fecha), asc(ingresos.tipoComprobante)),
+      consultarFlujoPorComprobante(anual),
       db.select({ fecha: ingresos.fecha, tipo: ingresosDetalle.tipo, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` })
         .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
         .where(documentosAnuales).groupBy(ingresos.fecha, ingresosDetalle.tipo).orderBy(asc(ingresos.fecha), asc(ingresosDetalle.tipo)),
+      consultarFlujoNotasDebito(anual),
+      consultarFlujoAdelantos(anual),
     ]);
     return {
       mes: { porMedioPago },
-      anual: { rango: anual, flujoPorComprobante, flujoPorConcepto },
+      anual: { rango: anual, flujoPorComprobante, flujoPorConcepto, flujoPorNotaDebito, flujoPorAdelanto },
     };
   }
 
-  async ingresos(rango: RangoFechas) {
-    const condicion = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesVenta);
-    const condicionDetalle = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]));
-    const [resumen, pagos, productosMasVendidos, porDia, flujoPorComprobante, flujoPorConcepto, notasInternas] = await Promise.all([
-      db.select({
-        ventas: sql<number>`count(*)::int`,
-        subtotal: sql<string>`coalesce(sum(${ingresos.subtotal}), 0)::numeric(16,2)`,
-        total: sql<string>`coalesce(sum(${ingresos.total}), 0)::numeric(16,2)`,
-      }).from(ingresos).where(condicion),
-      db.select({ medioPago: ingresos.medioPago, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
-        .from(ingresos).where(condicion).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
-      db.select({
-        descripcion: ingresosDetalle.descripcion,
-        tipo: ingresosDetalle.tipo,
-        unidades: sql<string>`sum(${ingresosDetalle.cantidad})::numeric(16,3)`,
-        ventas: sql<number>`count(distinct ${ingresosDetalle.ingresoId})::int`,
-        total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)`,
-      }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id)).where(condicionDetalle)
-        .groupBy(ingresosDetalle.descripcion, ingresosDetalle.tipo).orderBy(desc(sql`sum(${ingresosDetalle.total})`)).limit(10),
-      db.select({ fecha: ingresos.fecha, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
-        .from(ingresos).where(condicion).groupBy(ingresos.fecha).orderBy(asc(ingresos.fecha)),
-      db.select({ fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
-        .from(ingresos)
-        .where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])))
-        .groupBy(ingresos.fecha, ingresos.tipoComprobante).orderBy(asc(ingresos.fecha), asc(ingresos.tipoComprobante)),
-      db.select({ fecha: ingresos.fecha, tipo: ingresosDetalle.tipo, total: sql<string>`sum(${ingresosDetalle.total})::numeric(16,2)` })
-        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
-        .where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"])))
-        .groupBy(ingresos.fecha, ingresosDetalle.tipo).orderBy(asc(ingresos.fecha), asc(ingresosDetalle.tipo)),
-      db.select({ notas: sql<number>`count(*)::int`, total: sql<string>`coalesce(sum(${ingresos.total}),0)::numeric(16,2)`, productos: sql<number>`count(*) filter (where exists (select 1 from ingresos_detalle d where d.ingreso_id = ${ingresos.id} and d.tipo = 'PRODUCTO'))::int`, serviciosOMototaxis: sql<number>`count(*) filter (where exists (select 1 from ingresos_detalle d where d.ingreso_id = ${ingresos.id} and d.tipo in ('SERVICIO','MOTOTAXI')))::int` })
-        .from(ingresos).where(and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), eq(ingresos.tipoComprobante, "NOTA_VENTA"))),
+  /**
+   * Ingreso total por día en un rango, con la misma definición que el gráfico de ingresos del dashboard
+   * (documentos de venta + notas de débito + adelantos de órdenes sin facturar). Solo devuelve días con movimiento.
+   */
+  async ingresosComparativo(rango: RangoFechas) {
+    const [comprobantes, notasDebito, adelantos] = await Promise.all([
+      consultarFlujoPorComprobante(rango),
+      consultarFlujoNotasDebito(rango),
+      consultarFlujoAdelantos(rango),
     ]);
-    const totales = resumen[0] ?? { ventas: 0, subtotal: "0.00", total: "0.00" };
-    return {
-      rango,
-      resumen: { ventas: Number(totales.ventas), subtotal: totales.subtotal, total: totales.total, promedio: totales.ventas ? (Number(totales.total) / Number(totales.ventas)).toFixed(2) : "0.00" },
-      notasInternas: notasInternas[0] ?? { notas: 0, total: "0.00", productos: 0, serviciosOMototaxis: 0 },
-      porMedioPago: pagos,
-      productosMasVendidos,
-      porDia,
-      flujoPorComprobante,
-      flujoPorConcepto,
-    };
+    return { rango, dias: sumarFlujosDiarios(comprobantes, notasDebito, adelantos) };
+  }
+
+  /** Artículos más vendidos del rango y total de ventas del mismo rango. */
+  articulosMasVendidos(rango: RangoFechas, limite = 12) { return consultarArticulosMasVendidos(rango, limite); }
+
+  /** Ventas por día de la semana y hora, para el mapa de calor. */
+  horarios(rango: RangoFechas) { return consultarHorarios(rango); }
+
+  /** Lo vendido en el rango y lo ya cobrado de esas ventas. */
+  cobranza(rango: RangoFechas) { return consultarCobranza(rango); }
+
+  /** Ventas por categoría con su costo y margen. El costo solo se devuelve a quien tiene permiso sobre inventario o mototaxis. */
+  async rentabilidad(rango: RangoFechas, permisos: string[] = []) {
+    const filas = await consultarRentabilidad(rango);
+    return { rango, filas: aplicarPermisosDeCosto(filas, { inventario: permisos.includes("INVENTARIO.LEER"), mototaxis: permisos.includes("MOTOTAXIS.LEER") }) };
   }
 
   async inventario(rango: RangoFechas, permisos: string[] = []) {
@@ -142,6 +123,16 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     }).from(movimientosStock)
       .where(and(gte(movimientosStock.creadoEn, inicioPeriodo), lt(movimientosStock.creadoEn, finPeriodo)))
       .groupBy(movimientosStock.productoId).as("movimientos_periodo");
+    const promediosCompra = db.select({
+      productoId: entradasStockDetalle.productoId,
+      precio: sql<string>`coalesce(sum(${entradasStockDetalle.subtotal}) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
+    }).from(entradasStockDetalle).groupBy(entradasStockDetalle.productoId).as("promedios_compra_producto");
+    const promediosVenta = db.select({
+      productoId: ingresosDetalle.productoId,
+      precio: sql<string>`coalesce(sum(${ingresosDetalle.total}) / nullif(sum(${ingresosDetalle.cantidadBase}), 0), 0)::numeric(18,6)`.as("precio_promedio_venta"),
+    }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+      .where(and(eq(ingresosDetalle.tipo, "PRODUCTO"), sql`${ingresos.estado} <> 'ANULADO'`))
+      .groupBy(ingresosDetalle.productoId).as("promedios_venta_producto");
     const items = await db.select({
       id: productos.id,
       codigo: productos.codigoInterno,
@@ -152,6 +143,8 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       stockActual: sql<string>`coalesce(${saldosStock.cantidad}, 0)::numeric(18,3)`,
       entradasPeriodo: sql<string>`coalesce(${movimientos.entradas}, 0)::numeric(18,3)`,
       salidasPeriodo: sql<string>`coalesce(${movimientos.salidas}, 0)::numeric(18,3)`,
+      precioPromedioCompra: sql<string>`coalesce(${promediosCompra.precio}, 0)::numeric(18,6)`,
+      precioPromedioVenta: sql<string>`coalesce(${promediosVenta.precio}, 0)::numeric(18,6)`,
     }).from(productos)
       .innerJoin(marcasProductos, eq(productos.marcaId, marcasProductos.id))
       .innerJoin(productosPresentaciones, and(eq(productosPresentaciones.productoId, productos.id), eq(productosPresentaciones.esBase, true)))
@@ -159,8 +152,20 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       .leftJoin(categoriasProductos, eq(productos.categoriaId, categoriasProductos.id))
       .leftJoin(saldosStock, eq(productos.id, saldosStock.productoId))
       .leftJoin(movimientos, eq(productos.id, movimientos.productoId))
+      .leftJoin(promediosCompra, eq(productos.id, promediosCompra.productoId))
+      .leftJoin(promediosVenta, eq(productos.id, promediosVenta.productoId))
       .where(eq(productos.activo, true)).orderBy(asc(productos.nombre));
     const puedeLeerMototaxis = permisos.includes("MOTOTAXIS.LEER");
+    const promediosCompraMototaxi = db.select({
+      modeloId: comprasMototaxisDetalle.modeloId,
+      precio: sql<string>`coalesce(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / nullif(sum(${comprasMototaxisDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
+    }).from(comprasMototaxisDetalle).groupBy(comprasMototaxisDetalle.modeloId).as("promedios_compra_mototaxi");
+    const promediosVentaMototaxi = db.select({
+      modeloId: ingresosDetalle.mototaxiModeloId,
+      precio: sql<string>`coalesce(sum(${ingresosDetalle.total}) / nullif(sum(${ingresosDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_venta"),
+    }).from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+      .where(and(eq(ingresosDetalle.tipo, "MOTOTAXI"), sql`${ingresos.estado} <> 'ANULADO'`))
+      .groupBy(ingresosDetalle.mototaxiModeloId).as("promedios_venta_mototaxi");
     const modelos = puedeLeerMototaxis ? await db.select({
       id: modelosMototaxis.id,
       codigo: modelosMototaxis.codigo,
@@ -170,9 +175,13 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       stockActual: modelosMototaxis.stockDisponible,
       entradasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} in ('COMPRA', 'ANULACION_VENTA') or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} > ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadFinal} - ${movimientosModelosMototaxis.cantidadAnterior} else 0 end), 0)::int`,
       salidasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} = 'VENTA' or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} < ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadAnterior} - ${movimientosModelosMototaxis.cantidadFinal} else 0 end), 0)::int`,
+      precioPromedioCompra: sql<string>`coalesce(${promediosCompraMototaxi.precio}, 0)::numeric(18,6)`,
+      precioPromedioVenta: sql<string>`coalesce(${promediosVentaMototaxi.precio}, 0)::numeric(18,6)`,
     }).from(modelosMototaxis)
       .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
       .leftJoin(movimientosModelosMototaxis, and(eq(modelosMototaxis.id, movimientosModelosMototaxis.modeloId), gte(movimientosModelosMototaxis.creadoEn, inicioPeriodo), lt(movimientosModelosMototaxis.creadoEn, finPeriodo)))
+      .leftJoin(promediosCompraMototaxi, eq(modelosMototaxis.id, promediosCompraMototaxi.modeloId))
+      .leftJoin(promediosVentaMototaxi, eq(modelosMototaxis.id, promediosVentaMototaxi.modeloId))
       .where(eq(modelosMototaxis.activo, true)).groupBy(modelosMototaxis.id, marcasProductos.nombre).orderBy(asc(modelosMototaxis.nombre)) : [];
     return {
       rango,

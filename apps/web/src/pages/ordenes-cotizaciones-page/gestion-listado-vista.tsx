@@ -6,8 +6,6 @@ import type { EstadoVisibleCotizacion } from "./use-gestion-listado";
 type Props = {
   busqueda: string;
   setBusqueda: (valor: string) => void;
-  filtroEstado: string;
-  setFiltroEstado: (valor: string) => void;
   desde: string;
   setDesde: (valor: string) => void;
   hasta: string;
@@ -25,7 +23,7 @@ type Props = {
 
 export function GestionListadoVista(props: Props) {
   const {
-    busqueda, setBusqueda, filtroEstado, setFiltroEstado, desde, setDesde, hasta, setHasta,
+    busqueda, setBusqueda, desde, setDesde, hasta, setHasta,
     cotizaciones, cargando, estadoVisible, documentoCompletado, mensajeWhatsApp,
     imprimir, prepararDocumento, puedeCrear, editar,
   } = props;
@@ -38,12 +36,6 @@ export function GestionListadoVista(props: Props) {
         value={busqueda}
         onChange={(evento) => setBusqueda(evento.target.value)}
       />
-      <label className={cotizacionClases.filterLabel}>Estado<select className={cotizacionClases.filterControl} value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value)}>
-        <option value="TODAS">Todos los estados</option>
-        <option value="ACTIVA">Activa</option>
-        <option value="INACTIVA">Inactiva</option>
-        <option value="EMITIDA">Emitida</option>
-      </select></label>
       <label className={cotizacionClases.filterLabel}>Vigencia desde<input className={cotizacionClases.filterControl} type="date" value={desde} onChange={(evento) => setDesde(evento.target.value)} /></label>
       <label className={cotizacionClases.filterLabel}>Vigencia hasta<input className={cotizacionClases.filterControl} type="date" value={hasta} onChange={(evento) => setHasta(evento.target.value)} /></label>
     </div>

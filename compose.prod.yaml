@@ -81,7 +81,6 @@
       SUNAT_SIRE_CLAVE_SOL: ${SUNAT_SIRE_CLAVE_SOL:-}
       SUNAT_SIRE_CLIENT_ID: ${SUNAT_SIRE_CLIENT_ID:-}
       SUNAT_SIRE_CLIENT_SECRET: ${SUNAT_SIRE_CLIENT_SECRET:-}
-      IMAGEN_MAXIMO_BYTES: ${IMAGEN_MAXIMO_BYTES:-5242880}
       UPLOADS_DIR: /data/uploads
     volumes:
       - uploads-data:/data/uploads

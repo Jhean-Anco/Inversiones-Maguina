@@ -5,13 +5,14 @@ import { Etiqueta } from "../../components/ui/etiqueta";
 import { clasesBotonAccion } from "../../components/ui/boton-accion";
 import { IconoWhatsApp } from "../../components/ui/icono-whatsapp";
 import { BotonImprimir } from "../../components/documentos/boton-imprimir";
-import { DesgloseImportes } from "../../components/ingresos/desglose-importes";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import type { Cotizacion } from "../../services/ingresos.service";
 import { cotizacionClases } from "./cotizacion-clases";
 import { calcularTotalesCotizacion } from "./gestion-utils";
 import { nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
 import { clasesOpcionMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "../../components/documentos/menu-accion-classes";
+
+const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
 
 type EstadoVisibleCotizacion = "EMITIDA" | "INACTIVA" | "ACTIVA";
 type CotizacionRowProps = {
@@ -48,7 +49,9 @@ export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenu
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity}`}>{cotizacion.vigenteHasta ?? "Sin fecha"}</td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnClient} ${cotizacionClases.client}`}><strong className={nombreRelacionListadoClasses}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><Etiqueta tono={estado === "EMITIDA" ? "informativa" : estado === "INACTIVA" ? "neutral" : "positiva"}>{estado === "EMITIDA" ? "Emitida" : estado === "INACTIVA" ? "Inactiva" : "Activa"}</Etiqueta></td>
-    <td className={cotizacionClases.tableCell}><DesgloseImportes {...calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv)} /></td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal}`}>
+      <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
+    </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>
       {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} onClick={onEditar} />}
       <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" alImprimirA4={onImprimirA4} alImprimirTicket={onImprimirTicket} />

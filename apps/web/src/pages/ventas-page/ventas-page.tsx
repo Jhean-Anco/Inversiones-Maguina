@@ -13,10 +13,11 @@ import { NotaAjusteFormulario } from "./nota-ajuste-formulario";
 import { DialogoInicioNota } from "./dialogo-inicio-nota";
 import { DialogoAnulacion } from "./dialogo-anulacion";
 import { ventasClasses } from "./ventas-classes";
+import { AplicarGarantiaVentaDialog } from "./aplicar-garantia-venta-dialog";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
 const encabezadoVentas = <tr><th>Fecha</th><th>Tipo</th><th>Nro. de documento</th><th>Cliente</th><th>Pago</th><th>Importes</th><th>Estado SUNAT</th><th>Archivos y acciones</th></tr>;
-export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean }) {
+export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false, puedeAplicarGarantia = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean; puedeAplicarGarantia?: boolean }) {
   const navegar = useNavigate();
   const esMoto = tipoVenta === "MOTOTAXIS";
   const [ventas, setVentas] = useState<VentaListado[]>([]);
@@ -30,6 +31,9 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [ventaSeleccionada, setVentaSeleccionada] = useState<VentaListado | null>(null);
+  const [ventaParaGarantia, setVentaParaGarantia] = useState<VentaListado | null>(null);
+  const [mensajeGarantia, setMensajeGarantia] = useState("");
+  const [revisionGarantias, setRevisionGarantias] = useState(0);
   const [fuenteNota, setFuenteNota] = useState<FuenteNota | null>(null);
   const [notas, setNotas] = useState<NotaRelacionada[]>([]);
   const [tipoNota, setTipoNota] = useState<"NOTA_CREDITO" | "NOTA_DEBITO">("NOTA_CREDITO");
@@ -68,7 +72,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       }).finally(() => { if (vigente) setCargando(false); });
     }, busqueda ? 220 : 0);
     return () => { vigente = false; window.clearTimeout(temporizador); };
-  }, [tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, navegar]);
+  }, [tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, navegar, revisionGarantias]);
 
   useEffect(() => {
     if (!ventaSeleccionada) return;
@@ -203,11 +207,13 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       </>}
       paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
       encabezadoTabla={encabezadoVentas}
-      renderizarFila={(venta) => <VentaRow key={venta.id} venta={venta} puedeEmitirNotas={puedeEmitirNotas} puedeAnular={puedeAnular} onConsultarEstado={abrirEstadoComprobante} onEmitirNota={(venta, tipo) => setNotaPorIniciar({ venta, tipo })} onAnular={abrirAnulacion} />}
+      renderizarFila={(venta) => <VentaRow key={venta.id} venta={venta} puedeEmitirNotas={puedeEmitirNotas} puedeAnular={puedeAnular} onConsultarEstado={abrirEstadoComprobante} onEmitirNota={(venta, tipo) => setNotaPorIniciar({ venta, tipo })} onAnular={abrirAnulacion} onAplicarGarantia={esMoto && puedeAplicarGarantia ? setVentaParaGarantia : undefined} />}
       claseTabla={ventasClasses.table}
       claseContenedor={ventasClasses.tableScroll}
     />
     {ventaRechazada && <DialogoRechazo venta={ventaRechazada} error={errorReintento} guardando={guardandoReintento} consultando={consultandoRechazo} puedeCrear={puedeCrear} onClose={() => setVentaRechazada(null)} onConsultar={() => void procesarConsultaRechazo()} onReintentar={() => void procesarReintento()} />}
+    {mensajeGarantia && <NotificacionFlotante tipo="exito" mensaje={mensajeGarantia} onCerrar={() => setMensajeGarantia("")} />}
+    {ventaParaGarantia && <AplicarGarantiaVentaDialog venta={ventaParaGarantia} onClose={() => setVentaParaGarantia(null)} onApplied={() => { setMensajeGarantia(`Garantía aplicada a ${ventaParaGarantia.codigoComprobante}.`); setRevisionGarantias((n) => n + 1); }} />}
     </>}
     {notaPorIniciar && puedeEmitirNotas && <DialogoInicioNota
       venta={notaPorIniciar.venta} tipo={notaPorIniciar.tipo}

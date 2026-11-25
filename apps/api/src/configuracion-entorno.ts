@@ -29,7 +29,6 @@ export function validarConfiguracionEntorno() {
   const segundosSesion = enteroPositivo("AUTENTICACION_DURACION_SEGUNDOS", 8 * 60 * 60);
   const segundosSesionRecordada = enteroPositivo("AUTENTICACION_DURACION_RECORDAR_SEGUNDOS", 30 * 24 * 60 * 60);
   const timeoutNubefactMs = enteroPositivo("NUBEFACT_TIMEOUT_MS", 20000);
-  const maximoImagenBytes = enteroPositivo("IMAGEN_MAXIMO_BYTES", 5 * 1024 * 1024);
   const carpetaSubidas = resolve(process.cwd(), texto("UPLOADS_DIR") || "storage");
   const descuentoMaximoPorcentaje = Number(texto("DESCUENTO_MAXIMO_PORCENTAJE") || "0");
   if (!Number.isFinite(descuentoMaximoPorcentaje) || descuentoMaximoPorcentaje < 0 || descuentoMaximoPorcentaje > 100) {
@@ -55,5 +54,5 @@ export function validarConfiguracionEntorno() {
 
   const regimenTributario = texto("REGIMEN_TRIBUTARIO") || "NRUS";
   if (!["NRUS", "RER", "RMT", "GENERAL"].includes(regimenTributario)) throw new Error("REGIMEN_TRIBUTARIO debe ser NRUS, RER, RMT o GENERAL.");
-  return { puerto, origenes, segundosSesion, segundosSesionRecordada, timeoutNubefactMs, maximoImagenBytes, carpetaSubidas, descuentoMaximoPorcentaje };
+  return { puerto, origenes, segundosSesion, segundosSesionRecordada, timeoutNubefactMs, carpetaSubidas, descuentoMaximoPorcentaje };
 }

@@ -1,11 +1,11 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import type { OrdenServicio } from "../../services/ingresos.service";
 import type { LineaOrden } from "./types";
 import { OrdenServicioRow } from "./orden-servicio-row";
-import { SelectorDocumentoOrden } from "./orden-servicio-menu-acciones";
+import { SelectorDocumentoOrden, type TipoDocumentoOrden } from "./orden-servicio-menu-acciones";
 import { ordenesListadoClasses as c } from "./ordenes-tabla-classes";
 
 type OrdenesServicioListadoProps = {
@@ -14,6 +14,7 @@ type OrdenesServicioListadoProps = {
   cargando: boolean;
   error: string;
   puedeCrear: boolean;
+  tiposDocumentoDisponibles: TipoDocumentoOrden[];
   onBuscar: (valor: string) => void;
   onCrear: () => void;
   onEmitir: (orden: OrdenServicio, tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => void;
@@ -21,7 +22,6 @@ type OrdenesServicioListadoProps = {
   onEditar: (orden: OrdenServicio) => void;
   formatearFecha: (fecha: string) => string;
   formatearTotal: (lineas: LineaOrden[]) => string;
-  formatearDesglose: (lineas: LineaOrden[]) => string;
   etiquetaEstado: (orden: OrdenServicio) => string;
 };
 
@@ -31,6 +31,7 @@ export function OrdenesServicioListado({
   cargando,
   error,
   puedeCrear,
+  tiposDocumentoDisponibles,
   onBuscar,
   onCrear,
   onEmitir,
@@ -38,10 +39,8 @@ export function OrdenesServicioListado({
   onEditar,
   formatearFecha,
   formatearTotal,
-  formatearDesglose,
   etiquetaEstado,
 }: OrdenesServicioListadoProps) {
-  const [filtroEstado, setFiltroEstado] = useState("TODOS");
   const ordenesVisibles = useMemo(() => {
     const ordenadas = [...ordenes].sort((a, b) => {
       const fechaA = Date.parse(a.fechaRecepcion);
@@ -54,24 +53,12 @@ export function OrdenesServicioListado({
       if (numeroA !== numeroB) return numeroB - numeroA;
       return b.codigo.localeCompare(a.codigo, "es", { numeric: true, sensitivity: "base" });
     });
-    return filtroEstado === "TODOS" ? ordenadas : ordenadas.filter((orden) => orden.estado === filtroEstado);
-  }, [filtroEstado, ordenes]);
+    return ordenadas;
+  }, [ordenes]);
   const controlesCabecera = <>
     <label className={`${c.search} listado-maestro-busqueda-icono`}>
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
       <input type="search" value={busqueda} placeholder="Buscar por orden, cliente o vehículo" aria-label="Buscar órdenes de servicio" onChange={(evento) => onBuscar(evento.target.value)} />
-    </label>
-    <label className="listado-maestro-filtro">Estado
-      <select aria-label="Filtrar órdenes por estado" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value)}>
-        <option value="TODOS">Todos los estados</option>
-        <option value="ABIERTA">Abierta</option>
-        <option value="EN_PROCESO">En proceso</option>
-        <option value="ESPERANDO_REPUESTOS">Esperando repuestos</option>
-        <option value="COMPLETADA">Completada</option>
-        <option value="EMITIENDO">Emitiendo</option>
-        <option value="FACTURADA">Facturada</option>
-        <option value="ANULADA">Anulada</option>
-      </select>
     </label>
   </>;
 
@@ -85,13 +72,13 @@ export function OrdenesServicioListado({
       registros={ordenesVisibles}
       cargando={cargando}
       error={null}
-      vacio={<div className={c.empty}><strong>{busqueda || filtroEstado !== "TODOS" ? "No hay órdenes para mostrar" : "Aún no hay órdenes de servicio"}</strong><span>{busqueda || filtroEstado !== "TODOS" ? "Prueba con otra búsqueda o cambia el estado seleccionado." : "Las órdenes registradas para tus clientes aparecerán aquí."}</span></div>}
+      vacio={<div className={c.empty}><strong>{busqueda ? "No hay órdenes para mostrar" : "Aún no hay órdenes de servicio"}</strong><span>{busqueda ? "Prueba con otra búsqueda." : "Las órdenes registradas para tus clientes aparecerán aquí."}</span></div>}
       controlesCabecera={controlesCabecera}
       claseCabecera={c.header}
       claseControlesCabecera={c.controls}
       clasePaginacion={c.pagination}
       paginacion={{ modo: "local" }}
-      resetKey={`${busqueda}|${filtroEstado}`}
+      resetKey={busqueda}
       claseTabla={`${c.table} ordenes-table`}
       claseContenedor={c.tableScroll}
       centrarCeldas
@@ -102,9 +89,8 @@ export function OrdenesServicioListado({
         fecha={formatearFecha(orden.fechaRecepcion)}
         estado={etiquetaEstado(orden)}
         total={formatearTotal(orden.detalles as LineaOrden[])}
-        desglose={formatearDesglose(orden.detalles as LineaOrden[])}
         puedeCrear={puedeCrear}
-        menuDocumento={<SelectorDocumentoOrden onSeleccionar={(tipo) => onEmitir(orden, tipo)} />}
+        menuDocumento={<SelectorDocumentoOrden tiposDisponibles={tiposDocumentoDisponibles} onSeleccionar={(tipo) => onEmitir(orden, tipo)} />}
         formatearFecha={formatearFecha}
         alImprimirA4={() => onImprimir(orden, "A4")}
         alImprimirTicket={() => onImprimir(orden, "TICKET")}

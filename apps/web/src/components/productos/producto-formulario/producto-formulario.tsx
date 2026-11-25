@@ -17,6 +17,14 @@ type PropiedadesProductoFormulario = {
   alCrearCategoria: Parameters<typeof useProductoFormulario>[0]["alCrearCategoria"];
 };
 
+function generarCodigoEAN13Interno() {
+  const aleatorios = new Uint32Array(10);
+  globalThis.crypto.getRandomValues(aleatorios);
+  const base = `20${[...aleatorios].map((valor) => String(valor % 10)).join("")}`;
+  const suma = [...base].reduce((total, digito, indice) => total + Number(digito) * (indice % 2 === 0 ? 1 : 3), 0);
+  return `${base}${(10 - suma % 10) % 10}`;
+}
+
 export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGuardar, alCrearMarca, alCrearCategoria }: PropiedadesProductoFormulario) {
   const formulario = useProductoFormulario({ producto, catalogos, alGuardar, alCrearMarca, alCrearCategoria });
   const codigoBase = catalogos.unidadesMedida.find((unidad) => unidad.codigo === formulario.unidadBaseCodigo)?.nombre ?? formulario.unidadBaseCodigo;
@@ -73,7 +81,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
               {formulario.codigos.map((codigo, indice) => <div className="producto-row producto-code-row" key={codigo.clave}>
                 <select aria-label="Tipo de código" value={codigo.tipo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipo: event.target.value as typeof fila.tipo } : fila))}><option value="FABRICANTE">Fabricante / OEM</option><option value="BARRAS">Código de barras</option><option value="GTIN">GTIN</option></select>
                 <input id={codigo.tipo === "BARRAS" ? `codigo-barras-${codigo.clave}` : undefined} aria-label={codigo.tipo === "BARRAS" ? "Código de barras, listo para lector" : "Código"} value={codigo.codigo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: event.target.value } : fila))} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} autoComplete="off" maxLength={100} placeholder={codigo.tipo === "BARRAS" ? "Enfoca aquí el lector o escribe el código" : "Código"} />
-                {codigo.tipo === "BARRAS" && <button type="button" className="producto-scan-button" onClick={() => document.getElementById(`codigo-barras-${codigo.clave}`)?.focus()}>Enfocar lector</button>}
+                {codigo.tipo === "BARRAS" && <div className="flex flex-wrap gap-2"><button type="button" className="producto-scan-button" onClick={() => document.getElementById(`codigo-barras-${codigo.clave}`)?.focus()}>Leer con escáner</button><button type="button" className="producto-scan-button" onClick={() => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: generarCodigoEAN13Interno() } : fila))}>Generar EAN-13</button></div>}
                 <AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar código" onClick={() => formulario.setCodigos((actual) => actual.filter((_, i) => i !== indice))} />
               </div>)}
             </div>

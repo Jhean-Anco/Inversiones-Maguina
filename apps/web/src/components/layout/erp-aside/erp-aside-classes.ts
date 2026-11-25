@@ -1,6 +1,6 @@
 export const asideClasses = {
   sidebar: [
-    "relative z-[2] grid [grid-column:1] row-start-1 flex h-auto min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto border-r border-[#ffffff12] px-4 pt-[25px] pb-4 print:hidden",
+    "relative z-[2] [grid-column:1] row-start-1 flex h-auto min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto border-r border-[#ffffff12] px-4 pt-[25px] pb-4 print:hidden",
     "bg-[linear-gradient(160deg,#0d2c51_0%,#092442_58%,#071d36_100%)] shadow-[5px_0_22px_#102b4810]",
     "before:absolute before:inset-[0_0_auto] before:h-[3px] before:bg-[linear-gradient(90deg,#d41e32,#f04450_52%,#d41e32)] before:content-['']",
     "[scrollbar-width:thin] [scrollbar-color:#ffffff24_transparent] [transition:padding_1.5s_cubic-bezier(.2,.72,.22,1),transform_1.5s_cubic-bezier(.2,.72,.22,1)]",
@@ -37,7 +37,7 @@ export const asideClasses = {
     "tablet-portrait:[.erp-layout.is-collapsed:not(.menu-open)_&]:hidden mobile-landscape:[.erp-layout.is-collapsed:not(.menu-open)_&]:hidden mobile-portrait:[.erp-layout.is-collapsed:not(.menu-open)_&]:hidden",
   ].join(" "),
   brandName: "text-[17px] font-[850] tracking-[.09em] text-[#f2f6fc] mobile-landscape:text-[13px] mobile-portrait:text-[13px]",
-  navigation: "erp-navigation flex min-h-0 flex-1 flex-col justify-start content-start gap-[3px] overflow-auto p-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+  navigation: "erp-navigation flex min-h-0 flex-1 flex-col justify-start content-start gap-[3px] overflow-auto p-0 pt-[10px] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
   navLink: [
     "relative flex min-h-[46px] items-center gap-3 rounded-[8px] border border-transparent px-3 text-[15px] font-semibold text-[#c0ccda] no-underline",
     "[transition:gap_1.5s_ease,padding_1.5s_ease,justify-content_.3s_ease,background_.16s_ease,color_.16s_ease]",

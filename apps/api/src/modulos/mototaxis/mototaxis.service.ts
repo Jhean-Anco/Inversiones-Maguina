@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomUUID } from "node:crypto";
-import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
+import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, garantiasModelosMototaxis, garantiasMototaxis, garantiasVentasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { bloquearModelos, moverSaldoModelo, precioVigenteModelo, siguientePrecioModelo } from "./inventario-modelos";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -482,9 +482,51 @@ export class ServicioMototaxis {
     return db.select().from(movimientosMototaxis).where(eq(movimientosMototaxis.unidadId, unidadId)).orderBy(desc(movimientosMototaxis.creadoEn));
   }
 
+  async obtenerGarantiaModelo(modeloId: string) {
+    if (!uuidValido(modeloId)) throw new BadRequestException("El modelo no es válido.");
+    const [garantia] = await db.select().from(garantiasModelosMototaxis).where(eq(garantiasModelosMototaxis.modeloId, modeloId)).limit(1);
+    return garantia ?? null;
+  }
+
+  async guardarGarantiaModelo(modeloId: string, valor: unknown) {
+    if (!uuidValido(modeloId)) throw new BadRequestException("El modelo no es válido.");
+    if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("La garantía no es válida.");
+    const d = valor as Record<string, unknown>;
+    if (typeof d.activa !== "boolean") throw new BadRequestException("Indica si el modelo cuenta con garantía.");
+    const mesesVigencia = Number(d.mesesVigencia);
+    if (!Number.isInteger(mesesVigencia) || mesesVigencia < 1 || mesesVigencia > 120) throw new BadRequestException("La vigencia debe estar entre 1 y 120 meses.");
+    const alcance = texto(d.alcance, "El alcance de la garantía", 4000, d.activa)!;
+    if (d.activa && (alcance?.length ?? 0) < 3) throw new BadRequestException("Describe con claridad qué cubre la garantía (mínimo 3 caracteres).");
+    const exclusiones = texto(d.exclusiones, "Las exclusiones", 4000);
+    const [modelo] = await db.select({ id: modelosMototaxis.id }).from(modelosMototaxis).where(eq(modelosMototaxis.id, modeloId)).limit(1);
+    if (!modelo) throw new NotFoundException("No se encontró el modelo de mototaxi.");
+    const [garantia] = await db.insert(garantiasModelosMototaxis).values({ modeloId, activa: d.activa, mesesVigencia, alcance: alcance ?? "", exclusiones })
+      .onConflictDoUpdate({ target: garantiasModelosMototaxis.modeloId, set: { activa: d.activa, mesesVigencia, alcance: alcance ?? "", exclusiones, actualizadoEn: new Date() } }).returning();
+    return garantia;
+  }
+
+  async aplicarGarantiaVenta(detalleId: string) {
+    if (!uuidValido(detalleId)) throw new BadRequestException("La línea de venta no es válida.");
+    return db.transaction(async (tx) => {
+      const [detalle] = await tx.select({ id: ingresosDetalle.id, modeloId: ingresosDetalle.mototaxiModeloId, cantidad: ingresosDetalle.cantidad, tipo: ingresosDetalle.tipo, fecha: ingresos.fecha, estado: ingresos.estado })
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresos.id, ingresosDetalle.ingresoId)).where(eq(ingresosDetalle.id, detalleId)).for("update").limit(1);
+      if (!detalle || detalle.tipo !== "MOTOTAXI" || !detalle.modeloId || detalle.estado !== "EMITIDO") throw new BadRequestException("La línea debe pertenecer a una venta emitida de mototaxi.");
+      const [existente] = await tx.select().from(garantiasVentasMototaxis).where(eq(garantiasVentasMototaxis.ingresoDetalleId, detalleId)).limit(1);
+      if (existente) return existente;
+      const [politica] = await tx.select().from(garantiasModelosMototaxis).where(and(eq(garantiasModelosMototaxis.modeloId, detalle.modeloId), eq(garantiasModelosMototaxis.activa, true))).limit(1);
+      if (!politica) throw new ConflictException("Este modelo no tiene una garantía activa configurada.");
+      const terminaEn = sumarMeses(detalle.fecha, politica.mesesVigencia);
+      if (fechaActualPeru() > terminaEn) throw new ConflictException("La vigencia de esta garantía ya terminó para la fecha de venta.");
+      const cantidad = Number(detalle.cantidad);
+      if (!Number.isInteger(cantidad) || cantidad < 1) throw new ConflictException("La cantidad de mototaxis de esta venta no es válida para aplicar una garantía.");
+      const [guardada] = await tx.insert(garantiasVentasMototaxis).values({ ingresoDetalleId: detalle.id, garantiaModeloId: politica.id, cantidad, mesesVigencia: politica.mesesVigencia, iniciaEn: detalle.fecha, terminaEn, alcance: politica.alcance, exclusiones: politica.exclusiones }).returning();
+      return guardada;
+    });
+  }
+
   async listarGarantias() {
     return db.select({
-      id: garantiasMototaxis.id, unidadId: unidadesMototaxis.id, compraDetalleId: garantiasMototaxis.compraDetalleId, vin: unidadesMototaxis.vin,
+      id: garantiasMototaxis.id, modeloId: modelosMototaxis.id, unidadId: unidadesMototaxis.id, compraDetalleId: garantiasMototaxis.compraDetalleId, vin: unidadesMototaxis.vin,
       codigo: sql<string>`coalesce(${comprasMototaxis.codigo}, ${unidadesMototaxis.codigo})`,
       cantidad: sql<number>`coalesce(${comprasMototaxisDetalle.cantidad}, 1)`,
       marca: marcasProductos.nombre, modelo: modelosMototaxis.nombre, version: modelosMototaxis.version,
@@ -513,13 +555,29 @@ export class ServicioMototaxis {
     if (costoTotal > 999_999_999_999.99) throw new BadRequestException("El costo del reclamo supera el máximo permitido.");
     const [garantia] = await db.select().from(garantiasMototaxis).where(eq(garantiasMototaxis.id, d.garantiaId)).limit(1);
     if (!garantia) throw new NotFoundException("No se encontró la garantía.");
+    let ingresoDetalleId: string | null = null;
+    if (d.ingresoDetalleId !== undefined) {
+      if (!uuidValido(d.ingresoDetalleId)) throw new BadRequestException("Selecciona el artículo vendido válido.");
+      const [detalleVenta] = await db.select({ id: ingresosDetalle.id, ingresoId: ingresosDetalle.ingresoId, modeloId: ingresosDetalle.mototaxiModeloId, tipo: ingresosDetalle.tipo, fecha: ingresos.fecha, estado: ingresos.estado })
+        .from(ingresosDetalle).innerJoin(ingresos, eq(ingresos.id, ingresosDetalle.ingresoId))
+        .where(eq(ingresosDetalle.id, d.ingresoDetalleId)).limit(1);
+      if (!detalleVenta || detalleVenta.tipo !== "MOTOTAXI" || !detalleVenta.modeloId || detalleVenta.estado !== "EMITIDO") throw new BadRequestException("El artículo elegido no corresponde a una venta emitida de mototaxi.");
+      const [modeloGarantia] = await db.select({ modeloId: sql<string>`coalesce(${comprasMototaxisDetalle.modeloId}, ${unidadesMototaxis.modeloId})` })
+        .from(garantiasMototaxis)
+        .leftJoin(comprasMototaxisDetalle, eq(garantiasMototaxis.compraDetalleId, comprasMototaxisDetalle.id))
+        .leftJoin(unidadesMototaxis, eq(garantiasMototaxis.unidadId, unidadesMototaxis.id))
+        .where(eq(garantiasMototaxis.id, d.garantiaId)).limit(1);
+      if (!modeloGarantia || modeloGarantia.modeloId !== detalleVenta.modeloId) throw new BadRequestException("La garantía seleccionada no corresponde al modelo vendido.");
+      if (detalleVenta.fecha > fecha) throw new BadRequestException("La fecha de aplicación no puede ser anterior a la venta.");
+      ingresoDetalleId = detalleVenta.id;
+    }
     if (fecha < garantia.iniciaEn || fecha > garantia.terminaEn) throw new BadRequestException("La fecha del reclamo está fuera de la vigencia de la garantía.");
     const porcentaje = Number(garantia.porcentajeProveedor);
     const totalCentimos = BigInt(Math.round(costoTotal * 100));
     const proveedorCentimos = (totalCentimos * BigInt(porcentaje) + 50n) / 100n;
     const importeProveedor = Number(proveedorCentimos) / 100;
     const importeEmpresa = Number(totalCentimos - proveedorCentimos) / 100;
-    const [reclamo] = await db.insert(reclamosGarantiaMototaxis).values({ garantiaId: d.garantiaId, fecha, descripcionFalla, costoTotal: costoTotal.toFixed(2), porcentajeProveedorAplicado: String(porcentaje), importeProveedor: importeProveedor.toFixed(2), importeEmpresa: importeEmpresa.toFixed(2), estado: "ABIERTO", usuarioId }).returning();
+    const [reclamo] = await db.insert(reclamosGarantiaMototaxis).values({ garantiaId: d.garantiaId, ingresoDetalleId, fecha, descripcionFalla, costoTotal: costoTotal.toFixed(2), porcentajeProveedorAplicado: String(porcentaje), importeProveedor: importeProveedor.toFixed(2), importeEmpresa: importeEmpresa.toFixed(2), estado: "ABIERTO", usuarioId }).returning();
     return reclamo;
   }
 
@@ -537,7 +595,18 @@ export class ServicioMototaxis {
     return reclamo;
   }
 
-  listarReclamos() { return db.select().from(reclamosGarantiaMototaxis).orderBy(desc(reclamosGarantiaMototaxis.fecha), desc(reclamosGarantiaMototaxis.creadoEn)); }
+  listarReclamos() {
+    return db.select({
+      id: reclamosGarantiaMototaxis.id, garantiaId: reclamosGarantiaMototaxis.garantiaId, ingresoDetalleId: reclamosGarantiaMototaxis.ingresoDetalleId,
+      ventaCodigo: ingresos.codigo, ventaCliente: ingresos.clienteNombre, ventaMototaxi: ingresosDetalle.descripcion,
+      fecha: reclamosGarantiaMototaxis.fecha, descripcionFalla: reclamosGarantiaMototaxis.descripcionFalla, costoTotal: reclamosGarantiaMototaxis.costoTotal,
+      porcentajeProveedorAplicado: reclamosGarantiaMototaxis.porcentajeProveedorAplicado, importeProveedor: reclamosGarantiaMototaxis.importeProveedor,
+      importeEmpresa: reclamosGarantiaMototaxis.importeEmpresa, estado: reclamosGarantiaMototaxis.estado, resolucion: reclamosGarantiaMototaxis.resolucion,
+    }).from(reclamosGarantiaMototaxis)
+      .leftJoin(ingresosDetalle, eq(reclamosGarantiaMototaxis.ingresoDetalleId, ingresosDetalle.id))
+      .leftJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
+      .orderBy(desc(reclamosGarantiaMototaxis.fecha), desc(reclamosGarantiaMototaxis.creadoEn));
+  }
 
   private esDuplicado(error: unknown) { return typeof error === "object" && error !== null && "code" in error && error.code === "23505"; }
 }
