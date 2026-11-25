@@ -23,6 +23,11 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
   alCerrar: () => void;
   alGuardar: (modelo: ModeloMototaxi) => void;
 }) {
+  const tiposMotor = [
+    { valor: "MONOCILINDRICO_4T", etiqueta: "Monocilíndrico 4T" },
+    { valor: "ELECTRICO", etiqueta: "Eléctrico" },
+  ] as const;
+  const tiposMotorAnteriores: Record<string, string> = { "2_TIEMPOS": "2 tiempos", "4_TIEMPOS": "4 tiempos" };
   const [datos, setDatos] = useState(() => modelo ? datosDeModelo(modelo) : nuevoModelo());
   const [mostrarMasColores, setMostrarMasColores] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -80,7 +85,7 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
             <label>Categoría vehicular<select required value={datos.categoriaVehicular} onChange={(e) => setDatos((actual) => ({ ...actual, categoriaVehicular: e.target.value }))}><option value="L5">L5</option><option value="L4">L4</option><option value="L3">L3</option><option value="L2">L2</option><option value="L1">L1</option></select></label>
           </div></section>
           <section className={cn("inventory-moto-field-group", c.fieldGroup)}><header><div><h3>Motor y configuración</h3><p>Especificaciones principales de fábrica.</p></div></header><div className={cn("inventory-moto-form-grid", c.technicalGrid)}>
-            <label>Tipo de motor<select value={datos.tipoMotor} onChange={(e) => setDatos((actual) => ({ ...actual, tipoMotor: e.target.value }))}><option value="">Selecciona el tipo de motor</option><option value="2_TIEMPOS">2 tiempos</option><option value="4_TIEMPOS">4 tiempos</option></select></label>
+            <label>Tipo de motor<select value={datos.tipoMotor} onChange={(e) => setDatos((actual) => ({ ...actual, tipoMotor: e.target.value }))}><option value="">Selecciona el tipo de motor</option>{tiposMotor.map((tipo) => <option key={tipo.valor} value={tipo.valor}>{tipo.etiqueta}</option>)}{tiposMotorAnteriores[datos.tipoMotor] && <option value={datos.tipoMotor}>{tiposMotorAnteriores[datos.tipoMotor]} (actual)</option>}</select></label>
             <label>Cilindrada<div className={cn("inventory-moto-input-unit", c.inputUnit)}><input type="number" min="1" max="2147483647" step="1" inputMode="numeric" value={datos.cilindradaCc} onChange={(e) => setDatos((actual) => ({ ...actual, cilindradaCc: e.target.value }))} placeholder="150" /><span>cc</span></div></label>
             <label>Combustible<select value={datos.combustible} onChange={(e) => setDatos((actual) => ({ ...actual, combustible: e.target.value }))}><option value="">Selecciona el combustible</option>{combustiblesSugeridos.map((opcion) => <option key={opcion} value={opcion}>{opcion}</option>)}</select></label>
             <label>Carrocería<input list="inventory-moto-bodyworks" maxLength={80} value={datos.carroceria} onChange={(e) => setDatos((actual) => ({ ...actual, carroceria: e.target.value }))} placeholder="Ej. Trimoto pasajeros" /><datalist id="inventory-moto-bodyworks">{carroceriasSugeridas.map((opcion) => <option key={opcion} value={opcion} />)}</datalist></label>

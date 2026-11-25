@@ -17,7 +17,7 @@ export function FichaModelo({ analisis, alEditar, alCerrar }: {
   const datos = [
     ["Marca", modelo.marca], ["Modelo", modelo.nombre], ["Versión", modelo.version], ["Categoría vehicular", modelo.categoriaVehicular],
     ["Tipo", modelo.tipoMototaxi], ["Fabricante", modelo.fabricante], ["País", modelo.paisFabricacion],
-    ["Marca del motor", modelo.marcaMotor], ["Modelo del motor", modelo.modeloMotor], ["Tipo de motor", modelo.tipoMotor?.replaceAll("_", " ")],
+    ["Marca del motor", modelo.marcaMotor], ["Modelo del motor", modelo.modeloMotor], ["Tipo de motor", modelo.tipoMotor === "MONOCILINDRICO_4T" ? "Monocilíndrico 4T" : modelo.tipoMotor === "ELECTRICO" ? "Eléctrico" : modelo.tipoMotor?.replaceAll("_", " ")],
     ["Cilindrada", modelo.cilindradaCc && `${modelo.cilindradaCc} cc`], ["Combustible", modelo.combustible],
     ["Transmisión", modelo.transmision], ["Refrigeración", modelo.tipoRefrigeracion?.replaceAll("_", " ")], ["Carrocería", modelo.carroceria],
     ["Asientos", modelo.capacidadAsientos], ["Carga", modelo.capacidadCargaKg && `${modelo.capacidadCargaKg} kg`], ["Colores ofrecidos", modelo.coloresDisponibles?.join(", ")],

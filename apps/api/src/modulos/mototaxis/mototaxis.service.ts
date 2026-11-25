@@ -60,7 +60,7 @@ function validarModelo(valor: unknown) {
   const tipoMototaxi = texto(d.tipoMototaxi, "El tipo de mototaxi", 20);
   if (tipoMototaxi && !["PASAJERO", "CARGA"].includes(tipoMototaxi)) throw new BadRequestException("Selecciona un tipo de mototaxi válido.");
   const tipoMotor = texto(d.tipoMotor, "El tipo de motor", 20);
-  if (tipoMotor && !["2_TIEMPOS", "4_TIEMPOS"].includes(tipoMotor)) throw new BadRequestException("Selecciona un tipo de motor válido.");
+  if (tipoMotor && !["2_TIEMPOS", "4_TIEMPOS", "MONOCILINDRICO_4T", "ELECTRICO"].includes(tipoMotor)) throw new BadRequestException("Selecciona un tipo de motor válido.");
   const tipoRefrigeracion = texto(d.tipoRefrigeracion, "El tipo de refrigeración", 20);
   if (tipoRefrigeracion && !["AIRE", "LIQUIDO", "AIRE_ACEITE"].includes(tipoRefrigeracion)) throw new BadRequestException("Selecciona un tipo de refrigeración válido.");
   if (d.coloresDisponibles != null && !Array.isArray(d.coloresDisponibles)) throw new BadRequestException("Selecciona una lista de colores válida.");
