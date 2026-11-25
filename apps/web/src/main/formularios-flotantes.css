@@ -1,4 +1,21 @@
 /* Estructura unificada para formularios flotantes: cabecera de marca, contenido y acciones. */
+.dialogo-pantalla-completa-movil[role="dialog"] {
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 639px) {
+  html body .dialogo-pantalla-completa-movil[role="dialog"] {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
 :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog, .venta-new-client, .moto-purchase-dialog, .catalog-manager-dialog, .producto-brand-modal, .catalog-modal:has(> form), [role="dialog"]:has(> form), [aria-modal="true"]:has(> form))::before,
 [role="alertdialog"]::before,
 .finanzas-form::before {

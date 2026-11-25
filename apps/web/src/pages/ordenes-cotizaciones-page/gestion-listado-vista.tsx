@@ -81,6 +81,8 @@ export function GestionListadoVista(props: Props) {
     controlesCabecera={controles}
     cotizaciones={visibles}
     cargando={cargando}
+    filtroEstadoActivo={filtro !== "TODAS"}
+    resetKey={filtro}
     estadoVisible={estadoVisible}
     documentoCompletado={documentoCompletado}
     mensajeWhatsApp={mensajeWhatsApp}

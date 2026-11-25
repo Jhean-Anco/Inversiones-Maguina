@@ -25,6 +25,7 @@ type DialogoProps = {
   icono?: ReactNode;
   /** Texto debajo del título (p. ej. nombre de un artículo y su código). */
   subtitulo?: ReactNode;
+  pantallaCompletaMovil?: boolean;
 };
 
 const anchos: Record<AnchoDialogo, string> = {
@@ -43,7 +44,7 @@ const SELECTOR_ENFOCABLE = "a[href], button:not(:disabled), input:not(:disabled)
  * atrapa Tab y devuelve el foco al elemento anterior al cerrarse.
  * En escritorio aparece centrado; en pantallas pequeñas se convierte en hoja inferior.
  */
-export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = true, tipo = "dialogo", ancho = "md", enfocarAlAbrir, className = "", icono, subtitulo }: DialogoProps) {
+export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = true, tipo = "dialogo", ancho = "md", enfocarAlAbrir, className = "", icono, subtitulo, pantallaCompletaMovil = false }: DialogoProps) {
   const idTitulo = useId();
   const contenedorRef = useRef<HTMLDivElement>(null);
   const onCerrarRef = useRef(onCerrar);
@@ -105,11 +106,11 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
         role={tipo === "alerta" ? "alertdialog" : "dialog"}
         aria-modal="true"
         aria-labelledby={idTitulo}
-        className={`flex max-h-full w-full ${anchos[ancho]} flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(6,23,43,0.35)] max-sm:max-h-[88%] max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] ${className}`}
+        className={`flex max-h-full w-full ${anchos[ancho]} flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(6,23,43,0.35)] max-sm:max-h-[88%] max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] ${pantallaCompletaMovil ? "dialogo-pantalla-completa-movil" : ""} ${className}`}
       >
-        <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden="true">
+        {!pantallaCompletaMovil && <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden="true">
           <span className="h-1 w-10 rounded-sm bg-[#c5d1db]" />
-        </div>
+        </div>}
         <header className="flex items-start justify-between gap-4 border-b border-[#dbe3e9] px-6 pb-[18px] pt-[22px] max-sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {icono}

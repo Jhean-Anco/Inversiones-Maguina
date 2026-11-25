@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import type { Cotizacion } from "../../services/ingresos.service";
 import { cotizacionClases } from "./cotizacion-clases";
@@ -10,6 +9,8 @@ type CotizacionesListadoProps = {
   controlesCabecera: ReactNode;
   cotizaciones: Cotizacion[];
   cargando: boolean;
+  filtroEstadoActivo: boolean;
+  resetKey: string;
   estadoVisible: (cotizacion: Cotizacion) => EstadoVisibleCotizacion;
   documentoCompletado: (cotizacion: Cotizacion) => boolean;
   mensajeWhatsApp: (cotizacion: Cotizacion) => string;
@@ -20,27 +21,21 @@ type CotizacionesListadoProps = {
   editar: (cotizacion: Cotizacion) => void;
 };
 
-export function CotizacionesListado({ controlesCabecera, cotizaciones, cargando, estadoVisible, documentoCompletado, mensajeWhatsApp, imprimirA4, imprimirTicket, prepararDocumento, puedeCrear, editar }: CotizacionesListadoProps) {
-  const [filtro, setFiltro] = useState<EstadoVisibleCotizacion | "TODAS">("TODAS");
-  const estados: { valor: EstadoVisibleCotizacion | "TODAS"; etiqueta: string }[] = [
-    { valor: "TODAS", etiqueta: "Todas" }, { valor: "ACTIVA", etiqueta: "Activas" },
-    { valor: "EMITIDA", etiqueta: "Emitidas" }, { valor: "INACTIVA", etiqueta: "Inactivas" },
-  ];
-  const visibles = filtro === "TODAS" ? cotizaciones : cotizaciones.filter((cotizacion) => estadoVisible(cotizacion) === filtro);
+export function CotizacionesListado({ controlesCabecera, cotizaciones, cargando, filtroEstadoActivo, resetKey, estadoVisible, documentoCompletado, mensajeWhatsApp, imprimirA4, imprimirTicket, prepararDocumento, puedeCrear, editar }: CotizacionesListadoProps) {
   return <ListadoMaestro
-    controlesCabecera={<div className="cotizaciones-controles-rediseño">{controlesCabecera}<div className="cotizaciones-estados" role="group" aria-label="Filtrar cotizaciones por estado">{estados.map(({ valor, etiqueta }) => <button key={valor} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>{etiqueta}<span>{valor === "TODAS" ? cotizaciones.length : cotizaciones.filter((cotizacion) => estadoVisible(cotizacion) === valor).length}</span></button>)}</div></div>}
+    controlesCabecera={controlesCabecera}
     claseCabecera={`${cotizacionClases.listHeader} ${cotizacionClases.listHeaderMobile}`}
     claseControlesCabecera={`${cotizacionClases.listControls} ${cotizacionClases.controlsMobile}`}
     titulo="Cotizaciones"
     descripcion="Propuestas comerciales y su conversión en ventas."
-    registros={visibles}
+    registros={cotizaciones}
     cargando={cargando}
     error={null}
     claseTabla={`${cotizacionClases.table} cotizaciones-tabla`}
-    vacio={<div className={cotizacionClases.empty}><span className={cotizacionClases.emptyIcon} aria-hidden="true">+</span><strong className={cotizacionClases.emptyTitle}>{filtro === "TODAS" ? "Aún no hay cotizaciones" : "No hay cotizaciones para este estado"}</strong><p className={cotizacionClases.emptyDescription}>{filtro === "TODAS" ? "Cuando prepares una propuesta para un cliente, aparecerá aquí." : "Elige otro estado para ver más resultados."}</p></div>}
+    vacio={<div className={cotizacionClases.empty}><span className={cotizacionClases.emptyIcon} aria-hidden="true">+</span><strong className={cotizacionClases.emptyTitle}>{filtroEstadoActivo ? "No hay cotizaciones para este estado" : "Aún no hay cotizaciones"}</strong><p className={cotizacionClases.emptyDescription}>{filtroEstadoActivo ? "Elige otro estado para ver más resultados." : "Cuando prepares una propuesta para un cliente, aparecerá aquí."}</p></div>}
     clasePaginacion="mr-[72px]"
     paginacion={{ modo: "local" }}
-    resetKey={filtro}
+    resetKey={resetKey}
     variante="tabla"
     encabezadoTabla={(
       <tr>

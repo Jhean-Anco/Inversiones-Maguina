@@ -161,6 +161,7 @@ function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
       kicker="DIRECTORIO COMERCIAL"
       titulo="Registrar proveedor"
       ancho="md"
+      pantallaCompletaMovil
       cerrable={!guardando}
       onCerrar={solicitarCancelacion}
       pie={<><button className={clase.cancel} type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="proveedor-form" className={clase.primary} disabled={guardando}>{guardando ? "Guardando…" : "Guardar proveedor"}</button></>}

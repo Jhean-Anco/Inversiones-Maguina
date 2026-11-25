@@ -140,6 +140,7 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
         subtitulo={registroEditado ? "Actualiza el nombre." : `Agrega una ${singular} al catálogo.`}
         icono={<span className="grid size-11 place-items-center rounded-xl bg-[#eef4fa] text-[#174b78]"><Icono nombre={tipo} /></span>}
         ancho="sm"
+        pantallaCompletaMovil={esMarca && Boolean(registroEditado)}
         cerrable={!guardando}
         onCerrar={cerrarModal}
         pie={

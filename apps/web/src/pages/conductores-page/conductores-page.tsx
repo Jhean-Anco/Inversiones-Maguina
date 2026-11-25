@@ -108,6 +108,7 @@ function FormularioConductor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
       kicker="DIRECTORIO DE CONDUCTORES"
       titulo="Crear conductor"
       ancho="md"
+      pantallaCompletaMovil
       cerrable={!guardando}
       onCerrar={solicitarCancelacion}
       pie={<><button className="cursor-pointer rounded-[9px] border border-[#d5e0ea] bg-white px-[14px] text-[#49627b] font-bold" type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="conductor-form" className="min-h-10 cursor-pointer rounded-[10px] border border-[var(--action-primary-border)] bg-[var(--action-primary-surface)] px-[14px] text-xs font-bold text-[var(--action-primary)] disabled:cursor-wait disabled:opacity-[.65]" disabled={guardando}>{guardando ? "Guardando…" : "Crear conductor"}</button></>}
