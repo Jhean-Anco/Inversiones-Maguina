@@ -49,10 +49,22 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
     setCargandoGuias(true);
     void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias, filtroEstado).then((resultado) => {
       if (vigente) {
-        setGuias(resultado.items);
-        setTotalGuias(resultado.total);
-        setTotalPaginasGuias(resultado.totalPaginas);
-        setConteos(resultado.conteos);
+        const perteneceAlFiltro = (guia: GuiaRemision) => filtroEstado === "TODAS"
+          || (filtroEstado === "EMITIDAS" && guia.estado === "EMITIDO")
+          || (filtroEstado === "RECHAZADAS" && (guia.estado.startsWith("ERROR") || guia.estado.startsWith("RECHAZADO")))
+          || (filtroEstado === "PENDIENTES" && guia.estado !== "EMITIDO" && !guia.estado.startsWith("ERROR") && !guia.estado.startsWith("RECHAZADO"));
+        const items = resultado.conteos ? resultado.items : resultado.items.filter(perteneceAlFiltro);
+        const conteosDePagina = resultado.conteos ?? resultado.items.reduce((cuenta, guia) => {
+          cuenta.todas += 1;
+          if (guia.estado === "EMITIDO") cuenta.emitidas += 1;
+          else if (guia.estado.startsWith("ERROR") || guia.estado.startsWith("RECHAZADO")) cuenta.rechazadas += 1;
+          else cuenta.pendientes += 1;
+          return cuenta;
+        }, { todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0 });
+        setGuias(items);
+        setTotalGuias(resultado.conteos ? resultado.total : filtroEstado === "TODAS" ? resultado.total : items.length);
+        setTotalPaginasGuias(resultado.conteos ? resultado.totalPaginas : Math.max(1, Math.ceil(items.length / porPaginaGuias)));
+        setConteos(conteosDePagina);
         setError("");
       }
     }).catch((problema) => {
