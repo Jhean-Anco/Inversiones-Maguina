@@ -14,6 +14,7 @@ import type { LineaOrden } from "./types";
 import { OrdenesServicioListado } from "./ordenes-servicio-listado";
 import { importesOrden, TASA_IGV_ORDEN } from "./importes-orden";
 import { ConfirmarDescartarOrden } from "./confirmar-descartar-orden";
+import { etiquetasEstadoOrden } from "./estados-orden";
 import "../nuevo-ingreso-page/nuevo-ingreso-page.css";
 import "./ordenes-servicio-page.css";
 import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../../components/catalogo/use-catalogo-recientes";
@@ -22,7 +23,7 @@ const fechaHoy = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lim
 const fechaLegible = (fecha: string) => new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${fecha.slice(0, 10)}T00:00:00Z`));
 const soles = (monto: number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(Number.isFinite(monto) ? monto : 0);
 const nombreCliente = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
-const estadosOrden: Record<OrdenServicio["estado"], string> = { ABIERTA: "Abierta", EN_PROCESO: "En proceso", ESPERANDO_REPUESTOS: "Esperando repuestos", COMPLETADA: "Completada", EMITIENDO: "Emitiendo", FACTURADA: "Facturada", ANULADA: "Anulada" };
+const estadosOrden = etiquetasEstadoOrden;
 const totalOrden = (lineas: LineaOrden[]) => importesOrden(lineas).total;
 type EstadoFormularioOrden = {
   fechaRecepcion: string;
@@ -259,6 +260,8 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       onSubmit={(evento) => void guardar(evento)}
       orden={{
         activa: ordenActiva,
+        estado,
+        modificada: claveFormularioInicial.current !== null && claveFormularioActual !== claveFormularioInicial.current,
         codigo: codigoOrdenPrevisualizado ?? (consultandoNumeroOrden ? "Consultando?" : errorConsultaNumeroOrden ? "No se pudo consultar la serie" : "FALTA CONFIGURAR SERIE"),
         fechaRecepcion,
         fechaAcabado,
