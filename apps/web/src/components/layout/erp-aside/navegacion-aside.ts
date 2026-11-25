@@ -20,6 +20,8 @@ export type SubmoduloAside = {
 export type ModuloAside = {
   nombre: string;
   icono: string;
+  /** Texto corto bajo el icono cuando el aside está colapsado y el nombre no cabe. */
+  etiqueta?: string;
   ruta?: string;
   hijos: SubmoduloAside[];
 };
@@ -73,7 +75,6 @@ export const elementosAside: ModuloAside[] = [
     ],
   },
   { nombre: "Finanzas", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }, { nombre: "Movimientos por cuenta", ruta: "/finanzas/movimientos", permiso: "FINANZAS.LEER" }] },
-  { nombre: "Configuración", icono: "administracion", hijos: [{ nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" }] },
   {
     nombre: "Reportes",
     icono: "reportes",
@@ -81,6 +82,7 @@ export const elementosAside: ModuloAside[] = [
       { nombre: "Inventario", ruta: "/reportes/inventario", permiso: "INVENTARIO.LEER" },
     ],
   },
+  { nombre: "Configuración", etiqueta: "Ajustes", icono: "administracion", hijos: [{ nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" }] },
 ];
 
 function rutaCoincide(rutaActual: string, elemento: SubmoduloAside) {
