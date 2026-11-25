@@ -6,6 +6,7 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioReportes, type FiltroReporte, type ReporteInventario } from "../../services/reportes.service";
 import { hoy, numero, primerDiaMes, soles } from "./reportes-formatters";
 import { descargarReporteInventarioPdf } from "./inventario-pdf";
+import { useViewportProfile } from "../../utilidades/use-viewport-profile";
 
 type VistaInventario = "repuestos" | "mototaxis";
 type Resultado = { tipo: "inventario"; datos: ReporteInventario };
@@ -26,6 +27,8 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
   busqueda: string; setBusqueda: (busqueda: string) => void; existencia: FiltroExistencia;
   setExistencia: (existencia: FiltroExistencia) => void; alExportar: () => void;
 }) {
+  const perfilViewport = useViewportProfile();
+  const usarTarjetasMoviles = Boolean(vista === "mototaxis" && (perfilViewport === "mobile-portrait" || perfilViewport === "mobile-landscape"));
   const motos = vista === "mototaxis" ? datos.mototaxis : undefined;
   const registros = useMemo<FilaInventario[]>(() => (motos
     ? motos.items.map((m) => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, marca: m.marca, categoria: "Mototaxi", unidad: "", stock: m.stockActual, precioPromedioCompra: Number(m.precioPromedioCompra) || 0, cantidadCompraTotal: Number(m.cantidadCompraTotal) || 0, precioPromedioVenta: Number(m.precioPromedioVenta) || 0, cantidadVendidaTotal: Number(m.cantidadVendidaTotal) || 0, precioVentaActual: m.precioVentaActual == null ? null : Number(m.precioVentaActual) || 0 }))
@@ -64,13 +67,21 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
       { titulo: "Sin stock", valor: numero(datos.resumen.sinStock) },
       { titulo: "Precio prom. compras", valor: precioPromedioCompras > 0 ? soles(precioPromedioCompras) : "—" },
     ]} />
-    <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
-      registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
-      controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
-      encabezadoTabla={<tr>{columnas.map((columna) => <th key={columna}>{columna}</th>)}</tr>}
-      renderizarFila={(item) => motos
-        ? <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{numero(item.stock)} unidades</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</td></tr>
-        : <tr key={item.id}><td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.codigo}</span></td><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{item.categoria}</td><td>{numero(item.stock)}{item.unidad && ` ${item.unidad}`}</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />
+    {usarTarjetasMoviles
+      ? <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tarjetas" titulo="Existencias por modelo de mototaxi"
+        registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
+        controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
+        columnas={1} renderizarTarjeta={(item) => <article key={item.id} className="grid gap-3 rounded-xl border border-[var(--erp-border)] bg-[var(--erp-surface)] p-4">
+          <header className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><h3 className="m-0 break-words text-base font-bold text-[var(--erp-text)]">{item.nombre}</h3><p className="m-0 mt-1 text-sm text-[var(--erp-text-muted)]">{item.marca}</p></div></header>
+          <dl className="m-0 grid grid-cols-2 gap-3 border-t border-[var(--erp-border)] pt-3 text-sm"><div><dt className="text-xs text-[var(--erp-text-muted)]">Existencias</dt><dd className="m-0 font-semibold tabular-nums">{numero(item.stock)} unidades</dd></div><div><dt className="text-xs text-[var(--erp-text-muted)]">Costo promedio</dt><dd className="m-0 font-semibold tabular-nums">{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</dd></div><div className="col-span-2"><dt className="text-xs text-[var(--erp-text-muted)]">Precio vigente</dt><dd className="m-0 font-semibold tabular-nums">{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</dd></div></dl>
+        </article>} />
+      : <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
+        registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
+        controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
+        encabezadoTabla={<tr>{columnas.map((columna) => <th key={columna}>{columna}</th>)}</tr>}
+        renderizarFila={(item) => motos
+          ? <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{numero(item.stock)} unidades</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</td></tr>
+          : <tr key={item.id}><td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.codigo}</span></td><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{item.categoria}</td><td>{numero(item.stock)}{item.unidad && ` ${item.unidad}`}</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />}
   </div>;
 }
 
