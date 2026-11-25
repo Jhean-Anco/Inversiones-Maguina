@@ -30,7 +30,8 @@ export type UbigeoPeru = { codigo: string; departamento: string; provincia: stri
 export type DocumentoOrigenGuia = { id: string; codigo: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; estado: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; total: string };
 export type DetalleDocumentoGuia = { id: string; tipo: "PRODUCTO" | "MOTOTAXI"; codigo: string | null; descripcion: string; unidad: string | null; cantidad: string };
 export type DocumentoGuia = { id: string; codigo: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; clienteId: string; clienteNombreCompleto: string; clienteTipoDocumento: string; clienteNumeroDocumento: string; clienteDireccion: string; detalles: DetalleDocumentoGuia[] };
-export type PaginaGuiasRemision = { items: GuiaRemision[]; pagina: number; porPagina: number; total: number; totalPaginas: number };
+export type EstadoFiltroGuias = "TODAS" | "EMITIDAS" | "PENDIENTES" | "RECHAZADAS";
+export type PaginaGuiasRemision = { items: GuiaRemision[]; pagina: number; porPagina: number; total: number; totalPaginas: number; conteos: { todas: number; emitidas: number; pendientes: number; rechazadas: number } };
 export type NumeracionesIngreso = { BOLETA: { serie: string | null; numero: number | null; codigo: string | null }; FACTURA: { serie: string | null; numero: number | null; codigo: string | null }; NOTA_VENTA: { serie: string | null; numero: number | null; codigo: string | null }; ORDEN_SERVICIO: { serie: string | null; numero: number | null; codigo: string | null }; COTIZACION: { aplicaIgv?: boolean; serie: string | null; numero: number | null; codigo: string | null }; GUIA_REMITENTE: { serie: string | null; numero: number | null; codigo: string | null } };
 export type DatosPagoIngreso = { idempotencyKey: string; fechaPago: string; importeAplicado: string; medioPago: string; cuentaFinancieraId: string; referenciaPago?: string; observacion?: string };
 export type MedioPagoDisponible = { codigo: "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "BILLETERA_DIGITAL"; nombre: string };
@@ -45,8 +46,8 @@ export type Cotizacion = { id: string; codigo: string; aplicaIgv?: boolean; clie
 export type { IdentidadConsultada } from "./identidad.service";
 
 export const servicioIngresos = {
-  listarGuias(pagina = 1, porPagina = 10) {
-    const consulta = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina) });
+  listarGuias(pagina = 1, porPagina = 10, estado: EstadoFiltroGuias = "TODAS") {
+    const consulta = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), estado });
     return solicitarApi<PaginaGuiasRemision>(`/ingresos/guias?${consulta}`);
   },
   listarUbigeos() { return solicitarApi<UbigeoPeru[]>("/ingresos/ubigeos"); },

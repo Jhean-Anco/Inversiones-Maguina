@@ -4,7 +4,7 @@ import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/a
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { Etiqueta } from "../../components/ui/etiqueta";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
-import { servicioIngresos, type GuiaRemision } from "../../services/ingresos.service";
+import { servicioIngresos, type EstadoFiltroGuias, type GuiaRemision } from "../../services/ingresos.service";
 import { FormularioGuiaRemision } from "./formulario-guia-remision";
 import { guideListActionsClasses, guidePageClasses } from "./guias-remision-page-classes";
 
@@ -13,6 +13,21 @@ function tipoAviso(estado: string): TipoNotificacionFlotante {
   if (estado.startsWith("ERROR") || estado.startsWith("RECHAZADO")) return "error";
   return "advertencia";
 }
+
+function etiquetaEstadoGuia(estado: string) {
+  if (estado === "EMITIDO") return "Emitida";
+  if (estado === "RECHAZADO_SUNAT" || estado === "ERROR_NUBEFACT") return "Rechazada";
+  if (estado === "PENDIENTE_SUNAT") return "Pendiente de SUNAT";
+  if (estado === "NUBEFACT_PENDIENTE") return "Pendiente de envío";
+  return estado.replaceAll("_", " ");
+}
+
+const filtrosGuias: { valor: EstadoFiltroGuias; etiqueta: string; clave: "todas" | "emitidas" | "pendientes" | "rechazadas" }[] = [
+  { valor: "TODAS", etiqueta: "Todas", clave: "todas" },
+  { valor: "EMITIDAS", etiqueta: "Emitidas", clave: "emitidas" },
+  { valor: "PENDIENTES", etiqueta: "Pendientes", clave: "pendientes" },
+  { valor: "RECHAZADAS", etiqueta: "Rechazadas", clave: "rechazadas" },
+];
 
 export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean }) {
   const [guias, setGuias] = useState<GuiaRemision[]>([]);
@@ -26,22 +41,30 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
   const alertas = useAlertas();
   const [actualizada, setActualizada] = useState(0);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState<EstadoFiltroGuias>("TODAS");
+  const [conteos, setConteos] = useState({ todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0 });
 
   useEffect(() => {
     let vigente = true;
     setCargandoGuias(true);
-    void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias).then((resultado) => {
+    void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias, filtroEstado).then((resultado) => {
       if (vigente) {
         setGuias(resultado.items);
         setTotalGuias(resultado.total);
         setTotalPaginasGuias(resultado.totalPaginas);
+        setConteos(resultado.conteos);
         setError("");
       }
     }).catch((problema) => {
       if (vigente) setError(problema instanceof Error ? problema.message : "No se pudieron cargar las guías.");
     }).finally(() => { if (vigente) setCargandoGuias(false); });
     return () => { vigente = false; };
-  }, [actualizada, paginaGuias, porPaginaGuias]);
+  }, [actualizada, filtroEstado, paginaGuias, porPaginaGuias]);
+
+  function cambiarFiltro(estado: EstadoFiltroGuias) {
+    setFiltroEstado(estado);
+    setPaginaGuias(1);
+  }
 
   async function consultar(id: string) {
     setConsultando(id);
@@ -78,6 +101,15 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
   return (
     <main className={guidePageClasses}>
       {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear guía de remisión" onClick={() => setMostrarFormulario(true)} />}
+      <nav className="flex flex-wrap gap-2 rounded-2xl border border-[#dce6f0] bg-white p-3 shadow-[0_8px_26px_#173b600b]" aria-label="Filtrar guías por estado">
+        {filtrosGuias.map((filtro) => <button
+          key={filtro.valor}
+          type="button"
+          aria-pressed={filtroEstado === filtro.valor}
+          onClick={() => cambiarFiltro(filtro.valor)}
+          className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${filtroEstado === filtro.valor ? "border-[#28577f] bg-[#28577f] text-white" : "border-[#d4e1ed] bg-[#f8fbfe] text-[#28577f] hover:bg-[#edf5fc]"}`}
+        >{filtro.etiqueta}<span className={`rounded-full px-2 py-0.5 text-xs ${filtroEstado === filtro.valor ? "bg-white/20" : "bg-[#e8f0f7]"}`}>{conteos[filtro.clave]}</span></button>)}
+      </nav>
       <ListadoMaestro<GuiaRemision>
         variante="tabla"
         titulo="Guías de remisión"
@@ -91,14 +123,14 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
           alCambiarPagina: setPaginaGuias,
           alCambiarTamanio: (tamanio) => { setPorPaginaGuias(tamanio); setPaginaGuias(1); },
         }}
-        vacio={<span>Las guías emitidas aparecerán aquí.</span>}
+        vacio={<span>{filtroEstado === "TODAS" ? "Las guías emitidas aparecerán aquí." : "No hay guías con este estado."}</span>}
         encabezadoTabla={<tr><th>Tipo y código</th><th>Comprobante origen</th><th>Fecha</th><th>Estado y detalle</th><th>Documentos y acciones</th></tr>}
         renderizarFila={(guia) => (
           <tr key={guia.id}>
-            <td><strong>{guia.tipo === "REMITENTE" ? "Remitente" : "Transportista"}</strong><small>{guia.codigo}</small></td>
+            <td><strong>Guía de remisión {guia.tipo === "REMITENTE" ? "remitente" : "transportista"}</strong><small>{guia.codigo}</small></td>
             <td>{guia.comprobanteOrigen ? <><strong>{guia.comprobanteOrigen.codigo}</strong><small>{guia.comprobanteOrigen.tipo.replace("_", " ")}</small></> : "Sin vínculo"}</td>
             <td>{guia.fecha}</td>
-            <td><Etiqueta compacta tono={guia.estado === "EMITIDO" ? "positiva" : guia.estado.includes("RECHAZ") || guia.estado.includes("ERROR") ? "peligro" : "advertencia"}>{guia.estado}</Etiqueta>{guia.detalle && <small>{guia.detalle}</small>}</td>
+            <td><Etiqueta compacta tono={guia.estado === "EMITIDO" ? "positiva" : guia.estado.includes("RECHAZ") || guia.estado.includes("ERROR") ? "peligro" : "advertencia"}>{etiquetaEstadoGuia(guia.estado)}</Etiqueta>{guia.detalle && <small>{guia.detalle}</small>}</td>
             <td>
               <div className={guideListActionsClasses}>
                 {guia.enlacePdf && <a href={guia.enlacePdf} target="_blank" rel="noreferrer">PDF</a>}
