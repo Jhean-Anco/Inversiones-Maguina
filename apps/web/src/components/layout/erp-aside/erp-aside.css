@@ -1,151 +1,293 @@
 /*
- * Aside: riel de iconos (72 px) + panel de submódulos (216 px).
- * Escritorio: el riel ocupa su columna y el panel se superpone al contenido.
- * Compacto (tablet vertical y móvil): ambos viven dentro de un cajón lateral.
+ * Aside navy con secciones.
+ * Escritorio: ocupa 76 px en la cuadrícula; al expandirse (256 px) se superpone
+ * al contenido, así que no provoca reflujo. Compacto: cajón lateral.
  */
 .erp-sidebar {
-  --aside-riel: 72px;
-  --aside-panel: 216px;
+  --aside-colapsado: 76px;
+  --aside-expandido: 256px;
   --aside-fondo: #0b2545;
   --aside-texto: #c5d1e0;
+  --aside-tenue: #8fa4be;
   --aside-acento: #d41e32;
   --aside-foco: #ed5360;
+  --aside-curva: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   z-index: 20;
   grid-column: 1;
   grid-row: 1;
-  width: var(--aside-riel);
+  width: var(--aside-colapsado);
   min-width: 0;
   height: 100%;
   color: var(--aside-texto);
 }
 
-/* Riel */
-.erp-rail {
+.erp-aside {
+  position: absolute;
+  inset: 0 auto 0 0;
   display: flex;
-  height: 100%;
+  width: var(--aside-colapsado);
   box-sizing: border-box;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 0 12px;
-  border-top: 3px solid var(--aside-acento);
+  padding: 18px 15px 12px;
+  overflow: hidden;
   background: var(--aside-fondo);
+  transition: width 0.34s var(--aside-curva), box-shadow 0.34s ease;
 }
-.erp-rail__marca {
-  width: 44px;
-  height: 44px;
-  margin-bottom: 12px;
+.erp-aside::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--aside-acento);
+  content: "";
+}
+.erp-aside.is-expanded {
+  width: var(--aside-expandido);
+  box-shadow: 10px 0 28px rgb(11 37 69 / 0.22);
+}
+
+/* Marca */
+.erp-aside__marca {
+  display: flex;
+  height: 42px;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 0 2px;
+}
+.erp-aside__logo {
+  width: 42px;
+  height: 42px;
   flex: none;
   border-radius: 10px;
   background: #fff;
   object-fit: contain;
 }
-.erp-rail__nav {
+.erp-aside__nombre {
+  flex: 1;
+  overflow: hidden;
+  color: #f2f6fc;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+/* Etiquetas que solo existen con el aside expandido */
+.erp-aside__nombre,
+.erp-aside__texto,
+.erp-aside__chevron,
+.erp-aside__colapsar {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.is-expanded .erp-aside__nombre,
+.is-expanded .erp-aside__texto,
+.is-expanded .erp-aside__chevron,
+.is-expanded .erp-aside__colapsar {
+  opacity: 1;
+  transition: opacity 0.22s ease 0.12s;
+}
+
+/* Botones de colapsar / expandir */
+.erp-aside__colapsar,
+.erp-aside__expandir {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--aside-texto);
+  cursor: pointer;
+}
+.erp-aside__colapsar:hover,
+.erp-aside__expandir:hover {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+.erp-aside__expandir {
+  width: 46px;
+  height: 40px;
+  margin-top: 8px;
+  border-radius: 10px;
+}
+.erp-aside:not(.is-expanded) .erp-aside__colapsar {
+  pointer-events: none;
+}
+.erp-aside__colapsar .erp-icon,
+.erp-aside__expandir .erp-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Navegación */
+.erp-aside__nav {
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  gap: 2px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
 }
-.erp-rail__nav::-webkit-scrollbar {
+.erp-aside__nav::-webkit-scrollbar {
   display: none;
 }
-.erp-rail__item {
+.erp-aside__seccion {
+  display: block;
+  flex: none;
+  height: 12px;
+  margin-top: 8px;
+  overflow: hidden;
+  color: var(--aside-tenue);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.is-expanded .erp-aside__seccion {
+  height: 18px;
+  padding: 6px 13px 0;
+  box-sizing: border-box;
+  line-height: 12px;
+  opacity: 1;
+  transition: opacity 0.22s ease 0.12s;
+}
+.erp-aside__fila {
   position: relative;
   display: flex;
-  width: 60px;
-  height: 56px;
+  width: 100%;
+  min-height: 46px;
   box-sizing: border-box;
   flex: none;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 0 2px;
+  gap: 12px;
+  padding: 0 13px;
   border: 0;
   border-radius: 10px;
   background: transparent;
   color: var(--aside-texto);
   font: inherit;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.16s ease, color 0.16s ease;
 }
-.erp-rail__item .erp-icon {
-  width: 22px;
-  height: 22px;
+.erp-aside__fila .erp-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
-.erp-rail__etiqueta {
-  max-width: 100%;
+.erp-aside__texto {
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.erp-rail__item:hover {
+.erp-aside__chevron {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--aside-tenue);
+  transition: opacity 0.1s ease, transform 0.3s var(--aside-curva);
+}
+.is-expanded .erp-aside__chevron {
+  transition: opacity 0.22s ease 0.12s, transform 0.3s var(--aside-curva);
+}
+.erp-aside__fila[aria-expanded="true"] .erp-aside__chevron {
+  transform: rotate(180deg);
+}
+.erp-aside__fila:hover {
   background: rgb(255 255 255 / 0.08);
   color: #fff;
 }
-.erp-rail__item.is-current,
-.erp-rail__item[aria-expanded="true"] {
-  background: rgb(255 255 255 / 0.14);
+.erp-aside__fila.is-current {
+  background: rgb(255 255 255 / 0.1);
   color: #fff;
-  box-shadow: inset 3px 0 0 #ef3447;
 }
-.erp-rail__item:focus-visible,
-.erp-panel__enlace:focus-visible,
-.erp-panel__ocultar:focus-visible {
+.erp-aside:not(.is-expanded) .erp-aside__fila.is-current {
+  background: var(--aside-acento);
+}
+.erp-aside__fila:focus-visible,
+.erp-aside__sub:focus-visible,
+.erp-aside__colapsar:focus-visible,
+.erp-aside__expandir:focus-visible {
   outline: 2px solid var(--aside-foco);
   outline-offset: 2px;
 }
 
-/* Panel de submódulos */
-.erp-panel {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 100%;
-  display: flex;
-  width: var(--aside-panel);
-  box-sizing: border-box;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 12px 12px;
-  background: #f6f8fb;
-  color: #3d4f66;
-  box-shadow: 8px 0 24px rgb(11 37 69 / 0.16);
-  /* Cerrado: recortado contra el borde del riel y desplazado hacia él. */
+/* Submódulos: se despliegan animando la altura sin medirla */
+.erp-aside__subnav {
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  visibility: hidden;
-  clip-path: inset(0 100% 0 0);
-  transform: translateX(-28px);
-  /* Salida: más corta y con curva de aceleración. */
-  transition:
-    opacity 0.16s ease-in,
-    clip-path 0.22s cubic-bezier(0.4, 0, 1, 1),
-    transform 0.22s cubic-bezier(0.4, 0, 1, 1),
-    visibility 0s linear 0.22s;
+  transition: grid-template-rows 0.3s var(--aside-curva), opacity 0.2s ease;
 }
-.erp-panel.is-open {
+.erp-aside__subnav.is-open {
+  grid-template-rows: 1fr;
   opacity: 1;
-  visibility: visible;
-  /* El margen negativo a la derecha deja ver la sombra del panel. */
-  clip-path: inset(0 -32px 0 0);
-  transform: none;
-  /* Entrada: el panel se desliza desde el riel y se revela hacia la derecha. */
-  transition:
-    opacity 0.2s ease-out,
-    clip-path 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0s;
 }
-@keyframes erp-panel-enlace-entrada {
+.erp-aside:not(.is-expanded) .erp-aside__subnav {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+.erp-aside__subnav-lista {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 31px;
+  overflow: hidden;
+}
+.erp-aside__subnav.is-open .erp-aside__subnav-lista {
+  padding: 2px 0 6px;
+}
+.erp-aside__sub {
+  display: flex;
+  min-height: 34px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  color: var(--aside-texto);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.erp-aside__sub::before {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.35);
+  content: "";
+}
+.erp-aside__sub:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+.erp-aside__sub.is-current {
+  background: var(--aside-acento);
+  color: #fff;
+  font-weight: 600;
+}
+.erp-aside__sub.is-current::before {
+  background: #fff;
+}
+@keyframes erp-aside-sub-entrada {
   from {
     opacity: 0;
     transform: translateX(-10px);
@@ -155,79 +297,9 @@
     transform: none;
   }
 }
-/* Los submódulos entran en cascada cuando el panel se abre. */
-:where(html[data-responsive-profile="laptop"], html[data-responsive-profile="tablet-landscape"])
-  .erp-panel.is-open
-  .erp-panel__enlace {
-  animation: erp-panel-enlace-entrada 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(60ms + var(--orden, 0) * 35ms);
-}
-.erp-panel__cabecera {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 6px;
-}
-.erp-panel__titulo {
-  color: #0b2545;
-  font-size: 17px;
-  font-weight: 700;
-}
-.erp-panel__conteo {
-  color: #5b6b80;
-  font-size: 12px;
-}
-.erp-panel__lista {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
-}
-.erp-panel__enlace {
-  display: flex;
-  min-height: 40px;
-  box-sizing: border-box;
-  align-items: center;
-  padding: 6px 12px;
-  border-radius: 8px;
-  color: #3d4f66;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.25;
-  text-decoration: none;
-}
-.erp-panel__enlace:hover {
-  background: #e7edf5;
-  color: #0b2545;
-}
-.erp-panel__enlace.is-current {
-  background: var(--aside-fondo);
-  color: #fff;
-  font-weight: 600;
-}
-.erp-panel__ocultar {
-  display: flex;
-  height: 36px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #3d4f66;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-.erp-panel__ocultar:hover {
-  background: #e7edf5;
-}
-.erp-panel__ocultar .erp-icon {
-  width: 16px;
-  height: 16px;
+.erp-aside.is-expanded .erp-aside__subnav.is-open .erp-aside__sub {
+  animation: erp-aside-sub-entrada 0.3s var(--aside-curva) both;
+  animation-delay: calc(80ms + var(--orden, 0) * 35ms);
 }
 
 /* Cajón lateral en tablet vertical y móvil */
@@ -247,8 +319,7 @@
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 31;
-  display: flex;
-  width: min(calc(var(--aside-riel) + var(--aside-panel)), 92vw);
+  width: min(276px, 86vw);
   height: 100svh;
   transform: translateX(-102%);
   transition: transform 0.24s ease-in-out;
@@ -258,25 +329,9 @@
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .erp-rail {
-  width: var(--aside-riel);
-  flex: none;
-}
-:where(
-    html[data-responsive-profile="tablet-portrait"],
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .erp-panel {
-  position: static;
-  width: auto;
-  min-width: 0;
-  flex: 1;
+  .erp-aside {
+  width: 100%;
   box-shadow: none;
-  opacity: 1;
-  visibility: visible;
-  clip-path: none;
-  transform: none;
   transition: none;
 }
 :where(
@@ -284,7 +339,7 @@
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .erp-panel__ocultar {
+  :is(.erp-aside__colapsar, .erp-aside__expandir) {
   display: none;
 }
 .menu-open .erp-sidebar {
@@ -299,13 +354,13 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .erp-sidebar,
-  .erp-panel,
-  .erp-panel.is-open,
-  .erp-rail__item {
+  .erp-aside,
+  .erp-aside *,
+  .erp-aside__subnav {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
   }
-  .erp-panel.is-open .erp-panel__enlace {
+  .erp-aside__sub {
     animation: none !important;
   }
 }

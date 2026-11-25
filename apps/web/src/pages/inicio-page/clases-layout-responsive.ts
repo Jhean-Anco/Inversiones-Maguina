@@ -1,7 +1,7 @@
 export const clasesLayoutResponsive = [
-  "grid-cols-[72px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]",
-  "laptop:grid-cols-[72px_minmax(0,1fr)]",
-  "tablet-landscape:grid-cols-[72px_minmax(0,1fr)]",
+  "grid-cols-[76px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]",
+  "laptop:grid-cols-[76px_minmax(0,1fr)]",
+  "tablet-landscape:grid-cols-[76px_minmax(0,1fr)]",
   "tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:grid-rows-[68px_minmax(0,1fr)]",
   "mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-rows-[56px_minmax(0,1fr)]",
   "mobile-portrait:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-rows-[60px_minmax(0,1fr)]",

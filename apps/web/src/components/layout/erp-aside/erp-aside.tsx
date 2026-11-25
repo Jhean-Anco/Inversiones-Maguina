@@ -1,5 +1,5 @@
 import "./erp-aside.css";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import { useViewportProfile } from "../../../utilidades/use-viewport-profile";
 import { Icono } from "./erp-icon";
@@ -12,7 +12,7 @@ type ErpAsideProps = {
   submoduloActivo?: SubmoduloAside;
   navegacionVisible: ModuloAside[];
   dashboardActivo: boolean;
-  /** En escritorio, true cuando el panel de submódulos está oculto. */
+  /** En escritorio, true cuando el aside está colapsado a 76 px. */
   contraido: boolean;
   menuMovilAbierto: boolean;
   botonMenuRef: RefObject<HTMLButtonElement | null>;
@@ -21,22 +21,21 @@ type ErpAsideProps = {
   onNavegarResumen: () => void;
 };
 
-const ID_PANEL = "erp-aside-panel";
 const CONTROLES_ENFOCABLES = "a[href], button:not(:disabled)";
+
+function crearIdSubnav(nombre: string) {
+  return `erp-subnav-${nombre.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es-PE").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
 
 export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, dashboardActivo, contraido, menuMovilAbierto, botonMenuRef, onContraidoChange, onCerrarMenuMovil, onNavegarResumen }: ErpAsideProps) {
   const perfilViewport = useViewportProfile();
   const perfilAmplio = perfilViewport === "laptop" || perfilViewport === "tablet-landscape";
   const perfilCompacto = !perfilAmplio;
   const asideOculto = perfilCompacto && !menuMovilAbierto;
+  const expandido = perfilCompacto || !contraido;
   const [seccionAbierta, setSeccionAbierta] = useState<string | null>(null);
   const asideRef = useRef<HTMLElement>(null);
   const menuEstuvoAbierto = useRef(false);
-
-  const modulosConHijos = navegacionVisible.filter((modulo) => modulo.hijos.length > 0);
-  const moduloPanel = modulosConHijos.find((modulo) => modulo.nombre === seccionAbierta)
-    ?? (perfilCompacto ? modulosConHijos.find((modulo) => modulo.nombre === moduloActivo?.nombre) ?? modulosConHijos[0] : undefined);
-  const panelAbierto = Boolean(moduloPanel) && (perfilCompacto || !contraido);
 
   useEffect(() => {
     if (perfilAmplio && menuMovilAbierto) onCerrarMenuMovil();
@@ -70,12 +69,12 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
   }, [botonMenuRef, menuMovilAbierto, perfilCompacto]);
 
   const alternarModulo = (nombre: string) => {
-    if (perfilAmplio && !contraido && seccionAbierta === nombre) {
-      onContraidoChange(true);
+    if (contraido && perfilAmplio) {
+      onContraidoChange(false);
+      setSeccionAbierta(nombre);
       return;
     }
-    setSeccionAbierta(nombre);
-    if (perfilAmplio) onContraidoChange(false);
+    setSeccionAbierta((abierta) => (abierta === nombre ? null : nombre));
   };
 
   const manejarTecladoAside = (evento: ReactKeyboardEvent<HTMLElement>) => {
@@ -105,8 +104,6 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
     }
   };
 
-  const conteoSubmodulos = moduloPanel ? `${moduloPanel.hijos.length} ${moduloPanel.hijos.length === 1 ? "módulo" : "módulos"}` : "";
-
   return (
     <>
       {perfilCompacto && menuMovilAbierto && <button className="erp-aside-velo" aria-label="Cerrar menú" type="button" onClick={onCerrarMenuMovil} />}
@@ -119,71 +116,83 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
         inert={asideOculto}
         onKeyDown={manejarTecladoAside}
       >
-        <div className="erp-rail">
-          <img className="erp-rail__marca" src="/logo.webp" alt="Inversiones Maguiña" />
-          <nav className="erp-rail__nav" aria-label="Módulos">
-            {navegacionVisible.map((elemento) => {
-              const etiqueta = elemento.etiqueta ?? elemento.nombre;
+        <div className={`erp-aside${expandido ? " is-expanded" : ""}`}>
+          <div className="erp-aside__marca">
+            <img className="erp-aside__logo" src="/logo.webp" alt="Inversiones Maguiña" />
+            <strong className="erp-aside__nombre">MAGUIÑA</strong>
+            {perfilAmplio && expandido && (
+              <button className="erp-aside__colapsar" type="button" aria-label="Contraer menú" onClick={() => onContraidoChange(true)}>
+                <svg className="erp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+              </button>
+            )}
+          </div>
+
+          <nav className="erp-aside__nav" aria-label="Secciones">
+            {navegacionVisible.map((elemento, indice) => {
+              const nuevaSeccion = Boolean(elemento.seccion) && elemento.seccion !== navegacionVisible[indice - 1]?.seccion;
+              const etiquetaSeccion = nuevaSeccion ? <span className="erp-aside__seccion" aria-hidden="true">{elemento.seccion}</span> : null;
               if (elemento.ruta) {
                 return (
-                  <Link
-                    className={`erp-rail__item${dashboardActivo ? " is-current" : ""}`}
-                    key={elemento.nombre}
-                    to={elemento.ruta}
-                    title={elemento.nombre}
-                    aria-current={dashboardActivo ? "page" : undefined}
-                    onClick={() => { onNavegarResumen(); onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
-                  >
-                    <Icono nombre={elemento.icono} /><span className="erp-rail__etiqueta">{etiqueta}</span>
-                  </Link>
+                  <Fragment key={elemento.nombre}>
+                    {etiquetaSeccion}
+                    <Link
+                      className={`erp-aside__fila${dashboardActivo ? " is-current" : ""}`}
+                      to={elemento.ruta}
+                      title={expandido ? undefined : elemento.nombre}
+                      aria-current={dashboardActivo ? "page" : undefined}
+                      onClick={() => { onNavegarResumen(); onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
+                    >
+                      <Icono nombre={elemento.icono} /><span className="erp-aside__texto">{elemento.nombre}</span>
+                    </Link>
+                  </Fragment>
                 );
               }
+              const abierto = seccionAbierta === elemento.nombre;
+              const idSubnav = crearIdSubnav(elemento.nombre);
               return (
-                <button
-                  className={`erp-rail__item${moduloActivo?.nombre === elemento.nombre ? " is-current" : ""}`}
-                  key={elemento.nombre}
-                  type="button"
-                  title={elemento.nombre}
-                  aria-expanded={panelAbierto && moduloPanel?.nombre === elemento.nombre}
-                  aria-controls={ID_PANEL}
-                  onClick={() => alternarModulo(elemento.nombre)}
-                >
-                  <Icono nombre={elemento.icono} /><span className="erp-rail__etiqueta">{etiqueta}</span>
-                </button>
+                <Fragment key={elemento.nombre}>
+                  {etiquetaSeccion}
+                  <button
+                    className={`erp-aside__fila${moduloActivo?.nombre === elemento.nombre ? " is-current" : ""}`}
+                    type="button"
+                    title={expandido ? undefined : elemento.nombre}
+                    aria-expanded={abierto && expandido}
+                    aria-controls={idSubnav}
+                    onClick={() => alternarModulo(elemento.nombre)}
+                  >
+                    <Icono nombre={elemento.icono} /><span className="erp-aside__texto">{elemento.nombre}</span>
+                    <svg className="erp-aside__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                  <div id={idSubnav} className={`erp-aside__subnav${abierto ? " is-open" : ""}`} aria-hidden={!abierto || !expandido} inert={!abierto || !expandido}>
+                    <div className="erp-aside__subnav-lista">
+                      {elemento.hijos.map((hijo, orden) => {
+                        const actual = submoduloActivo?.ruta === hijo.ruta;
+                        return (
+                          <Link
+                            className={`erp-aside__sub${actual ? " is-current" : ""}`}
+                            to={hijo.ruta}
+                            key={hijo.ruta}
+                            aria-current={actual ? "page" : undefined}
+                            style={{ "--orden": orden } as CSSProperties}
+                            onClick={() => { onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
+                          >
+                            {hijo.nombre}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Fragment>
               );
             })}
           </nav>
-        </div>
 
-        {moduloPanel && (
-          <div id={ID_PANEL} className={`erp-panel${panelAbierto ? " is-open" : ""}`} aria-hidden={!panelAbierto} inert={!panelAbierto}>
-            <div className="erp-panel__cabecera">
-              <strong className="erp-panel__titulo">{moduloPanel.nombre}</strong>
-              <span className="erp-panel__conteo">{conteoSubmodulos}</span>
-            </div>
-            <nav className="erp-panel__lista" aria-label={`Submódulos de ${moduloPanel.nombre}`}>
-              {moduloPanel.hijos.map((hijo, orden) => {
-                const actual = submoduloActivo?.ruta === hijo.ruta;
-                return (
-                  <Link
-                    className={`erp-panel__enlace${actual ? " is-current" : ""}`}
-                    to={hijo.ruta}
-                    key={hijo.ruta}
-                    aria-current={actual ? "page" : undefined}
-                    style={{ "--orden": orden } as CSSProperties}
-                    onClick={() => { onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
-                  >
-                    {hijo.nombre}
-                  </Link>
-                );
-              })}
-            </nav>
-            <button className="erp-panel__ocultar" type="button" onClick={() => onContraidoChange(true)}>
-              <svg className="erp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-              Ocultar panel
+          {perfilAmplio && !expandido && (
+            <button className="erp-aside__expandir" type="button" aria-label="Expandir menú" onClick={() => onContraidoChange(false)}>
+              <svg className="erp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </aside>
     </>
   );
