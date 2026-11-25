@@ -404,31 +404,41 @@ export class ServicioIngresos {
     return { ...documento, clienteNombreCompleto: documento.clienteNombre ?? [documento.clienteNombres, documento.clienteApellidoPaterno, documento.clienteApellidoMaterno].filter(Boolean).join(" "), clienteDireccion: documento.clienteDireccionEntrega || documento.clienteDireccionFiscal || "", detalles };
   }
 
-  async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string, estadoEntrada?: string) {
+  async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string, estadoEntrada?: string, busquedaEntrada?: string) {
     const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
     const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
     const grupo = estadoEntrada && ["TODAS", "EMITIDAS", "PENDIENTES", "RECHAZADAS"].includes(estadoEntrada) ? estadoEntrada : "TODAS";
+    const busqueda = busquedaEntrada?.trim().slice(0, 100) ?? "";
+    const patron = busqueda ? `%${normalizarTextoBusqueda(busqueda).replace(/[\\%_]/g, "\\$&")}%` : "";
+    const codigoOrigen = this.codigoDocumentoParaGuia();
+    const condicionBusqueda = patron ? or(
+      contieneSinTildes(sql`concat_ws('-', ${guiasRemision.serie}, lpad(${guiasRemision.numero}::text, 6, '0'))`, patron),
+      contieneSinTildes(codigoOrigen, patron),
+      contieneSinTildes(ingresos.clienteNombre, patron),
+      contieneSinTildes(ingresos.tipoComprobante, patron),
+    ) : undefined;
     const condicion = grupo === "EMITIDAS" ? eq(guiasRemision.estado, "EMITIDO")
       : grupo === "RECHAZADAS" ? inArray(guiasRemision.estado, [...estadosRechazadosGuia])
         : grupo === "PENDIENTES" ? not(inArray(guiasRemision.estado, ["EMITIDO", ...estadosRechazadosGuia])) : undefined;
+    const condicionListado = and(condicion, condicionBusqueda);
     const [[{ total }], [conteos]] = await Promise.all([
-      db.select({ total: count() }).from(guiasRemision).where(condicion),
+      db.select({ total: count() }).from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicionListado),
       db.select({
       todas: count(),
       emitidas: sql<number>`count(*) filter (where ${guiasRemision.estado} = 'EMITIDO')`,
       pendientes: sql<number>`count(*) filter (where ${guiasRemision.estado} <> 'EMITIDO' and ${guiasRemision.estado} not in ('ERROR_NUBEFACT', 'ERROR_SUNAT', 'RECHAZADO_SUNAT'))`,
       rechazadas: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('ERROR_NUBEFACT', 'ERROR_SUNAT', 'RECHAZADO_SUNAT'))`,
-      }).from(guiasRemision),
+      }).from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicionBusqueda),
     ]);
-    const filas = await db.select({ guia: guiasRemision, codigoOrigen: this.codigoDocumentoParaGuia(), tipoOrigen: ingresos.tipoComprobante })
-      .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicion)
+    const filas = await db.select({ guia: guiasRemision, codigoOrigen, tipoOrigen: ingresos.tipoComprobante, clienteNombre: ingresos.clienteNombre })
+      .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicionListado)
       .orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
-    const items = filas.map(({ guia: fila, codigoOrigen, tipoOrigen }) => {
+    const items = filas.map(({ guia: fila, codigoOrigen, tipoOrigen, clienteNombre }) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
       const respuesta = datos.respuesta && typeof datos.respuesta === "object" ? datos.respuesta as Record<string, unknown> : {};
       const comprobanteOrigen = datos.comprobanteOrigen && typeof datos.comprobanteOrigen === "object" ? datos.comprobanteOrigen as Record<string, unknown> : null;
       return { id: fila.id, tipo: fila.tipo, fecha: fila.fecha, codigo: `${fila.serie}-${String(fila.numero).padStart(6, "0")}`,
-        ingresoId: fila.ingresoId, comprobanteOrigen: comprobanteOrigen && typeof comprobanteOrigen.codigo === "string"
+        ingresoId: fila.ingresoId, clienteNombre: clienteNombre ?? null, comprobanteOrigen: comprobanteOrigen && typeof comprobanteOrigen.codigo === "string"
           ? { codigo: comprobanteOrigen.codigo, tipo: typeof comprobanteOrigen.tipo === "string" ? comprobanteOrigen.tipo : "" }
           : codigoOrigen && tipoOrigen ? { codigo: codigoOrigen, tipo: tipoOrigen } : null,
         estado: fila.estado, detalle: typeof respuesta.sunat_description === "string" ? respuesta.sunat_description : null,
