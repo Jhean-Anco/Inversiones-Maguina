@@ -65,17 +65,6 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
   return <div className="gestion-cotizacion-page">
     <div className="cotizacion-layout">
       <div className="cotizacion-editor">
-        <aside className="venta-catalog-sidebar" aria-label="Catálogo de repuestos">
-          <header><div><span>CATÁLOGO</span><h2>Buscar repuestos</h2><p>Busca en inventario y agrega los necesarios para la cotización.</p></div></header>
-          <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={busquedaProducto} onChange={(e) => onBusquedaProductoChange(e.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar en el catálogo de repuestos" autoComplete="off" /></label>
-          <div className="venta-catalog-results" aria-live="polite">
-            {!busquedaProducto.trim() ? <CatalogoRecientes items={productosRecientes} alSeleccionar={onAgregarProductoReciente} titulo="Últimos repuestos seleccionados" etiquetaAccion="Volver a agregar" /> : busquedaProducto.trim().length < MIN_CARACTERES_BUSQUEDA_CATALOGO ? <div className="venta-catalog-empty is-hint"><span>Escribe al menos cuatro caracteres para buscar en inventario.</span></div> : buscandoProductos ? <p className="venta-catalog-status">Buscando en inventario…</p> : productos.length ? productos.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}>
-              <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigo} · {producto.presentacion}</span></div>
-              <div className="venta-catalog-product-meta"><strong>{dinero(Number(producto.precio))}</strong></div>
-              <button type="button" onClick={() => onAgregarProducto(producto)}>Agregar a la cotización</button>
-            </article>) : <div className="venta-catalog-empty"><strong>No hay repuestos para mostrar</strong><span>No encontramos coincidencias. Prueba con otro nombre o código.</span></div>}
-          </div>
-        </aside>
         <article className="venta-form-paper gestion-cotizacion-paper" aria-label="Documento de cotización">
           <header className="venta-form-heading"><div><p>DOCUMENTO COMERCIAL</p><h2>{editando ? "EDITAR COTIZACIÓN" : "NUEVA COTIZACIÓN"}</h2></div><div className="venta-number-card"><span>N° DE COTIZACIÓN</span><strong>{consultandoSerie ? "Consultando serie…" : errorConsultaSerie ? "Error de serie" : codigoPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong></div></header>
           <div className="cotizacion-form-scroll">
@@ -98,6 +87,17 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
           </div>
             <section className="cotizacion-form-body" aria-label="Repuestos y servicios">
               <div className="venta-form-body-heading"><h3>Detalle de la cotización</h3><div className="venta-product-tools"><span>{lineas.length} líneas</span><button type="button" onClick={onAgregarServicio}>+ Agregar servicio</button></div></div>
+        <aside className="venta-catalog-sidebar cotizacion-catalogo-integrado" aria-label="Catálogo de repuestos">
+          <header><div><span>CATÁLOGO</span><h2>Buscar repuestos</h2><p>Busca en inventario y agrega los necesarios para la cotización.</p></div></header>
+          <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={busquedaProducto} onChange={(e) => onBusquedaProductoChange(e.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar en el catálogo de repuestos" autoComplete="off" /></label>
+          <div className="venta-catalog-results" aria-live="polite">
+            {!busquedaProducto.trim() ? <CatalogoRecientes items={productosRecientes} alSeleccionar={onAgregarProductoReciente} titulo="Últimos repuestos seleccionados" etiquetaAccion="Volver a agregar" /> : busquedaProducto.trim().length < MIN_CARACTERES_BUSQUEDA_CATALOGO ? <div className="venta-catalog-empty is-hint"><span>Escribe al menos cuatro caracteres para buscar en inventario.</span></div> : buscandoProductos ? <p className="venta-catalog-status">Buscando en inventario…</p> : productos.length ? productos.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <article className="venta-catalog-product" key={producto.presentacionId}>
+              <div className="venta-catalog-product-title"><strong>{producto.nombre}</strong><span>{producto.codigo} · {producto.presentacion}</span></div>
+              <div className="venta-catalog-product-meta"><strong>{dinero(Number(producto.precio))}</strong></div>
+              <button type="button" onClick={() => onAgregarProducto(producto)}>Agregar a la cotización</button>
+            </article>) : <div className="venta-catalog-empty"><strong>No hay repuestos para mostrar</strong><span>No encontramos coincidencias. Prueba con otro nombre o código.</span></div>}
+          </div>
+        </aside>
               {lineas.length ? <>
               <div className={`orden-invoice-columns ${cotizacionClases.invoiceColumns}`}><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Descuento</span><span>Total</span><span aria-label="Acciones" /></div>
               <div className={`orden-invoice-lines ${cotizacionClases.invoiceLines}`}>
@@ -124,7 +124,7 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
               </> : <div className="orden-invoice-empty cotizacion-empty"><strong>Agrega el primer repuesto o servicio</strong><p>Busca repuestos en el catálogo o pulsa Agregar servicio para incluir mano de obra.</p></div>}
             </section>
             <div className="venta-data-footer ordenes-data-footer cotizacion-data-footer">
-              <label className="venta-observation-card ordenes-reason-card cotizacion-observations">Observaciones<textarea value={observacion} onChange={(e) => onObservacionChange(e.target.value)} placeholder="Añade una nota para el cliente" /></label>
+              <label className="venta-observation-card ordenes-reason-card cotizacion-observations"><span className="cotizacion-seccion-titulo"><span>3</span>Observaciones (opcional)</span><textarea maxLength={2000} value={observacion} onChange={(e) => onObservacionChange(e.target.value)} placeholder="Añade una nota para el cliente" /></label>
               <div className="venta-checkout-actions ordenes-checkout-actions cotizacion-checkout-actions">
                 <DesgloseImportes {...totales} destacado />
                 <div className="venta-checkout-buttons"><button type="button" className="venta-clear" disabled={guardando} onClick={onCerrar}>Cancelar</button><button type="button" className="venta-submit" disabled={guardando || !codigoPrevisualizado || consultandoSerie || Boolean(errorConsultaSerie)} onClick={onGuardar}>{guardando ? "Guardando…" : "Guardar e imprimir cotización"}<span aria-hidden="true">→</span></button></div>
