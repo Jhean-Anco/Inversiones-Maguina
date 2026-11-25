@@ -1,2118 +1,311 @@
-.erp-nav-link i {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(0);
-  transition:
-    opacity 0.8s ease,
-    max-width 1.5s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-height 1.5s ease,
-    margin 1.5s ease,
-    transform 1.2s ease,
-    visibility 0s;
+/*
+ * Aside: riel de iconos (72 px) + panel de submódulos (216 px).
+ * Escritorio: el riel ocupa su columna y el panel se superpone al contenido.
+ * Compacto (tablet vertical y móvil): ambos viven dentro de un cajón lateral.
+ */
+.erp-sidebar {
+  --aside-riel: 72px;
+  --aside-panel: 216px;
+  --aside-fondo: #0b2545;
+  --aside-texto: #c5d1e0;
+  --aside-acento: #d41e32;
+  --aside-foco: #ed5360;
+  position: relative;
+  z-index: 20;
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--aside-riel);
+  min-width: 0;
+  height: 100%;
+  color: var(--aside-texto);
 }
 
-.erp-subnav {
-  max-height: 500px;
-  overflow: hidden;
-  opacity: 1;
-  transition:
-    max-height 1.5s ease,
-    opacity 0.8s ease,
-    margin 1.5s ease,
-    padding 1.5s ease;
+/* Riel */
+.erp-rail {
+  display: flex;
+  height: 100%;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 0 12px;
+  border-top: 3px solid var(--aside-acento);
+  background: var(--aside-fondo);
 }
-.is-collapsed .erp-nav-link i {
-  width: 0;
-  max-width: 0;
-  margin: 0;
-  border-width: 0;
+.erp-rail__marca {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+  flex: none;
+  border-radius: 10px;
+  background: #fff;
+  object-fit: contain;
+}
+.erp-rail__nav {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.erp-rail__nav::-webkit-scrollbar {
+  display: none;
+}
+.erp-rail__item {
+  position: relative;
+  display: flex;
+  width: 60px;
+  height: 56px;
+  box-sizing: border-box;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--aside-texto);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+.erp-rail__item .erp-icon {
+  width: 22px;
+  height: 22px;
+}
+.erp-rail__etiqueta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.erp-rail__item:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+.erp-rail__item.is-current,
+.erp-rail__item[aria-expanded="true"] {
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  box-shadow: inset 3px 0 0 #ef3447;
+}
+.erp-rail__item:focus-visible,
+.erp-panel__enlace:focus-visible,
+.erp-panel__ocultar:focus-visible {
+  outline: 2px solid var(--aside-foco);
+  outline-offset: 2px;
+}
+
+/* Panel de submódulos */
+.erp-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  display: flex;
+  width: var(--aside-panel);
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 12px 12px;
+  background: #f6f8fb;
+  color: #3d4f66;
+  box-shadow: 8px 0 24px rgb(11 37 69 / 0.16);
+  /* Cerrado: recortado contra el borde del riel y desplazado hacia él. */
   opacity: 0;
   visibility: hidden;
-  transform: translate(-5px);
+  clip-path: inset(0 100% 0 0);
+  transform: translateX(-28px);
+  /* Salida: más corta y con curva de aceleración. */
   transition:
-    opacity 0.8s ease,
-    width 1.5s ease,
-    max-width 1.5s ease,
-    transform 1.2s ease,
-    visibility 0s linear 1.45s;
+    opacity 0.16s ease-in,
+    clip-path 0.22s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.22s cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 0.22s;
 }
-.is-collapsed .erp-subnav {
-  max-height: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  opacity: 0;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-nav-link
-  i {
-  max-width: none;
-  max-height: none;
-  width: auto;
-  margin: revert;
+.erp-panel.is-open {
   opacity: 1;
   visibility: visible;
+  /* El margen negativo a la derecha deja ver la sombra del panel. */
+  clip-path: inset(0 -32px 0 0);
   transform: none;
-  pointer-events: auto;
-  transition: none;
-}
-:where(
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .is-collapsed
-  .erp-brand
-  div,
-:where(
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .is-collapsed
-  .erp-nav-link
-  span,
-:where(
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .is-collapsed
-  .erp-nav-link
-  i {
-  max-width: none;
-  max-height: none;
-  width: auto;
-  margin: revert;
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-  pointer-events: auto;
-  transition: none;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-sidebar {
-  transition-delay: 0.65s;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-brand div,
-:where(html[data-responsive-profile="laptop"]) .erp-nav-link span {
+  /* Entrada: el panel se desliza desde el riel y se revela hacia la derecha. */
   transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-height 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
+    opacity 0.2s ease-out,
+    clip-path 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0s;
 }
-:where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-brand div,
-:where(html[data-responsive-profile="laptop"])
-  .is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-height 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    margin 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link {
-  transition-delay: 0s;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand
-  div {
-  transition-delay: 0s, 0s, 0s, 0s, 0s, 0.85s;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  span {
-  transition-delay: 0s, 0s, 0s, 0s, 0.85s;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s linear 0.85s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-sidebar {
-  transition-delay: 0.65s;
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-brand div,
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link span {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-height 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-height 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    margin 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link {
-  transition-delay: 0s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand
-  div {
-  transition-delay: 0s, 0s, 0s, 0s, 0s, 0.85s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  span {
-  transition-delay: 0s, 0s, 0s, 0s, 0.85s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s linear 0.85s;
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-layout,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-sidebar,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-brand,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-brand
-    div,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-nav-link,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-nav-link
-    span,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-nav-link
-    i,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-nav-link
-    svg,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-subnav,
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-subnav-link {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+@keyframes erp-panel-enlace-entrada {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
   }
-
-  :where(
-      html[data-responsive-profile="laptop"],
-      html[data-responsive-profile="tablet-landscape"]
-    )
-    .erp-subnav.is-open
-    .erp-subnav-inner
-    > .erp-subnav-link {
-    animation: none !important;
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
-
-:where(html[data-responsive-profile="tablet-portrait"]) .erp-nav-link {
-  gap: 9px;
-  padding-right: 8px;
-  padding-left: 9px;
-  font-size: 10px;
+/* Los submódulos entran en cascada cuando el panel se abre. */
+:where(html[data-responsive-profile="laptop"], html[data-responsive-profile="tablet-landscape"])
+  .erp-panel.is-open
+  .erp-panel__enlace {
+  animation: erp-panel-enlace-entrada 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(60ms + var(--orden, 0) * 35ms);
 }
-
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-subnav {
+.erp-panel__cabecera {
   display: flex;
-}
-:where(
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .is-collapsed
-  .erp-subnav {
-  display: flex;
-}
-.erp-layout .erp-subnav {
-  display: flex !important;
-  max-height: 0 !important;
   flex-direction: column;
-  gap: 1px;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(-5px);
-  transition:
-    max-height 0.74s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.48s ease,
-    margin 0.74s cubic-bezier(0.4, 0, 0.2, 1),
-    padding 0.74s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.48s ease;
+  gap: 2px;
+  padding: 0 6px;
 }
-.erp-layout .erp-subnav.is-open {
-  max-height: 500px !important;
-  margin: 2px 0 5px 20px;
-  padding: 2px 0 2px 14px;
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    max-height 0.74s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.52s ease,
-    margin 0.74s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 0.74s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+.erp-panel__titulo {
+  color: #0b2545;
+  font-size: 17px;
+  font-weight: 700;
 }
-.erp-layout.is-collapsed .erp-subnav.is-open {
-  max-height: 0 !important;
-  margin-top: 0;
-  margin-bottom: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  opacity: 0;
+.erp-panel__conteo {
+  color: #5b6b80;
+  font-size: 12px;
+}
+.erp-panel__lista {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+.erp-panel__enlace {
+  display: flex;
+  min-height: 40px;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: #3d4f66;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.erp-panel__enlace:hover {
+  background: #e7edf5;
+  color: #0b2545;
+}
+.erp-panel__enlace.is-current {
+  background: var(--aside-fondo);
+  color: #fff;
+  font-weight: 600;
+}
+.erp-panel__ocultar {
+  display: flex;
+  height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #3d4f66;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.erp-panel__ocultar:hover {
+  background: #e7edf5;
+}
+.erp-panel__ocultar .erp-icon {
+  width: 16px;
+  height: 16px;
 }
 
-.erp-layout .erp-subnav-inner > .erp-subnav-link {
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.24s ease,
-    transform 0.28s cubic-bezier(0.2, 0.7, 0.25, 1);
-}
-.erp-layout .erp-subnav.is-open .erp-subnav-inner > .erp-subnav-link {
-  opacity: 1;
-  transform: translateY(0);
-  animation: erp-submodule-enter 0.32s cubic-bezier(0.2, 0.75, 0.25, 1) both;
-  transition-delay: 0ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(1) {
-  transition-delay: 300ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(2) {
-  transition-delay: 240ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(3) {
-  transition-delay: 180ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(4) {
-  transition-delay: 120ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(5) {
-  transition-delay: 60ms;
-}
-.erp-layout .erp-subnav-inner > .erp-subnav-link:nth-child(6) {
-  transition-delay: 0ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(1) {
-  animation-delay: 0ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(2) {
-  animation-delay: 60ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(3) {
-  animation-delay: 120ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(4) {
-  animation-delay: 180ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(5) {
-  animation-delay: 240ms;
-}
-.erp-layout
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(6) {
-  animation-delay: 300ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  .erp-layout .erp-subnav {
-    transition-duration: 0.74s, 0.48s, 0.74s, 0.74s, 0.48s !important;
-  }
-  .erp-layout .erp-subnav.is-open {
-    transition-duration: 0.74s, 0.52s, 0.74s, 0.74s, 0.52s !important;
-  }
-  .erp-layout .erp-subnav-inner > .erp-subnav-link {
-    transition-duration: 0.24s, 0.28s !important;
-    animation-duration: 0.32s !important;
-  }
-}
-.is-collapsed .erp-nav-link i {
-  transform: translateX(-5px);
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-brand {
-  gap: 11px;
+/* Cajón lateral en tablet vertical y móvil */
+.erp-aside-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: #061a2d80;
 }
 :where(
+    html[data-responsive-profile="tablet-portrait"],
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .is-collapsed
-  .erp-brand {
-  gap: 11px;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-nav-link {
-  gap: 12px;
+  .erp-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 31;
+  display: flex;
+  width: min(calc(var(--aside-riel) + var(--aside-panel)), 92vw);
+  height: 100svh;
+  transform: translateX(-102%);
+  transition: transform 0.24s ease-in-out;
 }
 :where(
+    html[data-responsive-profile="tablet-portrait"],
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .is-collapsed
-  .erp-nav-link {
-  gap: 12px;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-nav-link
-  span {
-  flex: 1;
+  .erp-rail {
+  width: var(--aside-riel);
+  flex: none;
 }
 :where(
+    html[data-responsive-profile="tablet-portrait"],
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .is-collapsed
-  .erp-nav-link
-  span {
-  flex: 1;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-nav-link
-  i {
+  .erp-panel {
+  position: static;
   width: auto;
-  border-width: initial;
+  min-width: 0;
+  flex: 1;
+  box-shadow: none;
+  opacity: 1;
+  visibility: visible;
+  clip-path: none;
+  transform: none;
+  transition: none;
 }
 :where(
+    html[data-responsive-profile="tablet-portrait"],
     html[data-responsive-profile="mobile-landscape"],
     html[data-responsive-profile="mobile-portrait"]
   )
-  .is-collapsed
-  .erp-nav-link
-  i {
-  width: auto;
-  border-width: initial;
+  .erp-panel__ocultar {
+  display: none;
 }
-:where(html[data-responsive-profile="tablet-portrait"])
-  .is-collapsed
-  .erp-subnav {
-  max-height: 500px;
-  margin: 2px 0 5px 20px;
-  padding: 2px 0 2px 14px;
-  overflow: visible;
-  opacity: 1;
+.menu-open .erp-sidebar {
+  transform: translateX(0);
 }
-:where(
-    html[data-responsive-profile="mobile-landscape"],
-    html[data-responsive-profile="mobile-portrait"]
-  )
-  .is-collapsed
-  .erp-subnav {
-  max-height: 500px;
-  margin: 2px 0 5px 20px;
-  padding: 2px 0 2px 14px;
-  overflow: visible;
-  opacity: 1;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-sidebar {
-  transition: padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-sidebar {
-  transition: padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-:where(html[data-responsive-profile="laptop"]) .erp-brand,
-:where(html[data-responsive-profile="laptop"]) .erp-nav-link {
-  transition-delay: 0s;
-  transition-duration: 0.85s;
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-brand,
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link {
-  transition-delay: 0s;
-  transition-duration: 0.85s;
-}
-:where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-brand,
-:where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-nav-link {
-  transition-delay: 0.65s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-brand,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-nav-link {
-  transition-delay: 0.65s;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-nav-link span {
-  transition:
-    flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s;
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link span {
-  transition:
-    flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s;
-}
-:where(html[data-responsive-profile="laptop"])
-  .is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-nav-link i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s;
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    visibility 0s;
-}
-:where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-nav-link i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-    visibility 0s linear 1.5s;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-subnav {
-  max-height: 220px;
-  transition:
-    max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-:where(html[data-responsive-profile="tablet-landscape"]) .erp-subnav {
-  max-height: 220px;
-  transition:
-    max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-:where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-subnav {
-  max-height: 0;
-  transition:
-    max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .is-collapsed
-  .erp-subnav {
-  max-height: 0;
-  transition:
-    max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1);
-}
-@starting-style {
-  :where(html[data-responsive-profile="laptop"]) .erp-subnav {
-    max-height: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-  }
-}
-@starting-style {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-subnav {
-    max-height: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-  }
-}
-:where(html[data-responsive-profile="laptop"]) .erp-layout .erp-sidebar,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
+
+@media print {
   .erp-sidebar,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar {
-  transition: padding 0.58s cubic-bezier(0.22, 0.72, 0.22, 1) !important;
-  transition-delay: 0s !important;
+  .erp-aside-velo {
+    display: none;
+  }
 }
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-brand,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link {
-  transition-delay: 0s !important;
-  transition-duration: 0.58s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  :where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  i,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.18s ease 0.02s,
-    max-width 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    max-height 0.42s cubic-bezier(0.22, 0.72, 0.22, 1),
-    margin 0.42s cubic-bezier(0.22, 0.72, 0.22, 1),
-    transform 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    visibility 0s linear 0.5s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    opacity 0.18s ease 0.02s,
-    max-width 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    transform 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    visibility 0s linear 0.5s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  svg {
-  transition: transform 0.5s cubic-bezier(0.22, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-layout .erp-subnav,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open {
-  transition:
-    max-height 0.24s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.16s ease,
-    margin 0.24s cubic-bezier(0.4, 0, 0.2, 1),
-    padding 0.24s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav-inner
-  > .erp-subnav-link,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  transition:
-    opacity 0.12s ease,
-    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(n) {
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout
+@media (prefers-reduced-motion: reduce) {
   .erp-sidebar,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-sidebar,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar {
-  transition: padding 0.58s cubic-bezier(0.22, 0.72, 0.22, 1) !important;
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-brand,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link {
-  transition-delay: 0s !important;
-  transition-duration: 0.58s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  :where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  i,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.18s ease 0.02s,
-    max-width 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    max-height 0.42s cubic-bezier(0.22, 0.72, 0.22, 1),
-    margin 0.42s cubic-bezier(0.22, 0.72, 0.22, 1),
-    transform 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    visibility 0s linear 0.5s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    opacity 0.18s ease 0.02s,
-    max-width 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    transform 0.48s cubic-bezier(0.22, 0.72, 0.22, 1),
-    visibility 0s linear 0.5s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  svg {
-  transition: transform 0.5s cubic-bezier(0.22, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout
-  .erp-subnav,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open {
-  transition:
-    max-height 0.24s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.16s ease,
-    margin 0.24s cubic-bezier(0.4, 0, 0.2, 1),
-    padding 0.24s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav-inner
-  > .erp-subnav-link,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  transition:
-    opacity 0.12s ease,
-    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  transition-delay: 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(n) {
-  transition-delay: 0s !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-sidebar {
-    transition: padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-sidebar {
-    transition: padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-brand,
-  :where(html[data-responsive-profile="laptop"]) .erp-nav-link {
-    transition-delay: 0s !important;
-    transition-duration: 0.85s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-brand,
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link {
-    transition-delay: 0s !important;
-    transition-duration: 0.85s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-brand,
-  :where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-nav-link {
-    transition-delay: 0.65s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-brand,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-nav-link {
-    transition-delay: 0.65s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-nav-link {
-    transition:
-      gap 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      justify-content 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      background 0.16s ease,
-      color 0.16s ease !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link {
-    transition:
-      gap 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      justify-content 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      background 0.16s ease,
-      color 0.16s ease !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-nav-link {
-    transition:
-      gap 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      justify-content 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      background 0.16s ease,
-      color 0.16s ease !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-nav-link {
-    transition:
-      gap 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      justify-content 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      background 0.16s ease,
-      color 0.16s ease !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-nav-link span {
-    transition:
-      flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      visibility 0s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link span {
-    transition:
-      flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-      visibility 0s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"])
-    .is-collapsed
-    .erp-nav-link
-    span {
-    transition:
-      flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      visibility 0s linear 1.5s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-nav-link
-    span {
-    transition:
-      flex 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      visibility 0s linear 1.5s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-nav-link i {
-    transition-duration: 0.85s, 0.85s, 0.85s, 0.85s, 0s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-nav-link i {
-    transition-duration: 0.85s, 0.85s, 0.85s, 0.85s, 0s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-nav-link i {
-    transition:
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      visibility 0s linear 1.5s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-nav-link
-    i {
-    transition:
-      opacity 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      max-width 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) 0.65s,
-      visibility 0s linear 1.5s !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-subnav {
-    max-height: 220px;
-    transition:
-      max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"]) .erp-subnav {
-    max-height: 220px;
-    transition:
-      max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .is-collapsed .erp-subnav {
-    max-height: 0;
-    transition:
-      max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .is-collapsed
-    .erp-subnav {
-    max-height: 0;
-    transition:
-      max-height 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      opacity 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      margin 0.65s cubic-bezier(0.2, 0.72, 0.22, 1),
-      padding 0.65s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-  }
-}
-:where(html[data-responsive-profile="laptop"]) .erp-layout .erp-sidebar {
-  transition:
-    padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.42s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.3s ease,
-    max-width 0.42s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.3s ease,
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(1)
-  .erp-nav-link
-  span {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(2)
-  .erp-nav-link
-  span {
-  transition-delay: 55ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(3)
-  .erp-nav-link
-  span {
-  transition-delay: 110ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(4)
-  .erp-nav-link
-  span {
-  transition-delay: 165ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(5)
-  .erp-nav-link
-  span {
-  transition-delay: 220ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(6)
-  .erp-nav-link
-  span {
-  transition-delay: 275ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(7)
-  .erp-nav-link
-  span {
-  transition-delay: 330ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(8)
-  .erp-nav-link
-  span {
-  transition-delay: 385ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(9)
-  .erp-nav-link
-  span {
-  transition-delay: 440ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-navigation
-  > :nth-child(10)
-  .erp-nav-link
-  span {
-  transition-delay: 495ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.3s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.3s ease,
-    max-width 0.3s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.3s ease,
-    visibility 0.3s linear !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(1)
-  .erp-nav-link
-  span {
-  transition-delay: 495ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(2)
-  .erp-nav-link
-  span {
-  transition-delay: 440ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(3)
-  .erp-nav-link
-  span {
-  transition-delay: 385ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(4)
-  .erp-nav-link
-  span {
-  transition-delay: 330ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(5)
-  .erp-nav-link
-  span {
-  transition-delay: 275ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(6)
-  .erp-nav-link
-  span {
-  transition-delay: 220ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(7)
-  .erp-nav-link
-  span {
-  transition-delay: 165ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(8)
-  .erp-nav-link
-  span {
-  transition-delay: 110ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(9)
-  .erp-nav-link
-  span {
-  transition-delay: 55ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(10)
-  .erp-nav-link
-  span {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout
-  .erp-sidebar {
-  transition:
-    padding 0.85s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.85s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.42s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.3s ease,
-    max-width 0.42s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.3s ease,
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(1)
-  .erp-nav-link
-  span {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(2)
-  .erp-nav-link
-  span {
-  transition-delay: 55ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(3)
-  .erp-nav-link
-  span {
-  transition-delay: 110ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(4)
-  .erp-nav-link
-  span {
-  transition-delay: 165ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(5)
-  .erp-nav-link
-  span {
-  transition-delay: 220ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(6)
-  .erp-nav-link
-  span {
-  transition-delay: 275ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(7)
-  .erp-nav-link
-  span {
-  transition-delay: 330ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(8)
-  .erp-nav-link
-  span {
-  transition-delay: 385ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(9)
-  .erp-nav-link
-  span {
-  transition-delay: 440ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-navigation
-  > :nth-child(10)
-  .erp-nav-link
-  span {
-  transition-delay: 495ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.3s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.3s ease,
-    max-width 0.3s cubic-bezier(0.2, 0.72, 0.22, 1),
-    transform 0.3s ease,
-    visibility 0.3s linear !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(1)
-  .erp-nav-link
-  span {
-  transition-delay: 495ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(2)
-  .erp-nav-link
-  span {
-  transition-delay: 440ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(3)
-  .erp-nav-link
-  span {
-  transition-delay: 385ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(4)
-  .erp-nav-link
-  span {
-  transition-delay: 330ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(5)
-  .erp-nav-link
-  span {
-  transition-delay: 275ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(6)
-  .erp-nav-link
-  span {
-  transition-delay: 220ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(7)
-  .erp-nav-link
-  span {
-  transition-delay: 165ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(8)
-  .erp-nav-link
-  span {
-  transition-delay: 110ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(9)
-  .erp-nav-link
-  span {
-  transition-delay: 55ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(10)
-  .erp-nav-link
-  span {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-layout .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-sidebar {
-  transition-delay: 0.7s !important;
-}
-:where(html[data-responsive-profile="laptop"]) .erp-layout .erp-subnav,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav {
-  transition:
-    max-height 0.45s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.35s ease,
-    margin 0.45s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.45s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav {
-  transition:
-    max-height 0s linear 0.7s,
-    opacity 0s linear 0.7s,
-    margin 0s linear 0.7s,
-    padding 0s linear 0.7s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open {
-  transition:
-    max-height 0s linear 0.7s,
-    opacity 0s linear 0.7s,
-    margin 0s linear 0.7s,
-    padding 0s linear 0.7s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav-inner
-  > .erp-subnav-link,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  opacity: 0;
-  transform: translateY(-4px);
-  animation: none !important;
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(1) {
-  transition-delay: 560ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(2) {
-  transition-delay: 420ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(3) {
-  transition-delay: 280ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(4) {
-  transition-delay: 140ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(n + 5) {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  :where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  svg {
-  transform: none !important;
-  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  :where(html[data-responsive-profile="laptop"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open {
-  transition:
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
-    opacity 0.14s ease 0.2s,
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
-    padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  opacity: 1;
-  transform: translateY(0);
-  animation: none !important;
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(1) {
-  transition-delay: 200ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(2) {
-  transition-delay: 340ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(3) {
-  transition-delay: 480ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(4) {
-  transition-delay: 620ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(5) {
-  transition-delay: 760ms !important;
-}
-:where(html[data-responsive-profile="laptop"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(6) {
-  transition-delay: 760ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout
-  .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-sidebar {
-  transition-delay: 0.7s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout
-  .erp-subnav,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav {
-  transition:
-    max-height 0.45s cubic-bezier(0.2, 0.72, 0.22, 1),
-    opacity 0.35s ease,
-    margin 0.45s cubic-bezier(0.2, 0.72, 0.22, 1),
-    padding 0.45s cubic-bezier(0.2, 0.72, 0.22, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav {
-  transition:
-    max-height 0s linear 0.7s,
-    opacity 0s linear 0.7s,
-    margin 0s linear 0.7s,
-    padding 0s linear 0.7s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open {
-  transition:
-    max-height 0s linear 0.7s,
-    opacity 0s linear 0.7s,
-    margin 0s linear 0.7s,
-    padding 0s linear 0.7s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav-inner
-  > .erp-subnav-link,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  opacity: 0;
-  transform: translateY(-4px);
-  animation: none !important;
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(1) {
-  transition-delay: 560ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(2) {
-  transition-delay: 420ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(3) {
-  transition-delay: 280ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(4) {
-  transition-delay: 140ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(n + 5) {
-  transition-delay: 0ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  :where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-collapsed
-  .erp-nav-link
-  svg {
-  transform: none !important;
-  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  :where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout.is-dashboard.is-collapsed
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    opacity 0.7s ease 0.7s,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.7s,
-    visibility 0s linear 1.4s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-sidebar {
-  transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-brand
-  div,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-nav-link
-  span,
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-nav-link
-  i {
-  transition:
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-navigation
-  > .erp-nav-link.erp-nav-direct
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-navigation
-  > :nth-child(n)
-  .erp-nav-link
-  span {
-  transition:
-    flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.7s ease,
-    max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open {
-  transition:
-    max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
-    opacity 0.14s ease 0.2s,
-    margin 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
-    padding 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.2s !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link {
-  opacity: 1;
-  transform: translateY(0);
-  animation: none !important;
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(1) {
-  transition-delay: 200ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(2) {
-  transition-delay: 340ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(3) {
-  transition-delay: 480ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(4) {
-  transition-delay: 620ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(5) {
-  transition-delay: 760ms !important;
-}
-:where(html[data-responsive-profile="tablet-landscape"])
-  .erp-layout:not(.is-collapsed)
-  .erp-subnav.is-open
-  .erp-subnav-inner
-  > .erp-subnav-link:nth-child(6) {
-  transition-delay: 760ms !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-sidebar,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-subnav,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-nav-link,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-brand div,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-nav-link span,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-nav-link i,
-  :where(html[data-responsive-profile="laptop"]) .erp-layout .erp-nav-link svg {
+  .erp-panel,
+  .erp-panel.is-open,
+  .erp-rail__item {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
   }
-  :where(html[data-responsive-profile="laptop"])
-    .erp-layout
-    .erp-subnav.is-open
-    .erp-subnav-inner
-    > .erp-subnav-link,
-  :where(html[data-responsive-profile="laptop"])
-    .erp-layout.is-collapsed
-    .erp-subnav.is-open
-    .erp-subnav-inner
-    > .erp-subnav-link {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-    animation: none !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-sidebar,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-subnav,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-nav-link,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-brand
-    div,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-nav-link
-    span,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-nav-link
-    i,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-nav-link
-    svg {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-  }
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout
-    .erp-subnav.is-open
-    .erp-subnav-inner
-    > .erp-subnav-link,
-  :where(html[data-responsive-profile="tablet-landscape"])
-    .erp-layout.is-collapsed
-    .erp-subnav.is-open
-    .erp-subnav-inner
-    > .erp-subnav-link {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
+  .erp-panel.is-open .erp-panel__enlace {
     animation: none !important;
   }
 }
