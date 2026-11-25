@@ -31,17 +31,17 @@ export function CotizacionesListado({ controlesCabecera, cotizaciones, cargando,
     error={null}
     claseTabla={`${cotizacionClases.table} cotizaciones-tabla`}
     vacio={<div className={cotizacionClases.empty}><span className={cotizacionClases.emptyIcon} aria-hidden="true">+</span><strong className={cotizacionClases.emptyTitle}>Aún no hay cotizaciones</strong><p className={cotizacionClases.emptyDescription}>Cuando prepares una propuesta para un cliente, aparecerá aquí.</p></div>}
+    clasePaginacion="mr-[72px]"
     paginacion={{ modo: "local" }}
     variante="tabla"
     encabezadoTabla={(
       <tr>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnDate}`}>Fecha</th>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnCode}`}>Código</th>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnValidity}`}>Vigencia</th>
+        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnCode}`}>Cotización</th>
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnClient}`}>Cliente</th>
+        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnDates}`}>Emisión → vigencia</th>
         <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnStatus}`}>Estado</th>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnTotal}`}>Total</th>
-        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnActions}`}>Acciones</th>
+        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnTotal} text-right`}>Total</th>
+        <th className={`${cotizacionClases.tableHeader} ${cotizacionClases.columnActions} text-center`}>Acciones</th>
       </tr>
     )}
     renderizarFila={(cotizacion) => {

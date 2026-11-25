@@ -15,6 +15,14 @@ import { clasesOpcionMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "
 const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
 
 type EstadoVisibleCotizacion = "EMITIDA" | "INACTIVA" | "ACTIVA";
+
+/** Cada estado tiene texto y punto propios; el texto distingue el estado aunque no se perciba el color. */
+const tonosEstadoCotizacion: Record<EstadoVisibleCotizacion, { etiqueta: string; caja: string; punto: string }> = {
+  ACTIVA: { etiqueta: "Activa", caja: "border-[#c9e3d4] bg-[#edf7f1] text-[#24734e]", punto: "bg-[#2e9467]" },
+  EMITIDA: { etiqueta: "Emitida", caja: "border-[#c7d9ea] bg-[#edf4fa] text-[#174b78]", punto: "bg-[#174b78]" },
+  INACTIVA: { etiqueta: "Inactiva", caja: "border-[#d5dde5] bg-[#f1f4f7] text-[#52697d]", punto: "bg-[#8497a8]" },
+};
+
 type CotizacionRowProps = {
   cotizacion: Cotizacion;
   estado: EstadoVisibleCotizacion;
@@ -43,13 +51,16 @@ function SelectorDocumentoCotizacion({ cotizacion, inactiva, alPreparar }: { cot
 }
 
 export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenuDocumento, documentoPendiente, onImprimirA4, onImprimirTicket, onPrepararDocumento, puedeEditar, onEditar }: CotizacionRowProps) {
+  const tono = tonosEstadoCotizacion[estado];
   return <tr className={cotizacionClases.tableRow}>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnDate}`}>{cotizacion.fecha}</td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.code}`}>{cotizacion.codigo}</td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity}`}>{cotizacion.vigenteHasta ?? "Sin fecha"}</td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnClient} ${cotizacionClases.client}`}><strong className={nombreRelacionListadoClasses}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><Etiqueta tono={estado === "EMITIDA" ? "informativa" : estado === "INACTIVA" ? "neutral" : "positiva"}>{estado === "EMITIDA" ? "Emitida" : estado === "INACTIVA" ? "Inactiva" : "Activa"}</Etiqueta></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal}`}>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.code}`}>
+      <strong className={cotizacionClases.documentCode}>{cotizacion.codigo}</strong>
+      <span className={cotizacionClases.minorText}>Cotización</span>
+    </td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.client}`}><strong className={`${nombreRelacionListadoClasses} max-w-[280px]`}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnDates}`}><span className="whitespace-nowrap [font-variant-numeric:tabular-nums]">{cotizacion.fecha} → {cotizacion.vigenteHasta ?? "Sin fecha"}</span></td>
+    <td className={cotizacionClases.tableCell}><span className={`${cotizacionClases.statusPill} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{tono.etiqueta}</span></td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal} text-right`}>
       <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
     </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>

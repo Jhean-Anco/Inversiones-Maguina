@@ -16,7 +16,7 @@ import { ventasClasses } from "./ventas-classes";
 import { AplicarGarantiaVentaDialog } from "./aplicar-garantia-venta-dialog";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
-const encabezadoVentas = <tr><th>Fecha</th><th>Tipo</th><th>Nro. de documento</th><th>Cliente</th><th>Pago</th><th>Importes</th><th>Estado SUNAT</th><th>Archivos y acciones</th></tr>;
+const encabezadoVentas = <tr><th>Fecha</th><th>Comprobante</th><th>Cliente</th><th>Pago</th><th className="!text-right">Total</th><th>Estado SUNAT</th><th className="!text-right">Acciones</th></tr>;
 export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false, puedeAplicarGarantia = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean; puedeAplicarGarantia?: boolean }) {
   const navegar = useNavigate();
   const esMoto = tipoVenta === "MOTOTAXIS";
@@ -199,7 +199,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       vacio={<div className={ventasClasses.empty}><strong>No hay ventas para mostrar</strong></div>}
       claseCabecera={ventasClasses.header}
       claseControlesCabecera={ventasClasses.controls}
-      clasePaginacion={ventasClasses.pagination}
+      clasePaginacion={`${ventasClasses.pagination} mr-[72px]`}
       controlesCabecera={<>
         <label className={`${ventasClasses.search} listado-maestro-busqueda-icono`}><svg className={ventasClasses.searchIcon} viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg><input className={ventasClasses.searchInput} type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label>
         <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] font-bold uppercase tracking-[.06em] text-[#687e96]">Tipo de documento<select className="h-11 rounded-xl border border-[#d8e3ee] bg-white px-3 text-[13px] font-medium normal-case tracking-normal text-[#173554]" value={tipoDocumento} onChange={(evento) => { setPagina(1); setTipoDocumento(evento.target.value); }}><option value="">Todos los documentos</option><option value="BOLETA">Boleta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
