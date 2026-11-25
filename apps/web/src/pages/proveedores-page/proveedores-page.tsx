@@ -1,6 +1,7 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { useConfirmarCancelacionFormulario } from "../../hooks/use-confirmar-cancelacion-formulario";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
@@ -92,9 +93,19 @@ function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
     const datos: DatosProveedorNuevo = { tipoDocumento, numeroDocumento, ...(esJuridica ? { razonSocial } : { nombres, apellidoPaterno, apellidoMaterno }), nombreComercial };
     const resultado = await onGuardar(datos); if (resultado) setError(resultado); setGuardando(false);
   }
-  return <>{dialogo}<div className={`proveedores-backdrop ${clase.backdrop}`} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) solicitarCancelacion(); }}><form ref={dialogoRef} className={`proveedores-form ${clase.form}`} role="dialog" aria-modal="true" aria-labelledby="proveedor-form-title" onSubmit={(evento) => void submit(evento)}><header className={`${clase.formHeader} inventario-dialogo-cabecera`}><div><span className={clase.kicker}>DIRECTORIO COMERCIAL</span><h2 className="mb-0 mt-1 text-xl" id="proveedor-form-title">Registrar proveedor</h2></div><button className={clase.formClose} type="button" aria-label="Cerrar" onClick={solicitarCancelacion}>×</button></header>
-    <div className={clase.fields}><label className={clase.label}>Documento<select className={clase.input} disabled={buscando} value={tipoDocumento} onChange={(evento) => { setTipoDocumento(evento.target.value as "DNI" | "RUC"); setNumeroDocumento(""); setRazonSocial(""); setNombres(""); setApellidoPaterno(""); setApellidoMaterno(""); }}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label><label className={clase.label}>Número de documento<div className={clase.documentRow}><input className={clase.input} required disabled={buscando} inputMode="numeric" maxLength={tipoDocumento === "DNI" ? 8 : 11} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{11}"} value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value.replace(/\D/g, ""))} /><button className={clase.search} type="button" disabled={buscando || numeroDocumento.length !== (tipoDocumento === "DNI" ? 8 : 11)} onClick={() => void buscarIdentidad()}>{buscando ? "Buscando…" : "Buscar"}</button></div></label>
+  return <>{dialogo}<Dialogo
+      kicker="DIRECTORIO COMERCIAL"
+      titulo="Registrar proveedor"
+      ancho="md"
+      cerrable={!guardando}
+      onCerrar={solicitarCancelacion}
+      pie={<><button className={clase.cancel} type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="proveedor-form" className={clase.primary} disabled={guardando}>{guardando ? "Guardando…" : "Guardar proveedor"}</button></>}
+    >
+      <form id="proveedor-form" ref={dialogoRef} className="grid gap-4" onSubmit={(evento) => void submit(evento)}>
+        <div className={clase.fields}><label className={clase.label}>Documento<select className={clase.input} disabled={buscando} value={tipoDocumento} onChange={(evento) => { setTipoDocumento(evento.target.value as "DNI" | "RUC"); setNumeroDocumento(""); setRazonSocial(""); setNombres(""); setApellidoPaterno(""); setApellidoMaterno(""); }}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label><label className={clase.label}>Número de documento<div className={clase.documentRow}><input className={clase.input} required disabled={buscando} inputMode="numeric" maxLength={tipoDocumento === "DNI" ? 8 : 11} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{11}"} value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value.replace(/\D/g, ""))} /><button className={clase.search} type="button" disabled={buscando || numeroDocumento.length !== (tipoDocumento === "DNI" ? 8 : 11)} onClick={() => void buscarIdentidad()}>{buscando ? "Buscando…" : "Buscar"}</button></div></label>
       {esJuridica ? <label className={`${clase.label} ${clase.wide}`}>Razón social<input className={clase.input} required maxLength={180} value={razonSocial} onChange={(evento) => setRazonSocial(evento.target.value)} /></label> : <><label className={clase.label}>Nombres<input className={clase.input} required maxLength={120} value={nombres} onChange={(evento) => setNombres(evento.target.value)} /></label><label className={clase.label}>Apellido paterno<input className={clase.input} required maxLength={120} value={apellidoPaterno} onChange={(evento) => setApellidoPaterno(evento.target.value)} /></label><label className={clase.label}>Apellido materno<input className={clase.input} maxLength={120} value={apellidoMaterno} onChange={(evento) => setApellidoMaterno(evento.target.value)} /></label></>}
       <label className={`${clase.label} ${clase.wide}`}>Nombre comercial<input className={clase.input} maxLength={180} value={nombreComercial} onChange={(evento) => setNombreComercial(evento.target.value)} placeholder="Opcional" /></label>
-    </div>{error && <NotificacionFlotante mensaje={error} />}<footer className={clase.footer}><button className={clase.cancel} type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" className={clase.primary} disabled={guardando}>{guardando ? "Guardando…" : "Guardar proveedor"}</button></footer></form></div></>;
+    </div>{error && <NotificacionFlotante mensaje={error} />}
+      </form>
+    </Dialogo></>;
 }

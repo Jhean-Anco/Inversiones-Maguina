@@ -29,6 +29,9 @@ const anchos: Record<AnchoDialogo, string> = {
   lg: "max-w-[760px]",
 };
 
+/** Diálogos abiertos, del más antiguo al más reciente. Solo el de arriba responde a Escape y a Tab. */
+const pilaDialogos: string[] = [];
+
 const SELECTOR_ENFOCABLE = "a[href], button:not(:disabled), input:not(:disabled):not([type=hidden]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])";
 
 /**
@@ -45,12 +48,15 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
   cerrableRef.current = cerrable;
 
   useEffect(() => {
+    pilaDialogos.push(idTitulo);
+    const esElTope = () => pilaDialogos[pilaDialogos.length - 1] === idTitulo;
     const elementoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const contenedor = contenedorRef.current;
     const enfocables = () => Array.from(contenedor?.querySelectorAll<HTMLElement>(SELECTOR_ENFOCABLE) ?? []).filter((el) => el.getClientRects().length > 0);
     (enfocarAlAbrir?.current ?? enfocables()[0])?.focus();
 
     const manejarTeclado = (evento: KeyboardEvent) => {
+      if (!esElTope()) return;
       if (evento.key === "Escape") {
         if (!cerrableRef.current) return;
         evento.preventDefault();
@@ -73,9 +79,11 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
     window.addEventListener("keydown", manejarTeclado);
     return () => {
       window.removeEventListener("keydown", manejarTeclado);
+      const posicion = pilaDialogos.indexOf(idTitulo);
+      if (posicion >= 0) pilaDialogos.splice(posicion, 1);
       if (elementoAnterior?.isConnected) elementoAnterior.focus();
     };
-  }, [enfocarAlAbrir]);
+  }, [enfocarAlAbrir, idTitulo]);
 
   const cerrarSiPermitido = () => {
     if (cerrableRef.current) onCerrarRef.current();
