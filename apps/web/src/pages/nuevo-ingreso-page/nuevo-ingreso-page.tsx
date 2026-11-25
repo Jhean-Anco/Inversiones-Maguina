@@ -19,7 +19,6 @@ import { ClienteDetalleDialog } from "./cliente-detalle-dialog";
 import { LineaVentaRow } from "./linea-venta-row";
 import { useNuevoIngresoClienteForm } from "./use-nuevo-ingreso-cliente-form";
 import { useNuevoIngresoCatalogo } from "./use-nuevo-ingreso-catalogo";
-import { CatalogoVentaLateral } from "./catalogo-venta-lateral";
 import { obtenerVistaNuevoIngreso } from "./obtener-vista-nuevo-ingreso";
 import { SelectorClienteVenta } from "./selector-cliente-venta";
 import { nuevoIngresoClasses } from "./nuevo-ingreso-classes";
@@ -179,8 +178,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
 
     <form className={`venta-layout ${nuevoIngresoClasses.layout} ${paso === "previa" ? "is-preview-step" : "is-data-step"}`} onSubmit={avanzar}>
       {paso === "datos" && <>
-      <div className={`venta-editor is-catalog-open ${nuevoIngresoClasses.editor}`}>
-        <CatalogoVentaLateral venta={venta} tipoVenta={tipoVenta} puedeCrearProductos={permisos.includes("INVENTARIO.CREAR")} formatearSoles={soles} onEnter={buscarProductoConEnter} onCrearProducto={() => void abrirAltaProducto()} />
+      <div className={`venta-editor is-data-layout ${nuevoIngresoClasses.editor}`}>
         <article className={`venta-form-paper ${presentacionComprobante.clase}`}>
           <header className="venta-form-heading"><div><p>{esBoleta || esFactura ? "COMPROBANTE DE VENTA" : "DOCUMENTO INTERNO DE INVENTARIO"}</p><h2>{presentacionComprobante.titulo}</h2></div>{paso === "datos" && <div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div>}</header>
           <div className="venta-form-scroll">
@@ -210,21 +208,19 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
             return <LineaVentaRow key={linea.clave} linea={linea} esFactura={esFactura} separadorTipo={separadorTipo} precio={precio} importe={importe} nombreLinea={nombreLinea} totalLinea={totalLinea} formatearSoles={soles} onActualizar={(cambios) => venta.actualizarLinea(linea.clave, cambios)} onQuitar={() => venta.quitarLinea(linea.clave)} />;
           })}</div>}
         </section>
-        <div className="venta-data-footer">
-          <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones" value={venta.observacion} onChange={(e) => venta.setObservacion(e.target.value)} maxLength={1000} rows={3} placeholder="Añade una nota" /></label>
-          <div className="venta-checkout-actions">
-            <div className="venta-checkout-total">
-              <div className="venta-checkout-amount">
-                <DesgloseImportes {...importesVenta} destacado />
-                {transferenciaOS && <><b>Saldo a pagar {soles(saldoOrdenServicio)}</b><small className="text-[10px] font-medium leading-[1.35] text-[#71869b]">Adelanto: {soles(Number(transferenciaOS.adelanto || 0))} · {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto"}</small></>}
-              </div>
-              {transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : venta.condicionPago === "CONTADO" ? <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} /> : null}
-            </div>
-            <div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={cancelarVenta}>Cancelar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div>
-          </div>
-        </div>
+        <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones" value={venta.observacion} onChange={(e) => venta.setObservacion(e.target.value)} maxLength={1000} rows={3} placeholder="Añade una nota" /></label>
         </div>
         </article>
+        <aside className="venta-summary-card" aria-label="Resumen de la venta">
+          <div className="venta-summary-heading"><span>PASO FINAL</span><h3>Resumen de la venta</h3></div>
+          <DesgloseImportes {...importesVenta} destacado />
+          {transferenciaOS && <div className="venta-summary-balance"><strong>Saldo a pagar {soles(saldoOrdenServicio)}</strong><small>Adelanto: {soles(Number(transferenciaOS.adelanto || 0))} · {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto"}</small></div>}
+          <section className="venta-summary-payment" aria-label="Condición y cuenta de pago">
+            <div className="venta-summary-condition"><span>Condición de pago</span><strong>Contado</strong></div>
+            {transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} />}
+          </section>
+          <div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={cancelarVenta}>Cancelar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div>
+        </aside>
       </div>
       </>}
 
