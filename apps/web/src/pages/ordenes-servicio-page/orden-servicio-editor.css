@@ -591,6 +591,12 @@
 .os-linea-descripcion input {
   font-weight: 600;
 }
+.os-linea-metadato {
+  display: block;
+  margin: 4px 10px 0;
+  color: var(--os-tinta-suave);
+  font-size: 12px;
+}
 .os-linea.es-producto .os-linea-descripcion input,
 .os-linea.es-producto .os-linea-precio input {
   border-color: transparent;

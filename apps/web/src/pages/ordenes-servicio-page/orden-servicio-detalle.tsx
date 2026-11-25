@@ -66,6 +66,7 @@ export function OrdenServicioDetalle({
               }}
             />
           ) : <input aria-label="Descripción del repuesto" value={linea.nombreVisible} readOnly />}
+          {esServicio && <small className="os-linea-metadato">Mano de obra</small>}
         </div>
         <label className="os-linea-campo os-linea-cantidad"><span>Cant.</span>
           <input
