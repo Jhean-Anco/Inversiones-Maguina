@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Eye, Mail, Phone } from "lucide-react";
-import { Etiqueta } from "../../components/ui/etiqueta";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { BotonImprimir } from "../../components/documentos/boton-imprimir";
 import { clasesOpcionMenu } from "../../components/documentos/menu-accion-classes";
@@ -22,21 +21,39 @@ type OrdenServicioRowProps = {
   alEditar: () => void;
 };
 
+type TonoEstado = { caja: string; punto: string };
+
+/** Cada estado tiene su propio color; el punto y el texto lo distinguen también sin depender del color. */
+const tonosEstado: Record<OrdenServicio["estado"], TonoEstado> = {
+  ABIERTA: { caja: "border-[#c8deed] bg-[#eef6fb] text-[#17628b]", punto: "bg-[#2a8bbd]" },
+  EN_PROCESO: { caja: "border-[#c7d9ea] bg-[#edf4fa] text-[#174b78]", punto: "bg-[#174b78]" },
+  ESPERANDO_REPUESTOS: { caja: "border-[#f0dbb1] bg-[#fff7e8] text-[#8a5a00]", punto: "bg-[#d99a1b]" },
+  COMPLETADA: { caja: "border-[#c9e3d4] bg-[#edf7f1] text-[#24734e]", punto: "bg-[#2e9467]" },
+  EMITIENDO: { caja: "border-[#dbe3e9] bg-[#f1f4f6] text-[#586b7b]", punto: "bg-[#8497a8]" },
+  FACTURADA: { caja: "border-[#b3d8c4] bg-[#e4f3ec] text-[#1b5e40]", punto: "bg-[#1b5e40]" },
+  ANULADA: { caja: "border-[#efc9cd] bg-[#fff1f2] text-[#b42335]", punto: "bg-[#c91f32]" },
+};
+
 const telefonoParaLlamar = (telefono: string) => telefono.trim().replace(/[^+\d]/g, "");
 
 export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menuDocumento, formatearFecha, alImprimirA4, alImprimirTicket, alEditar }: OrdenServicioRowProps) {
+  const tono = tonosEstado[orden.estado];
+  const modificable = orden.estado !== "FACTURADA" && orden.estado !== "ANULADA";
   return (
     <tr>
-      <td className="[font-variant-numeric:tabular-nums] text-[#506b87]">{fecha}</td>
-      <td><strong className={`block ${c.documentCode}`}>{orden.codigo}</strong><small className="ordenes-row-caption">Orden de servicio</small></td>
-      <td><strong className={`block ${c.clientName}`}>Vehículo</strong><small className={`block ${c.minorText}`}>{orden.vehiculoPlaca || "Sin identificador"}</small></td>
-      <td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}><strong className={`block ${c.clientName}`}>{orden.clienteNombre}</strong></td>
-      <td><Etiqueta tono={["COMPLETADA", "FACTURADA"].includes(orden.estado) ? "positiva" : orden.estado === "ANULADA" ? "peligro" : "advertencia"}>{estado}</Etiqueta></td>
+      <td><strong className={`block ${c.documentCode}`}>{orden.codigo}</strong><small className={`block ${c.minorText}`}>Orden de servicio</small></td>
+      <td><span className={c.plate}>{orden.vehiculoPlaca || "Sin identificador"}</span></td>
+      <td className={`${anchoMinimoColumnaRelacionClasses} w-[26%]`}><strong className={`block ${c.clientName}`}>{orden.clienteNombre}</strong></td>
+      <td className="whitespace-nowrap [font-variant-numeric:tabular-nums]">
+        <span className="block text-[#142b42]">{fecha}</span>
+        <small className={`block ${c.minorText}`}>{orden.fechaAcabado ? `Entrega ${formatearFecha(orden.fechaAcabado)}` : "Sin fecha de entrega"}</small>
+      </td>
+      <td><span className={`${c.status} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{estado}</span></td>
       <td className={`${c.number} ${c.total}`}><strong className="block">{total}</strong></td>
       <td><div className={`${c.rowActions} ordenes-row-actions`}>
-        {orden.estado !== "FACTURADA" && orden.estado !== "ANULADA" && <AccionIcono accion="editar" etiqueta={`Editar orden ${orden.codigo}`} confirmacion={{ titulo: "¿Editar esta orden de servicio?", descripcion: `Vas a abrir ${orden.codigo} para revisar sus datos. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar orden" }} onClick={alEditar} />}
+        {modificable && <AccionIcono accion="editar" etiqueta={`Editar orden ${orden.codigo}`} confirmacion={{ titulo: "¿Editar esta orden de servicio?", descripcion: `Vas a abrir ${orden.codigo} para revisar sus datos. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar orden" }} onClick={alEditar} />}
         <BotonImprimir etiqueta={`Imprimir orden ${orden.codigo}`} tono="neutral" alImprimirA4={alImprimirA4} alImprimirTicket={alImprimirTicket} />
-        {orden.estado !== "FACTURADA" && orden.estado !== "ANULADA" && puedeCrear && menuDocumento}
+        {modificable && puedeCrear && menuDocumento}
         {(orden.clienteTelefono || orden.clienteCorreo || orden.ingresoId) && <MenuMasAccionesOrden>
           {orden.clienteTelefono && <a className={`${clasesOpcionMenu} flex items-center gap-2 text-[12px]`} href={`tel:${telefonoParaLlamar(orden.clienteTelefono)}`} role="menuitem"><Phone aria-hidden="true" size={16} />Llamar</a>}
           {orden.clienteTelefono && <AccionesWhatsAppOrden orden={orden} formatearFecha={formatearFecha} />}
