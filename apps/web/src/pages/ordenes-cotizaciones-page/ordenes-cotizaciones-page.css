@@ -166,7 +166,7 @@
 .cotizacion-subtitulo { display: block; margin-top: 3px; color: #72859a; font-size: 11px; font-weight: 400; }
 .gestion-cotizacion-page .cotizacion-editor { display: block; overflow: auto; }
 .gestion-cotizacion-page .gestion-cotizacion-paper { height: auto; min-height: 100%; border: 0; background: transparent; box-shadow: none; }
-.gestion-cotizacion-page .cotizacion-form-scroll { display: grid; grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); align-items: start; gap: 16px; padding: 16px; overflow: visible; }
+.gestion-cotizacion-page .cotizacion-form-scroll { display: grid; flex: none; height: auto; grid-auto-rows: max-content; grid-template-columns: minmax(0, 1fr) minmax(270px, 330px); align-items: start; gap: 16px; padding: 16px; overflow: visible; }
 .gestion-cotizacion-page .cotizacion-header-fields, .gestion-cotizacion-page .cotizacion-form-body, .gestion-cotizacion-page .cotizacion-observations, .gestion-cotizacion-page .cotizacion-checkout-actions { min-width: 0; border: 1px solid #dce5ed; border-radius: 16px; background: white; padding: 20px; }
 .gestion-cotizacion-page .cotizacion-header-fields { grid-column: 1; }
 .gestion-cotizacion-page .cotizacion-form-body { grid-column: 1; gap: 12px; }
@@ -177,7 +177,19 @@
 .gestion-cotizacion-page .cotizacion-seccion-titulo > span { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #102d4d; color: white; font-size: 12px; }
 .gestion-cotizacion-page .cotizacion-catalogo-integrado { position: static; width: 100%; min-height: 0; max-height: none; border: 0; padding: 0; box-shadow: none; }
 .gestion-cotizacion-page .cotizacion-catalogo-integrado .venta-catalog-results { max-height: 230px; overflow: auto; }
+.gestion-cotizacion-page .cotizacion-lineas-scroll { max-width: 100%; min-width: 0; overflow-x: auto; }
+@media (max-width: 1023px) {
+  .gestion-cotizacion-page .cotizacion-lineas-scroll .orden-invoice-columns,
+  .gestion-cotizacion-page .cotizacion-lineas-scroll .orden-invoice-lines { min-width: 680px !important; }
+  .gestion-cotizacion-page .cotizacion-lineas-scroll .orden-invoice-lines { overflow: visible !important; }
+}
 .gestion-cotizacion-page .cotizacion-observations small { text-align: right; color: #71849b; }
+.gestion-cotizacion-page .cotizacion-indicadores { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px 0; }
+.gestion-cotizacion-page .cotizacion-estado-editor { border: 1px solid #9ab7ce; border-radius: 999px; padding: 6px 12px; color: #245a85; background: #eef6fc; font-size: 12px; font-weight: 700; }
+.gestion-cotizacion-page .cotizacion-numero { display: grid; gap: 4px; border: 1px solid #dce5ed; border-radius: 12px; padding: 10px 16px; background: white; color: #102d4d; }
+.gestion-cotizacion-page .cotizacion-numero span { font-size: 10px; font-weight: 700; }
+.gestion-cotizacion-page .cotizacion-header-fields > .cotizacion-seccion-titulo { grid-column: 1 / -1; }
+.gestion-cotizacion-page .cotizacion-checkout-actions > h3 { margin: 0 0 14px; color: #102d4d; font-size: 16px; }
 .gestion-cotizacion-page .cotizacion-catalogo-integrado > header { display: none; }
 .gestion-cotizacion-page .cotizacion-checkout-actions .venta-checkout-buttons { display: flex; flex-direction: column-reverse; }
 .gestion-cotizacion-page .cotizacion-checkout-actions .venta-checkout-buttons button { width: 100%; min-height: 48px; height: auto; white-space: normal; }

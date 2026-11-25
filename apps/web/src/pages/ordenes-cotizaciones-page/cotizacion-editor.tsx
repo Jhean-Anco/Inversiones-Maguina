@@ -66,9 +66,9 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
     <div className="cotizacion-layout">
       <div className="cotizacion-editor">
         <article className="venta-form-paper gestion-cotizacion-paper" aria-label="Documento de cotización">
-          <header className="venta-form-heading"><div><p>DOCUMENTO COMERCIAL</p><h2>{editando ? "EDITAR COTIZACIÓN" : "NUEVA COTIZACIÓN"}</h2></div><div className="venta-number-card"><span>N° DE COTIZACIÓN</span><strong>{consultandoSerie ? "Consultando serie…" : errorConsultaSerie ? "Error de serie" : codigoPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong></div></header>
+          <header className="cotizacion-indicadores"><span className="cotizacion-estado-editor">{editando ? "Editando cotización" : "Se creará como Activa"}</span><div className="cotizacion-numero"><span>N.° DE COTIZACIÓN</span><strong>{consultandoSerie ? "Consultando serie…" : errorConsultaSerie ? "Error de serie" : codigoPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong></div></header>
           <div className="cotizacion-form-scroll">
-          <div className="venta-form-header-fields cotizacion-header-fields" aria-label="Datos de la cotización">
+          <div className="venta-form-header-fields cotizacion-header-fields" role="region" aria-label="Datos de la cotización"><h3 className="cotizacion-seccion-titulo"><span>1</span>Datos de la cotización</h3>
             <div className="venta-fields venta-document-fields cotizacion-document-fields">
               <label>Fecha de emisión<input type="date" value={fechaEmision} readOnly aria-readonly="true" /></label>
               <label>Válida hasta<input type="date" min={fechaEmision} value={vigenteHasta} onChange={(e) => onVigenteHastaChange(e.target.value)} required /></label>
@@ -86,7 +86,7 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
             </div>
           </div>
             <section className="cotizacion-form-body" aria-label="Repuestos y servicios">
-              <div className="venta-form-body-heading"><h3>Detalle de la cotización</h3><div className="venta-product-tools"><span>{lineas.length} líneas</span><button type="button" onClick={onAgregarServicio}>+ Agregar servicio</button></div></div>
+              <div className="venta-form-body-heading"><h3 className="cotizacion-seccion-titulo"><span>2</span>Detalle de la cotización</h3><div className="venta-product-tools"><span>{lineas.length} líneas</span><button type="button" onClick={onAgregarServicio}>+ Agregar servicio</button></div></div>
         <aside className="venta-catalog-sidebar cotizacion-catalogo-integrado" aria-label="Catálogo de repuestos">
           <header><div><span>CATÁLOGO</span><h2>Buscar repuestos</h2><p>Busca en inventario y agrega los necesarios para la cotización.</p></div></header>
           <label className="venta-catalog-search"><span aria-hidden="true">⌕</span><input value={busquedaProducto} onChange={(e) => onBusquedaProductoChange(e.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar en el catálogo de repuestos" autoComplete="off" /></label>
@@ -98,7 +98,7 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
             </article>) : <div className="venta-catalog-empty"><strong>No hay repuestos para mostrar</strong><span>No encontramos coincidencias. Prueba con otro nombre o código.</span></div>}
           </div>
         </aside>
-              {lineas.length ? <>
+              {lineas.length ? <div className="cotizacion-lineas-scroll" role="region" aria-label="Detalle de repuestos y servicios" tabIndex={0}>
               <div className={`orden-invoice-columns ${cotizacionClases.invoiceColumns}`}><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Descuento</span><span>Total</span><span aria-label="Acciones" /></div>
               <div className={`orden-invoice-lines ${cotizacionClases.invoiceLines}`}>
                 {(["PRODUCTO", "SERVICIO"] as const).map((tipo) => {
@@ -121,11 +121,11 @@ export function CotizacionEditor({ productos, buscandoProductos, productosRecien
                   </div>;
                 })}
               </div>
-              </> : <div className="orden-invoice-empty cotizacion-empty"><strong>Agrega el primer repuesto o servicio</strong><p>Busca repuestos en el catálogo o pulsa Agregar servicio para incluir mano de obra.</p></div>}
+              </div> : <div className="orden-invoice-empty cotizacion-empty"><strong>Agrega el primer repuesto o servicio</strong><p>Busca repuestos en el catálogo o pulsa Agregar servicio para incluir mano de obra.</p></div>}
             </section>
             <div className="venta-data-footer ordenes-data-footer cotizacion-data-footer">
               <label className="venta-observation-card ordenes-reason-card cotizacion-observations"><span className="cotizacion-seccion-titulo"><span>3</span>Observaciones (opcional)</span><textarea maxLength={2000} value={observacion} onChange={(e) => onObservacionChange(e.target.value)} placeholder="Añade una nota para el cliente" /></label>
-              <div className="venta-checkout-actions ordenes-checkout-actions cotizacion-checkout-actions">
+              <div className="venta-checkout-actions ordenes-checkout-actions cotizacion-checkout-actions"><h3>Resumen de la cotización</h3>
                 <DesgloseImportes {...totales} destacado />
                 <div className="venta-checkout-buttons"><button type="button" className="venta-clear" disabled={guardando} onClick={onCerrar}>Cancelar</button><button type="button" className="venta-submit" disabled={guardando || !codigoPrevisualizado || consultandoSerie || Boolean(errorConsultaSerie)} onClick={onGuardar}>{guardando ? "Guardando…" : "Guardar e imprimir cotización"}<span aria-hidden="true">→</span></button></div>
               </div>
