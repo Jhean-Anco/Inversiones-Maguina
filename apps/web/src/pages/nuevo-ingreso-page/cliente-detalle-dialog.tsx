@@ -54,7 +54,7 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
     <div className="venta-client-detail-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onClose(); }}>
       <section className="venta-client-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="venta-client-detail-title">
         <header><div><small>{editando ? "FICHA DE CLIENTE · EDITANDO" : "FICHA DE CLIENTE"}</small><h2 id="venta-client-detail-title">{nombre}</h2>{editando && <p className="venta-client-edit-guidance">El documento y el tipo de persona no se pueden modificar. Los cambios se aplican al pulsar «Guardar cambios».</p>}</div><button type="button" aria-label="Cerrar detalle" onClick={onClose}>×</button></header>
-        <div className="venta-client-profile">
+        {!editando && <div className="venta-client-profile">
           <span className="venta-client-profile-avatar" aria-hidden="true">{iniciales}</span>
           <div className="venta-client-profile-identity">
             <strong>{cliente.nombreComercial || cliente.razonSocial || nombre}</strong>
@@ -63,7 +63,7 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
               {documentos.map((documento) => <span key={`${documento.tipoDocumento}:${documento.numeroDocumento}`}>{nombreDocumento(documento.tipoDocumento)} {documento.numeroDocumento}</span>)}
             </div>
           </div>
-        </div>
+        </div>}
         <div className="venta-client-detail-grid mobile-portrait:grid-cols-1">
           <div><small>Documento</small><strong>{documentos.map((documento) => `${nombreDocumento(documento.tipoDocumento)} ${documento.numeroDocumento}`).join(" · ")}</strong></div>
           <div><small>Tipo de persona</small><strong>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Persona natural"}</strong></div>
