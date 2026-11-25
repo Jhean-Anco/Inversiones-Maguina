@@ -44,6 +44,19 @@ export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean
       busqueda={modulo.busqueda}
       busquedaPlaceholder="Buscar por código, proveedor o documento"
       busquedaAriaLabel="Buscar compras"
+      controlesFiltro={(
+        <div className="flex w-full flex-wrap gap-2" role="group" aria-label="Filtrar compras por estado de pago">
+          {([
+            ["TODAS", "Todas", modulo.conteosPago.todas],
+            ["PAGADAS", "Pagadas", modulo.conteosPago.pagadas],
+            ["PENDIENTES", "Con saldo pendiente", modulo.conteosPago.pendientes],
+          ] as const).map(([valor, etiqueta, conteo]) => <button key={valor} type="button" aria-pressed={modulo.filtroPago === valor}
+            className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-colors ${modulo.filtroPago === valor ? "border-[#0b2545] bg-[#0b2545] text-white" : "border-[#c5d1db] bg-white text-[#27445f] hover:border-[#8eacc9] hover:bg-[#f5f9fd]"}`}
+            onClick={() => { modulo.cambiarPagina(1); modulo.setFiltroPago(valor); }}>
+            {etiqueta}<span className={`inline-flex h-5 min-w-[22px] items-center justify-center rounded-[10px] px-1.5 text-[11px] font-bold ${modulo.filtroPago === valor ? "bg-white/20 text-white" : "bg-[#eef2f6] text-[#3d566e]"}`}>{conteo}</span>
+          </button>)}
+        </div>
+      )}
       claseCabecera="compra-listado-cabecera"
       variante="tabla"
       encabezadoTabla={encabezadoCompras}

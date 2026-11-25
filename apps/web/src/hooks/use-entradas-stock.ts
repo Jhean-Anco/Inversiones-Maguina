@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
 import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
-import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
+import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type FiltroEstadoPagoEntrada, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
 import { useProveedorEntradaStock } from "./use-proveedor-entrada-stock";
 import { useCatalogoRecientes, type CatalogoReciente, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../components/catalogo/use-catalogo-recientes";
 
@@ -13,10 +13,11 @@ const fechaHoy = () => { const ahora = new Date(); return `${ahora.getFullYear()
 
 export function useEntradasStock(alGuardarse?: () => void) {
   const navegar = useNavigate();
-  const [paginaDatos, setPaginaDatos] = useState({ items: [] as EntradaStock[], total: 0, totalPaginas: 1 });
+  const [paginaDatos, setPaginaDatos] = useState({ items: [] as EntradaStock[], total: 0, totalPaginas: 1, conteosPago: { todas: 0, pagadas: 0, pendientes: 0 } });
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroPago, setFiltroPago] = useState<FiltroEstadoPagoEntrada>("TODAS");
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -46,23 +47,23 @@ export function useEntradasStock(alGuardarse?: () => void) {
   }, [navegar]);
   const datosProveedor = useProveedorEntradaStock(setError, manejarError);
 
-  const cargarPagina = useCallback(async (numeroPagina = pagina, tamano = porPagina, textoBusqueda = busqueda) => {
+  const cargarPagina = useCallback(async (numeroPagina = pagina, tamano = porPagina, textoBusqueda = busqueda, estadoPago = filtroPago) => {
     const consulta = ++consultaActual.current;
     setCargando(true);
     try {
-      const resultado = await servicioEntradasStock.listar(numeroPagina, tamano, textoBusqueda);
+      const resultado = await servicioEntradasStock.listar(numeroPagina, tamano, textoBusqueda, estadoPago);
       if (consulta !== consultaActual.current) return;
       setPaginaDatos(resultado);
       if (numeroPagina > resultado.totalPaginas) setPagina(resultado.totalPaginas);
       setError("");
     } catch (problema) { if (consulta === consultaActual.current) manejarError(problema, "No se pudieron cargar las compras."); }
     finally { if (consulta === consultaActual.current) setCargando(false); }
-  }, [pagina, porPagina, busqueda, manejarError]);
+  }, [pagina, porPagina, busqueda, filtroPago, manejarError]);
 
   useEffect(() => {
     const temporizador = window.setTimeout(() => { void cargarPagina(pagina, porPagina, busqueda); }, busqueda ? 220 : 0);
     return () => window.clearTimeout(temporizador);
-  }, [cargarPagina, pagina, porPagina, busqueda]);
+  }, [cargarPagina, pagina, porPagina, busqueda, filtroPago]);
 
   useEffect(() => {
     const texto = productoBusqueda.trim();
@@ -151,7 +152,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
 
   const totalBorrador = useMemo(() => detalles.reduce((total, fila) => total + Number(fila.importeTotal), 0), [detalles]);
   return {
-    entradas: paginaDatos.items, total: paginaDatos.total, pagina, porPagina, totalPaginas: paginaDatos.totalPaginas,
+    entradas: paginaDatos.items, total: paginaDatos.total, pagina, porPagina, totalPaginas: paginaDatos.totalPaginas, conteosPago: paginaDatos.conteosPago, filtroPago, setFiltroPago,
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, error, setError, busqueda, setBusqueda, cambiarPagina: setPagina, cambiarPorPagina,
     modalAbierto, abrirNuevo, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,

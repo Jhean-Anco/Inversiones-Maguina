@@ -27,7 +27,7 @@ export type EstadoFiltroVenta = "TODAS" | "EMITIDAS" | "PENDIENTES" | "RECHAZADA
 export type ConteosVentas = { todas: number; emitidas: number; pendientes: number; rechazadas: number; anuladas: number; conSaldo?: number };
 export type PaginaVentas = { items: VentaListado[]; pagina: number; porPagina: number; total: number; totalPaginas: number; conteos?: ConteosVentas };
 export type EstadoNubefact = { regimenTributario: "NRUS" | "RER" | "RMT" | "GENERAL"; credencialesConfiguradas: boolean; seriesConfiguradas: boolean; emisionHabilitada: boolean; serieFacturaConfigurada: boolean; emisionFacturaHabilitada: boolean };
-export type GuiaRemision = { id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; fecha: string; codigo: string; ingresoId?: string | null; comprobanteOrigen?: { codigo: string; tipo: string } | null; estado: string; detalle: string | null; enlacePdf: string | null; enlaceXml: string | null; enlaceCdr: string | null };
+export type GuiaRemision = { id: string; tipo: "REMITENTE" | "TRANSPORTISTA"; fecha: string; codigo: string; ingresoId?: string | null; clienteNombre?: string | null; comprobanteOrigen?: { codigo: string; tipo: string } | null; estado: string; detalle: string | null; enlacePdf: string | null; enlaceXml: string | null; enlaceCdr: string | null };
 export type UbigeoPeru = { codigo: string; departamento: string; provincia: string; distrito: string };
 export type DocumentoOrigenGuia = { id: string; codigo: string; fecha: string; tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA"; estado: string; clienteNombre: string | null; clienteNumeroDocumento: string | null; total: string };
 export type DetalleDocumentoGuia = { id: string; tipo: "PRODUCTO" | "MOTOTAXI"; codigo: string | null; descripcion: string; unidad: string | null; cantidad: string };
@@ -48,8 +48,8 @@ export type Cotizacion = { id: string; codigo: string; aplicaIgv?: boolean; clie
 export type { IdentidadConsultada } from "./identidad.service";
 
 export const servicioIngresos = {
-  listarGuias(pagina = 1, porPagina = 10, grupo: GrupoGuiasRemision = "TODAS") {
-    const consulta = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), ...(grupo === "TODAS" ? {} : { estado: grupo }) });
+  listarGuias(pagina = 1, porPagina = 10, grupo: GrupoGuiasRemision = "TODAS", busqueda = "") {
+    const consulta = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), ...(grupo === "TODAS" ? {} : { estado: grupo }), ...(busqueda.trim() ? { busqueda: busqueda.trim() } : {}) });
     return solicitarApi<PaginaGuiasRemision>(`/ingresos/guias?${consulta}`);
   },
   listarUbigeos() { return solicitarApi<UbigeoPeru[]>("/ingresos/ubigeos"); },

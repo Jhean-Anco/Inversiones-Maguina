@@ -61,7 +61,8 @@ export type EntradaStock = {
   detallesDocumento?: Array<Omit<LineaDocumentoCompra, "codigo" | "unidad"> & { id: string; orden: number; codigo: string | null; unidad: string | null }>;
 };
 
-export type PaginaEntradasStock = { items: EntradaStock[]; total: number; pagina: number; porPagina: number; totalPaginas: number };
+export type FiltroEstadoPagoEntrada = "TODAS" | "PAGADAS" | "PENDIENTES";
+export type PaginaEntradasStock = { items: EntradaStock[]; total: number; pagina: number; porPagina: number; totalPaginas: number; conteosPago: { todas: number; pagadas: number; pendientes: number } };
 export type DatosEntradaStock = {
   fecha: string;
   tipoDocumento: string;
@@ -81,8 +82,8 @@ export type DatosEntradaStock = {
 };
 
 export const servicioEntradasStock = {
-  listar(pagina: number, porPagina: number, busqueda: string) {
-    const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda });
+  listar(pagina: number, porPagina: number, busqueda: string, estadoPago: FiltroEstadoPagoEntrada = "TODAS") {
+    const parametros = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina), busqueda, estadoPago });
     return solicitarApi<PaginaEntradasStock>(`/inventario/entradas-stock?${parametros.toString()}`);
   },
   consultar: (id: string) => solicitarApi<EntradaStock>(`/inventario/entradas-stock/${id}`),

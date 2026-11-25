@@ -50,6 +50,7 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
   const [totalPaginasGuias, setTotalPaginasGuias] = useState(1);
   const [conteos, setConteos] = useState<PaginaGuiasRemision["conteos"]>({ todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0 });
   const [grupo, setGrupo] = useState<GrupoGuiasRemision>("TODAS");
+  const [busquedaGuias, setBusquedaGuias] = useState("");
   const [paginaGuias, setPaginaGuias] = useState(1);
   const [porPaginaGuias, setPorPaginaGuias] = useState(tamanioTablaInicial);
   const [cargandoGuias, setCargandoGuias] = useState(true);
@@ -62,7 +63,7 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
   useEffect(() => {
     let vigente = true;
     setCargandoGuias(true);
-    void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias, grupo).then((resultado) => {
+    void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias, grupo, busquedaGuias).then((resultado) => {
       if (vigente) {
         setGuias(resultado.items);
         setTotalGuias(resultado.total);
@@ -74,7 +75,9 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
       if (vigente) setError(problema instanceof Error ? problema.message : "No se pudieron cargar las guías.");
     }).finally(() => { if (vigente) setCargandoGuias(false); });
     return () => { vigente = false; };
-  }, [actualizada, paginaGuias, porPaginaGuias, grupo]);
+  }, [actualizada, paginaGuias, porPaginaGuias, grupo, busquedaGuias]);
+
+  const textoBusquedaGuias = busquedaGuias.trim();
 
   async function consultar(id: string) {
     setConsultando(id);
@@ -118,22 +121,30 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
         cargando={cargandoGuias}
         error={error || undefined}
         controlesCabecera={(
-          <div className="flex w-full flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
-            {filtros.map(({ valor, etiqueta, conteo }) => (
-              <button key={valor} type="button" className={claseChip} aria-pressed={grupo === valor} onClick={() => { setPaginaGuias(1); setGrupo(valor); }}>
-                {etiqueta}<span className={claseConteo}>{conteos[conteo]}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <label className="flex h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#c5d1db] bg-white px-3 text-[#52697d] sm:min-w-[260px]">
+              <svg className="h-[18px] w-[18px] shrink-0 fill-none stroke-current" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" strokeWidth="2" /><path d="m16 16 4.5 4.5" strokeWidth="2" strokeLinecap="round" /></svg>
+              <input className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#142b42] outline-none placeholder:text-[#7a8fa1]" type="search" value={busquedaGuias}
+                onChange={(evento) => { setBusquedaGuias(evento.target.value); setPaginaGuias(1); }} placeholder="Buscar por guía, comprobante o cliente" aria-label="Buscar guías de remisión" />
+            </label>
+            <div className="flex w-full flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
+              {filtros.map(({ valor, etiqueta, conteo }) => (
+                <button key={valor} type="button" className={claseChip} aria-pressed={grupo === valor} onClick={() => { setPaginaGuias(1); setGrupo(valor); }}>
+                  {etiqueta}<span className={claseConteo}>{conteos[conteo]}</span>
+                </button>
+              ))}
+            </div>
+          </>
         )}
         paginacion={{
-          modo: "remota", pagina: paginaGuias, tamanio: porPaginaGuias, total: totalGuias, totalPaginas: totalPaginasGuias,
+          modo: "remota", pagina: paginaGuias, tamanio: porPaginaGuias, total: totalGuias,
+          totalPaginas: totalPaginasGuias,
           desde: totalGuias ? (paginaGuias - 1) * porPaginaGuias + 1 : 0,
           hasta: Math.min(paginaGuias * porPaginaGuias, totalGuias),
           alCambiarPagina: setPaginaGuias,
           alCambiarTamanio: (tamanio) => { setPorPaginaGuias(tamanio); setPaginaGuias(1); },
         }}
-        vacio={<span>{grupo === "TODAS" ? "Las guías emitidas aparecerán aquí." : "No hay guías en este estado."}</span>}
+        vacio={<span>{textoBusquedaGuias ? "No se encontraron guías con esos criterios." : grupo === "TODAS" ? "Las guías emitidas aparecerán aquí." : "No hay guías en este estado."}</span>}
         encabezadoTabla={<tr><th>Tipo y código</th><th>Comprobante origen</th><th>Fecha</th><th>Estado y detalle</th><th>Documentos y acciones</th></tr>}
         renderizarFila={(guia) => {
           const tono = tonoDeEstado(guia.estado);

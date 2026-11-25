@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
@@ -59,13 +59,19 @@ export class ServicioEntradasStock {
     return filas;
   }
 
-  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string }) {
+  async listar(filtros: { pagina?: string; porPagina?: string; busqueda?: string; estadoPago?: string }) {
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
     const solicitados = Number.parseInt(filtros.porPagina ?? "10", 10);
     const porPagina = [4, 6, 8, 10].includes(solicitados) ? solicitados : 10;
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condicion = coincidencia ? or(ilike(entradasStock.codigo, coincidencia), ilike(entradasStock.proveedor, coincidencia), ilike(entradasStock.numeroDocumento, coincidencia), ilike(entradasStock.proveedorNumeroDocumento, coincidencia)) : undefined;
+    const estadoPago = filtros.estadoPago === "PAGADAS" || filtros.estadoPago === "PENDIENTES" ? filtros.estadoPago : "TODAS";
+    const totalCompra = sql`coalesce(${entradasStock.totalDocumento}, ${entradasStock.total})`;
+    const montoPagado = sql`coalesce(${entradasStock.montoPagado}, 0)`;
+    const condicionEstadoPago = estadoPago === "PAGADAS" ? and(isNotNull(entradasStock.montoPagado), gte(montoPagado, totalCompra))
+      : estadoPago === "PENDIENTES" ? or(isNull(entradasStock.montoPagado), lt(montoPagado, totalCompra)) : undefined;
+    const condicionListado = and(condicion, condicionEstadoPago);
     const [items, [total]] = await Promise.all([
       db.select({
         id: entradasStock.id, codigo: entradasStock.codigo, fecha: entradasStock.fecha,
@@ -75,11 +81,15 @@ export class ServicioEntradasStock {
         medioPago: entradasStock.medioPago, montoPagado: entradasStock.montoPagado,
         totalDocumento: entradasStock.totalDocumento, total: entradasStock.total, creadoEn: entradasStock.creadoEn,
         cantidadProductos: sql<number>`(select count(*)::int from entradas_stock_detalle d where d.entrada_id = ${entradasStock.id})`,
-      }).from(entradasStock).where(condicion).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
-      db.select({ total: count() }).from(entradasStock).where(condicion),
+      }).from(entradasStock).where(condicionListado).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
+      db.select({
+        total: count(),
+        pagadas: sql<number>`count(*) filter (where ${entradasStock.montoPagado} is not null and ${montoPagado} >= ${totalCompra})::int`,
+        pendientes: sql<number>`count(*) filter (where ${entradasStock.montoPagado} is null or ${montoPagado} < ${totalCompra})::int`,
+      }).from(entradasStock).where(condicion),
     ]);
     const totalRegistros = total?.total ?? 0;
-    return { items: items.map((item) => ({ ...item, cantidadProductos: Number(item.cantidadProductos ?? 0) })), total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)) };
+    return { items: items.map((item) => ({ ...item, cantidadProductos: Number(item.cantidadProductos ?? 0) })), total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)), conteosPago: { todas: Number(total?.total ?? 0), pagadas: Number(total?.pagadas ?? 0), pendientes: Number(total?.pendientes ?? 0) } };
   }
 
   async consultar(idEntrada: string) {
