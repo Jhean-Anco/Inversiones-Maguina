@@ -10,6 +10,20 @@ const riskyStatements = [
   /\bSET\s+NOT\s+NULL\b/gi,
 ];
 
+const approvedMigration = {
+  path: "packages/database/migrations/0189_retirar_fotografias.sql",
+  blob: "80d56760b1a015715a05b090dd77e42e48e36b69",
+};
+
+export function isApprovedDestructiveMigration({ findings, approvalLabel, migrationPaths, migrationBlob }) {
+  return approvalLabel === "true"
+    && migrationPaths.length === 1
+    && migrationPaths[0] === approvedMigration.path
+    && migrationBlob === approvedMigration.blob
+    && findings.length > 0
+    && findings.every((finding) => finding.startsWith(`${approvedMigration.path}:`) && finding.includes("operación potencialmente destructiva"));
+}
+
 export function inspectMigrationChanges(nameStatus, addedLines) {
   const findings = [];
 
@@ -100,6 +114,17 @@ export function auditMigrations(baseRef = process.env.MIGRATION_BASE_REF ?? "ori
 
   const findings = inspectMigrationChanges(entries, addedLines);
   if (findings.length) {
+    const migrationPaths = [...new Set(findings.map((finding) => finding.split(":")[0]))];
+    const migrationBlob = migrationPaths.length === 1 ? runGit(["hash-object", approvedMigration.path]).trim() : "";
+    if (isApprovedDestructiveMigration({
+      findings,
+      approvalLabel: process.env.MIGRATION_DESTRUCTIVE_APPROVED,
+      migrationPaths,
+      migrationBlob,
+    })) {
+      console.log(`Migración destructiva autorizada mediante etiqueta del PR: ${approvedMigration.path} (${approvedMigration.blob}).`);
+      return [];
+    }
     console.error("La auditoría de migraciones encontró operaciones que requieren revisión:");
     for (const finding of findings) console.error(`- ${finding}`);
     console.error("Reescriba la migración como cambio compatible y aditivo, o prepare un plan expand-contract antes de solicitar otra revisión.");
