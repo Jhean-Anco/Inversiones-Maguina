@@ -573,7 +573,7 @@ test("el ajuste de mototaxis aplica el saldo por modelo y conserva el historial 
     version: "V2",
     categoriaVehicular: "L5",
     tipoMototaxi: "PASAJERO",
-    tipoMotor: "4_TIEMPOS",
+    tipoMotor: "MONOCILINDRICO_4T",
     tipoRefrigeracion: "AIRE",
     coloresDisponibles: ["Rojo", "rojo", "Azul"],
     cilindradaCc: 200,
@@ -592,6 +592,7 @@ test("el ajuste de mototaxis aplica el saldo por modelo y conserva el historial 
   const modelo = { id: modeloActualizado.id };
   modelosMototaxisPrueba.push(modelo.id);
   assert.equal(modeloActualizado.version, "V2");
+  assert.equal(modeloActualizado.tipoMotor, "MONOCILINDRICO_4T");
   assert.equal(modeloActualizado.coloresDisponibles.length, 2);
   assert.equal(modeloActualizado.precioVenta, null);
   assert.equal((await servicioMototaxis.actualizarPrecioVentaModelo(modelo.id, { precioVenta: 175 }, usuarioId)).precioVenta, "175.00");
