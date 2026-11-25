@@ -2,6 +2,7 @@ import "./nuevo-ingreso-page.css";
 import { ConfirmarDescarteFormulario } from "../../components/ui/confirmar-descarte-formulario";
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useLocation, useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type MedioPagoDisponible } from "../../services/ingresos.service";
 import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
@@ -254,7 +255,28 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     {confirmarDescarteVenta && <ConfirmarDescarteFormulario elemento="esta venta" detalle="Si sales ahora, se perderán el cliente, los productos o servicios y los demás datos que ingresaste. ¿Quieres descartarla?" accion="Descartar y volver al listado" onSeguirEditando={() => setConfirmarDescarteVenta(false)} onDescartar={descartarVentaYVolver} />}
     {clienteEnDetalle && <ClienteDetalleDialog cliente={clienteEnDetalle} editable={permisos.includes("PERSONAS.EDITAR")} onClose={() => setClienteEnDetalle(null)} onSave={async (datos) => { const clienteActualizado = await servicioIngresos.actualizarCliente(clienteEnDetalle.id, datos); venta.actualizarClienteEnResultados(clienteActualizado); setClienteEnDetalle(clienteActualizado); }} />}
     {mostrarCobranza && venta.exito?.nubefact && venta.exito.tipoComprobante  && createPortal(<PagoIngresoDialog cuentaFinancieraInicialId={cuentaPagoId} ingresoId={venta.exito.id} total={venta.exito.total} contadoPendiente={contadoEmitido && cobranzaContadoPendiente} importeInicialObligatorio={pagoInicialCreditoPendiente && cobranzaContadoPendiente} fechaPagoInicial={venta.fecha} importeInicial={contadoEmitido ? venta.exito.total : venta.exito.importePagoInicial} medioPagoInicial={venta.exito.medioPago} onPaymentRecorded={() => { if (cobranzaContadoPendiente) setCobranzaContadoRegistradaId(venta.exito?.id ?? null); }} onClose={() => setMostrarCobranza(false)} />, document.body)}
-    {mostrarAltaProducto && createPortal(cargandoAltaProducto ? <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-label="Preparando el registro del repuesto"><p>Cargando formulario de repuesto…</p></section></div> : catalogosAltaProducto ? <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={catalogo.crearMarca} alCrearCategoria={catalogo.crearCategoria} /> : <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-labelledby="venta-alta-producto-error"><button className="catalog-modal-close" type="button" aria-label="Cerrar" onClick={() => setMostrarAltaProducto(false)}>×</button><h2 id="venta-alta-producto-error">No se pudo abrir el registro</h2><p>{errorAltaProducto}</p><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button><button className="catalog-submit" type="button" onClick={() => void abrirAltaProducto()}>Reintentar</button></div></section></div>, document.getElementById("root") ?? document.body)}
+    {mostrarAltaProducto && (cargandoAltaProducto ? (
+      <Dialogo titulo="Preparando el registro del repuesto" ancho="sm" onCerrar={() => setMostrarAltaProducto(false)}>
+        <p className="m-0 text-sm text-[#52697d]">Cargando formulario de repuesto…</p>
+      </Dialogo>
+    ) : catalogosAltaProducto ? (
+      <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={catalogo.crearMarca} alCrearCategoria={catalogo.crearCategoria} />
+    ) : (
+      <Dialogo
+        tipo="alerta"
+        titulo="No se pudo abrir el registro"
+        ancho="sm"
+        onCerrar={() => setMostrarAltaProducto(false)}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button>
+            <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" onClick={() => void abrirAltaProducto()}>Reintentar</button>
+          </>
+        }
+      >
+        <p className="m-0 text-sm text-[#52697d]">{errorAltaProducto}</p>
+      </Dialogo>
+    ))}
   </div>;
 }
 
