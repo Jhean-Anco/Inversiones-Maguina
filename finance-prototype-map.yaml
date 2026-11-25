@@ -1,0 +1,98 @@
+- generic [ref=e1]:
+  - banner "Controles del artefacto" [ref=e3]:
+    - toolbar "Herramientas de la página" [ref=e21]:
+      - generic [ref=e22]:
+        - link "Inicio" [ref=e23] [cursor=pointer]:
+          - /url: /
+          - generic [aria-hidden] [ref=e27]: 
+        - button "Órdenes de servicio" [ref=e29] [cursor=pointer]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Órdenes de servicio
+            - generic [aria-hidden] [ref=e36]: 
+        - generic [ref=e37]:
+          - status [ref=e38]
+          - button "Usted" [ref=e39] [cursor=pointer]:
+            - group "Usted" [ref=e40]:
+              - img "Jhean ANCO" [ref=e42]: JA
+          - group "Comentarios" [ref=e45]:
+            - button "Comentar este artefacto" [ref=e48] [cursor=pointer]:
+              - generic [ref=e51]:
+                - generic [aria-hidden]: 
+            - button "Más opciones de comentario" [ref=e54] [cursor=pointer]:
+              - generic [aria-hidden] [ref=e58]: 
+          - button "Chatear con Claude · 1 sesión aquí" [ref=e59] [cursor=pointer]:
+            - generic [ref=e62]:
+              - generic [aria-hidden] [ref=e63]: 
+              - text: Chatear
+          - button "Compartir, privado" [ref=e64] [cursor=pointer]:
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic:
+                  - generic [aria-hidden]: 
+              - text: Compartir
+          - status [ref=e69]
+          - alert [ref=e70]
+  - main [ref=e10]:
+    - iframe [ref=e13]:
+      - generic [ref=f4e1]:
+        - generic [ref=f4e4]:
+          - status [ref=f4e5]
+          - generic [ref=f4e6]:
+            - generic [ref=f4e7]:
+              - generic [ref=f4e8]:
+                - banner:
+                  - generic [ref=f4e12]:
+                    - button "Page 1, páginas" [ref=f4e14]
+                    - radiogroup "Vista" [ref=f4e24]
+                  - generic [ref=f4e34]:
+                    - button "Reproducir" [ref=f4e37]
+                    - button "Propiedades" [ref=f4e43]
+                    - button "1 %, Zoom" [ref=f4e48]
+                - main "Lienzo" [ref=f4e58]:
+                  - generic [ref=f4e59]:
+                    - generic
+              - complementary "Panel de propiedades"
+            - toolbar "Canvas tools" [ref=f4e1159]:
+              - generic [ref=f4e1162]:
+                - button "Seleccionar" [pressed] [ref=f4e1164]:
+                  - generic [ref=f4e1166]:
+                    - generic [aria-hidden]: 
+                - button "Mano" [ref=f4e1168]:
+                  - generic [ref=f4e1170]:
+                    - generic [aria-hidden]: 
+                - button "Texto" [ref=f4e1173]:
+                  - generic [ref=f4e1175]:
+                    - generic [aria-hidden]: 
+                - button "Mesa de trabajo" [ref=f4e1177]:
+                  - generic [ref=f4e1179]:
+                    - generic [aria-hidden]: 
+                - button "Nota" [ref=f4e1181]:
+                  - generic [ref=f4e1183]:
+                    - generic [aria-hidden]: 
+                - button "Lápiz" [ref=f4e1185]:
+                  - generic [ref=f4e1187]:
+                    - generic [aria-hidden]: 
+                - button "Shapes" [ref=f4e1189]
+        - generic:
+          - generic:
+            - generic:
+              - status
+              - region "Notifications"
+    - button "Chatear" [ref=e72] [cursor=pointer]
+  - status [ref=e14]
+  - status [ref=e15]
+  - status [ref=e16]
+  - status [ref=e17]
+  - status [ref=e18]
+  - status [ref=e19]
+  - status [ref=e20]
+  - status [ref=e76]
+  - generic:
+    - generic:
+      - status
+  - generic:
+    - generic:
+      - alert
+      - generic:
+        - alert
+        - status

@@ -17,15 +17,14 @@ import { PagoIngresoDialog } from "../../components/ingresos/pago-ingreso-dialog
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { ClienteDetalleDialog } from "./cliente-detalle-dialog";
-import { LineaVentaRow } from "./linea-venta-row";
+import { NuevaVentaEditor } from "./nueva-venta-editor";
+import { CatalogoVenta } from "./catalogo-venta";
 import { useNuevoIngresoClienteForm } from "./use-nuevo-ingreso-cliente-form";
 import { useNuevoIngresoCatalogo } from "./use-nuevo-ingreso-catalogo";
 import { obtenerVistaNuevoIngreso } from "./obtener-vista-nuevo-ingreso";
 import { SelectorClienteVenta } from "./selector-cliente-venta";
 import { nuevoIngresoClasses } from "./nuevo-ingreso-classes";
 import { fechaHoyPeru, soles } from "./nuevo-ingreso-formatters";
-import { CatalogoRecientes } from "../../components/catalogo/catalogo-recientes";
-import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../../components/catalogo/use-catalogo-recientes";
 
 export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { tipoVenta?: TipoVenta; permisos?: string[] }) {
   const ubicacion = useLocation();
@@ -65,7 +64,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const actualizar = (campo: string, valor: string) => venta.actualizarCampoNubefact(campo, valor);
   const { cargandoOS, vinculandoOS, ordenVinculadaOS, saldoOrdenServicio, medioAdelantoOrden } = transferencia;
   const vista = obtenerVistaNuevoIngreso(venta, numeraciones, transferenciaOS, cobranzaContadoRegistradaId);
-  const { esBoleta, esFactura, esNotaVenta, mostrarAfectacionIgv, presentacionComprobante, nombreCliente, numeroDocumento, tipoDocumento, identificacionFacturaPendiente, identificacionBoletaPendiente, identificacionComprobantePendiente, cantidadTotal, lineasOrdenadas, numeracionActual, cpeEmitido, enlaceNotaVenta, contadoEmitido, pagoInicialCreditoPendiente, cobranzaContadoPendiente, buscandoEnCatalogo, productosResultados } = vista;
+  const { esBoleta, esFactura, esNotaVenta, mostrarAfectacionIgv, presentacionComprobante, nombreCliente, numeroDocumento, tipoDocumento, identificacionFacturaPendiente, identificacionBoletaPendiente, identificacionComprobantePendiente, cantidadTotal, lineasOrdenadas, numeracionActual, cpeEmitido, enlaceNotaVenta, contadoEmitido, pagoInicialCreditoPendiente, cobranzaContadoPendiente } = vista;
   const ajustesIgvConocidos = esNotaVenta || venta.estadoNubefact !== null;
   const muestraBasesIgv = !esNotaVenta && venta.estadoNubefact !== null && venta.estadoNubefact.regimenTributario !== "NRUS";
   const importesVenta = {
@@ -122,6 +121,17 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     navegar(tipoVenta === "MOTOTAXIS" ? "/ingresos/ventas/mototaxis" : "/ingresos/ventas/repuestos");
   }
 
+  function cambiarTipoComprobante(tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") {
+    setIntentoIdentificacionComprobante(false);
+    venta.setTipoComprobante(tipo);
+    if (tipo === "FACTURA") {
+      formularioCliente.setTipoDocumentoBusqueda("06");
+      if (String(venta.camposNubefact.cliente_tipo_de_documento ?? "") !== "6") venta.quitarCliente();
+    } else if (tipo === "BOLETA") formularioCliente.setTipoDocumentoBusqueda("01");
+    venta.reiniciarIdempotencia();
+    venta.setExito(null);
+  }
+
   function avanzar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (paso === "datos") {
@@ -158,8 +168,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     }
   }
 
-  return <div className={`venta-page ${nuevoIngresoClasses.page} ${paso === "datos" ? "is-data-step" : "is-preview-step"}`}>
-    <header className={`venta-heading ${nuevoIngresoClasses.heading}`}><div><h1>{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Venta de mototaxis" : "Venta de repuestos" : esFactura ? "Emitir factura" : "Vista previa e impresión"}</h1><p className="page-subtitle text-xs mobile-portrait:text-[11px]">{paso === "datos" ? tipoVenta === "MOTOTAXIS" ? "Selecciona los modelos y las cantidades de la venta." : "Completa los datos y agrega los repuestos que se venderán." : esFactura ? "Revisa los datos y emite la factura en NubeFact." : esBoleta ? "Revisa la boleta antes de enviarla a NubeFact." : "Revisa la nota interna de salida de inventario."}</p></div><span className="venta-status"><i /> {paso === "datos" ? esBoleta ? "BOLETA" : esFactura ? "FACTURA" : "NOTA DE VENTA" : esFactura ? "FACTURA" : "VISTA PREVIA"}</span><div className={`venta-number-card ${nuevoIngresoClasses.numberCard}`}><span>{venta.exito ? "NÚMERO ASIGNADO" : esBoleta ? "N° DE BOLETA" : esFactura ? "N° DE FACTURA" : "N° DE NOTA · INTERNO"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div></header>
+  return <div className={paso === "datos" ? "flex h-full min-h-0 flex-1 flex-col gap-3" : `venta-page ${nuevoIngresoClasses.page} is-preview-step`}>
+    {paso === "previa" && <header className={`venta-heading ${nuevoIngresoClasses.heading}`}><div><h1>{esFactura ? "Emitir factura" : "Vista previa e impresión"}</h1><p className="page-subtitle text-xs mobile-portrait:text-[11px]">{esFactura ? "Revisa los datos y emite la factura en NubeFact." : esBoleta ? "Revisa la boleta antes de enviarla a NubeFact." : "Revisa la nota interna de salida de inventario."}</p></div><span className="venta-status"><i /> {esFactura ? "FACTURA" : "VISTA PREVIA"}</span><div className={`venta-number-card ${nuevoIngresoClasses.numberCard}`}><span>{venta.exito ? "NÚMERO ASIGNADO" : esBoleta ? "N° DE BOLETA" : esFactura ? "N° DE FACTURA" : "N° DE NOTA · INTERNO"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div></header>}
     {venta.error && <NotificacionFlotante mensaje={venta.error} onCerrar={() => venta.setError("")} />}
     {formularioCliente.busquedaSinResultados && formularioCliente.mostrarNotificacionSinCliente && <NotificacionFlotante tipo="error" titulo="Cliente no encontrado" mensaje={`No se encontró un cliente con ${formularioCliente.tipoDocumentoBusqueda === "01" ? "DNI" : "RUC"} ${venta.busquedaCliente.trim()}. Puedes registrarlo para usarlo en esta venta.`} duracionMs={0} accion={{ etiqueta: "Crear cliente", ejecutar: formularioCliente.abrirRegistroCliente }} onCerrar={() => formularioCliente.setMostrarNotificacionSinCliente(false)} />}
     {venta.exito && <NotificacionFlotante
@@ -177,57 +187,30 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       {cpeEmitido && <button type="button" onClick={() => setMostrarCobranza(true)}>{cobranzaContadoPendiente ? "Completar conciliación del pago" : "Registrar / ver pagos"}</button>}
       <button type="button" disabled={cobranzaContadoPendiente} title={cobranzaContadoPendiente ? "Completa la conciliación antes de ocultar el detalle de la venta." : undefined} onClick={() => venta.setExito(null)}>Ocultar detalle</button></section>}
 
-    <form className={`venta-layout ${nuevoIngresoClasses.layout} ${paso === "previa" ? "is-preview-step" : "is-data-step"}`} onSubmit={avanzar}>
+    <form className={paso === "datos" ? "flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto pb-12 pr-1 text-[#142b42]" : "venta-layout is-preview-step"} onSubmit={avanzar}>
       {paso === "datos" && <>
-      <div className="grid min-h-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <article className={`venta-form-paper ${presentacionComprobante.clase} min-w-0 !h-auto !max-h-none !overflow-visible`}>
-          <header className="venta-form-heading"><div><p>{esBoleta || esFactura ? "COMPROBANTE DE VENTA" : "DOCUMENTO INTERNO DE INVENTARIO"}</p><h2>{presentacionComprobante.titulo}</h2></div>{paso === "datos" && <div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div>}</header>
-          <div className="venta-form-scroll">
-          <div className="venta-form-header-fields">
-          <div className="venta-fields venta-document-fields">
-            <label className="venta-field-primary">Tipo de comprobante<select value={venta.tipoComprobante} onChange={(e) => { const tipo = e.target.value as "BOLETA" | "FACTURA" | "NOTA_VENTA"; setIntentoIdentificacionComprobante(false); venta.setTipoComprobante(tipo); if (tipo === "FACTURA") { formularioCliente.setTipoDocumentoBusqueda("06"); if (String(venta.camposNubefact.cliente_tipo_de_documento ?? "") !== "6") venta.quitarCliente(); } else if (tipo === "BOLETA") formularioCliente.setTipoDocumentoBusqueda("01"); venta.reiniciarIdempotencia(); venta.setExito(null); }}><option value="BOLETA">Boleta de venta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
-            <label>{esNotaVenta ? "Fecha de salida" : "Fecha de emisión"}<input type="date" min={esNotaVenta ? undefined : venta.fechaMinimaComprobante} max={esNotaVenta ? undefined : fechaHoyPeru()} value={String(venta.camposNubefact.fecha_de_emision ?? venta.fecha)} onChange={(e) => { actualizar("fecha_de_emision", e.target.value); venta.setFecha(e.target.value); }} required /></label>
-          </div>
-          {(errorMediosPago || (!cargandoMediosPago && mediosPagoDisponibles.length === 0)) && <NotificacionFlotante mensaje={errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta bancaria en Tesorería."} />}
-          <SelectorClienteVenta venta={venta} formulario={formularioCliente} esFactura={esFactura} nombreCliente={nombreCliente} numeroDocumento={numeroDocumento} tipoDocumento={tipoDocumento} intentoIdentificacion={intentoIdentificacionComprobante} identificacionFacturaPendiente={identificacionFacturaPendiente} identificacionBoletaPendiente={identificacionBoletaPendiente} onVerDetalle={setClienteEnDetalle} />
-          </div>
-        <section className="venta-form-body">
-          <div className="venta-form-body-heading"><h3>{tipoVenta === "MOTOTAXIS" ? "Mototaxis de esta venta" : "Repuestos y servicios de esta venta"}</h3><div className="venta-product-tools"><span>{venta.lineas.length} líneas</span>{tipoVenta === "REPUESTOS" && permisos.includes("INGRESOS.SERVICIO_PRECIO_MANUAL") && <button type="button" onClick={venta.agregarServicio}>+ Agregar servicio</button>}</div></div>
-          <div className="venta-inline-product-search">
-            <label className="venta-inline-product-input"><span aria-hidden="true">⌕</span><input value={tipoVenta === "MOTOTAXIS" ? venta.busquedaMototaxi : venta.busqueda} onChange={(evento) => tipoVenta === "MOTOTAXIS" ? venta.setBusquedaMototaxi(evento.target.value) : venta.setBusqueda(evento.target.value)} onKeyDown={tipoVenta === "REPUESTOS" ? buscarProductoConEnter : undefined} placeholder={tipoVenta === "MOTOTAXIS" ? "Buscar por modelo, marca o código…" : "Buscar repuesto por nombre o código…"} aria-label={tipoVenta === "MOTOTAXIS" ? "Buscar mototaxis disponibles" : "Buscar repuestos para la venta"} autoComplete="off" /></label>
-            <div className="venta-inline-product-list" aria-live="polite">
-              {tipoVenta === "MOTOTAXIS" ? venta.buscandoMototaxis ? <p className="venta-catalog-status">Buscando modelos…</p> : venta.busquedaMototaxi.trim().length >= MIN_CARACTERES_BUSQUEDA_CATALOGO ? venta.resultadosMototaxi.length ? venta.resultadosMototaxi.slice(0, MAX_RESULTADOS_CATALOGO).map((mototaxi) => <button className="venta-inline-product-row" key={mototaxi.mototaxiModeloId} type="button" disabled={!mototaxi.stockDisponible || !mototaxi.precioVenta} onClick={() => venta.agregarMototaxi(mototaxi)}><span><strong>{mototaxi.marca} {mototaxi.modelo}{mototaxi.version ? ` ${mototaxi.version}` : ""}</strong><small>{mototaxi.codigo} · {mototaxi.stockDisponible} disponibles</small></span><strong>{mototaxi.precioVenta ? soles(Number(mototaxi.precioVenta)) : "Precio pendiente"}</strong></button>) : <div className="venta-inline-product-empty"><strong>No hay modelos que coincidan</strong><span>Prueba con otro modelo, marca o código.</span></div> : venta.busquedaMototaxi.trim().length ? <div className="venta-inline-product-empty"><span>Escribe al menos cuatro caracteres para buscar.</span></div> : <CatalogoRecientes items={venta.mototaxisRecientes} alSeleccionar={(item) => void venta.agregarMototaxiReciente(item)} titulo="Últimos modelos seleccionados" etiquetaAccion="Volver a agregar" /> : venta.buscando ? <p className="venta-catalog-status">Buscando en inventario…</p> : buscandoEnCatalogo ? productosResultados.length > 0 ? productosResultados.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <button className="venta-inline-product-row" key={producto.presentacionId} type="button" disabled={!producto.precio && !producto.tramos?.length} onClick={() => venta.agregarProducto(producto)}><span><strong>{producto.nombre}</strong><small>{producto.codigo} · {producto.presentacion} · Stock {Number(producto.stockBase).toLocaleString("es-PE")}</small></span><strong>{producto.precio ? soles(Number(producto.precio)) : producto.tramos?.length ? "Según lista y cantidad" : "Sin precio configurado"}</strong></button>) : <div className="venta-inline-product-empty"><strong>No hay repuestos para mostrar</strong><span>No encontramos coincidencias. Prueba con otro nombre o código.</span>{permisos.includes("INVENTARIO.CREAR") && <button className="venta-register-product-button" type="button" onClick={() => void abrirAltaProducto()}><span aria-hidden="true">+</span>Registrar repuesto</button>}</div> : venta.busqueda.trim().length ? <div className="venta-inline-product-empty"><span>Escribe al menos cuatro caracteres para buscar.</span></div> : <CatalogoRecientes items={venta.productosRecientes} alSeleccionar={(item) => void venta.agregarProductoReciente(item)} titulo="Últimos repuestos seleccionados" etiquetaAccion="Volver a agregar" />}
-            </div>
-          </div>
-          {venta.lineas.length === 0 ? <div className="venta-empty"><strong>{tipoVenta === "MOTOTAXIS" ? "Agrega la primera mototaxi" : "Agrega el primer repuesto"}</strong><span>{tipoVenta === "MOTOTAXIS" ? "Busca una unidad disponible para iniciar." : "Busca en el catálogo o añade un servicio para iniciar."}</span></div> : <div className={`venta-lines ${esFactura ? "is-factura" : "is-boleta"}`}><div className={`venta-table-head ${esFactura ? "is-factura" : "is-boleta"}`}><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Descuento</span>{esFactura && <span>Operación</span>}<span>Total</span><i /></div>{lineasOrdenadas.map((linea, indice) => {
-            const separadorTipo = indice > 0 && lineasOrdenadas[indice - 1].tipo !== linea.tipo;
-            const precio = linea.tipo === "PRODUCTO" ? Number(precioRepuestoEnLinea(linea)) : Number(linea.precio) || 0;
-            const importe = precio * (Number(linea.cantidad) || 0);
-            const descuento = Number(linea.descuento) || 0;
-            const totalLinea = importeLinea(Number(linea.cantidad) || 0, precio, descuento);
-            const nombreLinea = linea.tipo === "PRODUCTO" ? linea.producto.nombre : linea.tipo === "MOTOTAXI" ? `${linea.mototaxi.marca} ${linea.mototaxi.modelo}` : linea.descripcion || "servicio";
-            return <LineaVentaRow key={linea.clave} linea={linea} esFactura={esFactura} separadorTipo={separadorTipo} precio={precio} importe={importe} nombreLinea={nombreLinea} totalLinea={totalLinea} formatearSoles={soles} onActualizar={(cambios) => venta.actualizarLinea(linea.clave, cambios)} onQuitar={() => venta.quitarLinea(linea.clave)} />;
-          })}</div>}
-        </section>
-        <section className="px-[22px] pb-[18px]" aria-label="Observaciones de la venta">
-          <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones" value={venta.observacion} onChange={(e) => venta.setObservacion(e.target.value)} maxLength={1000} rows={3} placeholder="Añade una nota" /></label>
-        </section>
-        </div>
-        </article>
-        <aside className="flex flex-col gap-4 rounded-2xl border border-[#dbe3e9] bg-white p-5 shadow-[0_8px_24px_rgba(15,42,66,.06)] xl:sticky xl:top-4" aria-label="Resumen de la venta">
-          <h3 className="m-0 text-[17px] font-bold text-[#0b2545]">Resumen de la venta</h3>
-          <div className="venta-checkout-actions">
-            <div className="venta-checkout-total">
-              <div className="venta-checkout-amount">
-                <DesgloseImportes {...importesVenta} destacado />
-                {transferenciaOS && <><b>Saldo a pagar {soles(saldoOrdenServicio)}</b><small className="text-[10px] font-medium leading-[1.35] text-[#71869b]">Adelanto: {soles(Number(transferenciaOS.adelanto || 0))} · {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto"}</small></>}
-              </div>
-              {transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : venta.condicionPago === "CONTADO" ? <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} /> : null}
-            </div>
-            <div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={cancelarVenta}>Cancelar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div>
-          </div>
-        </aside>
-      </div>
+        {(errorMediosPago || (!cargandoMediosPago && mediosPagoDisponibles.length === 0)) && <NotificacionFlotante mensaje={errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta bancaria en Tesorería."} />}
+        <NuevaVentaEditor
+          venta={venta}
+          tipoVenta={tipoVenta}
+          etiquetaNumero={venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}
+          numero={numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}
+          fecha={String(venta.camposNubefact.fecha_de_emision ?? venta.fecha)}
+          fechaMaxima={fechaHoyPeru()}
+          onFechaChange={(fecha) => { actualizar("fecha_de_emision", fecha); venta.setFecha(fecha); }}
+          onTipoComprobanteChange={cambiarTipoComprobante}
+          selectorCliente={<SelectorClienteVenta venta={venta} formulario={formularioCliente} esFactura={esFactura} nombreCliente={nombreCliente} numeroDocumento={numeroDocumento} tipoDocumento={tipoDocumento} intentoIdentificacion={intentoIdentificacionComprobante} identificacionFacturaPendiente={identificacionFacturaPendiente} identificacionBoletaPendiente={identificacionBoletaPendiente} onVerDetalle={setClienteEnDetalle} />}
+          catalogo={<CatalogoVenta venta={venta} tipoVenta={tipoVenta} puedeRegistrarRepuesto={permisos.includes("INVENTARIO.CREAR")} onRegistrarRepuesto={() => void abrirAltaProducto()} onKeyDownBusquedaRepuesto={buscarProductoConEnter} />}
+          puedeAgregarServicio={tipoVenta === "REPUESTOS" && permisos.includes("INGRESOS.SERVICIO_PRECIO_MANUAL")}
+          lineas={lineasOrdenadas}
+          cantidadTotal={cantidadTotal}
+          onCancelar={cancelarVenta}
+          resumen={<div className="flex flex-col gap-4 [&_.selector-cuenta-financiera]:grid [&_.selector-cuenta-financiera]:gap-1.5 [&_.selector-cuenta-financiera]:text-xs [&_.selector-cuenta-financiera]:font-semibold [&_.selector-cuenta-financiera]:text-[#3d566e] [&_.selector-cuenta-financiera_select]:box-border [&_.selector-cuenta-financiera_select]:h-[46px] [&_.selector-cuenta-financiera_select]:w-full [&_.selector-cuenta-financiera_select]:min-w-0 [&_.selector-cuenta-financiera_select]:rounded-[10px] [&_.selector-cuenta-financiera_select]:border [&_.selector-cuenta-financiera_select]:border-[#c5d1db] [&_.selector-cuenta-financiera_select]:bg-white [&_.selector-cuenta-financiera_select]:px-3 [&_.selector-cuenta-financiera_select]:text-sm [&_.selector-cuenta-financiera_select]:font-normal [&_.selector-cuenta-financiera_select]:text-[#142b42] [&_.selector-cuenta-hint]:font-medium [&_.selector-cuenta-hint]:text-[#5b7083]">
+            <DesgloseImportes {...importesVenta} destacado />
+            {transferenciaOS && <div className="grid gap-1 text-sm text-[#0b2545]"><strong>Saldo a pagar {soles(saldoOrdenServicio)}</strong><small className="text-xs text-[#5b7083]">Adelanto: {soles(Number(transferenciaOS.adelanto || 0))} · {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto"}</small></div>}
+            {transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : venta.condicionPago === "CONTADO" ? <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} /> : null}
+          </div>}
+        />
       </>}
 
       {paso === "previa" && <section className={`venta-preview-stage paper-${tamano.toLowerCase()}`}>

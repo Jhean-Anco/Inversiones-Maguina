@@ -2,3 +2,16 @@
 @media(max-width:700px){.reporte-ingresos-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}.reporte-ingresos-toolbar label{min-width:0}.reporte-ingresos-toolbar label:nth-child(3){grid-column:1/-1}.reporte-ingresos-export{grid-column:1/-1;width:100%;margin:0}.reporte-ingresos-content{gap:10px;margin-top:10px}.reporte-ingresos-kpis{grid-template-columns:1fr;gap:8px}.reporte-ingresos-kpis>div{padding:13px 15px}.reporte-ingresos-kpis dd{margin:4px 0;font-size:22px}.reporte-ingresos-panel{padding:14px}.reporte-ingresos-chart{height:185px;gap:8px}.reporte-ingresos-column{flex-basis:48px}.reporte-ingresos-table th,.reporte-ingresos-table td{padding:11px 7px;font-size:12px}.reporte-ingresos-table thead th{font-size:10px}}
 @media print{.erp-aside,.erp-topbar,.reporte-ingresos-toolbar{display:none!important}.erp-layout,.erp-main,.erp-content{display:block!important;width:auto!important;height:auto!important;min-height:0!important;overflow:visible!important}.reporte-ingresos-page{color:#132e45}.reporte-ingresos-content{margin-top:0}.reporte-ingresos-kpis>div,.reporte-ingresos-panel{break-inside:avoid;border-color:#cbd5df;box-shadow:none}.reporte-ingresos-chart{overflow:visible}}
 .reporte-ingresos-doc-cards{display:grid;gap:9px;margin-top:14px}.reporte-ingresos-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 12px;padding:13px;border:1px solid var(--erp-border,#dce5ed);border-radius:11px;background:var(--erp-surface,#fff)}.reporte-ingresos-doc-card h3{grid-column:1/-1;margin:0;padding-bottom:8px;border-bottom:1px solid #e5ebf0;color:#193b58;font-size:14px;font-weight:750}.reporte-ingresos-doc-card div{display:flex;justify-content:space-between;gap:10px;color:#657d91;font-size:12px}.reporte-ingresos-doc-card strong{color:#193b58;font-variant-numeric:tabular-nums}.reporte-ingresos-doc-card strong.is-credit{color:#a13d43}
+
+@media(min-width:701px){
+  .reporte-ingresos-toolbar label{box-sizing:border-box;flex:0 0 170px;width:170px;min-width:170px}
+  .reporte-ingresos-toolbar input,.reporte-ingresos-toolbar select{min-height:46px}
+  .reporte-ingresos-export{min-height:46px}
+  .reporte-ingresos-content{gap:20px;margin-top:20px}
+  .reporte-ingresos-kpis>div{box-sizing:border-box;height:98px;padding:14px 20px}
+  .reporte-ingresos-kpis dd{margin:3px 0 4px;font-size:24px;line-height:29px}
+  .reporte-ingresos-content>.reporte-ingresos-panel:first-of-type{box-sizing:border-box;display:flex;height:521px;min-height:521px;flex-direction:column;padding:23px 24px}
+  .reporte-ingresos-content>.reporte-ingresos-panel:first-of-type .reporte-ingresos-chart{box-sizing:border-box;flex:1 1 auto;height:423px;min-height:0;margin-top:14px}
+  .reporte-ingresos-documentos-heading{display:none}
+}
+@media(max-width:700px){.reporte-ingresos-documentos-heading{display:flex}}

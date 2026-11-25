@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 type CabeceraListadoProps = {
+  contenido?: ReactNode;
   controles?: ReactNode;
   claseCabecera?: string;
   claseControles?: string;
@@ -12,8 +13,9 @@ const clases = {
   directSearch: "[&>input[type=search]]:box-border [&>input[type=search]]:w-full [&>input[type=search]]:max-w-full [&>input[type=search]]:flex-[1_1_18rem]",
 };
 
-export function CabeceraListado({ controles, claseCabecera = "", claseControles = "" }: CabeceraListadoProps) {
+export function CabeceraListado({ contenido, controles, claseCabecera = "", claseControles = "" }: CabeceraListadoProps) {
   return <header className={`listado-maestro-cabecera ${clases.root} ${claseCabecera}`}>
+    {contenido}
     <div className={`listado-maestro-controles ${clases.controls} ${clases.directSearch} ${claseControles}`}>{controles}</div>
   </header>;
 }

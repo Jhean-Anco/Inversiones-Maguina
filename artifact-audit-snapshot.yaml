@@ -1,0 +1,31 @@
+- generic [ref=e1]:
+  - banner "Controles del artefacto" [ref=e3]:
+    - toolbar "Herramientas de la página" [ref=e21]:
+      - generic [ref=e22]:
+        - link "Inicio" [ref=e23] [cursor=pointer]:
+          - /url: /
+        - button "Órdenes de servicio" [ref=e29] [cursor=pointer]
+        - generic [ref=e37]
+  - main [ref=e10]:
+    - iframe [ref=e13]:
+      - generic [ref=f6e1]:
+        - generic [ref=f6e3]
+        - generic
+    - button "Chatear" [ref=e72] [cursor=pointer]
+  - status [ref=e14]
+  - status [ref=e15]
+  - status [ref=e16]
+  - status [ref=e17]
+  - status [ref=e18]
+  - status [ref=e19]
+  - status [ref=e20]
+  - status [ref=e76]
+  - generic:
+    - generic:
+      - status
+  - generic:
+    - generic:
+      - alert
+      - generic:
+        - alert
+        - status
