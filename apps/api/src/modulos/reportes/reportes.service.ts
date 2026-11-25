@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { db, categoriasProductos, clientes, comprasMototaxisDetalle, comprobantesRelacionados, comprobantesRelacionadosDetalle, entradasStockDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, ordenesServicio, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { consultarFlujoAdelantos, consultarFlujoNotasDebito, consultarFlujoPorComprobante, ventaVigente, type RangoFechas } from "./flujo-ingresos.consultas";
@@ -11,6 +11,11 @@ import { consultarArticulosMasVendidos } from "./articulos.consultas";
 
 /** Ventas del dashboard: boletas, facturas y notas de venta que no estén anuladas. */
 const comprobantesVenta = and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
+const comprobantesIngresosAceptados = and(
+  or(and(inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"]), eq(ingresos.estado, "EMITIDO")),
+    and(eq(ingresos.tipoComprobante, "NOTA_VENTA"), eq(ingresos.estado, "REGISTRADO"))),
+  ventaVigente,
+);
 
 @Injectable()
 export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
@@ -65,7 +70,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
   }
 
   async reporteIngresos(rango: RangoFechas, linea?: "PRODUCTO" | "MOTOTAXI" | "SERVICIO") {
-    const filtroVentas = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesVenta,
+    const filtroVentas = and(gte(ingresos.fecha, rango.desde), lte(ingresos.fecha, rango.hasta), comprobantesIngresosAceptados,
       ...(linea ? [eq(ingresosDetalle.tipo, linea)] : []));
     const ventasPorMes = await db.select({
       mes: sql<string>`to_char(date_trunc('month', ${ingresos.fecha}::date), 'YYYY-MM')`,
