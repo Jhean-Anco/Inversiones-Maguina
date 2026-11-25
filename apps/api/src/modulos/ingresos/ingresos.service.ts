@@ -75,6 +75,13 @@ function validarDetallesGestion(valor: unknown, permitirVacio: boolean) {
       : { tipo: linea.tipo, descripcion, cantidad: cantidad.toFixed(3), precioUnitario: precioUnitario.toFixed(4), descuento: descuento.toFixed(2), afectacionIgv, nombreVisible: descripcion };
   });
 }
+/** Grupos que muestra el listado de guías de remisión; cada grupo reúne los estados que devuelve el proveedor. */
+const gruposEstadoGuia = {
+  EMITIDAS: ["EMITIDO"],
+  PENDIENTES: ["NUBEFACT_PENDIENTE", "PENDIENTE_SUNAT"],
+  RECHAZADAS: ["ERROR_NUBEFACT", "ERROR_SUNAT", "RECHAZADO_SUNAT"],
+} as const;
+
 @Injectable()
 export class ServicioIngresos {
   async listarOrdenesServicio(busquedaEntrada?: string) {
@@ -386,12 +393,20 @@ export class ServicioIngresos {
     return { ...documento, clienteNombreCompleto: documento.clienteNombre ?? [documento.clienteNombres, documento.clienteApellidoPaterno, documento.clienteApellidoMaterno].filter(Boolean).join(" "), clienteDireccion: documento.clienteDireccionEntrega || documento.clienteDireccionFiscal || "", detalles };
   }
 
-  async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string) {
+  async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string, estadoEntrada?: string) {
     const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
     const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
-    const [{ total }] = await db.select({ total: count() }).from(guiasRemision);
+    const grupoEstado = estadoEntrada && estadoEntrada in gruposEstadoGuia ? gruposEstadoGuia[estadoEntrada as keyof typeof gruposEstadoGuia] : null;
+    const condicion = grupoEstado ? inArray(guiasRemision.estado, grupoEstado) : undefined;
+    const [{ total }] = await db.select({ total: count() }).from(guiasRemision).where(condicion);
+    const [conteos] = await db.select({
+      todas: count(),
+      emitidas: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('EMITIDO'))`,
+      pendientes: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('NUBEFACT_PENDIENTE', 'PENDIENTE_SUNAT'))`,
+      rechazadas: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('ERROR_NUBEFACT', 'ERROR_SUNAT', 'RECHAZADO_SUNAT'))`,
+    }).from(guiasRemision);
     const filas = await db.select({ guia: guiasRemision, codigoOrigen: this.codigoDocumentoParaGuia(), tipoOrigen: ingresos.tipoComprobante })
-      .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id))
+      .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicion)
       .orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
     const items = filas.map(({ guia: fila, codigoOrigen, tipoOrigen }) => {
       const datos = fila.datosNubefact && typeof fila.datosNubefact === "object" ? fila.datosNubefact as Record<string, unknown> : {};
@@ -406,7 +421,8 @@ export class ServicioIngresos {
         enlaceXml: typeof respuesta.enlace_del_xml === "string" ? respuesta.enlace_del_xml : null,
         enlaceCdr: typeof respuesta.enlace_del_cdr === "string" ? respuesta.enlace_del_cdr : null };
     });
-    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
+    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)),
+      conteos: { todas: Number(conteos.todas), emitidas: Number(conteos.emitidas), pendientes: Number(conteos.pendientes), rechazadas: Number(conteos.rechazadas) } };
   }
 
   async emitirGuia(valor: unknown, usuarioId: string) {
