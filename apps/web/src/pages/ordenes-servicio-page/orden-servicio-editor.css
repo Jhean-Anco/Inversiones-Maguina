@@ -15,6 +15,33 @@
   min-width: 0;
   color: var(--os-tinta);
 }
+
+/* Mantiene el formulario dentro del espacio visible del ERP y deja el scroll en su contenido. */
+.erp-content:has(> .modulo-route-transition > .os-editor) {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+.erp-content:has(> .modulo-route-transition > .os-editor)
+  > .modulo-route-transition {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+.erp-content:has(> .modulo-route-transition > .os-editor)
+  > .modulo-route-transition
+  > .os-editor {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 .os-editor *,
 .os-editor *::before,
 .os-editor *::after {

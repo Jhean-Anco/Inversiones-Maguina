@@ -12,12 +12,34 @@ test("normaliza una cuenta de efectivo y aplica PEN por defecto", () => {
       entidad: null,
       titular: null,
       moneda: "PEN",
+      saldoInicial: null,
+      fechaSaldoInicial: null,
       numeroCuenta: null,
       cci: null,
       numeroTarjeta: null,
       telefono: null,
       observacion: null,
     },
+  );
+});
+
+test("valida juntos el saldo inicial y la fecha de corte", () => {
+  const cuenta = validarDatosCuentaFinanciera({
+    tipo: "EFECTIVO",
+    nombre: "Caja principal",
+    saldoInicial: "1250.50",
+    fechaSaldoInicial: "2026-01-15",
+  });
+
+  assert.equal(cuenta.saldoInicial, "1250.50");
+  assert.equal(cuenta.fechaSaldoInicial, "2026-01-15");
+  assert.throws(
+    () => validarDatosCuentaFinanciera({ tipo: "EFECTIVO", nombre: "Caja", saldoInicial: "100.00" }),
+    (error) => error instanceof BadRequestException,
+  );
+  assert.throws(
+    () => validarDatosCuentaFinanciera({ tipo: "EFECTIVO", nombre: "Caja", saldoInicial: "100.123", fechaSaldoInicial: "2026-01-15" }),
+    (error) => error instanceof BadRequestException,
   );
 });
 
