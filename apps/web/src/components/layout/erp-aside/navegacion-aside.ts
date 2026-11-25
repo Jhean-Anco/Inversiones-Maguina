@@ -20,8 +20,8 @@ export type SubmoduloAside = {
 export type ModuloAside = {
   nombre: string;
   icono: string;
-  /** Sección del aside bajo la que se agrupa el módulo. */
-  seccion?: string;
+  /** Texto corto bajo el icono cuando el aside está colapsado y el nombre no cabe. */
+  etiqueta?: string;
   ruta?: string;
   hijos: SubmoduloAside[];
 };
@@ -30,7 +30,6 @@ export const elementosAside: ModuloAside[] = [
   { nombre: "Resumen", icono: "inicio", ruta: "/inicio", hijos: [] },
   {
     nombre: "Ingresos",
-    seccion: "OPERACIÓN",
     icono: "venta",
     hijos: [
       { nombre: "Órdenes de servicio", ruta: "/ingresos/ordenes-servicio", permiso: "INGRESOS.LEER" },
@@ -42,7 +41,6 @@ export const elementosAside: ModuloAside[] = [
   },
   {
     nombre: "Egresos",
-    seccion: "OPERACIÓN",
     icono: "egresos",
     hijos: [
       { nombre: "Compra de repuestos", ruta: "/egresos/compras", rutasRelacionadas: [{ ruta: "/egresos/compras/nueva", permiso: "INVENTARIO.CREAR" }], permiso: "INVENTARIO.LEER" },
@@ -51,7 +49,6 @@ export const elementosAside: ModuloAside[] = [
   },
   {
     nombre: "Catálogos",
-    seccion: "ALMACÉN",
     icono: "catalogos",
     hijos: [
       { nombre: "Categorías", ruta: "/inventario/categorias", permiso: "INVENTARIO.LEER" },
@@ -60,7 +57,6 @@ export const elementosAside: ModuloAside[] = [
   },
   {
     nombre: "Inventario",
-    seccion: "ALMACÉN",
     icono: "inventario",
     hijos: [
       { nombre: "Mototaxis", ruta: "/inventario/mototaxis", rutasRelacionadas: ["/mototaxis/garantias"].map((ruta) => ({ ruta, permiso: "MOTOTAXIS.LEER" as const })), permiso: "MOTOTAXIS.LEER" },
@@ -71,7 +67,6 @@ export const elementosAside: ModuloAside[] = [
   },
   {
     nombre: "Contactos",
-    seccion: "GESTIÓN",
     icono: "personas",
     hijos: [
       { nombre: "Clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" },
@@ -79,16 +74,15 @@ export const elementosAside: ModuloAside[] = [
       { nombre: "Conductores", ruta: "/personas/conductores", permiso: "PERSONAS.LEER" },
     ],
   },
-  { nombre: "Finanzas", seccion: "GESTIÓN", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }, { nombre: "Movimientos por cuenta", ruta: "/finanzas/movimientos", permiso: "FINANZAS.LEER" }] },
+  { nombre: "Finanzas", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }, { nombre: "Movimientos por cuenta", ruta: "/finanzas/movimientos", permiso: "FINANZAS.LEER" }] },
   {
     nombre: "Reportes",
-    seccion: "GESTIÓN",
     icono: "reportes",
     hijos: [
       { nombre: "Inventario", ruta: "/reportes/inventario", permiso: "INVENTARIO.LEER" },
     ],
   },
-  { nombre: "Configuración", seccion: "SISTEMA", icono: "administracion", hijos: [{ nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" }] },
+  { nombre: "Configuración", etiqueta: "Ajustes", icono: "administracion", hijos: [{ nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" }] },
 ];
 
 function rutaCoincide(rutaActual: string, elemento: SubmoduloAside) {

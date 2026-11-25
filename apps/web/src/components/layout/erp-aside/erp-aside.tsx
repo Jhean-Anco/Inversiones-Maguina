@@ -120,8 +120,8 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
           <div className="erp-aside__marca">
             <img className="erp-aside__logo" src="/logo.webp" alt="Inversiones Maguiña" />
             <strong className="erp-aside__nombre">MAGUIÑA</strong>
-            {perfilAmplio && expandido && (
-              <button className="erp-aside__colapsar" type="button" aria-label="Contraer menú" onClick={() => onContraidoChange(true)}>
+            {perfilAmplio && (
+              <button className="erp-aside__colapsar" type="button" aria-label="Contraer menú" inert={!expandido} onClick={() => onContraidoChange(true)}>
                 <svg className="erp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
               </button>
             )}
@@ -129,20 +129,18 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
 
           <nav className="erp-aside__nav" aria-label="Secciones">
             {navegacionVisible.map((elemento, indice) => {
-              const nuevaSeccion = Boolean(elemento.seccion) && elemento.seccion !== navegacionVisible[indice - 1]?.seccion;
-              const etiquetaSeccion = nuevaSeccion ? <span className="erp-aside__seccion" aria-hidden="true">{elemento.seccion}</span> : null;
               if (elemento.ruta) {
                 return (
                   <Fragment key={elemento.nombre}>
-                    {etiquetaSeccion}
                     <Link
                       className={`erp-aside__fila${dashboardActivo ? " is-current" : ""}`}
+                      style={{ "--i": indice } as CSSProperties}
                       to={elemento.ruta}
                       title={expandido ? undefined : elemento.nombre}
                       aria-current={dashboardActivo ? "page" : undefined}
                       onClick={() => { onNavegarResumen(); onCerrarMenuMovil(); if (perfilAmplio) onContraidoChange(true); }}
                     >
-                      <Icono nombre={elemento.icono} /><span className="erp-aside__texto">{elemento.nombre}</span>
+                      <Icono nombre={elemento.icono} /><span className="erp-aside__mini" aria-hidden="true">{elemento.etiqueta ?? elemento.nombre}</span><span className="erp-aside__texto">{elemento.nombre}</span>
                     </Link>
                   </Fragment>
                 );
@@ -151,16 +149,16 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
               const idSubnav = crearIdSubnav(elemento.nombre);
               return (
                 <Fragment key={elemento.nombre}>
-                  {etiquetaSeccion}
                   <button
                     className={`erp-aside__fila${moduloActivo?.nombre === elemento.nombre ? " is-current" : ""}`}
                     type="button"
+                    style={{ "--i": indice } as CSSProperties}
                     title={expandido ? undefined : elemento.nombre}
                     aria-expanded={abierto && expandido}
                     aria-controls={idSubnav}
                     onClick={() => alternarModulo(elemento.nombre)}
                   >
-                    <Icono nombre={elemento.icono} /><span className="erp-aside__texto">{elemento.nombre}</span>
+                    <Icono nombre={elemento.icono} /><span className="erp-aside__mini" aria-hidden="true">{elemento.etiqueta ?? elemento.nombre}</span><span className="erp-aside__texto">{elemento.nombre}</span>
                     <svg className="erp-aside__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                   </button>
                   <div id={idSubnav} className={`erp-aside__subnav${abierto ? " is-open" : ""}`} aria-hidden={!abierto || !expandido} inert={!abierto || !expandido}>
@@ -187,8 +185,8 @@ export function ErpAside({ moduloActivo, submoduloActivo, navegacionVisible, das
             })}
           </nav>
 
-          {perfilAmplio && !expandido && (
-            <button className="erp-aside__expandir" type="button" aria-label="Expandir menú" onClick={() => onContraidoChange(false)}>
+          {perfilAmplio && (
+            <button className="erp-aside__expandir" type="button" aria-label="Expandir menú" inert={expandido} onClick={() => onContraidoChange(false)}>
               <svg className="erp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
             </button>
           )}

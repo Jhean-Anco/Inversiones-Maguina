@@ -1,5 +1,5 @@
 /*
- * Aside navy con secciones.
+ * Aside navy: riel compacto que se expande.
  * Escritorio: ocupa 76 px en la cuadrícula; al expandirse (256 px) se superpone
  * al contenido, así que no provoca reflujo. Compacto: cajón lateral.
  */
@@ -12,8 +12,11 @@
   --aside-acento: #d41e32;
   --aside-foco: #ed5360;
   --aside-curva: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Expandir/contraer: lento y parejo para que el movimiento se vea completo. */
+  --aside-duracion: 1s;
+  --aside-suave: cubic-bezier(0.65, 0, 0.35, 1);
   position: relative;
-  z-index: 20;
+  z-index: 25;
   grid-column: 1;
   grid-row: 1;
   width: var(--aside-colapsado);
@@ -29,10 +32,10 @@
   width: var(--aside-colapsado);
   box-sizing: border-box;
   flex-direction: column;
-  padding: 18px 15px 12px;
+  padding: 18px 8px 12px;
   overflow: hidden;
   background: var(--aside-fondo);
-  transition: width 0.34s var(--aside-curva), box-shadow 0.34s ease;
+  transition: width var(--aside-duracion) var(--aside-suave), box-shadow var(--aside-duracion) ease !important;
 }
 .erp-aside::before {
   position: absolute;
@@ -53,8 +56,8 @@
   flex: none;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
-  padding: 0 2px;
+  margin-bottom: 14px;
+  padding: 0 0 0 9px;
 }
 .erp-aside__logo {
   width: 42px;
@@ -80,14 +83,17 @@
 .erp-aside__chevron,
 .erp-aside__colapsar {
   opacity: 0;
-  transition: opacity 0.1s ease;
+  transition: opacity 0.15s ease !important;
+}
+.erp-aside__texto {
+  pointer-events: none;
 }
 .is-expanded .erp-aside__nombre,
 .is-expanded .erp-aside__texto,
 .is-expanded .erp-aside__chevron,
 .is-expanded .erp-aside__colapsar {
   opacity: 1;
-  transition: opacity 0.22s ease 0.12s;
+  transition: opacity 0.35s ease calc(0.35s + var(--i, 0) * 50ms) !important;
 }
 
 /* Botones de colapsar / expandir */
@@ -110,15 +116,33 @@
   background: rgb(255 255 255 / 0.16);
   color: #fff;
 }
+/* Siempre montado: el botón se desvanece y colapsa su espacio al expandir. */
 .erp-aside__expandir {
-  width: 46px;
+  width: 44px;
   height: 40px;
   margin-top: 8px;
+  align-self: center;
   border-radius: 10px;
+  opacity: 1;
+  transition:
+    height var(--aside-duracion) var(--aside-suave),
+    margin-top var(--aside-duracion) var(--aside-suave),
+    opacity 0.35s ease 0.6s,
+    background-color 0.16s ease !important;
 }
-.erp-aside:not(.is-expanded) .erp-aside__colapsar {
+.is-expanded .erp-aside__expandir {
+  height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
   pointer-events: none;
+  transition:
+    height var(--aside-duracion) var(--aside-suave),
+    margin-top var(--aside-duracion) var(--aside-suave),
+    opacity 0.12s ease,
+    background-color 0.16s ease !important;
 }
+
 .erp-aside__colapsar .erp-icon,
 .erp-aside__expandir .erp-icon {
   width: 16px;
@@ -139,39 +163,19 @@
 .erp-aside__nav::-webkit-scrollbar {
   display: none;
 }
-.erp-aside__seccion {
-  display: block;
-  flex: none;
-  height: 12px;
-  margin-top: 8px;
-  overflow: hidden;
-  color: var(--aside-tenue);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.1s ease;
-}
-.is-expanded .erp-aside__seccion {
-  height: 18px;
-  padding: 6px 13px 0;
-  box-sizing: border-box;
-  line-height: 12px;
-  opacity: 1;
-  transition: opacity 0.22s ease 0.12s;
-}
+/*
+ * Fila: colapsada es una baldosa con icono y etiqueta debajo (riel);
+ * expandida es una fila con icono a la izquierda y nombre completo.
+ * El icono se desplaza entre ambas posiciones con una transición.
+ */
 .erp-aside__fila {
   position: relative;
-  display: flex;
+  display: block;
   width: 100%;
-  min-height: 46px;
+  height: 56px;
   box-sizing: border-box;
   flex: none;
-  align-items: center;
-  gap: 12px;
-  padding: 0 13px;
+  padding: 0;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -182,28 +186,74 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.16s ease, color 0.16s ease;
+  transition:
+    height var(--aside-duracion) var(--aside-suave),
+    background-color 0.16s ease,
+    color 0.16s ease !important;
+}
+.is-expanded .erp-aside__fila {
+  height: 46px;
 }
 .erp-aside__fila .erp-icon {
+  position: absolute;
+  top: 9px;
+  left: calc(50% - 11px);
+  width: 22px;
+  height: 22px;
+  transition:
+    top var(--aside-duracion) var(--aside-suave),
+    left var(--aside-duracion) var(--aside-suave),
+    width var(--aside-duracion) var(--aside-suave),
+    height var(--aside-duracion) var(--aside-suave) !important;
+}
+.is-expanded .erp-aside__fila .erp-icon {
+  top: 13px;
+  left: 20px;
   width: 20px;
   height: 20px;
-  flex: none;
 }
-.erp-aside__texto {
-  flex: 1;
+/* Etiqueta corta bajo el icono (solo colapsado) */
+.erp-aside__mini {
+  position: absolute;
+  right: 2px;
+  bottom: 9px;
+  left: 2px;
   overflow: hidden;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.35s ease 0.7s !important;
+}
+.is-expanded .erp-aside__mini {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease !important;
+}
+/* Nombre completo (solo expandido) */
+.erp-aside__texto {
+  position: absolute;
+  top: 0;
+  right: 40px;
+  left: 52px;
+  overflow: hidden;
+  line-height: 46px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .erp-aside__chevron {
+  position: absolute;
+  top: 15px;
+  right: 12px;
   width: 16px;
   height: 16px;
-  flex: none;
   color: var(--aside-tenue);
-  transition: opacity 0.1s ease, transform 0.3s var(--aside-curva);
+  transition: opacity 0.15s ease, transform 0.3s var(--aside-curva) !important;
 }
 .is-expanded .erp-aside__chevron {
-  transition: opacity 0.22s ease 0.12s, transform 0.3s var(--aside-curva);
+  transition: opacity 0.35s ease calc(0.35s + var(--i, 0) * 50ms), transform 0.3s var(--aside-curva) !important;
 }
 .erp-aside__fila[aria-expanded="true"] .erp-aside__chevron {
   transform: rotate(180deg);
@@ -216,8 +266,10 @@
   background: rgb(255 255 255 / 0.1);
   color: #fff;
 }
+/* Colapsado: baldosa con barra roja lateral, como el riel de iconos */
 .erp-aside:not(.is-expanded) .erp-aside__fila.is-current {
-  background: var(--aside-acento);
+  background: rgb(255 255 255 / 0.14);
+  box-shadow: inset 3px 0 0 #ef3447;
 }
 .erp-aside__fila:focus-visible,
 .erp-aside__sub:focus-visible,
@@ -232,7 +284,7 @@
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows 0.3s var(--aside-curva), opacity 0.2s ease;
+  transition: grid-template-rows 0.5s var(--aside-suave), opacity 0.4s ease !important;
 }
 .erp-aside__subnav.is-open {
   grid-template-rows: 1fr;
@@ -322,7 +374,7 @@
   width: min(276px, 86vw);
   height: 100svh;
   transform: translateX(-102%);
-  transition: transform 0.24s ease-in-out;
+  transition: transform 0.24s ease-in-out !important;
 }
 :where(
     html[data-responsive-profile="tablet-portrait"],
@@ -352,14 +404,13 @@
     display: none;
   }
 }
+/*
+ * Las transiciones del aside llevan !important a propósito: la app tiene reglas
+ * globales de movimiento reducido (main.css y erp-design-system.css) que las
+ * dejarían en 0.01 ms y el aside se abriría sin que se vea el cambio.
+ * Solo se quita la cascada de submódulos, que sí es un desplazamiento.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .erp-sidebar,
-  .erp-aside,
-  .erp-aside *,
-  .erp-aside__subnav {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-  }
   .erp-aside__sub {
     animation: none !important;
   }
