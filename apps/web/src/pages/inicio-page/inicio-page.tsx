@@ -1,3 +1,4 @@
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ErpAside, obtenerNavegacionAside } from "../../components/layout/erp-aside/erp-aside";
@@ -12,6 +13,7 @@ const NuevoIngresoPage = lazy(() => import("../nuevo-ingreso-page/nuevo-ingreso-
 const ClientesPage = lazy(() => import("../clientes-page/clientes-page").then((modulo) => ({ default: modulo.ClientesPage })));
 const ProveedoresPage = lazy(() => import("../proveedores-page/proveedores-page").then((modulo) => ({ default: modulo.ProveedoresPage })));
 const ReportePage = lazy(() => import("../reportes-page/reportes-page").then((modulo) => ({ default: modulo.ReportesPage })));
+const ReporteIngresosPage = lazy(() => import("../reportes-page/reporte-ingresos-page").then((modulo) => ({ default: modulo.ReporteIngresosPage })));
 const DashboardPage = lazy(() => import("../dashboard-page/dashboard-page").then((modulo) => ({ default: modulo.DashboardPage })));
 const MototaxisPage = lazy(() => import("../mototaxis-page/mototaxis-page").then((modulo) => ({ default: modulo.MototaxisPage })));
 const InventarioMototaxisPage = lazy(() => import("../inventario-mototaxis-page/inventario-mototaxis-page").then((modulo) => ({ default: modulo.InventarioMototaxisPage })));
@@ -48,7 +50,6 @@ export function InicioPage() {
   const botonMenuRef = useRef<HTMLButtonElement>(null);
   const contenidoRef = useRef<HTMLDivElement>(null);
   const cancelarCierreRef = useRef<HTMLButtonElement>(null);
-  const dialogoCierreRef = useRef<HTMLDivElement>(null);
   const rutaActual = ubicacion.pathname;
   useBorradoresDialogos(rutaActual, perfil?.id ?? null);
   const {
@@ -59,26 +60,9 @@ export function InicioPage() {
   } = useAlertasInicio(permisosPerfil);
   useEffect(() => {
     if (!confirmarCierreSesion) return;
-    const focoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const restaurarScroll = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    cancelarCierreRef.current?.focus();
-    const manejarTeclado = (evento: KeyboardEvent) => {
-      if (evento.key === "Escape") { evento.preventDefault(); setConfirmarCierreSesion(false); return; }
-      if (evento.key !== "Tab") return;
-      const botones = dialogoCierreRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
-      if (!botones?.length) return;
-      const primero = botones[0];
-      const ultimo = botones[botones.length - 1];
-      if (evento.shiftKey && document.activeElement === primero) { evento.preventDefault(); ultimo.focus(); }
-      else if (!evento.shiftKey && document.activeElement === ultimo) { evento.preventDefault(); primero.focus(); }
-    };
-    window.addEventListener("keydown", manejarTeclado);
-    return () => {
-      window.removeEventListener("keydown", manejarTeclado);
-      document.body.style.overflow = restaurarScroll;
-      if (focoAnterior?.isConnected) focoAnterior.focus();
-    };
+    return () => { document.body.style.overflow = restaurarScroll; };
   }, [confirmarCierreSesion]);
   const { moduloActivo, submoduloActivo, navegacionVisible, accesoDenegado } = obtenerNavegacionAside(rutaActual, permisosPerfil);
   const autorizacionResuelta = perfil !== null;
@@ -176,14 +160,31 @@ export function InicioPage() {
               <p className="m-0 text-sm leading-relaxed text-[#61758a]">Tu usuario no tiene el permiso necesario. Solicítalo a un administrador si necesitas acceder.</p>
               <button className="rounded-lg border border-[#cbd8e4] bg-white px-4 py-2 text-sm font-semibold text-[#244967] hover:bg-[#f5f8fb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2878b9]" type="button" onClick={() => navegar("/inicio")}>Volver al resumen</button>
             </section>
-          ) : ubicacion.pathname === "/configuracion/series" ? <ConfiguracionSeriesPage /> : ubicacion.pathname === "/mototaxis/compras/nueva" ? <MototaxisPage seccion="compras" esNuevaCompra puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} puedeCrearReclamo={perfil?.permisos.includes("MOTOTAXIS.CREAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : (ubicacion.pathname === "/finanzas/cuentas" || ubicacion.pathname === "/finanzas/movimientos") ? <FinanzasPage vista={ubicacion.pathname.endsWith("/movimientos") ? "movimientos" : "cuentas"} puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage puedeCrear={permisosPerfil.includes("PERSONAS.CREAR")} puedeEditar={perfil?.permisos.includes("PERSONAS.EDITAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={permisosPerfil.includes("PERSONAS.CREAR")} puedeEditar={permisosPerfil.includes("PERSONAS.EDITAR")} /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ordenes-servicio" ? <OrdenesServicioPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/cotizaciones" ? <OrdenesCotizacionesPage modo="COTIZACIONES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage key={ubicacion.pathname} tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} puedeAnular={perfil?.permisos.includes("FACTURACION.ANULAR") ?? false} puedeAplicarGarantia={perfil?.permisos.includes("MOTOTAXIS.CREAR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage /> : ubicacion.pathname === "/egresos/compras/nueva" ? <ComprasPage esNuevaCompra /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage puedeAjustar={permisosPerfil.includes("INVENTARIO.EDITAR")} /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage permisos={permisosPerfil} /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} permisos={perfil?.permisos ?? []} />}
+          ) : ubicacion.pathname === "/configuracion/series" ? <ConfiguracionSeriesPage /> : ubicacion.pathname === "/mototaxis/compras/nueva" ? <MototaxisPage seccion="compras" esNuevaCompra puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} /> : ubicacion.pathname.startsWith("/mototaxis") ? <MototaxisPage seccion={(ubicacion.pathname.split("/")[2] || "resumen") as "compras" | "garantias" | "movimientos"} puedeAjustarInventario={perfil?.permisos.includes("MOTOTAXIS.EDITAR") ?? false} puedeCrearReclamo={perfil?.permisos.includes("MOTOTAXIS.CREAR") ?? false} /> : ubicacion.pathname.startsWith("/inventario/mototaxis") ? <InventarioMototaxisPage permisos={perfil?.permisos ?? []} /> : (ubicacion.pathname === "/finanzas/cuentas" || ubicacion.pathname === "/finanzas/movimientos") ? <FinanzasPage vista={ubicacion.pathname.endsWith("/movimientos") ? "movimientos" : "cuentas"} puedeAdministrar={perfil?.permisos.includes("FINANZAS.ADMINISTRAR") ?? false} /> : ubicacion.pathname === "/clientes" ? <ClientesPage puedeCrear={permisosPerfil.includes("PERSONAS.CREAR")} puedeEditar={perfil?.permisos.includes("PERSONAS.EDITAR") ?? false} /> : ubicacion.pathname === "/personas/conductores" ? <ConductoresPage puedeCrear={permisosPerfil.includes("PERSONAS.CREAR")} puedeEditar={permisosPerfil.includes("PERSONAS.EDITAR")} /> : ubicacion.pathname === "/personas/proveedores" ? <ProveedoresPage puedeCrear={perfil?.permisos.includes("PERSONAS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/guias" ? <GuiasRemisionPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ordenes-servicio" ? <OrdenesServicioPage puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/cotizaciones" ? <OrdenesCotizacionesPage modo="COTIZACIONES" puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} /> : ubicacion.pathname === "/ingresos/ventas/repuestos" || ubicacion.pathname === "/ingresos/ventas/mototaxis" ? <VentasPage key={ubicacion.pathname} tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} puedeCrear={perfil?.permisos.includes("INGRESOS.CREAR") ?? false} puedeEmitirNotas={perfil?.permisos.includes("FACTURACION.NOTAS_EMITIR") ?? false} puedeAnular={perfil?.permisos.includes("FACTURACION.ANULAR") ?? false} puedeAplicarGarantia={perfil?.permisos.includes("MOTOTAXIS.CREAR") ?? false} /> : ubicacion.pathname.startsWith("/ingresos/nuevo") ? <NuevoIngresoPage tipoVenta={ubicacion.pathname.endsWith("/mototaxis") ? "MOTOTAXIS" : "REPUESTOS"} permisos={perfil?.permisos ?? []} /> : ubicacion.pathname === "/reportes/ingresos" ? <ReporteIngresosPage /> : ubicacion.pathname === "/reportes/inventario" ? <ReportePage /> : ubicacion.pathname === "/egresos/compras/nueva" ? <ComprasPage esNuevaCompra /> : ubicacion.pathname === "/egresos/compras" ? <ComprasPage /> : ubicacion.pathname === "/inventario/movimientos-ajustes" ? <MovimientosStockPage puedeAjustar={permisosPerfil.includes("INVENTARIO.EDITAR")} /> : ubicacion.pathname === "/inventario/productos" ? <ProductosPage permisos={permisosPerfil} /> : ubicacion.pathname === "/inventario/marcas" ? <MarcasPage /> : ubicacion.pathname === "/inventario/categorias" ? <CategoriasPage /> : <DashboardPage nombre={perfil?.nombreCompleto ?? ""} rol={rolPrincipal} puedeVerIngresos={perfil?.permisos.includes("INGRESOS.LEER") ?? false} permisos={perfil?.permisos ?? []} />}
           </Suspense>
 
           </div>
           </AccionPrincipalProvider>
         </div>
       </section>
-      {confirmarCierreSesion && <div className={`erp-logout-backdrop ${inicioClasses.logoutBackdrop}`} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setConfirmarCierreSesion(false); }}><div ref={dialogoCierreRef} className={`erp-logout-dialog ${inicioClasses.logoutDialog}`} role="alertdialog" aria-modal="true" aria-labelledby="erp-logout-title" aria-describedby="erp-logout-description"><span className={`erp-logout-symbol ${inicioClasses.logoutSymbol}`} aria-hidden="true"><Icono nombre="salir" /></span><div className={`erp-logout-copy ${inicioClasses.logoutCopy}`}><span className="erp-logout-kicker">SESIÓN ACTUAL</span><h2 id="erp-logout-title">¿Cerrar sesión?</h2><p id="erp-logout-description">Saldrás de tu cuenta en este dispositivo.</p></div><footer className={`erp-logout-footer ${inicioClasses.logoutFooter}`}><button ref={cancelarCierreRef} className="erp-logout-cancel" type="button" onClick={() => setConfirmarCierreSesion(false)}>Seguir aquí</button><button className="erp-logout-confirm" type="button" onClick={() => { setConfirmarCierreSesion(false); void salir(); }}><Icono nombre="salir" />Cerrar sesión</button></footer></div></div>}
+      {confirmarCierreSesion && (
+        <Dialogo
+          tipo="alerta"
+          ancho="sm"
+          kicker="SESIÓN ACTUAL"
+          titulo="¿Cerrar sesión?"
+          onCerrar={() => setConfirmarCierreSesion(false)}
+          enfocarAlAbrir={cancelarCierreRef}
+          pie={
+            <>
+              <button ref={cancelarCierreRef} className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" onClick={() => setConfirmarCierreSesion(false)}>Seguir aquí</button>
+              <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" type="button" onClick={() => { setConfirmarCierreSesion(false); void salir(); }}><Icono nombre="salir" />Cerrar sesión</button>
+            </>
+          }
+        >
+          <p className="m-0 text-sm leading-relaxed text-[#52697d]">Saldrás de tu cuenta en este dispositivo.</p>
+        </Dialogo>
+      )}
     </main>
   );
 }

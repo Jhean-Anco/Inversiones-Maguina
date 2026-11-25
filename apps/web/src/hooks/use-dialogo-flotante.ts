@@ -13,7 +13,14 @@ export function useDialogoFlotante<T extends HTMLElement>(referencia: RefObject<
     const dialogo = referencia.current;
     window.requestAnimationFrame(() => dialogo?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])')?.focus());
 
+    const esDialogoSuperior = () => {
+      const modales = document.querySelectorAll('[aria-modal="true"]');
+      const ultimo = modales[modales.length - 1];
+      return !ultimo || ultimo === dialogo?.closest('[aria-modal="true"]');
+    };
+
     const alPresionarTecla = (evento: KeyboardEvent) => {
+      if (!esDialogoSuperior()) return;
       if (evento.key === "Escape") cerrarRef.current();
       if (evento.key !== "Tab" || !dialogo) return;
       const elementos = Array.from(dialogo.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter((elemento) => elemento.offsetParent !== null);

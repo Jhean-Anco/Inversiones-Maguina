@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+import { Dialogo } from "../ui/dialogo/dialogo";
 import type { Producto } from "../../services/inventario/productos.service";
 
 const patronesL = ["0001101", "0011001", "0010011", "0111101", "0100011", "0110001", "0101111", "0111011", "0110111", "0001011"];
@@ -88,11 +88,25 @@ export function EtiquetaCodigoBarras({ producto, alCerrar }: { producto: Product
     window.setTimeout(iniciarImpresion, 150);
   }
 
-  return createPortal(<div className="barcode-print-portal fixed inset-0 z-[13010] grid place-items-center bg-[#081a2db8] p-5 backdrop-blur-[3px]" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) alCerrar(); }}>
-    <section className="grid w-[min(520px,100%)] gap-[18px] rounded-2xl border border-[#dce6ef] bg-white p-[22px] text-[#193753] shadow-[0_24px_70px_#071a2d40] print:block print:w-auto print:rounded-none print:border-0 print:p-0 print:shadow-none" role="dialog" aria-modal="true" aria-labelledby="barcode-print-title">
-      <header className="flex items-center justify-between gap-3 [&_span]:text-[10px] [&_span]:font-extrabold [&_span]:tracking-[.12em] [&_span]:text-[#71869a] [&_h2]:mb-0 [&_h2]:mt-1 [&_h2]:text-xl [&_button]:h-9 [&_button]:w-9 [&_button]:cursor-pointer [&_button]:rounded-[9px] [&_button]:border [&_button]:border-[#dce6ef] [&_button]:bg-white [&_button]:text-[22px] [&_button]:text-[#37526b] print:hidden"><div><span>ETIQUETA DE REPUESTO</span><h2 id="barcode-print-title">Imprimir código de barras</h2></div><button type="button" aria-label="Cerrar" onClick={alCerrar}>×</button></header>
-      <div className="barcode-print-label grid min-h-[150px] justify-items-center gap-1.5 rounded-xl border border-dashed border-[#b9c8d5] bg-white p-[18px] text-center text-black"><strong className="barcode-print-name">{producto.nombre}</strong><CodigoBarras codigo={codigo} /><span className="barcode-print-price">Precio {precioGeneral}</span></div>
-      <footer className="grid gap-2 print:hidden"><p className="m-0 text-right text-xs text-[#71869a]">En la ventana de impresión, selecciona la impresora Xprinter XP-420B y el tamaño 40 × 20 mm.</p><div className="flex items-center justify-end gap-3 [&_button]:min-h-10 [&_button]:cursor-pointer [&_button]:rounded-[9px] [&_button]:border [&_button]:border-[#d6e0e8] [&_button]:bg-white [&_button]:px-[14px] [&_button]:text-xs [&_button]:font-bold [&_button]:text-[#35516a] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-50 [&_button:last-child]:border-[#155b9c] [&_button:last-child]:bg-[#155b9c] [&_button:last-child]:text-white"><button type="button" onClick={alCerrar}>Cerrar</button><button type="button" disabled={!patronEan13(codigo)} onClick={imprimirEtiqueta}>Imprimir etiqueta</button></div></footer>
-    </section>
-  </div>, document.body);
+  return (
+    <Dialogo
+      kicker="ETIQUETA DE REPUESTO"
+      titulo="Imprimir código de barras"
+      ancho="sm"
+      onCerrar={alCerrar}
+      pie={
+        <>
+          <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={alCerrar}>Cerrar</button>
+          <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={!patronEan13(codigo)} onClick={imprimirEtiqueta}>Imprimir etiqueta</button>
+        </>
+      }
+    >
+      <div className="barcode-print-label grid min-h-[150px] justify-items-center gap-1.5 rounded-xl border border-dashed border-[#b9c8d5] bg-white p-[18px] text-center text-black">
+        <strong className="barcode-print-name">{producto.nombre}</strong>
+        <CodigoBarras codigo={codigo} />
+        <span className="barcode-print-price">Precio {precioGeneral}</span>
+      </div>
+      <p className="m-0 text-right text-xs text-[#71869a]">En la ventana de impresión, selecciona la impresora Xprinter XP-420B y el tamaño 40 × 20 mm.</p>
+    </Dialogo>
+  );
 }

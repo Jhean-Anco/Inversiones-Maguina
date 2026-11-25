@@ -354,6 +354,8 @@ export const cuentasFinancieras = pgTable("cuentas_financieras", {
   entidad: varchar("entidad", { length: 100 }),
   titular: varchar("titular", { length: 160 }),
   moneda: varchar("moneda", { length: 3 }).notNull().default("PEN"),
+  saldoInicial: numeric("saldo_inicial", { precision: 14, scale: 2 }),
+  fechaSaldoInicial: date("fecha_saldo_inicial", { mode: "string" }),
   numeroCuenta: varchar("numero_cuenta", { length: 100 }),
   cci: varchar("cci", { length: 100 }),
   numeroTarjeta: varchar("numero_tarjeta", { length: 30 }),
@@ -367,6 +369,7 @@ export const cuentasFinancieras = pgTable("cuentas_financieras", {
   index("cuentas_financieras_tipo_activa_idx").on(tabla.tipo, tabla.activa),
   check("cuentas_financieras_tipo_ck", sql`${tabla.tipo} IN ('EFECTIVO', 'BANCO', 'BILLETERA', 'TARJETA')`),
   check("cuentas_financieras_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
+  check("cuentas_financieras_saldo_inicial_par_ck", sql`(${tabla.saldoInicial} IS NULL AND ${tabla.fechaSaldoInicial} IS NULL) OR (${tabla.saldoInicial} IS NOT NULL AND ${tabla.fechaSaldoInicial} IS NOT NULL)`),
   check("cuentas_financieras_nombre_ck", sql`length(trim(${tabla.nombre})) BETWEEN 2 AND 100`),
 ]);
 

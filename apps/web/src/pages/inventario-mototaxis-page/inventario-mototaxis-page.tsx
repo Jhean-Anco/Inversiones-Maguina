@@ -2,7 +2,7 @@ import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/a
 import { cn } from "../../lib/utils";
 import { inventarioMototaxisClasses as c } from "./inventario-mototaxis-page-classes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, PackageSearch } from "lucide-react";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { BotonAccion } from "../../components/ui/boton-accion";
@@ -88,6 +88,7 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
           <label className="listado-maestro-busqueda">Buscar modelo<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, marca o código" /></label>
           <label className="listado-maestro-filtro">Marca<select value={marcaFiltro} onChange={(e) => setMarcaFiltro(e.target.value)}><option value="">Todas</option>{marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select></label>
           <label className="listado-maestro-filtro">Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option><option value="TODOS">Todos</option></select></label>
+          <Link className="inline-flex h-[42px] shrink-0 items-center rounded-md border border-[var(--erp-border)] px-3 text-xs font-semibold text-[var(--erp-ink)] no-underline hover:bg-[var(--erp-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2" to="/mototaxis/garantias">Garantías</Link>
           {puedeCrear && <RegistrarAccionPrincipal onClick={abrirNuevo} etiqueta="Nuevo modelo de mototaxi" />}
         </>}
         paginacion={{ modo: "local" }} resetKey={`${busqueda}|${filtroEstado}|${marcaFiltro}`}
@@ -113,7 +114,8 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
     {detalle?.tipo === "cargando" && <DialogoCatalogo titulo="Modelo de mototaxi" articulo={detalle.modelo.nombre} codigo={detalle.modelo.codigo} alCerrar={cerrarDetalle}><p role="status">Cargando el modelo…</p></DialogoCatalogo>}
     {detalle?.tipo === "ficha" && <FichaModelo analisis={detalle.analisis} alCerrar={cerrarDetalle}
       alEditar={puedeEditar ? () => { cerrarDetalle(); abrirEdicion(detalle.analisis.modelo); } : undefined} />}
-    {garantiaModelo && <FormularioGarantiaModelo modelo={garantiaModelo} puedeEditar={puedeEditar} alCerrar={() => setGarantiaModelo(null)} alGuardar={() => { setGarantiaModelo(null); setExito("La garantía del modelo quedó guardada."); }} />}`r`n    {detalle?.tipo === "precios" && <PreciosModelo modelo={detalle.modelo} historial={detalle.historial} compras={detalle.compras} puedeEditar={puedeEditar} alCerrar={cerrarDetalle} alGuardar={() => void cargarModelos()} />}
+    {garantiaModelo && <FormularioGarantiaModelo modelo={garantiaModelo} puedeEditar={puedeEditar} alCerrar={() => setGarantiaModelo(null)} alGuardar={() => { setGarantiaModelo(null); setExito("La garantía del modelo quedó guardada."); }} />}
+    {detalle?.tipo === "precios" && <PreciosModelo modelo={detalle.modelo} historial={detalle.historial} compras={detalle.compras} puedeEditar={puedeEditar} alCerrar={cerrarDetalle} alGuardar={() => void cargarModelos()} />}
     {modal && <FormularioModeloMototaxi modelo={editando ?? undefined} marcas={marcas} alCerrar={() => setModal(false)} alGuardar={(guardado) => {
       setModal(false);
       setExito(`${guardado.marca} ${guardado.nombre} ${editando ? "actualizado" : "agregado"} al catálogo.`);

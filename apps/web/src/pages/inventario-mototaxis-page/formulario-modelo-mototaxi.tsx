@@ -1,7 +1,6 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
-import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useConfirmarCancelacionFormulario } from "../../hooks/use-confirmar-cancelacion-formulario";
 import { cn } from "../../lib/utils";
 import { COLORES_ADICIONALES_MOTOTAXI, COLORES_RAPIDOS_MOTOTAXI, etiquetaColorMototaxi, hexColorMototaxi, servicioMototaxis, type MarcaMototaxi, type ModeloMototaxi } from "../../services/mototaxis.service";
@@ -30,7 +29,6 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
   const [error, setError] = useState("");
   const modalRef = useRef<HTMLFormElement>(null);
   const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(modalRef, alCerrar, modelo ? "los cambios del modelo" : "el modelo de mototaxi", JSON.stringify(datos));
-  useDialogoFlotante(modalRef, true, () => { if (!guardando) solicitarCancelacion(); });
 
   async function guardar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -58,8 +56,19 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
     ? [...datos.coloresDisponibles, ...COLORES_RAPIDOS_MOTOTAXI, ...COLORES_ADICIONALES_MOTOTAXI]
     : [...datos.coloresDisponibles.filter(esColorRapido), ...COLORES_RAPIDOS_MOTOTAXI];
   const coloresEnPaleta = candidatosColorPaleta.filter((color, indice, colores) => colores.findIndex((candidato) => etiquetaColorMototaxi(candidato).toLocaleLowerCase("es-PE") === etiquetaColorMototaxi(color).toLocaleLowerCase("es-PE")) === indice);
-  return createPortal(<>{dialogo}<div className={cn("inventory-moto-modal-backdrop", c.backdrop)} role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !guardando) solicitarCancelacion(); }}><form className={cn("inventory-moto-modal inventory-moto-modal-redesign", c.modal, c.redesignModal)} ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="inventory-moto-modal-title" onSubmit={(evento) => void guardar(evento)}>
-      <header className="inventory-moto-dialog-head inventario-dialogo-cabecera"><div className={cn("inventory-moto-brand-lockup", c.brandLockup)}><div><span className="block text-[10px] font-extrabold uppercase tracking-[.14em] text-white/75">Catálogo de mototaxis</span><h2 id="inventory-moto-modal-title">{modelo ? "Editar modelo" : "Nueva mototaxi · modelo"}</h2><p>Completa los datos generales, técnicos y de fabricación.</p></div></div><button type="button" aria-label="Cerrar ficha" onClick={() => { if (!guardando) solicitarCancelacion(); }}>×</button></header>
+  return (
+    <>
+      {dialogo}
+      <Dialogo
+        kicker="CATÁLOGO DE MOTOTAXIS"
+        titulo={modelo ? "Editar modelo" : "Nueva mototaxi · modelo"}
+        subtitulo="Completa los datos generales, técnicos y de fabricación."
+        ancho="lg"
+        cerrable={!guardando}
+        onCerrar={solicitarCancelacion}
+        pie={<><button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="modelo-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando}>{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></>}
+      >
+      <form id="modelo-form" ref={modalRef} className="grid gap-4" onSubmit={(evento) => void guardar(evento)}>
       {error && <NotificacionFlotante mensaje={error} />}
       <div className={cn("inventory-moto-dialog-content", c.dialogContent)}>
         <div className={cn("inventory-moto-technical-fields", c.technicalFields)}>
@@ -92,6 +101,8 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
           </section>
         </div>
       </div>
-      <footer className={cn("inventory-moto-dialog-actions", c.dialogActions)}><button type="button" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button className={cn("inventory-moto-save", c.saveButton)} type="submit" disabled={guardando}>{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></footer>
-    </form></div></>, document.body);
+      </form>
+      </Dialogo>
+    </>
+  );
 }

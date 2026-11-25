@@ -47,16 +47,27 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
   return (
     <tr>
       <td className="[font-variant-numeric:tabular-nums] text-[#506b87]">{fecha(venta.fecha)}</td>
-      <td><Etiqueta tono={venta.tipoComprobante === "FACTURA" ? "informativa" : venta.tipoComprobante === "BOLETA" ? "positiva" : "neutral"}>{comprobante(venta.tipoComprobante)}</Etiqueta></td>
-      <td><strong className={c.documentCode} title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td>
+      <td className="min-w-[170px]">
+        <strong className={`${c.documentCode} mb-1 block`} title={venta.codigoComprobante}>{venta.codigoComprobante}</strong>
+        <span className="mt-1 block"><Etiqueta tono={venta.tipoComprobante === "FACTURA" ? "informativa" : venta.tipoComprobante === "BOLETA" ? "positiva" : "neutral"}>{comprobante(venta.tipoComprobante)}</Etiqueta></span>
+      </td>
       <td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}>
         <strong className={c.clientName}>{venta.clienteNombre || "Cliente no especificado"}</strong>
         {venta.clienteNumeroDocumento && <small className={c.minorText}>{venta.clienteNumeroDocumento}</small>}
+        {venta.mototaxis?.map((detalle) => {
+          const cantidad = Number(detalle.cantidad);
+          const cantidadTexto = Number.isFinite(cantidad)
+            ? cantidad.toLocaleString("es-PE", { maximumFractionDigits: 2 })
+            : detalle.cantidad;
+          return <small className={c.itemDetail} key={detalle.id} title={detalle.descripcion}>
+            {detalle.descripcion} · {cantidadTexto} {cantidad === 1 ? "und" : "unds"}
+          </small>;
+        })}
       </td>
       <td>
         <div className="flex flex-wrap items-center gap-1"><Etiqueta tono="marca" compacta>{medioPago(venta.medioPago)}</Etiqueta><Etiqueta tono={venta.condicionPago === "CREDITO" ? "advertencia" : "neutral"} compacta>{venta.condicionPago === "CREDITO" ? "Credito" : "Contado"}</Etiqueta></div>
       </td>
-      <td className="min-w-[150px]"><strong className="block whitespace-nowrap text-center font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
+      <td className="min-w-[150px]"><strong className="block whitespace-nowrap text-right font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
       <td><Etiqueta tono={estadoFiscal === "Rechazado" ? "peligro" : estadoFiscal === "Emitido" ? "positiva" : "advertencia"}>{estadoFiscal}</Etiqueta></td>
       <td>
         <div className={c.rowActions}>

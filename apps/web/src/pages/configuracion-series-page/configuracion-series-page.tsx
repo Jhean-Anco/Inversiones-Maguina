@@ -7,6 +7,7 @@ import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maes
 import { Button } from "../../components/ui/button";
 import { clasesCamposPrecio, DialogoCatalogo } from "../../components/inventario/dialogo-catalogo";
 import { solicitarApi } from "../../services/api-cliente";
+import "./configuracion-series-page.css";
 
 type Tipo = "BOLETA" | "FACTURA" | "NOTA_CREDITO_FACTURA" | "NOTA_DEBITO_FACTURA" | "NOTA_CREDITO_BOLETA" | "NOTA_DEBITO_BOLETA" | "GUIA_REMITENTE" | "NOTA_VENTA" | "ORDEN_SERVICIO" | "COTIZACION";
 type Serie = { id: string; tipoComprobante: Tipo; serie: string; activa: boolean; ultimoNumero: number };
@@ -59,6 +60,10 @@ export function ConfiguracionSeriesPage() {
     });
   }, [busqueda, familia, filtroEstado, series]);
 
+  const conteoTodas = series.length;
+  const conteoFiscales = series.filter((item) => esFiscal(item.tipoComprobante)).length;
+  const conteoInternas = conteoTodas - conteoFiscales;
+
   function abrirFormulario(item?: Serie) {
     setMensaje("");
     setConfirmacion("");
@@ -97,17 +102,22 @@ export function ConfiguracionSeriesPage() {
       paginacion={{ modo: "local" }} resetKey={`${busqueda}|${familia}|${filtroEstado}`} vacio="No hay series para mostrar."
       controlesCabecera={<>
         <label className="listado-maestro-busqueda">Buscar serie<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Documento o serie" /></label>
-        <label className="listado-maestro-filtro">Documento<select value={familia} onChange={(e) => setFamilia(e.target.value)}><option value="">Todos</option><option value="FISCALES">Fiscales</option><option value="INTERNOS">Internos</option></select></label>
         <label className="listado-maestro-filtro">Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}><option value="TODAS">Todas</option><option value="ACTIVAS">Activas</option><option value="INACTIVAS">Inactivas</option></select></label>
+        <div className="series-familia-tabs" role="group" aria-label="Filtrar por tipo de documento">
+          {([ ["", "Todos", conteoTodas], ["FISCALES", "Fiscales", conteoFiscales], ["INTERNOS", "Internos", conteoInternas] ] as const).map(([valor, etiqueta, cantidad]) => <Button key={etiqueta} type="button" size="sm" variant={familia === valor ? "secondary" : "ghost"} aria-pressed={familia === valor} onClick={() => setFamilia(valor)}>{etiqueta}<span className="series-familia-count">{cantidad}</span></Button>)}
+        </div>
         <RegistrarAccionPrincipal etiqueta="Configurar serie" onClick={() => abrirFormulario()} />
       </>}
-      encabezadoTabla={<tr><th>Documento</th><th>Serie</th><th>Último emitido</th><th>Estado</th><th>Acciones</th></tr>}
+      encabezadoTabla={<>
+        <tr><th>Documento</th><th>Serie</th><th>Último emitido</th><th>Próximo documento</th><th>Estado</th><th>Acciones</th></tr>
+      </>}
       renderizarFila={(item) => <tr key={item.id}>
         <td><strong>{nombreDocumento(item.tipoComprobante)}</strong><small className="block">{esFiscal(item.tipoComprobante) ? "Fiscal" : "Interno"}</small></td>
         <td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.serie}</span></td>
-        <td>{item.ultimoNumero.toLocaleString("es-PE")}</td><td><Etiqueta tono={item.activa ? "positiva" : "neutral"}>{item.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
+        <td>{item.ultimoNumero.toLocaleString("es-PE")}</td><td><span className="font-mono font-semibold">{item.activa ? `${item.serie}-${String(item.ultimoNumero + 1).padStart(6, "0")}` : "—"}</span></td><td><Etiqueta tono={item.activa ? "positiva" : "neutral"}>{item.activa ? "Activa" : "Inactiva"}</Etiqueta></td>
         <td><AccionIcono accion="editar" etiqueta={`Configurar ${nombreDocumento(item.tipoComprobante)} ${item.serie}`} onClick={() => abrirFormulario(item)} /></td>
       </tr>}
+      claseRaiz="series-documentos-listado"
     />
     {mostrarFormulario && <DialogoCatalogo titulo="Configurar serie" articulo={nombreDocumento(tipo)} codigo={serie.trim().toUpperCase()} alCerrar={() => setMostrarFormulario(false)} guardando={guardando}
       acciones={<><Button variant="outline" disabled={guardando} onClick={() => setMostrarFormulario(false)}>Cancelar</Button><Button type="submit" form="config-series-form" disabled={guardando}>{guardando ? "Guardando…" : "Guardar serie"}</Button></>}>

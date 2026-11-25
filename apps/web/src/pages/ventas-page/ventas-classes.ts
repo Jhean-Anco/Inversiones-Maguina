@@ -13,6 +13,7 @@ export const ventasClasses = {
   documentCode: "block text-[12px] tracking-[.01em] text-[#173d68] [font-variant-numeric:tabular-nums]",
   clientName: `${nombreRelacionListadoClasses} max-w-[280px]`,
   minorText: "mt-[3px] block text-[11px] leading-[1.35] text-[#71839a]",
+  itemDetail: "mt-[3px] block max-w-[260px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-[1.3] text-[#58718a]",
   rowActions: "flex min-w-0 items-center gap-[6px]",
   iconButton: "inline-flex h-[34px] w-[34px] flex-[0_0_34px] items-center justify-center rounded-[9px] border border-[#dce6ef] bg-white text-[#24527e] shadow-[0_1px_2px_#18365308] transition-colors duration-150 hover:border-[#9bb7d2] hover:bg-[#f5f9fc] focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[#8cb9e8]",
   iconActions: "flex flex-wrap items-center gap-[6px] [&_a]:inline-flex [&_a]:h-[34px] [&_a]:w-[34px] [&_a]:flex-[0_0_34px] [&_a]:items-center [&_a]:justify-center [&_a]:rounded-[9px] [&_a]:border [&_a]:border-[#dce6ef] [&_a]:bg-white [&_a]:text-[#24527e] [&_a]:shadow-[0_1px_2px_#18365308] [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:border-[#9bb7d2] [&_a:hover]:bg-[#f5f9fc] [&_a:focus-visible]:outline-[3px] [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-[#8cb9e8]",

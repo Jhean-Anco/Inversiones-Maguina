@@ -272,15 +272,9 @@
   color: #7b8da1;
   font-size: 10px;
 }
-.ordenes-page .ordenes-table th:last-child {
-  text-align: center;
-}
-.ordenes-page .ordenes-table td:last-child {
-  text-align: center;
-}
 .ordenes-page .ordenes-row-actions {
-  gap: 7px;
-  justify-content: center;
+  gap: 2px;
+  justify-content: flex-end;
 }
 .ordenes-page .ordenes-row-actions > .erp-icon-action,
 .ordenes-page .ordenes-row-actions > .document-print-menu .erp-icon-action {

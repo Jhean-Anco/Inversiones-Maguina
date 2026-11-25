@@ -13,8 +13,8 @@ type SolicitudAutenticada = FastifyRequest & { usuario: UsuarioAutenticado };
 export class ControladorIngresos {
   constructor(private readonly ingresos: ServicioIngresos) {}
 
-  @Get() @RequierePermiso("INGRESOS.LEER") listarVentas(@Query("tipoVenta") tipoVenta?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string, @Query("tipoDocumento") tipoDocumento?: string, @Query("medioPago") medioPago?: string) {
-    return this.ingresos.listarVentas({ tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago });
+  @Get() @RequierePermiso("INGRESOS.LEER") listarVentas(@Query("tipoVenta") tipoVenta?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string, @Query("tipoDocumento") tipoDocumento?: string, @Query("medioPago") medioPago?: string, @Query("estado") estado?: string, @Query("conSaldo") conSaldo?: string) {
+    return this.ingresos.listarVentas({ tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estado, conSaldo });
   }
 
   @Get("productos") @RequierePermiso("INGRESOS.LEER") buscarProductos(@Query("busqueda") busqueda?: string, @Query("catalogo") catalogo?: string, @Query("limite") limite?: string, @Query("escaneo") escaneo?: string, @Query("paraVenta") paraVenta?: string) { return this.ingresos.buscarProductos(busqueda, catalogo === "1", limite, escaneo === "1", paraVenta === "1"); }
@@ -22,7 +22,7 @@ export class ControladorIngresos {
   @Get("series") @RequierePermiso("INGRESOS.CREAR") obtenerNumeraciones() { return this.ingresos.obtenerNumeraciones(); }
   @Get("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") listarSeriesConfiguradas() { return this.ingresos.listarSeriesConfiguradas(); }
   @Post("series/configuracion") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarSerieConfigurada(@Body() datos: unknown) { return this.ingresos.guardarSerieConfigurada(datos); }
-  @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.ingresos.listarGuias(pagina, porPagina); }
+  @Get("guias") @RequierePermiso("INGRESOS.LEER") listarGuias(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("estado") estado?: string) { return this.ingresos.listarGuias(pagina, porPagina, estado); }
   @Get("guias/documentos") @RequierePermiso("INGRESOS.LEER")
   buscarDocumentosParaGuia(@Query("busqueda") busqueda?: string, @Query("tipo") tipo?: string) {
     return this.ingresos.buscarDocumentosParaGuia(busqueda, tipo);

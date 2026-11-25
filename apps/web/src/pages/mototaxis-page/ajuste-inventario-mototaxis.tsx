@@ -1,6 +1,6 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
@@ -67,9 +67,15 @@ export function AjusteInventarioMototaxis({ puedeAjustar }: { puedeAjustar: bool
   return <section className="moto-panel moto-stocktake-page">
     {aviso && <NotificacionFlotante tipo="advertencia" mensaje={aviso} onCerrar={() => setAviso("")} />}
     <ListadoMaestro<AjusteInventarioMototaxi> variante="tabla" titulo="Ajustes de inventario de mototaxis" descripcion="Registra y consulta cantidades contadas por modelo." registros={ajustes} paginacion={{ modo: "local" }} cargando={cargando} error={!modal ? error || undefined : undefined} controlesCabecera={<>{puedeAjustar && <RegistrarAccionPrincipal etiqueta="Nuevo ajuste de mototaxis" onClick={abrir} />}</>} vacio={<span>Aún no hay reconteos registrados.</span>} encabezadoTabla={<tr><th>Fecha y código</th><th>Modelo</th><th>Anterior</th><th>Conteo</th><th>Variación aplicada</th><th>Final</th><th>Motivo</th><th>Responsable</th><th>Observación</th></tr>} renderizarFila={(ajuste) => <tr key={ajuste.id}><td><strong>{ajuste.codigo}</strong><small>{fecha(ajuste.creadoEn)}</small></td><td>{ajuste.marca} {ajuste.modelo}{ajuste.version ? ` ${ajuste.version}` : ""}</td><td>{ajuste.cantidadSistema}</td><td>{ajuste.cantidadContada}</td><td>{ajuste.aplicado ? `${ajuste.cantidadContada - ajuste.cantidadSistema > 0 ? "+" : ""}${ajuste.cantidadContada - ajuste.cantidadSistema}` : "Histórico"}</td><td>{ajuste.aplicado ? ajuste.cantidadContada : "—"}</td><td>{ajuste.motivo}</td><td>{ajuste.usuario}</td><td>{ajuste.observacion || "—"}</td></tr>} />
-    {modal && createPortal(<div className="catalog-modal-backdrop moto-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) cerrar(); }}><form ref={dialogoRef} role="dialog" aria-modal="true" aria-labelledby="moto-stocktake-title" className="catalog-modal moto-modal moto-stocktake-modal" onSubmit={(evento) => void guardar(evento)}>
-      <div className="moto-modal-title"><div><h2 id="moto-stocktake-title">Nuevo ajuste de mototaxis</h2><p>Indica cuántas unidades hay del modelo seleccionado.</p></div><button type="button" aria-label="Cerrar formulario" onClick={cerrar}>×</button></div>
-      <div className="moto-stocktake-body">
+    {modal && <Dialogo
+      titulo="Nuevo ajuste de mototaxis"
+      ancho="md"
+      cerrable={!guardando}
+      onCerrar={cerrar}
+      pie={<><button type="button" disabled={guardando} onClick={cerrar}>Cancelar</button><button className="moto-primary" disabled={guardando || cargandoReconteo || !reconteo || !modeloId} type="submit" form="moto-stocktake-form">{guardando ? "Guardando ajuste…" : "Registrar ajuste"}</button></>}
+    >
+      <p className="m-0 -mt-2 text-[13px] text-[#52697d]">Indica cuántas unidades hay del modelo seleccionado.</p>
+      <form id="moto-stocktake-form" ref={dialogoRef} className="grid gap-4" onSubmit={(evento) => void guardar(evento)}>
         <label>Modelo<select required value={modeloId} onChange={(evento) => setModeloId(evento.target.value)}><option value="">Selecciona un modelo</option>{modelos.map((modelo) => <option key={modelo.id} value={modelo.id}>{modelo.marca} {modelo.nombre}{modelo.version ? ` ${modelo.version}` : ""}</option>)}</select></label>
         {cargandoReconteo && <div className="moto-stocktake-loading">Consultando inventario del modelo…</div>}
         {reconteo && <><section className="moto-stocktake-counter" aria-live="polite"><div><span>Cantidad en sistema</span><strong>{reconteo.cantidadSistema}</strong></div><div><span>Cantidad contada</span><strong>{cantidad}</strong></div><div className={diferencia === 0 ? "is-even" : diferencia > 0 ? "is-surplus" : "is-shortage"}><span>Diferencia</span><strong>{diferencia > 0 ? "+" : ""}{diferencia}</strong></div></section>
@@ -79,8 +85,7 @@ export function AjusteInventarioMototaxis({ puedeAjustar }: { puedeAjustar: bool
           <label>Observación (opcional)<textarea rows={3} maxLength={2000} value={observacion} onChange={(evento) => setObservacion(evento.target.value)} /></label>
         </>}
         {error && <NotificacionFlotante mensaje={error} />}
-      </div>
-      <footer><button type="button" disabled={guardando} onClick={cerrar}>Cancelar</button><button className="moto-primary" disabled={guardando || cargandoReconteo || !reconteo || !modeloId} type="submit">{guardando ? "Guardando ajuste…" : "Registrar ajuste"}</button></footer>
-    </form></div>, document.body)}
+      </form>
+    </Dialogo>}
   </section>;
 }

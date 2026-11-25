@@ -2,6 +2,7 @@ import "./nuevo-ingreso-page.css";
 import { ConfirmarDescarteFormulario } from "../../components/ui/confirmar-descarte-formulario";
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
+import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import { useLocation, useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type MedioPagoDisponible } from "../../services/ingresos.service";
 import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
@@ -19,7 +20,6 @@ import { ClienteDetalleDialog } from "./cliente-detalle-dialog";
 import { LineaVentaRow } from "./linea-venta-row";
 import { useNuevoIngresoClienteForm } from "./use-nuevo-ingreso-cliente-form";
 import { useNuevoIngresoCatalogo } from "./use-nuevo-ingreso-catalogo";
-import { CatalogoVentaLateral } from "./catalogo-venta-lateral";
 import { obtenerVistaNuevoIngreso } from "./obtener-vista-nuevo-ingreso";
 import { SelectorClienteVenta } from "./selector-cliente-venta";
 import { nuevoIngresoClasses } from "./nuevo-ingreso-classes";
@@ -179,9 +179,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
 
     <form className={`venta-layout ${nuevoIngresoClasses.layout} ${paso === "previa" ? "is-preview-step" : "is-data-step"}`} onSubmit={avanzar}>
       {paso === "datos" && <>
-      <div className={`venta-editor is-catalog-open ${nuevoIngresoClasses.editor}`}>
-        <CatalogoVentaLateral venta={venta} tipoVenta={tipoVenta} puedeCrearProductos={permisos.includes("INVENTARIO.CREAR")} formatearSoles={soles} onEnter={buscarProductoConEnter} onCrearProducto={() => void abrirAltaProducto()} />
-        <article className={`venta-form-paper ${presentacionComprobante.clase}`}>
+      <div className="grid min-h-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <article className={`venta-form-paper ${presentacionComprobante.clase} min-w-0 !h-auto !max-h-none !overflow-visible`}>
           <header className="venta-form-heading"><div><p>{esBoleta || esFactura ? "COMPROBANTE DE VENTA" : "DOCUMENTO INTERNO DE INVENTARIO"}</p><h2>{presentacionComprobante.titulo}</h2></div>{paso === "datos" && <div className="venta-number-card"><span>{venta.exito ? "NÚMERO ASIGNADO" : esNotaVenta ? "N° DE NOTA" : esFactura ? "N° DE FACTURA" : "N° DE BOLETA"}</span><strong>{numeracionActual || (numeraciones ? "FALTA CONFIGURAR SERIE" : "Cargando correlativo…")}</strong></div>}</header>
           <div className="venta-form-scroll">
           <div className="venta-form-header-fields">
@@ -210,8 +209,13 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
             return <LineaVentaRow key={linea.clave} linea={linea} esFactura={esFactura} separadorTipo={separadorTipo} precio={precio} importe={importe} nombreLinea={nombreLinea} totalLinea={totalLinea} formatearSoles={soles} onActualizar={(cambios) => venta.actualizarLinea(linea.clave, cambios)} onQuitar={() => venta.quitarLinea(linea.clave)} />;
           })}</div>}
         </section>
-        <div className="venta-data-footer">
+        <section className="px-[22px] pb-[18px]" aria-label="Observaciones de la venta">
           <label className="venta-observation-card">Observaciones<textarea aria-label="Observaciones" value={venta.observacion} onChange={(e) => venta.setObservacion(e.target.value)} maxLength={1000} rows={3} placeholder="Añade una nota" /></label>
+        </section>
+        </div>
+        </article>
+        <aside className="flex flex-col gap-4 rounded-2xl border border-[#dbe3e9] bg-white p-5 shadow-[0_8px_24px_rgba(15,42,66,.06)] xl:sticky xl:top-4" aria-label="Resumen de la venta">
+          <h3 className="m-0 text-[17px] font-bold text-[#0b2545]">Resumen de la venta</h3>
           <div className="venta-checkout-actions">
             <div className="venta-checkout-total">
               <div className="venta-checkout-amount">
@@ -222,9 +226,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
             </div>
             <div className="venta-checkout-buttons"><button type="button" className="venta-clear" onClick={cancelarVenta}>Cancelar</button><button className="venta-submit" type="submit">Continuar <span aria-hidden="true">→</span></button></div>
           </div>
-        </div>
-        </div>
-        </article>
+        </aside>
       </div>
       </>}
 
@@ -254,7 +256,28 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     {confirmarDescarteVenta && <ConfirmarDescarteFormulario elemento="esta venta" detalle="Si sales ahora, se perderán el cliente, los productos o servicios y los demás datos que ingresaste. ¿Quieres descartarla?" accion="Descartar y volver al listado" onSeguirEditando={() => setConfirmarDescarteVenta(false)} onDescartar={descartarVentaYVolver} />}
     {clienteEnDetalle && <ClienteDetalleDialog cliente={clienteEnDetalle} editable={permisos.includes("PERSONAS.EDITAR")} onClose={() => setClienteEnDetalle(null)} onSave={async (datos) => { const clienteActualizado = await servicioIngresos.actualizarCliente(clienteEnDetalle.id, datos); venta.actualizarClienteEnResultados(clienteActualizado); setClienteEnDetalle(clienteActualizado); }} />}
     {mostrarCobranza && venta.exito?.nubefact && venta.exito.tipoComprobante  && createPortal(<PagoIngresoDialog cuentaFinancieraInicialId={cuentaPagoId} ingresoId={venta.exito.id} total={venta.exito.total} contadoPendiente={contadoEmitido && cobranzaContadoPendiente} importeInicialObligatorio={pagoInicialCreditoPendiente && cobranzaContadoPendiente} fechaPagoInicial={venta.fecha} importeInicial={contadoEmitido ? venta.exito.total : venta.exito.importePagoInicial} medioPagoInicial={venta.exito.medioPago} onPaymentRecorded={() => { if (cobranzaContadoPendiente) setCobranzaContadoRegistradaId(venta.exito?.id ?? null); }} onClose={() => setMostrarCobranza(false)} />, document.body)}
-    {mostrarAltaProducto && createPortal(cargandoAltaProducto ? <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-label="Preparando el registro del repuesto"><p>Cargando formulario de repuesto…</p></section></div> : catalogosAltaProducto ? <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={catalogo.crearMarca} alCrearCategoria={catalogo.crearCategoria} /> : <div className="catalog-modal-backdrop"><section className="catalog-modal venta-product-register-status" role="dialog" aria-modal="true" aria-labelledby="venta-alta-producto-error"><button className="catalog-modal-close" type="button" aria-label="Cerrar" onClick={() => setMostrarAltaProducto(false)}>×</button><h2 id="venta-alta-producto-error">No se pudo abrir el registro</h2><p>{errorAltaProducto}</p><div className="catalog-form-actions"><button className="catalog-cancel" type="button" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button><button className="catalog-submit" type="button" onClick={() => void abrirAltaProducto()}>Reintentar</button></div></section></div>, document.getElementById("root") ?? document.body)}
+    {mostrarAltaProducto && (cargandoAltaProducto ? (
+      <Dialogo titulo="Preparando el registro del repuesto" ancho="sm" onCerrar={() => setMostrarAltaProducto(false)}>
+        <p className="m-0 text-sm text-[#52697d]">Cargando formulario de repuesto…</p>
+      </Dialogo>
+    ) : catalogosAltaProducto ? (
+      <ProductoFormulario catalogos={catalogosAltaProducto} producto={null} error="" alCerrar={() => setMostrarAltaProducto(false)} alGuardar={guardarProductoDesdeVenta} alCrearMarca={catalogo.crearMarca} alCrearCategoria={catalogo.crearCategoria} />
+    ) : (
+      <Dialogo
+        tipo="alerta"
+        titulo="No se pudo abrir el registro"
+        ancho="sm"
+        onCerrar={() => setMostrarAltaProducto(false)}
+        pie={
+          <>
+            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button>
+            <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" onClick={() => void abrirAltaProducto()}>Reintentar</button>
+          </>
+        }
+      >
+        <p className="m-0 text-sm text-[#52697d]">{errorAltaProducto}</p>
+      </Dialogo>
+    ))}
   </div>;
 }
 

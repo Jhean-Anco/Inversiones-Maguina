@@ -1,0 +1,3 @@
+ALTER TABLE "cuentas_financieras" ADD COLUMN "saldo_inicial" numeric(14, 2);--> statement-breakpoint
+ALTER TABLE "cuentas_financieras" ADD COLUMN "fecha_saldo_inicial" date;--> statement-breakpoint
+ALTER TABLE "cuentas_financieras" ADD CONSTRAINT "cuentas_financieras_saldo_inicial_par_ck" CHECK (("cuentas_financieras"."saldo_inicial" IS NULL AND "cuentas_financieras"."fecha_saldo_inicial" IS NULL) OR ("cuentas_financieras"."saldo_inicial" IS NOT NULL AND "cuentas_financieras"."fecha_saldo_inicial" IS NOT NULL));

@@ -18,6 +18,10 @@ export class ControladorReportes {
     const anual = validarRango(desde, hasta);
     return this.reportes.ingresosDashboard(validarRango(mesDesde, anual.hasta), anual);
   }
+  @Get("ingresos/reporte") @RequierePermiso("INGRESOS.LEER") reporteIngresos(@Query("desde") desde?: string, @Query("hasta") hasta?: string, @Query("linea") linea?: string) {
+    if (linea && !["PRODUCTO", "MOTOTAXI", "SERVICIO"].includes(linea)) throw new BadRequestException("Selecciona una línea de ingresos válida.");
+    return this.reportes.reporteIngresos(validarRango(desde, hasta), linea as "PRODUCTO" | "MOTOTAXI" | "SERVICIO" | undefined);
+  }
   @Get("ingresos/comparativo") @RequierePermiso("INGRESOS.LEER") ingresosComparativo(@Query("desde") desde?: string, @Query("hasta") hasta?: string) {
     const rango = validarRango(desde, hasta);
     if (diasEntreFechas(rango.desde, rango.hasta) > MAXIMO_DIAS_COMPARATIVO) throw new BadRequestException(`El rango no puede superar ${MAXIMO_DIAS_COMPARATIVO} días.`);
