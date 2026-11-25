@@ -35,16 +35,16 @@ export function clasesBotonAccion(tono: TonoAccion = "principal", dimension: Dim
 }
 
 export function BotonAccion(props: Propiedades) {
-  const { etiqueta, icono, tono = "principal", dimension = "normal", className = "" } = props;
+  const { etiqueta, icono, tono = "principal", dimension = "normal", className = "", ...atributos } = props;
   const classNames = `${clasesBotonAccion(tono, dimension)} ${className}`;
 
-  if ("href" in props && props.href) {
-    const { href, ...resto } = props;
-    return <a {...resto as AnchorHTMLAttributes<HTMLAnchorElement>} href={href} className={`${classNames} no-underline`} aria-label={etiqueta} title={etiqueta}>{icono}</a>;
+  if ("href" in atributos && atributos.href) {
+    const { href, ...propiedadesEnlace } = atributos;
+    return <a {...propiedadesEnlace as AnchorHTMLAttributes<HTMLAnchorElement>} href={href} className={`${classNames} no-underline`} aria-label={etiqueta} title={etiqueta}>{icono}</a>;
   }
 
-  const { href: _href, ...resto } = props as PropiedadesBoton;
-  return <button {...resto} type={resto.type ?? "button"} className={classNames} aria-label={etiqueta} title={etiqueta}>{icono}</button>;
+  const { href: _href, ...propiedadesBoton } = atributos as PropiedadesBoton;
+  return <button {...propiedadesBoton} type={propiedadesBoton.type ?? "button"} className={classNames} aria-label={etiqueta} title={etiqueta}>{icono}</button>;
 }
 
 type PropiedadesEnlaceAccion = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "aria-label" | "title" | "className" | "children"> & {

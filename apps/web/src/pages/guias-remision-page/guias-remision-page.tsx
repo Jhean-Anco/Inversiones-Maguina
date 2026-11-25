@@ -32,6 +32,14 @@ function tonoDeEstado(estado: string) {
   return tonosEstado.pendiente;
 }
 
+function etiquetaEstadoGuia(estado: string) {
+  if (estado === "EMITIDO") return "Emitida";
+  if (estado.startsWith("ERROR") || estado.startsWith("RECHAZADO")) return "Rechazada";
+  if (estado === "NUBEFACT_PENDIENTE") return "Pendiente de envío";
+  if (estado === "PENDIENTE_SUNAT") return "Pendiente de SUNAT";
+  return estado.replaceAll("_", " ");
+}
+
 const claseChip = "inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[19px] border border-[#c5d1db] bg-white px-3.5 text-[13px] font-semibold text-[#27445f] transition-colors duration-150 hover:border-[#8eacc9] hover:bg-[#f5f9fd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2878b9] aria-pressed:border-[#0b2545] aria-pressed:bg-[#0b2545] aria-pressed:text-white";
 const claseConteo = "inline-flex h-5 min-w-[22px] items-center justify-center rounded-[10px] bg-[#eef2f6] px-1.5 text-[11px] font-bold text-[#3d566e] [button[aria-pressed=true]_&]:bg-white/20 [button[aria-pressed=true]_&]:text-white";
 const claseEnlace = "inline-flex min-h-[34px] items-center rounded-lg border border-[#d4e1ed] bg-[#f8fbfe] px-2.5 text-xs font-bold text-[#28577f] no-underline hover:bg-[#edf5fc]";
@@ -143,7 +151,7 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
               <td className="whitespace-nowrap tabular-nums">{guia.fecha}</td>
               <td>
                 <div className="flex flex-col items-start gap-1.5">
-                  <span className={`inline-flex h-[26px] items-center gap-[7px] whitespace-nowrap rounded-[13px] border px-2.5 text-xs font-semibold ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{tono.etiqueta}</span>
+                  <span className={`inline-flex h-[26px] items-center gap-[7px] whitespace-nowrap rounded-[13px] border px-2.5 text-xs font-semibold ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{etiquetaEstadoGuia(guia.estado)}</span>
                   {guia.detalle && <small className="max-w-[320px] text-[11px] leading-snug text-[#5b7083]">{guia.detalle}</small>}
                 </div>
               </td>

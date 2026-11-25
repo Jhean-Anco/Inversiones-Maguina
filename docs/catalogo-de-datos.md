@@ -263,6 +263,8 @@ Restricciones e indices declarados:
 | `entidad` | `varchar` | NULL | - | - | - |
 | `titular` | `varchar` | NULL | - | - | - |
 | `moneda` | `varchar` | NOT NULL | - | yes | - |
+| `saldo_inicial` | `numeric` | NULL | - | - | - |
+| `fecha_saldo_inicial` | `date` | NULL | - | - | - |
 | `numero_cuenta` | `varchar` | NULL | - | - | - |
 | `cci` | `varchar` | NULL | - | - | - |
 | `numero_tarjeta` | `varchar` | NULL | - | - | - |
@@ -277,6 +279,7 @@ Restricciones e indices declarados:
 - INDEX `cuentas_financieras_tipo_activa_idx`
 - CHECK `cuentas_financieras_tipo_ck`
 - CHECK `cuentas_financieras_moneda_ck`
+- CHECK `cuentas_financieras_saldo_inicial_par_ck`
 - CHECK `cuentas_financieras_nombre_ck`
 
 
@@ -470,6 +473,26 @@ Restricciones e indices declarados:
 - CHECK `entradas_stock_documento_detalle_importes_ck`
 
 
+### `garantias_modelos_mototaxis`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `modelo_id` | `uuid` | NOT NULL | FK | - | modelosMototaxis.id |
+| `activa` | `boolean` | NOT NULL | - | yes | - |
+| `meses_vigencia` | `integer` | NOT NULL | - | - | - |
+| `alcance` | `text` | NOT NULL | - | - | - |
+| `exclusiones` | `text` | NULL | - | - | - |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+| `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `garantias_modelos_mototaxis_modelo_unico`
+- CHECK `garantias_modelos_mototaxis_meses_ck`
+- CHECK `garantias_modelos_mototaxis_alcance_ck`
+- CHECK `garantias_modelos_mototaxis_exclusiones_ck`
+
+
 ### `garantias_mototaxis`
 
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
@@ -494,6 +517,29 @@ Restricciones e indices declarados:
 - CHECK `garantias_mototaxis_porcentaje_ck`
 - CHECK `garantias_mototaxis_meses_ck`
 - CHECK `garantias_mototaxis_fechas_ck`
+
+
+### `garantias_ventas_mototaxis`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `ingreso_detalle_id` | `uuid` | NOT NULL | FK | - | ingresosDetalle.id |
+| `garantia_modelo_id` | `uuid` | NOT NULL | FK | - | garantiasModelosMototaxis.id |
+| `cantidad` | `integer` | NOT NULL | - | - | - |
+| `meses_vigencia` | `integer` | NOT NULL | - | - | - |
+| `inicia_en` | `date` | NOT NULL | - | - | - |
+| `termina_en` | `date` | NOT NULL | - | - | - |
+| `alcance` | `text` | NOT NULL | - | - | - |
+| `exclusiones` | `text` | NULL | - | - | - |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `garantias_ventas_mototaxis_detalle_unico`
+- INDEX `garantias_ventas_mototaxis_fin_idx`
+- CHECK `garantias_ventas_mototaxis_cantidad_ck`
+- CHECK `garantias_ventas_mototaxis_meses_ck`
+- CHECK `garantias_ventas_mototaxis_fechas_ck`
 
 
 ### `guias_remision`
@@ -647,6 +693,25 @@ Restricciones e indices declarados:
 
 - UNIQUE INDEX `marcas_productos_nombre_lower_unico`
 - CHECK `marcas_productos_uso_ck`
+
+
+### `metas_dashboard`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `indicador` | `varchar` | NOT NULL | - | - | - |
+| `periodo` | `varchar` | NULL | - | - | - |
+| `valor` | `numeric` | NOT NULL | - | - | - |
+| `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+| `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `metas_dashboard_indicador_periodo_uq`
+- CHECK `metas_dashboard_indicador_ck`
+- CHECK `metas_dashboard_periodo_ck`
+- CHECK `metas_dashboard_valor_ck`
 
 
 ### `modelos_mototaxis`
@@ -1055,6 +1120,7 @@ Restricciones e indices declarados:
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
 | `garantia_id` | `uuid` | NOT NULL | FK | - | garantiasMototaxis.id |
+| `ingreso_detalle_id` | `uuid` | NULL | FK | - | ingresosDetalle.id |
 | `fecha` | `date` | NOT NULL | - | - | - |
 | `descripcion_falla` | `text` | NOT NULL | - | - | - |
 | `costo_total` | `numeric` | NOT NULL | - | - | - |
@@ -1068,6 +1134,7 @@ Restricciones e indices declarados:
 Restricciones e indices declarados:
 
 - INDEX `reclamos_garantia_mototaxis_estado_fecha_idx`
+- INDEX `reclamos_garantia_mototaxis_ingreso_detalle_idx`
 - CHECK `reclamos_garantia_mototaxis_costos_ck`
 - CHECK `reclamos_garantia_mototaxis_porcentaje_ck`
 - CHECK `reclamos_garantia_mototaxis_estado_ck`

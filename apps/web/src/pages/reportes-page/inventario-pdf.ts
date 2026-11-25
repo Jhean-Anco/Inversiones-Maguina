@@ -58,8 +58,7 @@ function dibujarPagina(
   filas: unknown[][],
   titulo: string,
   filtro: FiltroReporte,
-  resumen: { modelos: number; modelosConStock: number; sinStock: number; modelosConMovimiento: number },
-  motos: boolean,
+  indicadores: Array<{ etiqueta: string; valor: string }>,
   pagina: number,
   paginas: number,
 ) {
@@ -92,15 +91,13 @@ function dibujarPagina(
   texto(`Periodo de movimientos: ${fechaCorta(filtro.desde)} al ${fechaCorta(filtro.hasta)}`, MARGEN, 125, 9, COLOR_SUAVE);
   texto(`Generado: ${new Date().toLocaleString("es-PE")}`, MARGEN, 139, 8, COLOR_SUAVE);
 
-  const etiquetas = [motos ? "Modelos activos" : "Repuestos activos", "Con stock", "Sin stock", "Con movimiento"];
-  const valores = [resumen.modelos, resumen.modelosConStock, resumen.sinStock, resumen.modelosConMovimiento];
   const espacio = 8, tarjetaW = (ANCHO - MARGEN * 2 - espacio * 3) / 4, tarjetaY = 153, tarjetaH = 34;
-  etiquetas.forEach((etiqueta, indice) => {
+  indicadores.forEach(({ etiqueta, valor }, indice) => {
     const x = MARGEN + indice * (tarjetaW + espacio);
     contexto.fillStyle = "#fff"; contexto.fillRect(x, tarjetaY, tarjetaW, tarjetaH);
     contexto.strokeStyle = "#dce5eb"; contexto.lineWidth = 1; contexto.strokeRect(x, tarjetaY, tarjetaW, tarjetaH);
     texto(etiqueta, x + 7, tarjetaY + 13, 7, COLOR_SUAVE, 400, tarjetaW - 14);
-    texto(numero(valores[indice]), x + 7, tarjetaY + 28, 10, COLOR_TEXTO, 700);
+    texto(valor, x + 7, tarjetaY + 28, 10, COLOR_TEXTO, 700);
   });
 
   const tablaY = 201, encabezadoH = 19, altoFila = 15;
@@ -122,10 +119,27 @@ export async function descargarReporteInventarioPdf(datos: ReporteInventario, fi
   const marcaAgua = crearMarcaAgua(logo);
   const motos = vista === "mototaxis" ? datos.mototaxis : undefined;
   const filas: unknown[][] = motos
-    ? motos.items.map((item) => [item.codigo, item.nombre, item.marca, numero(item.stockActual), Number(item.precioPromedioCompra) > 0 ? soles(item.precioPromedioCompra) : "—", Number(item.precioPromedioVenta) > 0 ? soles(item.precioPromedioVenta) : "—"])
+    ? motos.items.map((item) => [item.nombre, item.marca, `${numero(item.stockActual)} unidades`, Number(item.precioPromedioCompra) > 0 ? soles(item.precioPromedioCompra) : "—", item.precioVentaActual != null && Number(item.precioVentaActual) > 0 ? soles(item.precioVentaActual) : "Sin precio"])
     : datos.items.map((item) => [item.codigo, item.nombre, item.marca, item.categoria || "—", `${numero(item.stockActual)} ${item.unidad}`, Number(item.precioPromedioCompra) > 0 ? soles(item.precioPromedioCompra) : "—", Number(item.precioPromedioVenta) > 0 ? soles(item.precioPromedioVenta) : "—"]);
-  const columnas = motos ? ["Código", "Modelo", "Marca", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"] : ["Código", "Repuesto", "Marca", "Categoría", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"];
-  const resumen = motos ? motos.resumen : { modelos: datos.resumen.productos, modelosConStock: datos.resumen.productosConStock, sinStock: datos.resumen.sinStock, modelosConMovimiento: datos.resumen.productosConMovimiento };
+  const columnas = motos ? ["Modelo", "Marca", "Existencias", "Costo promedio", "Precio vigente"] : ["Código", "Repuesto", "Marca", "Categoría", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"];
+  const promedioPonderado = (valores: Array<{ precio: number; cantidad: number }>) => {
+    const conPeso = valores.filter((item) => item.precio > 0 && item.cantidad > 0);
+    const cantidad = conPeso.reduce((total, item) => total + item.cantidad, 0);
+    return cantidad > 0 ? conPeso.reduce((total, item) => total + item.precio * item.cantidad, 0) / cantidad : 0;
+  };
+  const precioCompras = motos?.items.map((item) => ({ precio: Number(item.precioPromedioCompra) || 0, cantidad: Number(item.cantidadCompraTotal) || 0 })) ?? [];
+  const precioVentas = motos?.items.map((item) => ({ precio: Number(item.precioVentaActual) || 0, cantidad: Number(item.cantidadVendidaTotal) || 0 })) ?? [];
+  const indicadores = motos ? [
+    { etiqueta: "Modelos activos", valor: numero(motos.resumen.modelos) },
+    { etiqueta: "Existencias", valor: numero(motos.resumen.unidades) },
+    { etiqueta: "Precio promedio de compras", valor: promedioPonderado(precioCompras) > 0 ? soles(promedioPonderado(precioCompras)) : "—" },
+    { etiqueta: "Precio promedio de ventas", valor: promedioPonderado(precioVentas) > 0 ? soles(promedioPonderado(precioVentas)) : "—" },
+  ] : [
+    { etiqueta: "Repuestos activos", valor: numero(datos.resumen.productos) },
+    { etiqueta: "Con stock", valor: numero(datos.resumen.productosConStock) },
+    { etiqueta: "Sin stock", valor: numero(datos.resumen.sinStock) },
+    { etiqueta: "Con movimiento", valor: numero(datos.resumen.productosConMovimiento) },
+  ];
   const titulo = motos ? "Inventario de mototaxis" : "Inventario de repuestos";
   const filasPorPagina = 22;
   const grupos = Array.from({ length: Math.max(1, Math.ceil(filas.length / filasPorPagina)) }, (_, indice) => filas.slice(indice * filasPorPagina, (indice + 1) * filasPorPagina));
@@ -142,7 +156,7 @@ export async function descargarReporteInventarioPdf(datos: ReporteInventario, fi
     const idPagina = idImagen + 1;
     const idContenido = idImagen + 2;
     idsPagina.push(idPagina);
-    const jpeg = imagenABytes(dibujarPagina(logo, marcaAgua, columnas, grupo, titulo, filtro, resumen, Boolean(motos), indice + 1, grupos.length));
+    const jpeg = imagenABytes(dibujarPagina(logo, marcaAgua, columnas, grupo, titulo, filtro, indicadores, indice + 1, grupos.length));
     asignar(idImagen, juntarBytes(codificar(`<< /Type /XObject /Subtype /Image /Width ${ANCHO * ESCALA} /Height ${ALTO * ESCALA} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`), jpeg, codificar("\nendstream")));
     const contenido = codificar(`q ${ANCHO} 0 0 ${ALTO} 0 0 cm /Pagina Do Q`);
     asignar(idContenido, juntarBytes(codificar(`<< /Length ${contenido.length} >>\nstream\n`), contenido, codificar("\nendstream")));

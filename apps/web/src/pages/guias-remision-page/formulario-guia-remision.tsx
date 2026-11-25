@@ -17,6 +17,8 @@ type Props = {
   alEmitir: (guia: Awaited<ReturnType<typeof servicioIngresos.emitirGuia>>) => void;
 };
 
+type DatosResumenGuia = { motivo: string; peso: string; bultos: string; partida: string; llegada: string; modalidad: string; placa: string };
+
 export function FormularioGuiaRemision({ alCancelar, alEmitir }: Props) {
   const formulario = useRef<HTMLFormElement>(null);
   const [hoy] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "America/Lima" }));
@@ -26,10 +28,31 @@ export function FormularioGuiaRemision({ alCancelar, alEmitir }: Props) {
   const [cargandoDocumento, setCargandoDocumento] = useState(false);
   const [cantidades, setCantidades] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState(false);
+  const [datosResumen, setDatosResumen] = useState<DatosResumenGuia>({ motivo: "Venta", peso: "", bultos: "1", partida: "", llegada: "", modalidad: "Público", placa: "" });
   const alertas = useAlertas();
   const cancelar = useConfirmarCancelacionFormulario(formulario, alCancelar, "la guía de remisión");
   const cantidadBienes = Object.keys(cantidades).length;
   const puedeEmitir = Boolean(serie?.codigo && documento && cantidadBienes && !guardando && !cargandoDocumento && !cambiandoDocumento);
+
+  function actualizarResumen() {
+    const form = formulario.current;
+    if (!form) return;
+    const datos = new FormData(form);
+    const textoOpcion = (ariaLabel: string) => {
+      const select = form.querySelector<HTMLSelectElement>(`select[aria-label="${ariaLabel}"]`);
+      return select?.value ? select.selectedOptions[0]?.textContent?.trim() ?? "" : "";
+    };
+    const motivo = form.querySelector<HTMLSelectElement>('select[name="motivoTraslado"]')?.selectedOptions[0]?.textContent?.trim() ?? "";
+    setDatosResumen({
+      motivo,
+      peso: String(datos.get("pesoBrutoTotal") ?? ""),
+      bultos: String(datos.get("numeroBultos") ?? ""),
+      partida: textoOpcion("Distrito de partida"),
+      llegada: textoOpcion("Distrito de llegada"),
+      modalidad: datos.get("tipoTransporte") === "02" ? "Privado" : "Público",
+      placa: String(datos.get("placa") ?? "").trim().toLocaleUpperCase("es-PE"),
+    });
+  }
 
   useEffect(() => {
     let vigente = true;
@@ -80,7 +103,7 @@ export function FormularioGuiaRemision({ alCancelar, alEmitir }: Props) {
 
   return <section aria-labelledby="guia-editor-titulo" className="guia-remision-editor print:hidden">
     {serie && !serie.codigo && <NotificacionFlotante mensaje={serie.error || "Configura una serie activa para emitir la guía de remitente."} />}
-    <form ref={formulario} onSubmit={emitir} aria-busy={guardando} className="guide-create-layout">
+    <form ref={formulario} onSubmit={emitir} onChange={actualizarResumen} aria-busy={guardando} className="guide-create-layout">
       <CatalogoBienesGuia bienes={documento?.detalles ?? []} cantidades={cantidades} alAgregar={(bien) => cambiarCantidad(bien.id, bien.cantidad)} habilitado={Boolean(documento) && !cambiandoDocumento && !guardando} ocupado={cambiandoDocumento || guardando} />
       <article className="guide-form-pane">
         <header className="guide-form-heading"><div><p>GUÍA DE REMISIÓN · REMITENTE</p><h2 id="guia-editor-titulo">Nueva guía de remisión</h2></div><div className="guide-number-card" aria-live="polite"><span>N° DE GUÍA</span><strong>{serie?.codigo ?? (serie ? serie.error ? "Consulta fallida" : "Serie sin configurar" : "Consultando…")}</strong></div></header>
@@ -118,6 +141,21 @@ export function FormularioGuiaRemision({ alCancelar, alEmitir }: Props) {
           <div><Button variant="outline" disabled={guardando} onClick={cancelar.solicitarCancelacion}>Cancelar</Button><Button type="submit" disabled={!puedeEmitir}><Send size={15} aria-hidden="true" />{guardando ? "Enviando guía…" : "Emitir guía"}</Button></div>
         </footer>
       </article>
+      <aside className="guide-summary-pane" aria-label="Resumen de la guía">
+        <h2>Resumen de la guía</h2>
+        <dl>
+          <div><dt>Documento</dt><dd>{documento?.codigo ?? "Sin seleccionar"}</dd></div>
+          <div><dt>Destinatario</dt><dd>{documento?.clienteNombreCompleto ?? "Pendiente"}</dd></div>
+          <div><dt>Motivo</dt><dd>{datosResumen.motivo || "Pendiente"}</dd></div>
+          <div><dt>Bienes</dt><dd>{cantidadBienes} seleccionados</dd></div>
+          <div><dt>Peso bruto</dt><dd>{datosResumen.peso ? `${datosResumen.peso} kg` : "Pendiente"}</dd></div>
+          <div><dt>Bultos</dt><dd>{datosResumen.bultos || "Pendiente"}</dd></div>
+          <div><dt>Ruta</dt><dd>{datosResumen.partida && datosResumen.llegada ? `${datosResumen.partida} → ${datosResumen.llegada}` : "Pendiente"}</dd></div>
+          <div><dt>Transporte</dt><dd>{datosResumen.modalidad}{datosResumen.placa ? ` · ${datosResumen.placa}` : " · pendiente"}</dd></div>
+        </dl>
+        <Button type="submit" disabled={!puedeEmitir}><Send size={15} aria-hidden="true" />Emitir guía</Button>
+        <Button variant="outline" type="button" onClick={cancelar.solicitarCancelacion}>Cancelar</Button>
+      </aside>
     </form>
     {cancelar.dialogo}
   </section>;

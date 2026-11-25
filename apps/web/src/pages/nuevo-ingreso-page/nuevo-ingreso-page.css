@@ -376,3 +376,283 @@
 .venta-page.is-data-step .venta-checkout-buttons .venta-clear { grid-column: 1; grid-row: 2; }
 .venta-page.is-data-step .venta-checkout-buttons .venta-submit { grid-column: 2; grid-row: 2; width: 100%; }
 .venta-page.is-data-step .venta-checkout-buttons { display: contents !important; }
+
+/* Composición de captura alineada al rediseño: formulario principal y cierre lateral. */
+#root .venta-page.is-data-step .venta-editor.is-data-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 360px) !important;
+  align-items: start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+#root .venta-page.is-data-step .venta-editor.is-data-layout > .venta-form-paper {
+  display: flex !important;
+  width: 100%;
+  height: min(100%, calc(100dvh - 190px));
+  min-height: 580px;
+  max-height: calc(100dvh - 190px);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#root .venta-page.is-data-step .venta-editor.is-data-layout .venta-form-scroll {
+  display: flex !important;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#root .venta-page.is-data-step .venta-editor.is-data-layout .venta-form-body {
+  min-height: 240px;
+  flex: 1 0 auto;
+}
+
+#root .venta-page.is-data-step .venta-editor.is-data-layout .venta-observation-card {
+  flex: 0 0 auto;
+  margin: 0 22px 18px;
+}
+
+.venta-summary-card {
+  position: sticky;
+  top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-width: 0;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid #dce6ef;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px #15344f0a;
+}
+
+.venta-summary-heading > span {
+  color: #71849b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.venta-summary-heading h3 {
+  margin: 4px 0 0;
+  color: #173b65;
+  font-size: 18px;
+}
+
+.venta-summary-payment {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e2eaf2;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+
+.venta-summary-condition {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #617b97;
+  font-size: 12px;
+}
+
+.venta-summary-condition strong {
+  color: #173b65;
+}
+
+.venta-summary-balance {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #eff5fb;
+  color: #173b65;
+  font-size: 13px;
+}
+
+.venta-summary-balance small {
+  color: #71849b;
+  font-size: 11px;
+}
+
+.venta-page.is-data-step .venta-summary-card .venta-checkout-buttons {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 10px;
+}
+
+.venta-page.is-data-step .venta-summary-card .venta-checkout-buttons .venta-clear,
+.venta-page.is-data-step .venta-summary-card .venta-checkout-buttons .venta-submit {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+}
+
+.venta-page.is-data-step .venta-inline-product-search {
+  display: grid !important;
+  gap: 9px;
+  margin: 0 0 14px;
+}
+
+.venta-page.is-data-step .venta-inline-product-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d2dfed;
+  border-radius: 10px;
+  background: #fff;
+  color: #315a88;
+}
+
+.venta-page.is-data-step .venta-inline-product-input > span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.venta-page.is-data-step .venta-inline-product-input input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #153b65;
+  font: inherit;
+}
+
+.venta-page.is-data-step .venta-inline-product-input input::placeholder {
+  color: #7e90a5;
+}
+
+.venta-page.is-data-step .venta-inline-product-list {
+  display: grid;
+  gap: 7px;
+  overflow: visible;
+}
+
+.venta-page.is-data-step .venta-inline-product-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 11px;
+  border: 1px solid #dce6f1;
+  border-radius: 10px;
+  background: #fff;
+  color: #173b65;
+  text-align: left;
+  cursor: pointer;
+}
+
+.venta-page.is-data-step .venta-inline-product-row > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.venta-page.is-data-step .venta-inline-product-row > span strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.venta-page.is-data-step .venta-inline-product-row small {
+  color: #71859d;
+  font-size: 11px;
+}
+
+.venta-page.is-data-step .venta-inline-product-row > strong {
+  flex: none;
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .venta-page.is-data-step {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .venta-page.is-data-step > .venta-layout.is-data-step {
+    height: max-content !important;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+
+  .venta-page.is-data-step .venta-editor.is-data-layout {
+    height: max-content !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  #root .venta-page.is-data-step .venta-editor.is-data-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #root .venta-page.is-data-step .venta-editor.is-data-layout > .venta-form-paper {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  #root .venta-page.is-data-step .venta-editor.is-data-layout .venta-form-scroll {
+    overflow: visible;
+  }
+
+  .venta-summary-card {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .venta-summary-card {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .venta-page.is-data-step .venta-summary-card .venta-checkout-buttons {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  }
+
+  #root .venta-page.is-data-step .venta-editor.is-data-layout .venta-observation-card {
+    margin: 0 12px 14px;
+  }
+}
+
+@media (max-width: 960px) {
+  #root .venta-page.is-data-step {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  #root .venta-page.is-data-step > .venta-layout.is-data-step {
+    height: max-content !important;
+    min-height: max-content !important;
+    max-height: none !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+
+  #root .venta-page.is-data-step .venta-editor.is-data-layout {
+    display: flex !important;
+    height: max-content !important;
+    min-height: max-content !important;
+    flex: 0 0 auto !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+}

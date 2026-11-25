@@ -48,6 +48,7 @@ function App() {
             <Route path="/ingresos/ventas/repuestos" element={<InicioPage />} />
             <Route path="/ingresos/ventas/mototaxis" element={<InicioPage />} />
             <Route path="/reportes/inventario" element={<InicioPage />} />
+            <Route path="/reportes/ingresos" element={<InicioPage />} />
             <Route path="/clientes" element={<InicioPage />} />
             <Route path="/personas/proveedores" element={<InicioPage />} />
             <Route path="/personas/conductores" element={<InicioPage />} />

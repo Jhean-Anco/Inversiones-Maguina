@@ -1,0 +1,39 @@
+.series-documentos-listado .series-familia-tabs {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--erp-border, #dce5ed);
+  border-radius: 12px;
+  background: var(--erp-surface-muted, #f3f6f9);
+}
+
+.series-documentos-listado .series-familia-tabs button[aria-pressed="true"] {
+  background: var(--erp-surface, #fff);
+  color: var(--erp-ink, #172033);
+  box-shadow: 0 1px 3px #15344f1a;
+}
+
+.series-documentos-listado .series-familia-count {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--erp-surface-muted, #f3f6f9);
+  color: var(--erp-muted, #687e96);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .series-documentos-listado .series-familia-tabs {
+    width: 100%;
+  }
+
+  .series-documentos-listado .series-familia-tabs button {
+    flex: 1;
+  }
+}

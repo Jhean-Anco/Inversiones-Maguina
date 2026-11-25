@@ -58,3 +58,16 @@
 :where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .guide-form-pane{min-height:65vh;overflow:visible}
 :where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .guide-form-scroll{overflow:visible}
 :where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .guide-form-actions{position:sticky;bottom:0;z-index:2;box-shadow:0 -5px 14px #173b600c}
+.guide-create-layout{grid-template-columns:minmax(250px,.78fr) minmax(520px,2fr) minmax(230px,.85fr)}
+.guide-summary-pane{position:sticky;top:14px;display:grid;align-self:start;gap:14px;min-width:0;max-height:calc(100dvh - 120px);overflow:auto;padding:18px;border:1px solid #d7e2ed;border-radius:17px;background:#fff;box-shadow:0 8px 26px #173b600b}
+.guide-summary-pane h2{margin:0;color:#1b3c5e;font-size:18px;font-weight:750}
+.guide-summary-pane dl{display:grid;gap:10px;margin:0;padding:14px;border-radius:11px;background:#f4f7fa}
+.guide-summary-pane dl>div{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;font-size:12px}
+.guide-summary-pane dt{color:#6f8499}
+.guide-summary-pane dd{margin:0;color:#203f5e;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.guide-summary-pane>button{width:100%;min-height:42px}
+@media(min-width:1251px){.guide-form-actions{display:none}}
+@media(max-width:1250px){.guide-create-layout{grid-template-columns:minmax(230px,.78fr) minmax(0,2.3fr)}.guide-summary-pane{grid-column:2;position:static;max-height:none}.guide-summary-pane>button{display:none}}
+@media(max-width:760px){.guide-create-layout{grid-template-columns:minmax(0,1fr)}.guide-summary-pane{grid-column:auto;position:static;max-height:none}}
+:where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .guide-create-layout{grid-template-columns:minmax(0,1fr)}
+:where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .guide-summary-pane{grid-column:auto;position:static;max-height:none}

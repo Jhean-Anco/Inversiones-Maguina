@@ -13,6 +13,11 @@ import { nombreRelacionListadoClasses } from "../../components/ui/listado-maestr
 import { clasesOpcionMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "../../components/documentos/menu-accion-classes";
 
 const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
+const formatoFecha = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", timeZone: "UTC" });
+function fechaBreve(valor: string) {
+  const fecha = new Date(`${valor.slice(0, 10)}T00:00:00Z`);
+  return Number.isNaN(fecha.getTime()) ? valor : formatoFecha.format(fecha).replace(/\.$/, "");
+}
 
 type EstadoVisibleCotizacion = "EMITIDA" | "INACTIVA" | "ACTIVA";
 
@@ -58,13 +63,13 @@ export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenu
       <span className={cotizacionClases.minorText}>Cotización</span>
     </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.client}`}><strong className={`${nombreRelacionListadoClasses} max-w-[280px]`}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnDates}`}><span className="whitespace-nowrap [font-variant-numeric:tabular-nums]">{cotizacion.fecha} → {cotizacion.vigenteHasta ?? "Sin fecha"}</span></td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnDates}`} title={`${cotizacion.fecha} → ${cotizacion.vigenteHasta ?? "Sin fecha"}`}><span className="whitespace-nowrap [font-variant-numeric:tabular-nums]">{fechaBreve(cotizacion.fecha)} → {cotizacion.vigenteHasta ? fechaBreve(cotizacion.vigenteHasta) : "Sin fecha"}</span></td>
     <td className={cotizacionClases.tableCell}><span className={`${cotizacionClases.statusPill} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{tono.etiqueta}</span></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal} text-right`}>
       <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
     </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>
-      {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} onClick={onEditar} />}
+      {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} confirmacion={{ titulo: "¿Editar esta cotización?", descripcion: `Vas a abrir ${cotizacion.codigo} para revisar sus datos. Los cambios se aplicarán al guardarlos.`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar cotización" }} onClick={onEditar} />}
       <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" alImprimirA4={onImprimirA4} alImprimirTicket={onImprimirTicket} />
       <a className={clasesBotonAccion("positiva")} href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`} target="_blank" rel="noreferrer" title={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} aria-label={`Enviar cotización ${cotizacion.codigo} por WhatsApp`}><IconoWhatsApp size={17}/></a>
       {mostrarMenuDocumento && <SelectorDocumentoCotizacion cotizacion={cotizacion} inactiva={estado === "INACTIVA"} alPreparar={onPrepararDocumento}/>}

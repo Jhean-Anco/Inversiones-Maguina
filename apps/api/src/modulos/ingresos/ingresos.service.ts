@@ -12,10 +12,25 @@ import { analizarEstadoComprobante, validarElegibilidadReintento } from "./compr
 import { ServicioAlmacenamiento } from "../almacenamiento/almacenamiento.service";
 
 type AfectacionIgv = "GRAVADO" | "EXONERADO" | "INAFECTO";
+type EstadoFiltroVentas = "TODAS" | "EMITIDAS" | "PENDIENTES" | "RECHAZADAS" | "ANULADAS";
 import { bloquearModelos, moverSaldoModelo, precioVigenteModelo } from "../mototaxis/inventario-modelos";
 
 type Linea = { tipo?: unknown; presentacionId?: unknown; listaPrecioCodigo?: unknown; precioEsperado?: unknown; mototaxiModeloId?: unknown; cantidad?: unknown; precioUnitario?: unknown; descuento?: unknown; descripcion?: unknown; afectacionIgv?: unknown };
 type DatosIngreso = { idempotencyKey?: unknown; fecha?: unknown; tipoComprobante?: unknown; ordenServicioId?: unknown; cotizacionId?: unknown; clienteId?: unknown; clienteDireccion?: unknown; clienteTipoDocumento?: unknown; clienteNumeroDocumento?: unknown; clienteNombre?: unknown; medioPago?: unknown; condicionPago?: unknown; fechaVencimientoPago?: unknown; importePagoInicial?: unknown; cuotasPago?: unknown; observacion?: unknown; detalles?: unknown };
+
+const respuestaEstadoVenta = sql`coalesce(${ingresos.datosNubefact}->'consultaComprobante'->'respuesta', ${ingresos.datosNubefact}->'respuesta', '{}'::jsonb)`;
+const textoEstadoVenta = sql`concat_ws(' ', ${respuestaEstadoVenta}->>'sunat_description', ${respuestaEstadoVenta}->>'sunat_note', ${respuestaEstadoVenta}->>'errors', ${respuestaEstadoVenta}->>'error', ${respuestaEstadoVenta}->>'mensaje', ${respuestaEstadoVenta}->>'message')`;
+const estadoListadoVenta = sql<string>`case
+  when ${ingresos.datosNubefact}->'anulacion'->>'estado' = 'ANULADO' or ${ingresos.estado} = 'ANULADO' then 'ANULADAS'
+  when ${ingresos.datosNubefact}->'anulacion'->>'estado' = 'PENDIENTE' or ${ingresos.estado} = 'ANULACION_PENDIENTE' then 'PENDIENTES'
+  when ${ingresos.datosNubefact}->'anulacion'->>'estado' = 'RECHAZADO' then 'RECHAZADAS'
+  when coalesce(${respuestaEstadoVenta}->>'sunat_soap_error', '') <> '' then 'PENDIENTES'
+  when lower(concat_ws(' ', ${respuestaEstadoVenta}->>'estado', ${respuestaEstadoVenta}->>'status', ${respuestaEstadoVenta}->>'estado_comprobante', ${textoEstadoVenta})) ~ '(pendient|en proceso|processing|en cola|queued|queue)' or ${ingresos.estado} = 'NUBEFACT_PENDIENTE' then 'PENDIENTES'
+  when (${respuestaEstadoVenta}->>'aceptada_por_sunat' = 'false' and (lower(concat_ws(' ', ${respuestaEstadoVenta}->>'estado', ${respuestaEstadoVenta}->>'status', ${respuestaEstadoVenta}->>'estado_comprobante')) ~ '(rechaz|reject|deneg|denied|no aceptado)' or coalesce(${respuestaEstadoVenta}->>'sunat_responsecode', '') not in ('', '0', '0000') or ${textoEstadoVenta} ~* '(rechaz|no acept|inv[aá]lid|no coincide|no corresponde|no existe|inconsistente)')) then 'RECHAZADAS'
+  when lower(concat_ws(' ', ${respuestaEstadoVenta}->>'estado', ${respuestaEstadoVenta}->>'status', ${respuestaEstadoVenta}->>'estado_comprobante')) ~ '(rechaz|reject|deneg|denied|no aceptado)' then 'RECHAZADAS'
+  when ${respuestaEstadoVenta}->>'aceptada_por_sunat' = 'true' then 'EMITIDAS'
+  when ${respuestaEstadoVenta}->>'sunat_ticket_numero' is not null or ${ingresos.estado} like 'ERROR%' then 'PENDIENTES'
+  else 'EMITIDAS' end`;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const mediosPagoPorCuenta = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" } as const;
 const nombreMedioPago = { EFECTIVO: "Efectivo", TARJETA: "Tarjeta", TRANSFERENCIA: "Transferencia", BILLETERA_DIGITAL: "Billetera digital", OTRO: "Otro" } as const;
@@ -76,11 +91,7 @@ function validarDetallesGestion(valor: unknown, permitirVacio: boolean) {
   });
 }
 /** Grupos que muestra el listado de guías de remisión; cada grupo reúne los estados que devuelve el proveedor. */
-const gruposEstadoGuia = {
-  EMITIDAS: ["EMITIDO"],
-  PENDIENTES: ["NUBEFACT_PENDIENTE", "PENDIENTE_SUNAT"],
-  RECHAZADAS: ["ERROR_NUBEFACT", "ERROR_SUNAT", "RECHAZADO_SUNAT"],
-} as const;
+const estadosRechazadosGuia = ["ERROR_NUBEFACT", "ERROR_SUNAT", "RECHAZADO_SUNAT"] as const;
 
 @Injectable()
 export class ServicioIngresos {
@@ -396,15 +407,19 @@ export class ServicioIngresos {
   async listarGuias(paginaEntrada?: string, porPaginaEntrada?: string, estadoEntrada?: string) {
     const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
     const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
-    const grupoEstado = estadoEntrada && estadoEntrada in gruposEstadoGuia ? gruposEstadoGuia[estadoEntrada as keyof typeof gruposEstadoGuia] : null;
-    const condicion = grupoEstado ? inArray(guiasRemision.estado, grupoEstado) : undefined;
-    const [{ total }] = await db.select({ total: count() }).from(guiasRemision).where(condicion);
-    const [conteos] = await db.select({
+    const grupo = estadoEntrada && ["TODAS", "EMITIDAS", "PENDIENTES", "RECHAZADAS"].includes(estadoEntrada) ? estadoEntrada : "TODAS";
+    const condicion = grupo === "EMITIDAS" ? eq(guiasRemision.estado, "EMITIDO")
+      : grupo === "RECHAZADAS" ? inArray(guiasRemision.estado, [...estadosRechazadosGuia])
+        : grupo === "PENDIENTES" ? not(inArray(guiasRemision.estado, ["EMITIDO", ...estadosRechazadosGuia])) : undefined;
+    const [[{ total }], [conteos]] = await Promise.all([
+      db.select({ total: count() }).from(guiasRemision).where(condicion),
+      db.select({
       todas: count(),
-      emitidas: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('EMITIDO'))`,
-      pendientes: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('NUBEFACT_PENDIENTE', 'PENDIENTE_SUNAT'))`,
+      emitidas: sql<number>`count(*) filter (where ${guiasRemision.estado} = 'EMITIDO')`,
+      pendientes: sql<number>`count(*) filter (where ${guiasRemision.estado} <> 'EMITIDO' and ${guiasRemision.estado} not in ('ERROR_NUBEFACT', 'ERROR_SUNAT', 'RECHAZADO_SUNAT'))`,
       rechazadas: sql<number>`count(*) filter (where ${guiasRemision.estado} in ('ERROR_NUBEFACT', 'ERROR_SUNAT', 'RECHAZADO_SUNAT'))`,
-    }).from(guiasRemision);
+      }).from(guiasRemision),
+    ]);
     const filas = await db.select({ guia: guiasRemision, codigoOrigen: this.codigoDocumentoParaGuia(), tipoOrigen: ingresos.tipoComprobante })
       .from(guiasRemision).leftJoin(ingresos, eq(guiasRemision.ingresoId, ingresos.id)).where(condicion)
       .orderBy(desc(guiasRemision.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina);
@@ -807,7 +822,7 @@ export class ServicioIngresos {
     return { estadoProveedor: analisis.estadoProveedor, detalleProveedor: analisis.detalleProveedor, respuestaHttp: respuesta.status, consultadoEn: consultaComprobante.consultadoEn };
   }
 
-  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string; tipoDocumento?: string; medioPago?: string }) {
+  async listarVentas(filtros: { tipoVenta?: string; pagina?: string; porPagina?: string; busqueda?: string; tipoDocumento?: string; medioPago?: string; estado?: string; conSaldo?: string }) {
     const tipoVenta = filtros.tipoVenta === "MOTOTAXIS" ? "MOTOTAXIS" : filtros.tipoVenta === "REPUESTOS" ? "REPUESTOS" : null;
     if (!tipoVenta) throw new BadRequestException("Selecciona si deseas consultar ventas de repuestos o de mototaxis.");
     const pagina = Math.max(1, Number.parseInt(filtros.pagina ?? "1", 10) || 1);
@@ -821,19 +836,36 @@ export class ServicioIngresos {
       ? eq(ingresos.tipoComprobante, filtros.tipoDocumento as "BOLETA" | "FACTURA" | "NOTA_VENTA") : undefined;
     const filtroMedioPago = filtros.medioPago && ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"].includes(filtros.medioPago)
       ? eq(ingresos.medioPago, filtros.medioPago) : undefined;
+    const estadosValidos: EstadoFiltroVentas[] = ["TODAS", "EMITIDAS", "PENDIENTES", "RECHAZADAS", "ANULADAS"];
+    if (filtros.estado && !estadosValidos.includes(filtros.estado as EstadoFiltroVentas)) throw new BadRequestException("Selecciona un estado de venta válido.");
+    const estadoFiltro = (filtros.estado ?? "TODAS") as EstadoFiltroVentas;
+    const filtroEstado = estadoFiltro !== "TODAS" ? sql`${estadoListadoVenta} = ${estadoFiltro}` : undefined;
+    const pagosPorVenta = db.select({
+      ingresoId: ingresosPagos.ingresoId,
+      importeAplicado: sql<string>`coalesce(sum(${ingresosPagos.importeAplicado}), 0)::numeric(14,2)`.as("importe_aplicado"),
+    }).from(ingresosPagos).groupBy(ingresosPagos.ingresoId).as("pagos_por_venta");
+    const saldoPendiente = sql`greatest(${ingresos.total} - coalesce(${pagosPorVenta.importeAplicado}, 0), 0)`;
+    const criterioSaldoPendiente = and(
+      inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA"]), eq(ingresos.condicionPago, "CREDITO"), eq(ingresos.estado, "EMITIDO"),
+      sql`${ingresos.datosNubefact}->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'`, sql`${saldoPendiente} > 0`,
+    );
+    const filtroConSaldo = filtros.conSaldo === "true" ? criterioSaldoPendiente : undefined;
     const detallesCoinciden = busqueda ? exists(db.select({ id: ingresosDetalle.id }).from(ingresosDetalle)
       .where(and(eq(ingresosDetalle.ingresoId, ingresos.id), or(ilike(ingresosDetalle.descripcion, coincidencia), ilike(ingresosDetalle.codigoProducto, coincidencia))))) : undefined;
     const filtroBusqueda = busqueda ? or(ilike(ingresos.codigo, coincidencia), ilike(ingresos.clienteNombre, coincidencia),
       ilike(ingresos.clienteNumeroDocumento, coincidencia), ilike(ingresos.estado, coincidencia), detallesCoinciden) : undefined;
-    const condicion = and(filtroTipo, filtroDocumento, filtroMedioPago, filtroBusqueda);
-    const [filas, [conteo]] = await Promise.all([
+    const condicionBase = and(filtroTipo, filtroDocumento, filtroMedioPago, filtroBusqueda);
+    const condicion = and(condicionBase, filtroEstado, filtroConSaldo);
+    const [filas, [conteo], totalesFiltrados, [totalConSaldo]] = await Promise.all([
       db.select({ id: ingresos.id, codigo: ingresos.codigo, fecha: ingresos.fecha, tipoComprobante: ingresos.tipoComprobante,
         clienteNombre: ingresos.clienteNombre, clienteNumeroDocumento: ingresos.clienteNumeroDocumento, medioPago: ingresos.medioPago,
         condicionPago: ingresos.condicionPago, subtotal: ingresos.subtotal, igv: ingresos.igv, tasaIgv: ingresos.tasaIgv,
-        total: ingresos.total, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
-        .from(ingresos).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn))
+        total: ingresos.total, saldoPendiente: sql<string>`${saldoPendiente}::numeric(14,2)::text`, estado: ingresos.estado, datosNubefact: ingresos.datosNubefact })
+        .from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(condicion).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn))
         .limit(porPagina).offset((pagina - 1) * porPagina),
-      db.select({ total: count() }).from(ingresos).where(condicion),
+      db.select({ total: count() }).from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(condicion),
+      db.select({ estado: estadoListadoVenta, cantidad: count() }).from(ingresos).where(condicionBase).groupBy(estadoListadoVenta),
+      db.select({ total: count() }).from(ingresos).leftJoin(pagosPorVenta, eq(pagosPorVenta.ingresoId, ingresos.id)).where(and(condicionBase, criterioSaldoPendiente)),
     ]);
     const detallesMototaxi = tipoVenta === "MOTOTAXIS" && filas.length
       ? await db.select({ id: ingresosDetalle.id, ingresoId: ingresosDetalle.ingresoId, modeloId: ingresosDetalle.mototaxiModeloId, descripcion: ingresosDetalle.descripcion, cantidad: ingresosDetalle.cantidad,
@@ -867,7 +899,7 @@ export class ServicioIngresos {
         mototaxis: mototaxisPorVenta.get(fila.id) ?? [],
         lineasImpresion: fila.tipoComprobante === "NOTA_VENTA" ? (lineasNotaPorVenta.get(fila.id) ?? []).map(({ descripcion, cantidad, precioUnitario, total }) => ({ descripcion, cantidad, precioUnitario, total })) : undefined,
         clienteNumeroDocumento: fila.clienteNumeroDocumento, medioPago: fila.medioPago, condicionPago: fila.condicionPago,
-        subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total,
+        subtotal: fila.subtotal, igv: fila.igv, tasaIgv: fila.tasaIgv, total: fila.total, saldoPendiente: fila.saldoPendiente,
         estado: estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "ANULADO" ? "ANULADO" : fila.estado, estadoAnulacion, motivoAnulacion: typeof anulacion?.motivo === "string" ? anulacion.motivo : null,
         estadoProveedor: estadoAnulacion === "ANULADO" ? "ANULADO" : estadoAnulacion === "PENDIENTE" ? "ANULACION_PENDIENTE" : estadoAnulacion === "RECHAZADO" ? "BAJA_RECHAZADA" : estadoDocumento.estadoProveedor,
         detalleProveedor: estadoAnulacion ? (typeof anulacion?.detalle === "string" ? anulacion.detalle : estadoAnulacion === "PENDIENTE" ? "La comunicacion fue enviada y SUNAT aun no confirma el resultado." : null) : estadoDocumento.detalleProveedor,
@@ -877,7 +909,12 @@ export class ServicioIngresos {
       };
     });
     const total = conteo?.total ?? 0;
-    return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
+    const conteos = { todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0, anuladas: 0, conSaldo: Number(totalConSaldo?.total ?? 0) };
+    for (const fila of totalesFiltrados) {
+      const propiedad = ({ EMITIDAS: "emitidas", PENDIENTES: "pendientes", RECHAZADAS: "rechazadas", ANULADAS: "anuladas" } as const)[fila.estado as Exclude<EstadoFiltroVentas, "TODAS">];
+      if (propiedad) { conteos[propiedad] = Number(fila.cantidad); conteos.todas += Number(fila.cantidad); }
+    }
+    return { items: items.map((item) => ({ ...item, saldoPendiente: item.saldoPendiente ?? "0.00" })), pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)), conteos };
   }
 
   async obtenerFuenteNota(ingresoIdEntrada: string) {

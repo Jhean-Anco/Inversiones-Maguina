@@ -10,6 +10,10 @@ import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maes
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { anchoMinimoColumnaRelacionClasses, nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
+import { BotonAccion } from "../../components/ui/boton-accion";
+import { BotonEditarConfirmacion } from "../../components/ui/confirmar-edicion";
+import { Eye } from "lucide-react";
+import { ClienteDetalleDialog } from "../nuevo-ingreso-page/cliente-detalle-dialog";
 
 const nombreDe = (cliente: ClienteRegistrado) => cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const etiquetaDocumento = (tipo: string) => ({ "01": "DNI", "04": "Carné de extranjería", "06": "RUC", "07": "Pasaporte" } as Record<string, string>)[tipo] ?? tipo;
@@ -26,6 +30,7 @@ export function ClientesPage({ puedeEditar = false, puedeCrear = false }: { pued
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [actualizarLista, setActualizarLista] = useState(0);
   const [clienteEditando, setClienteEditando] = useState<ClienteRegistrado | null>(null);
+  const [clienteEnDetalle, setClienteEnDetalle] = useState<ClienteRegistrado | null>(null);
 
   useEffect(() => {
     let vigente = true;
@@ -62,10 +67,21 @@ export function ClientesPage({ puedeEditar = false, puedeCrear = false }: { pued
     }
   }
 
+  async function actualizarClienteDesdeFicha(cliente: ClienteRegistrado, datos: Pick<DatosClienteNuevo, "nombreComercial" | "contactoNombre" | "correo" | "telefono" | "direccion" | "direccionEntrega" | "observacion">) {
+    try {
+      await servicioIngresos.actualizarCliente(cliente.id, datos);
+      setClienteEnDetalle((actual) => actual?.id === cliente.id ? { ...actual, ...datos } : actual);
+      setActualizarLista((n) => n + 1);
+    } catch (problema) {
+      throw new Error(problema instanceof Error ? problema.message : "No se pudo actualizar el cliente.");
+    }
+  }
+
   return <div className="w-full min-w-0 px-1 pt-2 pb-9 text-[#173246]">
-    <ListadoMaestro<ClienteRegistrado> variante="tabla" titulo="Directorio de clientes" registros={clientes} cargando={cargando} error={error || undefined} claseContenedor="clientes-table-wrap" paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} encabezadoTabla={<tr><th>Cliente</th><th>Contacto</th><th>Documentos</th><th>Contacto directo</th><th>Acciones</th></tr>} controlesCabecera={<><label className="listado-maestro-busqueda">Buscar cliente<input id="clientes-buscar" value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }} placeholder="Nombre, contacto, correo o documento" autoComplete="off" /></label>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear cliente" onClick={() => { setError(""); setMostrarFormulario(true); }} />}</>} resetKey={busqueda} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no tienes clientes registrados"}</strong><span>{busqueda ? "Revisa nombre, contacto, correo o documento, o registra el cliente." : "Los clientes que registres desde una venta aparecerán aquí."}</span></>} renderizarFila={(cliente) => <tr className="clientes-row-account" key={cliente.id}><td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}><strong className={nombreRelacionListadoClasses}>{nombreDe(cliente)}</strong><small>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Cliente persona natural"}</small></td><td className="min-w-[210px] w-[22%]"><strong className={nombreRelacionListadoClasses}>{cliente.contactoNombre || "—"}</strong><small>{cliente.direccion || "Sin dirección fiscal"}</small></td><td><div className="clientes-document">{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((doc) => <span key={`${doc.tipoDocumento}:${doc.numeroDocumento}`} className="grid gap-[2px] [&+span]:mt-[5px] [&+span]:border-t [&+span]:border-[#edf1ef] [&+span]:pt-[5px]"><strong>{doc.numeroDocumento}</strong><small>{etiquetaDocumento(doc.tipoDocumento)}</small></span>)}</div></td><td><strong>{cliente.telefono || "Sin teléfono"}</strong><small>{cliente.correo || "Sin correo"}</small></td><td>{puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cliente ${nombreDe(cliente)}`} onClick={() => setClienteEditando(cliente)} />}</td></tr>} />
+    <ListadoMaestro<ClienteRegistrado> variante="tabla" titulo="Directorio de clientes" registros={clientes} cargando={cargando} error={error || undefined} claseContenedor="clientes-table-wrap" paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} encabezadoTabla={<tr><th>Cliente</th><th>Contacto</th><th>Documentos</th><th>Contacto directo</th><th>Acciones</th></tr>} controlesCabecera={<><label className="listado-maestro-busqueda">Buscar cliente<input id="clientes-buscar" value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setPagina(1); }} placeholder="Nombre, contacto, correo o documento" autoComplete="off" /></label>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear cliente" onClick={() => { setError(""); setMostrarFormulario(true); }} />}</>} resetKey={busqueda} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no tienes clientes registrados"}</strong><span>{busqueda ? "Revisa nombre, contacto, correo o documento, o registra el cliente." : "Los clientes que registres desde una venta aparecerán aquí."}</span></>} renderizarFila={(cliente) => <tr className="clientes-row-account" key={cliente.id}><td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}><strong className={nombreRelacionListadoClasses}>{nombreDe(cliente)}</strong><small>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Cliente persona natural"}</small></td><td className="min-w-[210px] w-[22%]"><strong className={nombreRelacionListadoClasses}>{cliente.contactoNombre || "—"}</strong><small>{cliente.direccion || "Sin dirección fiscal"}</small></td><td><div className="clientes-document">{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((doc) => <span key={`${doc.tipoDocumento}:${doc.numeroDocumento}`} className="grid gap-[2px] [&+span]:mt-[5px] [&+span]:border-t [&+span]:border-[#edf1ef] [&+span]:pt-[5px]"><strong>{doc.numeroDocumento}</strong><small>{etiquetaDocumento(doc.tipoDocumento)}</small></span>)}</div></td><td><strong>{cliente.telefono || "Sin teléfono"}</strong><small>{cliente.correo || "Sin correo"}</small></td><td><div className="flex items-center justify-end gap-2"><BotonAccion etiqueta={`Ver ficha de ${nombreDe(cliente)}`} tono="neutral" icono={<Eye aria-hidden="true" size={16} />} onClick={() => setClienteEnDetalle(cliente)} />{puedeEditar && <BotonEditarConfirmacion titulo="¿Editar los datos del cliente?" descripcion={`Vas a editar la información de ${nombreDe(cliente)}. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`} etiquetaCancelar="Volver al listado" etiquetaConfirmar="Sí, editar cliente" onConfirmar={() => setClienteEditando(cliente)}><AccionIcono accion="editar" etiqueta={`Editar cliente ${nombreDe(cliente)}`} onClick={() => undefined} /></BotonEditarConfirmacion>}</div></td></tr>} />
     {mostrarFormulario && createPortal(<FormularioCliente onGuardar={guardarCliente} onCancelar={() => setMostrarFormulario(false)} />, document.body)}
     {clienteEditando && createPortal(<EditarClienteDialog cliente={clienteEditando} onGuardar={actualizarCliente} onCancelar={() => setClienteEditando(null)} />, document.body)}
+    {clienteEnDetalle && createPortal(<ClienteDetalleDialog cliente={clienteEnDetalle} editable={puedeEditar} onClose={() => setClienteEnDetalle(null)} onSave={(datos) => actualizarClienteDesdeFicha(clienteEnDetalle, datos)} />, document.body)}
   </div>;
 }
 
@@ -99,13 +115,16 @@ export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicia
   const [numeroDocumento, setNumeroDocumento] = useState(numeroDocumentoInicial); const [fechaNacimiento, setFechaNacimiento] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombreComercial, setNombreComercial] = useState(""); const [contactoNombre, setContactoNombre] = useState(""); const [correo, setCorreo] = useState(""); const [telefono, setTelefono] = useState(""); const [direccion, setDireccion] = useState(""); const [direccionEntrega, setDireccionEntrega] = useState(""); const [observacion, setObservacion] = useState("");
   const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
   const [buscandoIdentidad, setBuscandoIdentidad] = useState(false);
+  const [identidadConsultada, setIdentidadConsultada] = useState(false);
   const esJuridica = tipoPersona === "JURIDICA";
 
   async function consultarIdentidad() {
     if (tipoDocumento !== "DNI" && tipoDocumento !== "RUC") return;
+    setIdentidadConsultada(false);
     setBuscandoIdentidad(true); setError("");
     try {
       const identidad = await servicioIngresos.consultarIdentidadCliente(tipoDocumento, numeroDocumento.trim());
+      setIdentidadConsultada(true);
       setTipoPersona(identidad.tipoPersona ?? "NATURAL");
       setRazonSocial(identidad.razonSocial ?? ""); setNombres(identidad.nombres ?? "");
       setApellidoPaterno(identidad.apellidoPaterno ?? ""); setApellidoMaterno(identidad.apellidoMaterno ?? "");
@@ -135,9 +154,9 @@ export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicia
     >
       <form id="cliente-form" ref={dialogoRef} className="grid gap-4" onSubmit={(e) => void submit(e)}>
         <div className="clientes-form-grid">
-      <label>Tipo de cliente<select value={tipoPersona} onChange={(e) => { const tipo = e.target.value as "NATURAL" | "JURIDICA"; setTipoPersona(tipo); setTipoDocumento(tipo === "JURIDICA" ? "RUC" : "DNI"); setNumeroDocumento(""); }}><option value="NATURAL">Persona natural</option><option value="JURIDICA">Empresa / organización</option></select></label>
-      <label>Documento de identidad<select disabled={buscandoIdentidad} value={tipoDocumento} onChange={(e) => setTipoDocumento(e.target.value as DatosClienteNuevo["tipoDocumento"])}><option value="RUC">RUC</option>{!esJuridica && <><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></>}</select></label>
-      <label className="clientes-form-wide">Número de documento<span className="clientes-document-search grid grid-cols-[minmax(0,1fr)_auto] gap-[7px]"><input required disabled={buscandoIdentidad} inputMode={tipoDocumento === "DNI" || tipoDocumento === "RUC" ? "numeric" : "text"} value={numeroDocumento} maxLength={tipoDocumento === "DNI" ? 8 : tipoDocumento === "RUC" ? 11 : 20} onChange={(e) => setNumeroDocumento(tipoDocumento === "DNI" || tipoDocumento === "RUC" ? e.target.value.replace(/\D/g, "") : e.target.value)} />{(tipoDocumento === "DNI" || tipoDocumento === "RUC") && <button className="min-w-[82px] min-h-10 border border-[#c8ded4] rounded-[8px] px-3 bg-[#edf7f1] text-[#17674f] font-[inherit] text-xs font-[750] cursor-pointer disabled:cursor-not-allowed disabled:opacity-[.55]" type="button" onClick={() => void consultarIdentidad()} disabled={buscandoIdentidad || (tipoDocumento === "DNI" ? numeroDocumento.length !== 8 : numeroDocumento.length !== 11)}>{buscandoIdentidad ? "Consultando…" : "Buscar"}</button>}</span></label>
+      <label>Tipo de cliente<select value={tipoPersona} onChange={(e) => { const tipo = e.target.value as "NATURAL" | "JURIDICA"; setTipoPersona(tipo); setTipoDocumento(tipo === "JURIDICA" ? "RUC" : "DNI"); setNumeroDocumento(""); setIdentidadConsultada(false); }}><option value="NATURAL">Persona natural</option><option value="JURIDICA">Empresa / organización</option></select></label>
+      <label>Documento de identidad<select disabled={buscandoIdentidad} value={tipoDocumento} onChange={(e) => { setTipoDocumento(e.target.value as DatosClienteNuevo["tipoDocumento"]); setIdentidadConsultada(false); }}><option value="RUC">RUC</option>{!esJuridica && <><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></>}</select></label>
+      <label className="clientes-form-wide">Número de documento<span className="clientes-document-search grid grid-cols-[minmax(0,1fr)_auto] gap-[7px]"><input required disabled={buscandoIdentidad} inputMode={tipoDocumento === "DNI" || tipoDocumento === "RUC" ? "numeric" : "text"} value={numeroDocumento} maxLength={tipoDocumento === "DNI" ? 8 : tipoDocumento === "RUC" ? 11 : 20} onChange={(e) => { setNumeroDocumento(tipoDocumento === "DNI" || tipoDocumento === "RUC" ? e.target.value.replace(/\D/g, "") : e.target.value); setIdentidadConsultada(false); }} />{(tipoDocumento === "DNI" || tipoDocumento === "RUC") && <button className="min-w-[82px] min-h-10 border border-[#c8ded4] rounded-[8px] px-3 bg-[#edf7f1] text-[#17674f] font-[inherit] text-xs font-[750] cursor-pointer disabled:cursor-not-allowed disabled:opacity-[.55]" type="button" onClick={() => void consultarIdentidad()} disabled={buscandoIdentidad || (tipoDocumento === "DNI" ? numeroDocumento.length !== 8 : numeroDocumento.length !== 11)}>{buscandoIdentidad ? "Consultando…" : tipoDocumento === "RUC" ? "Consultar en SUNAT" : "Buscar"}</button>}</span></label>
       {esJuridica ? <label className="clientes-form-wide">Razón social<input required maxLength={180} value={razonSocial} onChange={(e) => setRazonSocial(e.target.value)} /></label> : <><label>Nombres<input required maxLength={120} value={nombres} onChange={(e) => setNombres(e.target.value)} /></label><label>Apellido paterno<input required maxLength={120} value={apellidoPaterno} onChange={(e) => setApellidoPaterno(e.target.value)} /></label><label>Apellido materno<input maxLength={120} value={apellidoMaterno} onChange={(e) => setApellidoMaterno(e.target.value)} /></label></>}
       {!esJuridica && <label>Fecha de nacimiento<input type="date" max={new Date().toISOString().slice(0, 10)} value={fechaNacimiento} onChange={(e) => setFechaNacimiento(e.target.value)} /></label>}
       <label>Teléfono<input type="tel" maxLength={30} value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
@@ -150,6 +169,7 @@ export function FormularioCliente({ onGuardar, onCancelar, numeroDocumentoInicia
 
     </div>
       </form>
+      {identidadConsultada && <p className="clientes-identity-note">Datos completados desde la consulta de identidad. Revísalos antes de guardar.</p>}
       {error && <NotificacionFlotante mensaje={error} />}
     </Dialogo></>;
 }

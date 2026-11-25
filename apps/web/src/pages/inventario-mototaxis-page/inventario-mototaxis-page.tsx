@@ -114,7 +114,8 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
     {detalle?.tipo === "cargando" && <DialogoCatalogo titulo="Modelo de mototaxi" articulo={detalle.modelo.nombre} codigo={detalle.modelo.codigo} alCerrar={cerrarDetalle}><p role="status">Cargando el modelo…</p></DialogoCatalogo>}
     {detalle?.tipo === "ficha" && <FichaModelo analisis={detalle.analisis} alCerrar={cerrarDetalle}
       alEditar={puedeEditar ? () => { cerrarDetalle(); abrirEdicion(detalle.analisis.modelo); } : undefined} />}
-    {garantiaModelo && <FormularioGarantiaModelo modelo={garantiaModelo} puedeEditar={puedeEditar} alCerrar={() => setGarantiaModelo(null)} alGuardar={() => { setGarantiaModelo(null); setExito("La garantía del modelo quedó guardada."); }} />}`r`n    {detalle?.tipo === "precios" && <PreciosModelo modelo={detalle.modelo} historial={detalle.historial} compras={detalle.compras} puedeEditar={puedeEditar} alCerrar={cerrarDetalle} alGuardar={() => void cargarModelos()} />}
+    {garantiaModelo && <FormularioGarantiaModelo modelo={garantiaModelo} puedeEditar={puedeEditar} alCerrar={() => setGarantiaModelo(null)} alGuardar={() => { setGarantiaModelo(null); setExito("La garantía del modelo quedó guardada."); }} />}
+    {detalle?.tipo === "precios" && <PreciosModelo modelo={detalle.modelo} historial={detalle.historial} compras={detalle.compras} puedeEditar={puedeEditar} alCerrar={cerrarDetalle} alGuardar={() => void cargarModelos()} />}
     {modal && <FormularioModeloMototaxi modelo={editando ?? undefined} marcas={marcas} alCerrar={() => setModal(false)} alGuardar={(guardado) => {
       setModal(false);
       setExito(`${guardado.marca} ${guardado.nombre} ${editando ? "actualizado" : "agregado"} al catálogo.`);

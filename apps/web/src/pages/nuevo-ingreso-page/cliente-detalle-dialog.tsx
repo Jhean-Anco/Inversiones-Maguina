@@ -33,7 +33,13 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
     direccionEntrega: cliente.direccionEntrega ?? "",
     observacion: cliente.observacion ?? "",
   });
-  const nombre = cliente.nombreComercial || cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
+  const nombre = cliente.tipoPersona === "JURIDICA"
+    ? cliente.razonSocial || cliente.nombreComercial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ")
+    : [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") || cliente.nombreComercial || cliente.razonSocial || "Cliente";
+  const nombreIdentidad = cliente.razonSocial || cliente.nombreComercial || nombre;
+  const iniciales = nombreIdentidad.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toLocaleUpperCase("es-PE")).join("") || "CL";
+  const documentos = cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }];
+  const nombreDocumento = (tipo: string) => ({ "01": "DNI", "04": "CE", "06": "RUC", "07": "Pasaporte" } as Record<string, string>)[tipo] ?? tipo;
 
   function editarCampo(campo: keyof DatosEdicionCliente, valorNuevo: string) {
     setDatos((actual) => ({ ...actual, [campo]: valorNuevo }));
@@ -91,8 +97,19 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
       onCerrar={onClose}
       pie={editando ? pieEdicion : pieLectura}
     >
+      {!editando && <div className="venta-client-profile mb-4 flex items-center gap-3 rounded-xl border border-[#e1e8ef] bg-[#f7fafc] p-3">
+        <span className="venta-client-profile-avatar grid size-11 shrink-0 place-items-center rounded-full bg-[#e5eef6] text-sm font-bold text-[#174b80]" aria-hidden="true">{iniciales}</span>
+        <div className="venta-client-profile-identity grid min-w-0 gap-1">
+          <strong className="truncate text-sm text-[#142b42]">{cliente.nombreComercial || cliente.razonSocial || nombre}</strong>
+          <div className="venta-client-profile-tags flex flex-wrap gap-1.5 text-[11px] text-[#5b7083]">
+            <span>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Persona natural"}</span>
+            {documentos.map((documento) => <span key={`${documento.tipoDocumento}:${documento.numeroDocumento}`}>{nombreDocumento(documento.tipoDocumento)} {documento.numeroDocumento}</span>)}
+          </div>
+        </div>
+      </div>}
+
       <div className="grid grid-cols-2 gap-3.5 max-sm:grid-cols-1">
-        <div className={campoLectura}><span className={etiqueta}>Documento</span><strong className={valor}>{cliente.numeroDocumento}</strong></div>
+        <div className={campoLectura}><span className={etiqueta}>Documento</span><strong className={valor}>{documentos.map((documento) => `${nombreDocumento(documento.tipoDocumento)} ${documento.numeroDocumento}`).join(" · ")}</strong></div>
         <div className={campoLectura}><span className={etiqueta}>Tipo de persona</span><strong className={valor}>{cliente.tipoPersona === "JURIDICA" ? "Empresa / organización" : "Persona natural"}</strong></div>
       </div>
 
@@ -114,7 +131,6 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
           <div className={campoLectura}><span className={etiqueta}>Teléfono</span><strong className={valor}>{cliente.telefono || "—"}</strong></div>
           <div className={`${campoLectura} ${ancho}`}><span className={etiqueta}>Dirección fiscal</span><strong className={valor}>{cliente.direccion || "—"}</strong></div>
           <div className={`${campoLectura} ${ancho}`}><span className={etiqueta}>Dirección de entrega</span><strong className={valor}>{cliente.direccionEntrega || "—"}</strong></div>
-          <div className={`${campoLectura} ${ancho}`}><span className={etiqueta}>Nota interna</span><strong className={valor}>{cliente.observacion || "—"}</strong></div>
         </div>
       )}
 

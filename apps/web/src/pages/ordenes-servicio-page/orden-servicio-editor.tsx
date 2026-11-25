@@ -150,7 +150,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
                     <button className="os-boton-icono" type="button" aria-label="Agregar cliente" title="Agregar cliente" onClick={cliente.onAgregar}><UserPlus aria-hidden="true" size={20} strokeWidth={1.9} /></button>
                   </div>
                   {cliente.clientes.length > 0 && <ul className="os-cliente-resultados" aria-label="Resultados de clientes">
-                    {cliente.clientes.map((item) => <li key={item.id}><button type="button" onClick={() => cliente.onSeleccionar(item)}><strong>{nombreCompleto(item)}</strong></button></li>)}
+                    {cliente.clientes.map((item) => <li key={item.id}><button type="button" onClick={() => cliente.onSeleccionar(item)}><strong>{nombreCompleto(item)}</strong><small>{nombreDocumento(item.tipoDocumento)} · {item.numeroDocumento}</small></button></li>)}
                   </ul>}
                   {cliente.busquedaConfirmada === consultaCliente && consultaCliente.length >= 2 && cliente.clientes.length === 0 && <NotificacionFlotante tipo="informacion" mensaje="No encontramos coincidencias. Puedes agregar el cliente con el botón de persona +." />}
                 </div>

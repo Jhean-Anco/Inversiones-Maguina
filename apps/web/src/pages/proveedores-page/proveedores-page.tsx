@@ -9,10 +9,12 @@ import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maes
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioIdentidad } from "../../services/identidad.service";
-import { servicioProveedores, type DatosProveedorNuevo, type ProveedorRegistrado } from "../../services/proveedores.service";
+import { servicioProveedores, type DatosProveedorNuevo, type FichaProveedor, type ProveedorRegistrado } from "../../services/proveedores.service";
 import { tamanioListadoSegunPantalla } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { Etiqueta } from "../../components/ui/etiqueta";
 import { anchoMinimoColumnaRelacionClasses, nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
+import { BotonAccion } from "../../components/ui/boton-accion";
+import { Eye } from "lucide-react";
 
 const nombreDe = (proveedor: ProveedorRegistrado) => proveedor.nombre || proveedor.razonSocial || [proveedor.nombres, proveedor.apellidoPaterno, proveedor.apellidoMaterno].filter(Boolean).join(" ");
 
@@ -54,6 +56,7 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
+  const [proveedorEnDetalle, setProveedorEnDetalle] = useState<ProveedorRegistrado | null>(null);
   const cargar = useCallback(async () => {
     setCargando(true);
     try { const resultado = await servicioProveedores.listarPaginado(pagina, porPagina, busqueda); setProveedores(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError(""); }
@@ -69,9 +72,70 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
 
   return <section className="min-w-0">
     {exito && <NotificacionFlotante tipo="exito" mensaje={exito} onCerrar={() => setExito("")} />}
-    <ListadoMaestro<ProveedorRegistrado> variante="tabla" titulo="Directorio de proveedores" registros={proveedores} cargando={cargando} error={error || undefined} resetKey={busqueda} paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} controlesCabecera={<><label className="listado-maestro-busqueda">Buscar por nombre o documento<input id="proveedores-search" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); setPagina(1); }} placeholder="Nombre, DNI o RUC" /></label>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear proveedor" onClick={() => { setError(""); setAbierto(true); }} />}</>} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>Los proveedores registrados aquí también estarán disponibles al registrar compras.</span></>} encabezadoTabla={<tr><th>Proveedor</th><th>Documento</th><th>Razón social</th><th>Tipo</th></tr>} renderizarFila={(proveedor) => <tr key={proveedor.id}><td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}><strong className={nombreRelacionListadoClasses}>{nombreDe(proveedor)}</strong></td><td>{proveedor.tipoDocumento} · {proveedor.numeroDocumento}</td><td className="min-w-[210px] w-[22%]"><span className={nombreRelacionListadoClasses}>{proveedor.razonSocial || "—"}</span></td><td><Etiqueta tono="marca">Proveedor</Etiqueta></td></tr>} />
+    <ListadoMaestro<ProveedorRegistrado> variante="tabla" titulo="Directorio de proveedores" registros={proveedores} cargando={cargando} error={error || undefined} resetKey={busqueda} paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} controlesCabecera={<><label className="listado-maestro-busqueda">Buscar por nombre o documento<input id="proveedores-search" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); setPagina(1); }} placeholder="Nombre, DNI o RUC" /></label>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear proveedor" onClick={() => { setError(""); setAbierto(true); }} />}</>} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>{busqueda ? "Revisa el nombre o documento." : "Los proveedores registrados aquí también estarán disponibles al registrar compras."}</span></>} encabezadoTabla={<tr><th>Proveedor</th><th>Documento</th><th>Número</th><th>Tipo</th><th>Acciones</th></tr>} renderizarFila={(proveedor) => <tr key={proveedor.id}><td className={`${anchoMinimoColumnaRelacionClasses} w-[28%]`}><strong className={nombreRelacionListadoClasses}>{nombreDe(proveedor)}</strong><small>{proveedor.nombreComercial || "Sin nombre comercial"}</small></td><td><Etiqueta tono="marca">{proveedor.tipoDocumento}</Etiqueta></td><td className="font-mono text-xs">{proveedor.numeroDocumento}</td><td>{proveedor.tipoDocumento === "RUC" && proveedor.numeroDocumento.startsWith("20") ? "Empresa" : "Persona"}</td><td><div className="flex justify-end"><BotonAccion etiqueta={`Ver ficha de ${nombreDe(proveedor)}`} tono="neutral" icono={<Eye aria-hidden="true" size={16} />} onClick={() => setProveedorEnDetalle(proveedor)} /></div></td></tr>} />
     {abierto && createPortal(<FormularioProveedor onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
+    {proveedorEnDetalle && createPortal(<ProveedorFichaDialog proveedor={proveedorEnDetalle} onCerrar={() => setProveedorEnDetalle(null)} />, document.body)}
   </section>;
+}
+
+function ProveedorFichaDialog({ proveedor, onCerrar }: { proveedor: ProveedorRegistrado; onCerrar: () => void }) {
+  const navegar = useNavigate();
+  const [ficha, setFicha] = useState<FichaProveedor | null>(null);
+  const [cargandoFicha, setCargandoFicha] = useState(true);
+  const [errorFicha, setErrorFicha] = useState("");
+  const [revisionFicha, setRevisionFicha] = useState(0);
+  useEffect(() => {
+    let vigente = true;
+    setCargandoFicha(true);
+    setErrorFicha("");
+    void servicioProveedores.ficha(proveedor.id).then((resultado) => {
+      if (vigente) setFicha(resultado);
+    }).catch((problema: unknown) => {
+      if (!vigente) return;
+      if (problema instanceof ErrorApi && problema.estado === 401) navegar("/login", { replace: true });
+      else setErrorFicha(problema instanceof Error ? problema.message : "No se pudo cargar la ficha del proveedor.");
+    }).finally(() => { if (vigente) setCargandoFicha(false); });
+    return () => { vigente = false; };
+  }, [navegar, proveedor.id, revisionFicha]);
+  const datosProveedor = ficha?.proveedor ?? proveedor;
+  const esEmpresa = datosProveedor.tipoDocumento === "RUC" && datosProveedor.numeroDocumento.startsWith("20");
+  const nombre = nombreDe(datosProveedor);
+  const iniciales = nombre.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toLocaleUpperCase("es-PE")).join("") || "PR";
+  const resumen = ficha?.resumenCompras ?? [];
+  const formatMoney = (importe: string, moneda: string) => new Intl.NumberFormat("es-PE", { style: "currency", currency: moneda, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(importe));
+  const totalCompras = resumen.reduce((acumulado, item) => acumulado + item.compras, 0);
+
+  return <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-[#071a2d80] p-4" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onCerrar(); }}>
+    <section className="grid w-full max-w-[760px] gap-4 overflow-auto rounded-2xl border border-[#dce5ee] bg-white p-5 shadow-[0_22px_70px_#061a2d40] [max-height:calc(100dvh-24px)] [scrollbar-gutter:stable] mobile-portrait:rounded-[16px_16px_10px_10px] mobile-portrait:p-4" role="dialog" aria-modal="true" aria-labelledby="proveedor-ficha-titulo">
+      <header className="flex items-start justify-between gap-4 border-b border-[#e8eef4] pb-4">
+        <div className="grid min-w-0 gap-1"><small className="text-[10px] font-extrabold tracking-[.13em] text-[#647d97]">FICHA DEL PROVEEDOR</small><h2 id="proveedor-ficha-titulo" className="m-0 break-words text-xl font-extrabold text-[#153653]">{nombre}</h2></div>
+        <button className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[9px] border border-[#dce5ee] bg-white text-xl text-[#58708a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#83acd0]" type="button" aria-label="Cerrar ficha del proveedor" onClick={onCerrar}>×</button>
+      </header>
+      <div className="flex min-w-0 items-center gap-3 py-1">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#0b376a] text-sm font-extrabold text-white" aria-hidden="true">{iniciales}</span>
+        <div className="grid min-w-0 gap-1.5"><strong className="break-words text-sm font-bold text-[#153653]">{datosProveedor.nombreComercial || nombre}</strong><div className="flex flex-wrap gap-1.5"><span className="rounded-md border border-[#dce6ef] bg-[#f2f6f9] px-2 py-1 text-[10px] font-bold text-[#35536f]">{esEmpresa ? "Empresa / organización" : "Persona"}</span><span className="rounded-md border border-[#dce6ef] bg-[#f2f6f9] px-2 py-1 text-[10px] font-bold text-[#35536f]">{datosProveedor.tipoDocumento} {datosProveedor.numeroDocumento}</span></div></div>
+      </div>
+      <div className="grid min-w-0 grid-cols-2 gap-3 mobile-portrait:grid-cols-1">
+        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">DOCUMENTO</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.tipoDocumento} {datosProveedor.numeroDocumento}</strong></div>
+        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">TIPO DE PERSONA</small><strong className="break-words text-xs font-semibold text-[#24435f]">{esEmpresa ? "Empresa / organización" : "Persona"}</strong></div>
+        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">RAZÓN SOCIAL / NOMBRE</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.razonSocial || [datosProveedor.nombres, datosProveedor.apellidoPaterno, datosProveedor.apellidoMaterno].filter(Boolean).join(" ") || "—"}</strong></div>
+        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">NOMBRE COMERCIAL</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.nombreComercial || "Sin nombre comercial"}</strong></div>
+      </div>
+      {cargandoFicha ? <div className="rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] px-4 py-6 text-center text-xs text-[#60758a]" role="status">Cargando historial de compras…</div> : errorFicha ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-[11px] border border-[#f0d4d2] bg-[#fff7f6] px-4 py-3 text-xs text-[#8f3533]" role="alert"><span>{errorFicha}</span><button type="button" className="rounded-md border border-[#dca9a6] bg-white px-3 py-2 font-bold" onClick={() => setRevisionFicha((actual) => actual + 1)}>Reintentar</button></div> : ficha && (!ficha.permisosCompras.repuestos && !ficha.permisosCompras.mototaxis) ? <p className="m-0 rounded-[10px] bg-[#f7f9fb] px-3 py-3 text-xs text-[#667c91]">Tu usuario no tiene permisos para consultar el historial de compras.</p> : ficha && <>
+        <section className="grid grid-cols-3 gap-3 mobile-portrait:grid-cols-1" aria-label="Resumen de compras del proveedor">
+          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">COMPRAS</small><strong className="text-lg font-extrabold text-[#153653]">{totalCompras}</strong></div>
+          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">TOTAL COMPRADO</small>{resumen.length ? resumen.map((item) => <strong className="text-sm font-extrabold text-[#153653]" key={`total-${item.moneda}`}>{formatMoney(item.totalComprado, item.moneda)}</strong>) : <strong className="text-sm font-extrabold text-[#153653]">—</strong>}</div>
+          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">SALDO PENDIENTE</small>{resumen.length ? resumen.map((item) => <strong className="text-sm font-extrabold text-[#153653]" key={`saldo-${item.moneda}`}>{formatMoney(item.saldoPendiente, item.moneda)}</strong>) : <strong className="text-sm font-extrabold text-[#153653]">—</strong>}</div>
+        </section>
+        <section className="grid min-w-0 gap-2" aria-label="Historial de compras">
+          <h3 className="m-0 text-xs font-extrabold tracking-[.09em] text-[#60758a]">COMPRAS RECIENTES</h3>
+          <div className="min-w-0 overflow-x-auto rounded-[11px] border border-[#e1e8ef]"><table className="w-full min-w-[520px] border-collapse text-left text-xs"><thead className="bg-[#f4f7fa] text-[10px] font-extrabold tracking-[.07em] text-[#647b92]"><tr><th className="px-3 py-3">COMPRA</th><th className="px-3 py-3">FECHA</th><th className="px-3 py-3 text-right">TOTAL</th><th className="px-3 py-3">PAGO</th></tr></thead><tbody>{ficha.compras.map((compra) => <tr key={`${compra.origen}-${compra.id}`} className="border-t border-[#e8eef3] text-[#294863]"><td className="px-3 py-3 font-mono font-semibold">{compra.codigo}</td><td className="px-3 py-3">{new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeZone: "UTC" }).format(new Date(`${compra.fecha.slice(0, 10)}T00:00:00Z`))}</td><td className="px-3 py-3 text-right font-bold tabular-nums">{formatMoney(compra.total, compra.moneda)}</td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${compra.estadoPago === "PAGADA" ? "bg-[#eaf6ef] text-[#237047]" : compra.estadoPago === "SIN_PAGO" ? "bg-[#f2f4f6] text-[#53677a]" : "bg-[#fff4df] text-[#895910]"}`}>{compra.estadoPago === "PAGADA" ? "Pagada" : compra.estadoPago === "SIN_PAGO" ? "Sin pago" : "Saldo"}</span></td></tr>)}</tbody></table></div>
+          {!ficha.compras.length && <p className="m-0 rounded-[10px] bg-[#f7f9fb] px-3 py-4 text-center text-xs text-[#667c91]">No hay compras vinculadas a este proveedor con los permisos disponibles.</p>}
+        </section>
+      </>}
+      <footer className="flex justify-end border-t border-[#e8eef4] pt-3"><button className="min-h-10 cursor-pointer rounded-[9px] border border-[#d5e0ea] bg-white px-[14px] text-xs font-bold text-[#49627b] hover:bg-[#f7f9fb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#83acd0]" type="button" onClick={onCerrar}>Cerrar</button></footer>
+    </section>
+  </div>;
 }
 
 function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: DatosProveedorNuevo) => Promise<string | null>; onCerrar: () => void }) {
