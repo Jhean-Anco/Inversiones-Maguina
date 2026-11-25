@@ -47,8 +47,10 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
   return (
     <tr>
       <td className="[font-variant-numeric:tabular-nums] text-[#506b87]">{fecha(venta.fecha)}</td>
-      <td><Etiqueta tono={venta.tipoComprobante === "FACTURA" ? "informativa" : venta.tipoComprobante === "BOLETA" ? "positiva" : "neutral"}>{comprobante(venta.tipoComprobante)}</Etiqueta></td>
-      <td><strong className={c.documentCode} title={venta.codigoComprobante}>{venta.codigoComprobante}</strong></td>
+      <td>
+        <strong className={c.documentCode} title={venta.codigoComprobante}>{venta.codigoComprobante}</strong>
+        <span className="mt-1 block"><Etiqueta tono={venta.tipoComprobante === "FACTURA" ? "informativa" : venta.tipoComprobante === "BOLETA" ? "positiva" : "neutral"}>{comprobante(venta.tipoComprobante)}</Etiqueta></span>
+      </td>
       <td className={`${anchoMinimoColumnaRelacionClasses} w-[24%]`}>
         <strong className={c.clientName}>{venta.clienteNombre || "Cliente no especificado"}</strong>
         {venta.clienteNumeroDocumento && <small className={c.minorText}>{venta.clienteNumeroDocumento}</small>}
@@ -56,7 +58,7 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
       <td>
         <div className="flex flex-wrap items-center gap-1"><Etiqueta tono="marca" compacta>{medioPago(venta.medioPago)}</Etiqueta><Etiqueta tono={venta.condicionPago === "CREDITO" ? "advertencia" : "neutral"} compacta>{venta.condicionPago === "CREDITO" ? "Credito" : "Contado"}</Etiqueta></div>
       </td>
-      <td className="min-w-[150px]"><strong className="block whitespace-nowrap text-center font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
+      <td className="min-w-[120px]"><strong className="block whitespace-nowrap font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
       <td><Etiqueta tono={estadoFiscal === "Rechazado" ? "peligro" : estadoFiscal === "Emitido" ? "positiva" : "advertencia"}>{estadoFiscal}</Etiqueta></td>
       <td>
         <div className={c.rowActions}>

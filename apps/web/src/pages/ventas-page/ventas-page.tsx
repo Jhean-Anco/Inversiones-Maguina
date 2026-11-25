@@ -16,7 +16,7 @@ import { ventasClasses } from "./ventas-classes";
 import { AplicarGarantiaVentaDialog } from "./aplicar-garantia-venta-dialog";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
-const encabezadoVentas = <tr><th>Fecha</th><th>Tipo</th><th>Nro. de documento</th><th>Cliente</th><th>Pago</th><th>Importes</th><th>Estado SUNAT</th><th>Archivos y acciones</th></tr>;
+const encabezadoVentas = <tr><th>Fecha</th><th>Comprobante</th><th>Cliente</th><th>Pago</th><th>Total</th><th>Estado SUNAT</th><th>Acciones</th></tr>;
 export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false, puedeAplicarGarantia = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean; puedeAplicarGarantia?: boolean }) {
   const navegar = useNavigate();
   const esMoto = tipoVenta === "MOTOTAXIS";
