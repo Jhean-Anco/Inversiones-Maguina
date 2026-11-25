@@ -1,0 +1,67 @@
+@media (max-width: 700px) {
+  .finanzas-flow-panel {
+    min-width: 0;
+    padding: 13px;
+  }
+
+  .finanzas-flow-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .finanzas-flow-heading > div:first-child,
+  .finanzas-flow-filters {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .finanzas-flow-filters {
+    flex-wrap: wrap;
+  }
+
+  .finanzas-flow-period {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .finanzas-flow-period > button {
+    flex: 1 1 0;
+    padding-inline: 8px;
+  }
+
+  .finanzas-flow-date {
+    flex: 1 1 calc(50% - 6px);
+    width: auto;
+    min-width: 0;
+  }
+
+  .finanzas-flow-account {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .finanzas-flow-account select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .finanzas-flow-totals {
+    gap: 5px;
+  }
+
+  .finanzas-flow-totals > div {
+    min-width: 0;
+    padding: 8px 5px;
+  }
+
+  .finanzas-flow-totals > div > span {
+    font-size: 9px;
+  }
+
+  .finanzas-flow-totals > div > strong {
+    overflow-wrap: anywhere;
+    font-size: 11px;
+  }
+}

@@ -163,7 +163,7 @@ export class ServicioFinanzas {
     return { ...rango, monedas: Array.from(new Set(filas.map((fila) => fila.moneda))).sort(), items: filas };
   }
 
-  async movimientosPorPeriodo(periodoEntrada: string, fechaEntrada: string) {
+  async movimientosPorPeriodo(periodoEntrada: string, fechaEntrada: string, cuentaIdEntrada?: string, paginaEntrada?: string, porPaginaEntrada?: string) {
     let desde: string;
     let hasta: string;
     if (periodoEntrada === "DIA" && /^\d{4}-\d{2}-\d{2}$/.test(fechaEntrada)) {
@@ -185,6 +185,10 @@ export class ServicioFinanzas {
       throw new BadRequestException("Selecciona el filtro día, mes o año y un periodo válido.");
     }
 
+    const cuentaId = cuentaIdEntrada?.trim() ?? "";
+    if (cuentaId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cuentaId)) throw new BadRequestException("Selecciona una cuenta válida.");
+    const pagina = Math.max(1, Number.parseInt(paginaEntrada ?? "1", 10) || 1);
+    const porPagina = Math.min(50, Math.max(1, Number.parseInt(porPaginaEntrada ?? "10", 10) || 10));
     const [cuentas, filas] = await Promise.all([
       this.listar(),
       db.execute(sql`
@@ -216,8 +220,64 @@ export class ServicioFinanzas {
       return { id: cuenta.id, nombre: cuenta.nombre, tipo: cuenta.tipo, moneda: cuenta.moneda, activa: cuenta.activa,
         ingresos: movimientos.ingresos.toFixed(2), egresos: movimientos.egresos.toFixed(2), neto: (movimientos.ingresos - movimientos.egresos).toFixed(2) };
     });
-    return { periodo: periodoEntrada, fecha: fechaEntrada, desde, hasta,
-      totales: { ingresos: items.reduce((suma, item) => suma + Number(item.ingresos), 0).toFixed(2), egresos: items.reduce((suma, item) => suma + Number(item.egresos), 0).toFixed(2), neto: items.reduce((suma, item) => suma + Number(item.neto), 0).toFixed(2) }, items };
+    const movimientosRegistradosSql = sql`
+      SELECT ('VENTA:' || pago.id::text) AS id, pago.fecha_pago AS fecha, ('Venta ' || ingreso.codigo) AS descripcion,
+        pago.cuenta_financiera_id AS cuenta_id, 'INGRESO'::text AS sentido, pago.importe_aplicado AS importe, 'Venta'::text AS clase
+      FROM ingresos_pagos pago INNER JOIN ingresos ingreso ON ingreso.id = pago.ingreso_id
+      UNION ALL
+      SELECT ('ADELANTO:' || orden.id::text), orden.fecha_recepcion, ('Anticipo de orden ' || orden.codigo),
+        orden.adelanto_cuenta_financiera_id, 'INGRESO'::text, orden.adelanto, 'Orden de servicio'::text
+      FROM ordenes_servicio orden
+      WHERE orden.ingreso_id IS NULL AND orden.adelanto_cuenta_financiera_id IS NOT NULL AND orden.adelanto > 0
+      UNION ALL
+      SELECT ('EGRESO:' || pago.id::text), pago.fecha_pago, (egreso.concepto || ' · ' || egreso.codigo),
+        pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Gasto'::text
+      FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id
+      UNION ALL
+      SELECT ('REPUESTOS:' || pago.id::text), pago.fecha_pago, ('Compra de repuestos · ' || entrada.codigo),
+        pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Compra'::text
+      FROM pagos_entradas_stock pago INNER JOIN entradas_stock entrada ON entrada.id = pago.entrada_id
+      UNION ALL
+      SELECT ('MOTOTAXIS:' || pago.id::text), pago.fecha_pago, ('Compra de mototaxis · ' || compra.codigo),
+        pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Compra'::text
+      FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id
+      UNION ALL
+      SELECT ('NOTA:' || nota.id::text), nota.fecha,
+        ((CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'Nota de débito ' ELSE 'Nota de crédito ' END) || nota.serie || '-' || lpad(nota.numero::text, 6, '0')),
+        nota.cuenta_financiera_id,
+        (CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END)::text,
+        nota.total, 'Nota'::text
+      FROM comprobantes_relacionados nota
+      WHERE nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND nota.datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+    `;
+    const filtroCuentaSql = cuentaId ? sql`AND cuenta_id = ${cuentaId}::uuid` : sql``;
+    const [conteoMovimientos] = await db.execute(sql`
+      WITH pagos AS (${movimientosRegistradosSql})
+      SELECT count(*)::int AS total FROM pagos
+      WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date ${filtroCuentaSql}
+    `) as unknown as [{ total: number }];
+    const movimientosRegistrados = await db.execute(sql`
+      WITH pagos AS (${movimientosRegistradosSql})
+      SELECT pago.id, pago.fecha::text AS fecha, pago.descripcion, pago.cuenta_id AS "cuentaId", cuenta.nombre AS "cuentaNombre",
+        cuenta.moneda, pago.sentido, pago.importe::numeric(14,2)::text AS importe, pago.clase
+      FROM pagos pago INNER JOIN cuentas_financieras cuenta ON cuenta.id = pago.cuenta_id
+      WHERE pago.fecha >= ${desde}::date AND pago.fecha <= ${hasta}::date ${filtroCuentaSql}
+      ORDER BY pago.fecha DESC, pago.id DESC LIMIT ${porPagina} OFFSET ${(pagina - 1) * porPagina}
+    `) as unknown as Array<{ id: string; fecha: string; descripcion: string; cuentaId: string; cuentaNombre: string; moneda: typeof monedas[number]; sentido: "INGRESO" | "EGRESO"; importe: string; clase: string }>;
+    const sumasPorMoneda = items.reduce<Record<string, { ingresos: number; egresos: number; neto: number }>>((totales, cuenta) => {
+      const actual = totales[cuenta.moneda] ?? { ingresos: 0, egresos: 0, neto: 0 };
+      actual.ingresos += Number(cuenta.ingresos);
+      actual.egresos += Number(cuenta.egresos);
+      actual.neto += Number(cuenta.neto);
+      totales[cuenta.moneda] = actual;
+      return totales;
+    }, {});
+    const totalesPorMoneda = Object.fromEntries(Object.entries(sumasPorMoneda).map(([moneda, total]) => [moneda, {
+      ingresos: total.ingresos.toFixed(2), egresos: total.egresos.toFixed(2), neto: total.neto.toFixed(2),
+    }]));
+    return { periodo: periodoEntrada, fecha: fechaEntrada, desde, hasta, items, totalesPorMoneda,
+      movimientos: movimientosRegistrados, pagina, porPagina, totalMovimientos: conteoMovimientos?.total ?? 0,
+      totalPaginasMovimientos: Math.max(1, Math.ceil((conteoMovimientos?.total ?? 0) / porPagina)) };
   }
 
   async crear(entrada: unknown, usuarioId: string) {
