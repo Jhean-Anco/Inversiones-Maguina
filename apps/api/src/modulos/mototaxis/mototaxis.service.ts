@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomUUID } from "node:crypto";
-import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, garantiasModelosMototaxis, garantiasMototaxis, garantiasVentasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
+import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, entradasStock, garantiasModelosMototaxis, garantiasMototaxis, garantiasVentasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { bloquearModelos, moverSaldoModelo, precioVigenteModelo, siguientePrecioModelo } from "./inventario-modelos";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -9,6 +9,12 @@ import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 const uuidValido = (valor: unknown): valor is string => typeof valor === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor);
 const redondear = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
+const importeDesdeCentavos = (centavos: bigint) => `${centavos / 100n}.${String(centavos % 100n).padStart(2, "0")}`;
+function centavosDeImporte(valor: string | number | null | undefined) {
+  const textoImporte = String(valor ?? "0");
+  const [entero, decimal = ""] = textoImporte.split(".");
+  return BigInt(entero || "0") * 100n + BigInt((decimal + "00").slice(0, 2));
+}
 const transicionesReclamo: Record<string, readonly string[]> = {
   ABIERTO: ["ENVIADO"],
   ENVIADO: ["APROBADO", "RECHAZADO"],
@@ -245,6 +251,66 @@ export class ServicioMototaxis {
       .where(condicion).orderBy(asc(sql`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, ${personas.nombres})`))
       .limit(porPagina).offset((pagina - 1) * porPagina);
     return { items, pagina, porPagina, total, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
+  }
+
+  async obtenerFichaProveedor(idEntrada: string, permisosUsuario: string[] = []) {
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El proveedor no es vÃ¡lido.");
+    const [proveedor] = await db.select({ id: proveedores.personaId,
+      nombre: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}), ${proveedores.nombreComercial})`,
+      nombreComercial: proveedores.nombreComercial,
+      razonSocial: personas.razonSocial, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno,
+      apellidoMaterno: personas.apellidoMaterno, tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento })
+      .from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id))
+      .innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(eq(proveedores.personaId, idEntrada)).limit(1);
+    if (!proveedor) throw new NotFoundException("No se encontrÃ³ el proveedor.");
+
+    const puedeVerRepuestos = permisosUsuario.includes("INVENTARIO.LEER");
+    const puedeVerMototaxis = permisosUsuario.includes("MOTOTAXIS.LEER");
+    const filtroRepuestos = and(eq(entradasStock.proveedorTipoDocumento, proveedor.tipoDocumento),
+      eq(entradasStock.proveedorNumeroDocumento, proveedor.numeroDocumento));
+    const filtroMototaxis = eq(comprasMototaxis.proveedorPersonaId, proveedor.id);
+    const totalRepuestos = sql<string>`coalesce(${entradasStock.totalDocumento}, ${entradasStock.total})`;
+    const pagadoRepuestos = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_entradas_stock p where p.entrada_id = ${entradasStock.id}), ${entradasStock.montoPagado}, 0)::numeric(14,2)`;
+    const saldoRepuestos = sql<string>`greatest(${totalRepuestos} - ${pagadoRepuestos}, 0)::numeric(14,2)`;
+    const pagadoMototaxis = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = ${comprasMototaxis.id}), 0)::numeric(14,2)`;
+    const saldoMototaxis = sql<string>`greatest(${comprasMototaxis.total} - ${pagadoMototaxis}, 0)::numeric(14,2)`;
+
+    const [estadisticasRepuestos, comprasRepuestos, estadisticasMototaxis, comprasMototaxisRecientes] = await Promise.all([
+      puedeVerRepuestos ? db.select({ compras: count(), total: sql<string>`coalesce(sum(${totalRepuestos}), 0)::numeric(16,2)`, saldo: sql<string>`coalesce(sum(${saldoRepuestos}), 0)::numeric(16,2)` })
+        .from(entradasStock).where(filtroRepuestos) : Promise.resolve([]),
+      puedeVerRepuestos ? db.select({ id: entradasStock.id, codigo: entradasStock.codigo, fecha: entradasStock.fecha,
+        total: totalRepuestos, pagado: pagadoRepuestos, saldo: saldoRepuestos, creadoEn: entradasStock.creadoEn })
+        .from(entradasStock).where(filtroRepuestos).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(8) : Promise.resolve([]),
+      puedeVerMototaxis ? db.select({ moneda: comprasMototaxis.moneda, compras: count(),
+        total: sql<string>`coalesce(sum(${comprasMototaxis.total}), 0)::numeric(16,2)`, saldo: sql<string>`coalesce(sum(${saldoMototaxis}), 0)::numeric(16,2)` })
+        .from(comprasMototaxis).where(filtroMototaxis).groupBy(comprasMototaxis.moneda) : Promise.resolve([]),
+      puedeVerMototaxis ? db.select({ id: comprasMototaxis.id, codigo: comprasMototaxis.codigo, fecha: comprasMototaxis.fecha,
+        moneda: comprasMototaxis.moneda, total: comprasMototaxis.total, pagado: pagadoMototaxis, saldo: saldoMototaxis, creadoEn: comprasMototaxis.creadoEn })
+        .from(comprasMototaxis).where(filtroMototaxis).orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn)).limit(8) : Promise.resolve([]),
+    ]);
+
+    const compras = [
+      ...comprasRepuestos.map((compra) => ({ ...compra, origen: "REPUESTOS" as const, moneda: "PEN" as const })),
+      ...comprasMototaxisRecientes.map((compra) => ({ ...compra, origen: "MOTOTAXIS" as const })),
+    ].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.creadoEn.getTime() - a.creadoEn.getTime()).slice(0, 10);
+    const resumenPorMoneda = new Map<string, { compras: number; totalCentavos: bigint; saldoCentavos: bigint }>();
+    const agregarResumen = (moneda: string, cantidad: number, total: string, saldo: string) => {
+      const actual = resumenPorMoneda.get(moneda) ?? { compras: 0, totalCentavos: 0n, saldoCentavos: 0n };
+      actual.compras += cantidad;
+      actual.totalCentavos += centavosDeImporte(total);
+      actual.saldoCentavos += centavosDeImporte(saldo);
+      resumenPorMoneda.set(moneda, actual);
+    };
+    for (const resumen of estadisticasRepuestos) agregarResumen("PEN", Number(resumen.compras), resumen.total, resumen.saldo);
+    for (const resumen of estadisticasMototaxis) agregarResumen(resumen.moneda, Number(resumen.compras), resumen.total, resumen.saldo);
+    const resumenCompras = [...resumenPorMoneda.entries()].map(([moneda, resumen]) => ({
+      moneda, compras: resumen.compras, totalComprado: importeDesdeCentavos(resumen.totalCentavos), saldoPendiente: importeDesdeCentavos(resumen.saldoCentavos),
+    })).sort((a, b) => a.moneda.localeCompare(b.moneda));
+
+    return { proveedor, permisosCompras: { repuestos: puedeVerRepuestos, mototaxis: puedeVerMototaxis }, resumenCompras,
+      compras: compras.map(({ creadoEn: _creadoEn, pagado, saldo, ...compra }) => ({ ...compra,
+        estadoPago: Number(saldo) <= 0 ? "PAGADA" as const : Number(pagado) <= 0 ? "SIN_PAGO" as const : "SALDO_PENDIENTE" as const,
+      })) };
   }
 
   async crearProveedor(valor: unknown) {
