@@ -37,6 +37,10 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
       return coincide && (existencia === "todas" || (existencia === "con-stock" ? item.stock > 0 : item.stock <= 0));
     });
   }, [busqueda, existencia, registros]);
+  const precioPromedioCompras = useMemo(() => {
+    const conCosto = registros.filter((item) => item.precioPromedioCompra > 0);
+    return conCosto.length ? conCosto.reduce((total, item) => total + item.precioPromedioCompra, 0) / conCosto.length : 0;
+  }, [registros]);
   const controles = <>
     <label className="listado-maestro-busqueda">Buscar producto<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Código, nombre o marca" /></label>
     {datos.mototaxis && <label className="listado-maestro-filtro">Inventario<select value={vista} onChange={(e) => setVista(e.target.value as VistaInventario)}><option value="repuestos">Repuestos</option><option value="mototaxis">Mototaxis</option></select></label>}
@@ -49,7 +53,7 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
       { titulo: motos ? "Modelos activos" : "Repuestos activos", valor: numero(motos?.resumen.modelos ?? datos.resumen.productos) },
       { titulo: "Con stock", valor: numero(motos?.resumen.modelosConStock ?? datos.resumen.productosConStock) },
       { titulo: "Sin stock", valor: numero(motos?.resumen.sinStock ?? datos.resumen.sinStock) },
-      { titulo: "Con movimiento este mes", valor: numero(motos?.resumen.modelosConMovimiento ?? datos.resumen.productosConMovimiento) },
+      { titulo: "Precio prom. compras", valor: precioPromedioCompras > 0 ? soles(precioPromedioCompras) : "—" },
     ]} />
     <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
       registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
