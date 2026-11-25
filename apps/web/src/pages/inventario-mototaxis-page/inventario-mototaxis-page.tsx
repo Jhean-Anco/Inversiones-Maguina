@@ -2,7 +2,7 @@ import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/a
 import { cn } from "../../lib/utils";
 import { inventarioMototaxisClasses as c } from "./inventario-mototaxis-page-classes";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, PackageSearch } from "lucide-react";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { BotonAccion } from "../../components/ui/boton-accion";
