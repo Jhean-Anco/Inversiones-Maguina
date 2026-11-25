@@ -44,16 +44,15 @@ function SelectorDocumentoCotizacion({ cotizacion, inactiva, alPreparar }: { cot
 
 export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenuDocumento, documentoPendiente, onImprimirA4, onImprimirTicket, onPrepararDocumento, puedeEditar, onEditar }: CotizacionRowProps) {
   return <tr className={cotizacionClases.tableRow}>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnDate}`}>{cotizacion.fecha}</td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.code}`}>{cotizacion.codigo}</td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity}`}>{cotizacion.vigenteHasta ?? "Sin fecha"}</td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.code}`}><strong>{cotizacion.codigo}</strong><small className="cotizacion-subtitulo">Cotización</small></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnClient} ${cotizacionClases.client}`}><strong className={nombreRelacionListadoClasses}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
+    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader} ${cotizacionClases.columnValidity}`}>{cotizacion.fecha} → {cotizacion.vigenteHasta ?? "Sin fecha"}</td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><Etiqueta tono={estado === "EMITIDA" ? "informativa" : estado === "INACTIVA" ? "neutral" : "positiva"}>{estado === "EMITIDA" ? "Emitida" : estado === "INACTIVA" ? "Inactiva" : "Activa"}</Etiqueta></td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal}`}>
       <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
     </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>
-      {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} onClick={onEditar} />}
+      {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} confirmacion={{ titulo: "¿Editar esta cotización?", descripcion: `Vas a abrir ${cotizacion.codigo} para revisar sus datos. Los cambios se aplicarán al guardarlos.`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar cotización" }} onClick={onEditar} />}
       <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" alImprimirA4={onImprimirA4} alImprimirTicket={onImprimirTicket} />
       <a className={clasesBotonAccion("positiva")} href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`} target="_blank" rel="noreferrer" title={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} aria-label={`Enviar cotización ${cotizacion.codigo} por WhatsApp`}><IconoWhatsApp size={17}/></a>
       {mostrarMenuDocumento && <SelectorDocumentoCotizacion cotizacion={cotizacion} inactiva={estado === "INACTIVA"} alPreparar={onPrepararDocumento}/>}
