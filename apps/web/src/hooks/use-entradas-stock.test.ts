@@ -194,7 +194,7 @@ describe("useEntradasStock", () => {
     act(() => result.current.abrirNuevo());
     act(() => result.current.seleccionarProductoCompra(producto()));
     act(() => { result.current.setDetalles((d) => d.map((f) => ({ ...f, importeTotal: "10.00" }))); result.current.setPagosCompra((p) => p.map((pago) => ({ ...pago, cuentaFinancieraId: "c", medioPago: "YAPE" }))); });
-    let guardado!: Promise<void>;
+    let guardado!: Promise<unknown>;
     act(() => { guardado = result.current.guardar(evento()); });
     act(() => result.current.cerrarModal());
     expect(result.current.modalAbierto).toBe(true);

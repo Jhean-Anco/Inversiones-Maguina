@@ -242,14 +242,6 @@ body {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.catalog-modal.stock-quick-product-loading {
-  padding: 24px;
-  color: #35536f;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .inventario-dialogo-cabecera {
   background: var(--erp-brand);
   color: #fff;
@@ -453,7 +445,6 @@ html[data-responsive-profile="mobile-portrait"] .reporte-tabla td {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.compra-datos-proveedor,
 .compra-modelo-campos {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -496,7 +487,6 @@ html[data-responsive-profile="mobile-portrait"] .reporte-tabla td {
   cursor: not-allowed;
 }
 
-.compra-inline-actions,
 .compra-acciones {
   display: flex;
   flex-wrap: wrap;
@@ -771,8 +761,7 @@ html[data-responsive-profile="mobile-portrait"] .reporte-tabla td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .compra-comprobante > :last-child,
-  .compra-proveedor > .compra-inline-actions {
+  .compra-comprobante > :last-child {
     grid-column: 1 / -1;
   }
 
@@ -850,8 +839,7 @@ html[data-responsive-profile="mobile-portrait"] .reporte-tabla td {
 }
 
 @container (max-width: 360px) {
-  .compra-campos.compra-proveedor-moto,
-  .compra-campos.compra-datos-proveedor {
+  .compra-campos.compra-proveedor-moto {
     grid-template-columns: minmax(0, 1fr);
   }
 }

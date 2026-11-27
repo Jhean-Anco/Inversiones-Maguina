@@ -37,10 +37,10 @@ export function vueltoCobro(partes: ParteCobro[], total: number) {
   return redondear(partes.reduce((suma, parte, indice) => suma + (parte.medioPago === "EFECTIVO" && parte.recibido.trim() !== "" ? Math.max(0, Number(parte.recibido) - importes[indice]) : 0), 0));
 }
 
-type Props = { partes: ParteCobro[]; total: number; onChange: (partes: ParteCobro[]) => void };
+type Props = { partes: ParteCobro[]; total: number; onChange: (partes: ParteCobro[]) => void; titulo?: string };
 
 /** Cobro de la venta repartido en varias cuentas, cada una una sola vez, con cálculo del vuelto en efectivo. */
-export function CobroVenta({ partes, total, onChange }: Props) {
+export function CobroVenta({ partes, total, onChange, titulo = "Cobro" }: Props) {
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -66,8 +66,8 @@ export function CobroVenta({ partes, total, onChange }: Props) {
   if (error) return <p className="venta-cobro-ayuda es-error">{error}</p>;
   if (!cuentas.length) return <p className="venta-cobro-ayuda">Configura primero una caja o cuenta en <Link to="/finanzas/cuentas">Cuentas y medios</Link>.</p>;
 
-  return <div className="venta-cobro" role="group" aria-label="Cobro de la venta">
-    <span className="os-etiqueta">Cobro *</span>
+  return <div className="venta-cobro" role="group" aria-label={`${titulo} de la ${titulo === "Cobro" ? "venta" : "compra"}`}>
+    <span className="os-etiqueta">{titulo} *</span>
     {partes.map((parte, indice) => {
       const esUltima = indice === partes.length - 1;
       const disponibles = cuentas.filter((cuenta) => cuenta.id === parte.cuentaId || !usadas.has(cuenta.id));
