@@ -1,6 +1,7 @@
 import { solicitarApi, urlApi } from "../services/api-cliente";
 import { guardarDirecto, guardarFormato, leerDirecto } from "./memoria-impresion";
 import { imprimirHtml, imprimirPdf } from "./imprimir-navegador";
+import { cargarLogoTicket } from "./logo-ticket";
 import { a4Html, ANCHO_TICKET_MM, ticketHtml } from "./ticket-html";
 import { ticketEscPos } from "./ticket-escpos";
 import type { DocumentoImprimible, FormatoImpresion } from "./tipos";
@@ -78,23 +79,24 @@ export async function imprimirDocumento(documento: DocumentoImprimible, preparad
       const resultado = await imprimirPdf(propio ? urlApi(documento.enlacePdf) : documento.enlacePdf, propio);
       return { modo: resultado === "impreso" ? "dialogo" : "pestana" };
     }
-    await imprimirHtml(a4Html(documento));
+    await imprimirHtml(a4Html(documento, await cargarLogoTicket()));
     return { modo: "dialogo" };
   }
   const destino = preparada.destino ?? SISTEMA;
+  const logo = await cargarLogoTicket();
   if (destino.tipo !== "sistema") {
     try {
-      const bytes = ticketEscPos(documento);
+      const bytes = ticketEscPos(documento, logo);
       if (destino.tipo === "bluetooth") await enviarBluetooth(destino.dispositivo, bytes);
       else await enviarSerial(destino.puerto, bytes, BAUDIOS_SERIAL);
       return { modo: "directo" };
     } catch (errorDirecto) {
       // Impresora apagada o sin conexión: se ofrece el diálogo del sistema en vez de perder la impresión.
-      await imprimirHtml(ticketHtml(documento), { anchoMm: ANCHO_TICKET_MM });
+      await imprimirHtml(ticketHtml(documento, logo), { anchoMm: ANCHO_TICKET_MM });
       return { modo: "dialogo", errorDirecto };
     }
   }
-  await imprimirHtml(ticketHtml(documento), { anchoMm: ANCHO_TICKET_MM });
+  await imprimirHtml(ticketHtml(documento, logo), { anchoMm: ANCHO_TICKET_MM });
   return { modo: "dialogo" };
 }
 
