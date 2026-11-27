@@ -37,7 +37,7 @@ export function AplicarGarantiaVentaDialog({ venta, onClose, onApplied }: Props)
 
   const aplicada = linea?.garantiaAplicada;
   const vigenteParaVenta = politica?.activa && hoyPeru() <= fechaFin(venta.fecha, politica.mesesVigencia);
-  return <DialogoCatalogo titulo="Garantía aplicada a la venta" articulo={venta.clienteNombre || "Cliente no especificado"} codigo={venta.codigoComprobante} guardando={guardando} alCerrar={onClose}
+  return <DialogoCatalogo titulo="Garantía aplicada a la venta" articulo={venta.clienteNombre?.trim() || "Clientes varios"} codigo={venta.codigoComprobante} guardando={guardando} alCerrar={onClose}
     acciones={<><Button type="button" variant="outline" onClick={onClose}>Cerrar</Button>{!aplicada && <Button type="button" disabled={guardando || cargando || !vigenteParaVenta} onClick={() => void aplicar()}>{guardando ? "Aplicando…" : "Aplicar garantía"}</Button>}</>}>
     <div className="grid gap-4">
       <label className="grid gap-1.5 text-sm font-medium">Mototaxi de esta venta<select value={detalleId} onChange={(e) => setDetalleId(e.target.value)} className="w-full rounded-lg border border-[var(--erp-border)] bg-[var(--erp-surface)] p-2.5">{lineas.map((item) => <option key={item.id} value={item.id}>{item.descripcion} · {item.cantidad} un.</option>)}</select></label>

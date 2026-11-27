@@ -74,7 +74,7 @@ export function NotaAjusteFormulario({ venta, fuente, notas, tipo, ajustes, tota
     <form className="venta-form-scroll nota-ajuste-formulario" onSubmit={onSubmit} aria-busy={guardando || cargando}>
         <section className="venta-form-header-fields nota-ajuste-origen" aria-label="Datos del comprobante de origen">
           <dl className="nota-ajuste-datos">
-            <div><dt>Cliente</dt><dd>{fuente?.clienteNombre || venta.clienteNombre || "Cliente no especificado"}</dd></div>
+            <div><dt>Cliente</dt><dd>{fuente?.clienteNombre?.trim() || venta.clienteNombre?.trim() || "Clientes varios"}</dd></div>
             <div><dt>Documento del cliente</dt><dd>{fuente?.clienteNumeroDocumento || venta.clienteNumeroDocumento || "Sin número"}</dd></div>
             <div><dt>Fecha del comprobante</dt><dd>{fecha(fuente?.fecha ?? venta.fecha)}</dd></div>
             <div><dt>Importe original</dt><dd>{soles(fuente?.total ?? venta.total)}</dd></div>

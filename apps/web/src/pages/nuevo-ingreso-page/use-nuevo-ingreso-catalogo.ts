@@ -1,15 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { servicioIngresos } from "../../services/ingresos.service";
-import { servicioProductos, type DatosProducto } from "../../services/inventario/productos.service";
 import { useNuevoIngreso } from "../../hooks/use-nuevo-ingreso";
 
 type Venta = ReturnType<typeof useNuevoIngreso>;
 
 export function useNuevoIngresoCatalogo(venta: Venta) {
-  const [mostrarAltaProducto, setMostrarAltaProducto] = useState(false);
-  const [catalogosAltaProducto, setCatalogosAltaProducto] = useState<Awaited<ReturnType<typeof servicioProductos.catalogos>> | null>(null);
-  const [cargandoAltaProducto, setCargandoAltaProducto] = useState(false);
-  const [errorAltaProducto, setErrorAltaProducto] = useState("");
   const codigoLector = useRef("");
   const tiempoUltimaTeclaLector = useRef(0);
   const objetivoLector = useRef<EventTarget | null>(null);
@@ -38,33 +33,6 @@ export function useNuevoIngresoCatalogo(venta: Venta) {
       venta.setError(problema instanceof Error ? problema.message : "No se pudo buscar el código leído.");
     }
   };
-
-  async function abrirAltaProducto() {
-    setMostrarAltaProducto(true);
-    setErrorAltaProducto("");
-    if (catalogosAltaProducto) return;
-    setCargandoAltaProducto(true);
-    try {
-      setCatalogosAltaProducto(await servicioProductos.catalogos());
-    } catch (problema) {
-      setErrorAltaProducto(problema instanceof Error ? problema.message : "No se pudieron cargar los datos para registrar el repuesto.");
-    } finally {
-      setCargandoAltaProducto(false);
-    }
-  }
-
-  async function guardarProductoDesdeVenta(datos: DatosProducto) {
-    try {
-      const resultado = await servicioProductos.guardar(datos);
-      venta.setBusqueda(resultado.producto.codigoInterno);
-      venta.setError(resultado.advertencia ?? "");
-      setMostrarAltaProducto(false);
-      return true;
-    } catch (problema) {
-      venta.setError(problema instanceof Error ? problema.message : "No se pudo registrar el repuesto.");
-      return false;
-    }
-  }
 
   buscarCodigoLectorRef.current = buscarCodigoEscaneado;
 
@@ -110,22 +78,5 @@ export function useNuevoIngresoCatalogo(venta: Venta) {
     return () => window.removeEventListener("keydown", capturarLector, true);
   }, []);
 
-  return {
-    mostrarAltaProducto,
-    setMostrarAltaProducto,
-    catalogosAltaProducto,
-    cargandoAltaProducto,
-    errorAltaProducto,
-    buscarProductoConEnter,
-    abrirAltaProducto,
-    guardarProductoDesdeVenta,
-    crearMarca: async (nombre: string) => {
-      const resultado = await servicioProductos.crearMarca(nombre);
-      return { ...resultado.marca, advertencia: resultado.advertencia };
-    },
-    crearCategoria: async (nombre: string) => {
-      const resultado = await servicioProductos.crearCategoria(nombre);
-      return { ...resultado.categoria, advertencia: resultado.advertencia };
-    },
-  };
+  return { buscarProductoConEnter };
 }

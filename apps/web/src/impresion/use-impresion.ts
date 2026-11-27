@@ -16,7 +16,6 @@ export function avisarResultado({ modo, documento, errorDirecto }: ResultadoImpr
   for (const advertencia of documento.advertencias) avisos.advertencia(advertencia);
   if (errorDirecto) avisos.advertencia(`${mensajeErrorImpresion(errorDirecto)} Se abrió el diálogo de impresión.`);
   if (modo === "directo") avisos.exito(`${documento.serieNumero} enviado a la impresora.`);
-  if (modo === "pestana") avisos.advertencia("Tu navegador abrirá el PDF en otra pestaña; imprímelo desde allí.");
 }
 
 /** Estado de impresión para botones/menús: evita dobles clics y comunica resultados y advertencias. */

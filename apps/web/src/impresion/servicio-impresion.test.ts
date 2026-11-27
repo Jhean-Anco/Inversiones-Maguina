@@ -151,7 +151,7 @@ describe("avisos y hooks de impresión", () => {
     avisarResultado({ modo: "dialogo", documento: { ...doc, advertencias: [] }, errorDirecto: new Error("sin papel") }, a);
     expect(a.exito).toHaveBeenCalledOnce();
     expect(a.advertencia).toHaveBeenCalledWith("ojo");
-    expect(a.advertencia).toHaveBeenCalledWith(expect.stringContaining("otra pestaña"));
+    expect(a.advertencia).not.toHaveBeenCalledWith(expect.stringContaining("otra pestaña"));
     expect(a.advertencia).toHaveBeenCalledWith(expect.stringContaining("sin papel"));
   });
   it("useImpresion evita dobles envíos, avisa y reporta errores", async () => {

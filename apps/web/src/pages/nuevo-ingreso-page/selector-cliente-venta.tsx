@@ -3,7 +3,7 @@ import { Dialogo } from "../../components/ui/dialogo/dialogo";
 import type { ClienteRegistrado, DatosClienteNuevo } from "../../services/ingresos.service";
 import { useNuevoIngreso } from "../../hooks/use-nuevo-ingreso";
 import type { useNuevoIngresoClienteForm } from "./use-nuevo-ingreso-cliente-form";
-import { formularioDocumentoClases as clases } from "../../components/documentos/formulario-documento-clases";
+import { Eye, Search, UserPlus, X } from "lucide-react";
 
 type Props = {
   venta: ReturnType<typeof useNuevoIngreso>;
@@ -32,27 +32,29 @@ export function SelectorClienteVenta({ venta, formulario, esFactura, nombreClien
   const clienteSeleccionado = venta.clienteSeleccionado;
 
   const nombreRegistrado = (cliente: ClienteRegistrado) => cliente.nombreComercial ?? cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
-  const iconoDetalle = <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 12s3.3-6 9.5-6 9.5 6 9.5 6-3.3 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.7" /></svg>;
+  const iniciales = (nombre: string) => nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((palabra) => palabra[0]).join("").toLocaleUpperCase("es-PE");
   const direccion = String(venta.camposNubefact.cliente_direccion ?? "").trim();
 
-  return <div className="flex flex-col gap-2">
-    <label className={clases.etiquetaCampo} htmlFor="venta-buscar-cliente">Cliente</label>
-      {clienteSeleccionado ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-[#c9e3d4] bg-[#f4faf6] px-4 py-3">
-        <div className="grid min-w-0 gap-0.5 [overflow-wrap:anywhere]"><strong className="text-sm font-semibold text-[#0b2545]">{nombreCliente}</strong><span className="text-xs text-[#52697d]">{tipoDocumento === "6" ? "RUC" : tipoDocumento === "1" ? "DNI" : "Documento"} {numeroDocumento}{direccion ? ` · ${direccion}` : ""}</span></div>
-        <div className="flex flex-none gap-2"><button className={clases.botonIcono} type="button" aria-label="Ver detalle del cliente seleccionado" title="Ver detalle del cliente" onClick={() => onVerDetalle(clienteSeleccionado)}>{iconoDetalle}</button><button className={clases.botonSecundario} type="button" aria-label="Quitar cliente de la venta" title="Quitar cliente" onClick={() => venta.quitarCliente()}>Cambiar</button></div>
-      </div> : <>
-        <div className="flex flex-wrap gap-2.5">
-          <select className={`${clases.campo} !w-[116px] flex-none`} aria-label="Tipo de documento para buscar" value={esFactura ? "06" : tipoDocumentoBusqueda} onChange={(event) => cambiarTipoDocumentoBusqueda(event.target.value as "01" | "06")}><option value="06">RUC</option>{!esFactura && <option value="01">DNI</option>}</select>
-          <input className={`${clases.campo} !w-auto min-w-[200px] flex-[1_1_220px]`} id="venta-buscar-cliente" inputMode="numeric" maxLength={longitudDocumentoBusqueda} value={venta.busquedaCliente} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} onChange={(event) => cambiarBusquedaDocumento(event.target.value)} placeholder={`Ingresa ${tipoDocumentoBusqueda === "01" ? "DNI" : "RUC"}`} autoComplete="off" aria-describedby={errorBusquedaCliente ? "venta-busqueda-cliente-error" : undefined} />
-          <button type="button" className={clases.botonOscuro} disabled={venta.buscandoClientes} onClick={() => { setModoCliente("buscar"); setMostrarRegistroCliente(false); void ejecutarBusquedaCliente(); }}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>{venta.buscandoClientes ? "Buscando…" : "Buscar cliente"}
-          </button>
-          <button type="button" className={clases.botonIcono} aria-label="Crear cliente" title="Crear cliente" disabled={!busquedaSinResultados} onClick={abrirRegistroCliente}>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M15.5 20v-1.4a4.1 4.1 0 0 0-4.1-4.1H6.6a4.1 4.1 0 0 0-4.1 4.1V20M9 10.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2ZM19 8v7m-3.5-3.5h7" /></svg>
-          </button>
+  return <div className="os-cliente">
+    <label className="os-etiqueta" htmlFor="venta-buscar-cliente">{venta.tipoComprobante !== "BOLETA" ? "Cliente *" : "Cliente"}</label>
+      {clienteSeleccionado ? <div className="os-cliente-fijo es-editable">
+        <span className="os-avatar" aria-hidden="true">{iniciales(nombreCliente)}</span>
+        <div className="os-cliente-datos">
+          <strong>{nombreCliente}</strong>
+          <span>{tipoDocumento === "6" ? "RUC" : tipoDocumento === "1" ? "DNI" : "Documento"} {numeroDocumento}</span>
+          {direccion && <span>{direccion}</span>}
         </div>
-        {busquedaClienteEjecutada === venta.busquedaCliente.trim() && venta.clientesEncontrados.length > 0 && <ul aria-label="Resultados de clientes" className="m-0 flex list-none flex-col gap-0.5 rounded-xl border border-[#dbe3e9] bg-white p-1.5 shadow-[0_10px_26px_rgba(15,42,66,.1)]">
-          {venta.clientesEncontrados.map((cliente) => <li className="flex items-center gap-1" key={cliente.id}><button className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-3 py-2.5 text-left [overflow-wrap:anywhere] hover:bg-[#eef4fa]" type="button" onClick={() => formulario.seleccionarCliente(cliente)}><strong className="text-sm font-semibold text-[#0b2545]">{nombreRegistrado(cliente)}</strong><span className="text-xs text-[#52697d]">{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((documento) => `${documento.tipoDocumento === "06" ? "RUC" : documento.tipoDocumento === "01" ? "DNI" : documento.tipoDocumento} ${documento.numeroDocumento}`).join(" · ")}</span></button><button className="grid h-10 w-10 flex-none place-items-center rounded-lg text-[#174b78] hover:bg-[#eef4fa]" type="button" aria-label={`Ver detalle de ${cliente.nombreComercial ?? cliente.razonSocial ?? cliente.numeroDocumento}`} title="Ver detalle del cliente" onClick={() => onVerDetalle(cliente)}>{iconoDetalle}</button></li>)}
+        <button className="os-cliente-cambiar" type="button" aria-label="Ver detalle del cliente seleccionado" title="Ver detalle del cliente" onClick={() => onVerDetalle(clienteSeleccionado)}><Eye aria-hidden="true" size={18} /></button>
+        <button className="os-cliente-cambiar" type="button" aria-label="Cambiar cliente" title="Cambiar cliente" onClick={() => venta.quitarCliente()}><X aria-hidden="true" size={18} /></button>
+      </div> : <div className="os-cliente-buscador">
+        <div className="os-cliente-fila">
+          <select aria-label="Tipo de documento para buscar" value={esFactura ? "06" : tipoDocumentoBusqueda} onChange={(event) => cambiarTipoDocumentoBusqueda(event.target.value as "01" | "06")}><option value="06">RUC</option>{!esFactura && <option value="01">DNI</option>}</select>
+          <input id="venta-buscar-cliente" inputMode="numeric" maxLength={longitudDocumentoBusqueda} value={venta.busquedaCliente} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); setModoCliente("buscar"); setMostrarRegistroCliente(false); void ejecutarBusquedaCliente(); } }} onChange={(event) => cambiarBusquedaDocumento(event.target.value)} placeholder={`Ingresa ${tipoDocumentoBusqueda === "01" ? "DNI" : "RUC"}`} autoComplete="off" aria-label={`Número de ${tipoDocumentoBusqueda === "01" ? "DNI" : "RUC"}`} />
+          <button type="button" className="os-boton-oscuro" disabled={venta.buscandoClientes} onClick={() => { setModoCliente("buscar"); setMostrarRegistroCliente(false); void ejecutarBusquedaCliente(); }}><Search aria-hidden="true" size={16} strokeWidth={2} />{venta.buscandoClientes ? "Buscando…" : "Buscar cliente"}</button>
+          <button type="button" className="os-boton-icono" aria-label="Crear cliente" title={busquedaSinResultados ? "Crear cliente" : "Busca primero el documento para crear el cliente"} disabled={!busquedaSinResultados} onClick={abrirRegistroCliente}><UserPlus aria-hidden="true" size={20} strokeWidth={1.9} /></button>
+        </div>
+        {busquedaClienteEjecutada === venta.busquedaCliente.trim() && venta.clientesEncontrados.length > 0 && <ul className="os-cliente-resultados" aria-label="Resultados de clientes">
+          {venta.clientesEncontrados.map((cliente) => <li key={cliente.id}><button type="button" onClick={() => formulario.seleccionarCliente(cliente)}><strong>{nombreRegistrado(cliente)}</strong><small>{(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((documento) => `${documento.tipoDocumento === "06" ? "RUC" : documento.tipoDocumento === "01" ? "DNI" : documento.tipoDocumento} ${documento.numeroDocumento}`).join(" · ")}</small></button></li>)}
         </ul>}
         {errorBusquedaCliente && <NotificacionFlotante mensaje={errorBusquedaCliente} />}
         {mostrarRegistroCliente && (
@@ -78,7 +80,7 @@ export function SelectorClienteVenta({ venta, formulario, esFactura, nombreClien
             {errorRegistroCliente && <NotificacionFlotante mensaje={errorRegistroCliente} />}
           </Dialogo>
         )}
-      </>}
+      </div>}
     {intentoIdentificacion && identificacionFacturaPendiente && <NotificacionFlotante titulo="Completa los datos fiscales del cliente" mensaje="La factura requiere un RUC válido, razón social y dirección fiscal. Razón social y dirección admiten hasta 100 caracteres." />}
     {intentoIdentificacion && identificacionBoletaPendiente && <NotificacionFlotante titulo="La boleta requiere identificar al comprador" mensaje="Busca o registra al comprador con su tipo y número de documento para continuar con una boleta superior a S/ 700." />}
   </div>;

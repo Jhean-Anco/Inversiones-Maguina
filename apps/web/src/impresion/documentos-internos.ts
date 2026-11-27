@@ -50,7 +50,7 @@ export function documentoInterno(d: DatosDocumentoInterno): DocumentoImprimible 
     adelanto: d.adelanto ? { monto: dinero(d.adelanto.monto), saldo: dinero(d.adelanto.saldo) } : null,
     montoEnLetras: "", condicionPago: "CONTADO", medioPago: d.medioPago ?? null, cuotas: [], documentoModificado: null, observacion: d.observacion || null,
     hash: null, cadenaQr: null, leyenda: d.leyenda ?? "Documento interno sin valor tributario.", enlacePdf: d.enlacePdf ?? null,
-    advertencias: [...(d.advertencias ?? []), ...(d.emisor ? [] : ["Configura los datos de la empresa (EMPRESA_RUC, EMPRESA_RAZON_SOCIAL y EMPRESA_DIRECCION) para que aparezcan en el documento."])],
+    advertencias: d.advertencias ?? [],
   };
 }
 
