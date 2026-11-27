@@ -24,24 +24,8 @@
 /* Líneas: descripción, cantidad, costo unitario (calculado), total y quitar */
 .compra-repuestos-editor .os-lineas-cabecera,
 .compra-repuestos-editor .os-linea {
-  grid-template-columns: minmax(0, 1fr) 96px 120px 130px 36px;
+  grid-template-columns: minmax(0, 1fr) 84px 124px 130px 36px;
 }
-.compra-repuestos-editor .os-linea.es-incluida {
-  background: #f5f9fd;
-  box-shadow: inset 3px 0 0 var(--os-foco);
-}
-.compra-linea-nombre {
-  overflow: hidden;
-  color: var(--os-tinta);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.compra-costo strong {
-  color: var(--os-tinta-suave);
-  font-weight: 600;
-}
-
 /* Resumen */
 .compra-resumen-texto {
   max-width: 60%;

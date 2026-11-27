@@ -54,22 +54,26 @@ export function RepuestosCompra({ modulo, onCrearRepuesto }: Props) {
       <span>Búscalo en el inventario e indica la cantidad y el total pagado por la línea.</span>
     </div> : <div className="os-lineas" role="table" aria-label="Repuestos de la compra">
       <div className="os-lineas-cabecera" role="row"><span role="columnheader">DESCRIPCIÓN</span><span role="columnheader">CANT.</span><span role="columnheader">COSTO UNIT.</span><span role="columnheader">TOTAL</span><span role="columnheader" aria-label="Quitar" /></div>
-      {detalles.map((fila) => <div role="row" className={`os-linea es-producto${Number(fila.importeTotal) > 0 ? " es-incluida" : ""}`} key={fila.clave}>
+      <div role="rowgroup" aria-label="Repuestos de la compra">
+      <div className="os-lineas-grupo">REPUESTOS</div>
+      {detalles.map((fila) => <div role="row" className="os-linea es-producto" key={fila.clave}>
         <div role="cell" className="os-linea-descripcion">
-          <strong className="compra-linea-nombre" title={fila.nombre}>{fila.nombre}</strong>
-          <small className="os-ayuda">{fila.presentacion}</small>
+          <input aria-label="Descripción del repuesto" title={`${fila.nombre} · ${fila.presentacion}`} value={fila.nombre} readOnly />
         </div>
         <label role="cell" className="os-linea-campo os-linea-cantidad"><span>Cant.</span>
           <input aria-label={`Cantidad de ${fila.nombre}`} type="number" min="0.001" step="0.001" required value={fila.cantidad}
             onChange={(evento) => cambiarLinea(fila.clave, { cantidad: evento.target.value })} />
         </label>
-        <div role="cell" className="os-linea-total compra-costo"><span>Costo unit.</span><strong>{soles(Number(fila.costoUnitario))}</strong></div>
-        <label role="cell" className="os-linea-campo os-linea-precio"><span>Total</span>
+        <label role="cell" className="os-linea-campo os-linea-precio"><span>Costo unit.</span>
+          <input aria-label={`Costo unitario de ${fila.nombre} (calculado)`} type="text" value={soles(Number(fila.costoUnitario))} readOnly tabIndex={-1} />
+        </label>
+        <label role="cell" className="os-linea-campo os-linea-descuento"><span>Total</span>
           <input aria-label={`Total pagado por ${fila.nombre}`} type="number" min="0.01" step="0.01" placeholder="0.00" required value={Number(fila.importeTotal) ? fila.importeTotal : ""}
             onChange={(evento) => cambiarLinea(fila.clave, { importeTotal: evento.target.value })} />
         </label>
         <button className="os-linea-quitar" type="button" aria-label={`Quitar ${fila.nombre}`} title="Quitar" onClick={() => quitarDetalle(fila.clave)}><X aria-hidden="true" size={16} /></button>
       </div>)}
+      </div>
     </div>}
   </>;
 }

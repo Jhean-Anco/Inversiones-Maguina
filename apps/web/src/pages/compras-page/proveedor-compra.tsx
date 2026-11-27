@@ -23,8 +23,6 @@ export function ProveedorCompra({ modulo }: { modulo: ReturnType<typeof useEntra
     else setProveedorTipoPersona("");
   }
 
-  if (tipoDocumento === "SIN_DOCUMENTO") return <div className="os-vacio"><strong>Compra sin documento</strong><span>Se asignará una serie y número interno al guardar. No necesitas registrar ni buscar un proveedor.</span></div>;
-
   if (fijado) return <div className="os-cliente">
     <span className="os-etiqueta">Proveedor *</span>
     <div className="os-cliente-fijo es-editable">

@@ -113,14 +113,14 @@ export function FormularioCompraRepuestos({ modulo, alCerrar }: Props) {
             </div>
           </Tarjeta>
 
-          <Tarjeta paso={2} id="compra-titulo-proveedor" titulo="Proveedor"><ProveedorCompra modulo={modulo} /></Tarjeta>
+          {!sinDocumento && <Tarjeta paso={2} id="compra-titulo-proveedor" titulo="Proveedor"><ProveedorCompra modulo={modulo} /></Tarjeta>}
 
-          <Tarjeta paso={3} id="compra-titulo-repuestos" titulo="Repuestos de la compra"
+          <Tarjeta paso={sinDocumento ? 2 : 3} id="compra-titulo-repuestos" titulo="Repuestos de la compra"
             extra={<span className="os-contador">{detalles.length} {detalles.length === 1 ? "línea" : "líneas"}</span>}>
             <RepuestosCompra modulo={modulo} onCrearRepuesto={() => void alta.abrir()} />
           </Tarjeta>
 
-          <Tarjeta paso={4} id="compra-titulo-observaciones" titulo="Observaciones">
+          <Tarjeta paso={sinDocumento ? 3 : 4} id="compra-titulo-observaciones" titulo="Observaciones">
             <div className="os-revision">
               <label className="os-campo">
                 <span className="os-revision-titulo"><MessageSquareText aria-hidden="true" size={16} />Observaciones de la compra <em className="os-opcional">Opcional</em></span>
@@ -136,7 +136,7 @@ export function FormularioCompraRepuestos({ modulo, alCerrar }: Props) {
           <h3>Resumen de la compra</h3>
           <dl className="os-importes">
             <div><dt>Documento</dt><dd>{documentos[tipoDocumento as keyof typeof documentos] ?? tipoDocumento}{numeroDocumento && !sinDocumento ? ` ${numeroDocumento}` : ""}</dd></div>
-            <div><dt>Proveedor</dt><dd className="compra-resumen-texto">{sinDocumento ? "Sin proveedor" : proveedor.trim() || "Pendiente"}</dd></div>
+            {!sinDocumento && <div><dt>Proveedor</dt><dd className="compra-resumen-texto">{proveedor.trim() || "Pendiente"}</dd></div>}
             <div><dt>Repuestos</dt><dd>{lineasConImporte}/{detalles.length}</dd></div>
             <div className="es-total"><dt>Total</dt><dd aria-live="polite">{soles(totalBorrador)}</dd></div>
           </dl>
