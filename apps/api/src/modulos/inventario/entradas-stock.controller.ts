@@ -16,6 +16,7 @@ export class ControladorEntradasStock {
   @Get("productos") @RequierePermiso("INVENTARIO.LEER") buscarProductos(@Query("busqueda") busqueda?: string) { return this.entradas.buscarProductos(busqueda); }
   @Get() @RequierePermiso("INVENTARIO.LEER") listar(@Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string, @Query("busqueda") busqueda?: string, @Query("estadoPago") estadoPago?: string) { return this.entradas.listar({ pagina, porPagina, busqueda, estadoPago }); }
   @Get(":id") @RequierePermiso("INVENTARIO.LEER") consultar(@Param("id") id: string) { return this.entradas.consultar(id); }
+  @Post(":id/anular") @RequierePermiso("INVENTARIO.ANULAR") anular(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.entradas.anular(id, datos, solicitud.usuario.id); }
   @Post() @RequierePermiso("INVENTARIO.CREAR") crear(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
     if (typeof datos !== "object" || datos === null || Array.isArray(datos)) return this.entradas.crear(datos, solicitud.usuario.id);
     return this.entradas.crear(datos, solicitud.usuario.id);

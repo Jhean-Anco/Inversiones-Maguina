@@ -37,6 +37,7 @@ type OrdenServicioEditorProps = {
     onAgregarReciente: (item: CatalogoReciente) => void;
   };
   vehiculo: { datos: Vehiculo; onChange: (datos: Vehiculo) => void };
+  recepcion: { trabajadorId: string; condicion: string; personal: { id: string; nombre: string }[]; onTrabajador: (id: string) => void; onCondicion: (texto: string) => void };
   cliente: {
     seleccionado: ClienteRegistrado | null;
     nombreSeleccionado: string;
@@ -86,7 +87,7 @@ const nombreDocumento = (tipo: string) => (tipo === "06" ? "RUC" : tipo === "01"
 const nombreCompleto = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const iniciales = (nombre: string) => nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((palabra) => palabra[0]).join("").toLocaleUpperCase("es-PE");
 
-export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo, cliente, detalle, pago, formatearSoles, importes }: OrdenServicioEditorProps) {
+export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo, recepcion, cliente, detalle, pago, formatearSoles, importes }: OrdenServicioEditorProps) {
   const edicion = Boolean(orden.activa);
   const tonoEstado = tonosEstadoOrden[orden.estado];
   const adelanto = Number(pago.adelanto) || 0;
@@ -108,7 +109,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
         <div className="os-columna">
           <section className="os-tarjeta" aria-labelledby="os-titulo-recepcion">
             <div className="os-tarjeta-cabecera">
-              <div className="os-titulo"><span className="os-paso" aria-hidden="true">1</span><h3 id="os-titulo-recepcion">Recepción del vehículo</h3></div>
+              <div className="os-titulo"><span className="os-paso" aria-hidden="true">1</span><h3 id="os-titulo-recepcion">Recepción del móvil</h3></div>
             </div>
             {edicion && <div className="os-aviso" role="note"><Lock aria-hidden="true" size={18} />La fecha de recepción, la placa y el cliente no se pueden cambiar en una orden existente.</div>}
             <div className="os-campos">
@@ -123,6 +124,14 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
               </label>
             </div>
 
+            <div className="os-cliente">
+              <div className="os-campos">
+              <label className="os-campo">Encargado de revisar el móvil
+                  <select value={recepcion.trabajadorId} onChange={(evento) => recepcion.onTrabajador(evento.target.value)} required><option value="">Selecciona personal</option>{recepcion.personal.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
+                </label>
+              </div>
+              <label className="os-campo">Comentario de cómo llega el móvil<textarea value={recepcion.condicion} maxLength={2000} rows={3} required onChange={(evento) => recepcion.onCondicion(evento.target.value)} placeholder="Describe el estado en que se recibe el móvil" /></label>
+            </div>
             <div className="os-cliente">
               <label className="os-etiqueta" htmlFor="orden-cliente-busqueda">{edicion ? "Cliente" : "Cliente *"}</label>
               {orden.activa ? (

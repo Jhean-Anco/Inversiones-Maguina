@@ -16,8 +16,15 @@
 | `AUTENTICACION_DURACION_RECORDAR_SEGUNDOS` | API | no | 2592000 | servidor | interna |
 | `NUBEFACT_RUTA`, `NUBEFACT_TOKEN` | API | sí al iniciar | ninguno | servidor | token secreto; URL restringida |
 | `NUBEFACT_TIMEOUT_MS` | API | no | 20000 | servidor | interna |
+| `NUBEFACT_SEGUIMIENTO_ACTIVO` | API | no | `true` (`false` con `NODE_ENV=test`) | servidor | interna; activa la consulta automática de pendientes |
+| `NUBEFACT_SEGUIMIENTO_INTERVALO_MS` | API | no | 10000 | servidor | interna; frecuencia del ciclo |
+| `NUBEFACT_SEGUIMIENTO_ESPERAS_SEGUNDOS` | API | no | `15,30,60,120,300,600` | servidor | interna; espera creciente por documento, el último valor es el tope |
+| `NUBEFACT_SEGUIMIENTO_HORIZONTE_HORAS` | API | no | 48 | servidor | interna; al superarlo el seguimiento queda `AGOTADO` (revisión manual) |
+| `NUBEFACT_SEGUIMIENTO_LOTE` | API | no | 20 | servidor | interna; documentos consultados por ciclo |
+| `NUBEFACT_CONSULTA_INMEDIATA_ESPERAS_MS` | API | no | `1000,2000,3000` | servidor | interna; consultas tras emitir (máximo 8 s en total); `0` las desactiva |
 | `REGIMEN_TRIBUTARIO` | API | no | código: NRUS si vacío; ejemplo/Compose: RER | servidor | configuración; discrepancia por validar |
 | `DESCUENTO_MAXIMO_PORCENTAJE` | API | no | 0 | servidor | configuración |
+| `EMPRESA_RUC`, `EMPRESA_RAZON_SOCIAL`, `EMPRESA_DIRECCION`, `EMPRESA_TELEFONO`, `EMPRESA_MENSAJE_PIE` | API | no | vacío | servidor | datos públicos del emisor para tickets y A4; se usan solo si `configuracion_empresa` está vacía; si se define alguno de RUC, razón social o dirección, los tres son obligatorios y el RUC se valida al iniciar |
 | `APIS_PERU_TOKEN` | API | no | vacío | servidor | secreto |
 | `UPLOADS_DIR` | API | no | `storage` | servidor | ruta interna |
 | `VITE_API_URL` | web/build | no | vacío; ejemplo usa localhost:3000 | build/navegador | público; nunca incluir secreto |

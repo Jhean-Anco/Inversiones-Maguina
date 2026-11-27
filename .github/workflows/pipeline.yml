@@ -1,4 +1,4 @@
-﻿name: Pipeline de producción
+name: Pipeline de producción
 
 on:
   pull_request:
@@ -100,6 +100,16 @@ jobs:
         run: pnpm typecheck
       - name: Build real
         run: pnpm build
+      - name: Pruebas del frontend con cobertura mínima (90% en lógica)
+        run: pnpm --filter @magina/web test:coverage
+      - name: Publicar reporte LCOV del frontend
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cobertura-web-${{ github.sha }}
+          path: apps/web/coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
       - name: Aplicar todas las migraciones sobre PostgreSQL vacío
         run: pnpm --filter @magina/database db:migrate
       - name: Comprobar que repetir migraciones conserva el estado

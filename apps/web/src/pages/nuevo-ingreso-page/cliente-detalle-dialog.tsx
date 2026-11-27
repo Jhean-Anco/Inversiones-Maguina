@@ -59,13 +59,13 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
   }
 
   const botonCerrar = (
-    <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={onClose}>Cerrar</button>
+    <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={onClose}>Cerrar</button>
   );
 
   const pieEdicion = (
     <>
-      <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setEditando(false)}>Cancelar</button>
-      <button type="submit" form="cliente-detalle-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando}>
+      <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={() => setEditando(false)}>Cancelar</button>
+      <button type="submit" form="cliente-detalle-form" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={guardando}>
         {guardando ? "Guardando…" : "Guardar cambios"}
       </button>
     </>
@@ -82,7 +82,7 @@ export function ClienteDetalleDialog({ cliente, editable, onClose, onSave }: Cli
           etiquetaConfirmar="Sí, editar cliente"
           onConfirmar={() => setEditando(true)}
         >
-          <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full">Editar cliente</button>
+          <button type="button" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full">Editar cliente</button>
         </BotonEditarConfirmacion>
       )}
     </>

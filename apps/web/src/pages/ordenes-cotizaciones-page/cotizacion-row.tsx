@@ -4,7 +4,8 @@ import { AccionIcono } from "../../components/ui/accion-icono";
 import { Etiqueta } from "../../components/ui/etiqueta";
 import { clasesBotonAccion } from "../../components/ui/boton-accion";
 import { IconoWhatsApp } from "../../components/ui/icono-whatsapp";
-import { BotonImprimir } from "../../components/documentos/boton-imprimir";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
+import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import type { Cotizacion } from "../../services/ingresos.service";
 import { cotizacionClases } from "./cotizacion-clases";
@@ -34,8 +35,7 @@ type CotizacionRowProps = {
   mensajeWhatsApp: string;
   mostrarMenuDocumento: boolean;
   documentoPendiente: boolean;
-  onImprimirA4: () => void;
-  onImprimirTicket: () => void;
+  documentoImprimible: ObtenerDocumento;
   onPrepararDocumento: (tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => void;
   puedeEditar: boolean;
   onEditar: () => void;
@@ -55,7 +55,7 @@ function SelectorDocumentoCotizacion({ cotizacion, inactiva, alPreparar }: { cot
   </span>;
 }
 
-export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenuDocumento, documentoPendiente, onImprimirA4, onImprimirTicket, onPrepararDocumento, puedeEditar, onEditar }: CotizacionRowProps) {
+export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenuDocumento, documentoPendiente, documentoImprimible, onPrepararDocumento, puedeEditar, onEditar }: CotizacionRowProps) {
   const tono = tonosEstadoCotizacion[estado];
   return <tr className={cotizacionClases.tableRow}>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.code}`}>
@@ -70,7 +70,7 @@ export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenu
     </td>
     <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>
       {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} confirmacion={{ titulo: "¿Editar esta cotización?", descripcion: `Vas a abrir ${cotizacion.codigo} para revisar sus datos. Los cambios se aplicarán al guardarlos.`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar cotización" }} onClick={onEditar} />}
-      <BotonImprimir etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" alImprimirA4={onImprimirA4} alImprimirTicket={onImprimirTicket} />
+      <MenuImpresion codigo={cotizacion.codigo} etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" obtener={documentoImprimible} />
       <a className={clasesBotonAccion("positiva")} href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`} target="_blank" rel="noreferrer" title={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} aria-label={`Enviar cotización ${cotizacion.codigo} por WhatsApp`}><IconoWhatsApp size={17}/></a>
       {mostrarMenuDocumento && <SelectorDocumentoCotizacion cotizacion={cotizacion} inactiva={estado === "INACTIVA"} alPreparar={onPrepararDocumento}/>}
       {documentoPendiente && <Etiqueta compacta tono="advertencia">Documento pendiente de confirmación</Etiqueta>}

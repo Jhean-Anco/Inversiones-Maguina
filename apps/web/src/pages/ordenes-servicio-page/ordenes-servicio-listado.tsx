@@ -2,6 +2,7 @@ import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/
 import { useMemo, useState } from "react";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
+import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import type { OrdenServicio } from "../../services/ingresos.service";
 import type { LineaOrden } from "./types";
 import { OrdenServicioRow } from "./orden-servicio-row";
@@ -18,7 +19,7 @@ type OrdenesServicioListadoProps = {
   onBuscar: (valor: string) => void;
   onCrear: () => void;
   onEmitir: (orden: OrdenServicio, tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => void;
-  onImprimir: (orden: OrdenServicio, formato: "A4" | "TICKET") => void;
+  documentoImprimible: (orden: OrdenServicio) => ObtenerDocumento;
   onEditar: (orden: OrdenServicio) => void;
   formatearFecha: (fecha: string) => string;
   formatearTotal: (lineas: LineaOrden[]) => string;
@@ -47,7 +48,7 @@ export function OrdenesServicioListado({
   onBuscar,
   onCrear,
   onEmitir,
-  onImprimir,
+  documentoImprimible,
   onEditar,
   formatearFecha,
   formatearTotal,
@@ -103,16 +104,14 @@ export function OrdenesServicioListado({
       cargando={cargando}
       error={null}
       vacio={<div className={c.empty}><strong>{hayFiltros ? "No hay órdenes para mostrar" : "Aún no hay órdenes de servicio"}</strong><span>{hayFiltros ? "Prueba con otra búsqueda o con otro estado." : "Las órdenes registradas para tus clientes aparecerán aquí."}</span></div>}
-      claseRaiz="[&_.listado-maestro-footer]:grid [&_.listado-maestro-footer]:grid-cols-[1fr_auto_1fr] [&_.listado-maestro-footer]:flex-nowrap [&_.listado-maestro-resumen]:col-start-1 [&_.listado-maestro-resumen]:justify-self-start [&_.listado-maestro-paginacion]:col-start-2 [&_.listado-maestro-paginacion]:justify-self-center"
       claseCabecera={c.header}
       claseControlesCabecera={c.controls}
-      clasePaginacion={c.pagination}
       paginacion={{ modo: "local" }}
       resetKey={`${busqueda}|${filtro}`}
       claseTabla={`${c.table} ordenes-table`}
       claseContenedor={c.tableScroll}
       centrarCeldas={false}
-      encabezadoTabla={<tr><th>Orden</th><th>Vehículo</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th className="!text-right">Acciones</th></tr>}
+      encabezadoTabla={<tr><th>Orden</th><th>Móvil / encargado</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th className="!text-right">Acciones</th></tr>}
       renderizarFila={(orden) => <OrdenServicioRow
         key={orden.id}
         orden={orden}
@@ -122,8 +121,7 @@ export function OrdenesServicioListado({
         puedeCrear={puedeCrear}
         menuDocumento={<SelectorDocumentoOrden tiposDisponibles={tiposDocumentoDisponibles} onSeleccionar={(tipo) => onEmitir(orden, tipo)} />}
         formatearFecha={formatearFecha}
-        alImprimirA4={() => onImprimir(orden, "A4")}
-        alImprimirTicket={() => onImprimir(orden, "TICKET")}
+        documentoImprimible={documentoImprimible(orden)}
         alEditar={() => onEditar(orden)}
       />}
     />

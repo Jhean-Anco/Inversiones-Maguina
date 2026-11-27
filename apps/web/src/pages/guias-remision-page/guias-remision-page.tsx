@@ -1,9 +1,11 @@
 import { useAlertas, type TipoNotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useEffect, useState } from "react";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { servicioIngresos, type GrupoGuiasRemision, type GuiaRemision, type PaginaGuiasRemision } from "../../services/ingresos.service";
+import { documentoDeGuia } from "./documento-guia";
 import { FormularioGuiaRemision } from "./formulario-guia-remision";
 import { guidePageClasses } from "./guias-remision-page-classes";
 
@@ -168,6 +170,7 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
               </td>
               <td>
                 <div className="flex flex-wrap items-center gap-1.5">
+                  <MenuImpresion codigo={guia.codigo} etiqueta={`Imprimir guía ${guia.codigo}`} tono="neutral" obtener={() => documentoDeGuia(guia)} />
                   {guia.enlacePdf && <a className={claseEnlace} href={guia.enlacePdf} target="_blank" rel="noreferrer">PDF</a>}
                   {guia.enlaceXml && <a className={claseEnlace} href={guia.enlaceXml} target="_blank" rel="noreferrer">XML</a>}
                   {guia.enlaceCdr && <a className={claseEnlace} href={guia.enlaceCdr} target="_blank" rel="noreferrer">CDR</a>}

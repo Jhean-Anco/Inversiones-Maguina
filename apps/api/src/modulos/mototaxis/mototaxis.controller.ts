@@ -32,6 +32,7 @@ export class ControladorMototaxis {
   @Post("proveedores") @RequierePermiso("MOTOTAXIS.CREAR") crearProveedor(@Body() datos: unknown) { return this.mototaxis.crearProveedor(datos); }
   @Get("compras") @RequierePermiso("MOTOTAXIS.LEER") listarCompras(@Query("busqueda") busqueda?: string) { return this.mototaxis.listarCompras(busqueda); }
   @Post("compras/:id/pagos") @RequierePermiso("MOTOTAXIS.CREAR") aplicarPagoCompra(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.aplicarPagoCompra(id, datos, solicitud.usuario.id); }
+  @Post("compras/:id/anular") @RequierePermiso("MOTOTAXIS.ANULAR") anularCompra(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.mototaxis.anularCompra(id, datos, solicitud.usuario.id); }
   @Get("compras/:id/pagos") @RequierePermiso("MOTOTAXIS.LEER") listarPagosCompra(@Param("id") id: string) { return this.mototaxis.listarPagosCompra(id); }
   @Get("unidades") @RequierePermiso("MOTOTAXIS.LEER") listarUnidades(@Query("busqueda") busqueda?: string, @Query("estado") estado?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) { return this.mototaxis.listarUnidades({ busqueda, estado, pagina, porPagina }); }
   @Get("ajustes-inventario") @RequierePermiso("MOTOTAXIS.LEER") listarAjustesInventario() { return this.mototaxis.listarAjustesInventario(); }

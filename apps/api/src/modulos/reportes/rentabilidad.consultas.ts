@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { db } from "@magina/database";
 import type { RangoFechas } from "./flujo-ingresos.consultas";
+import { consultarAjustesPorLinea } from "./ajustes-notas.consultas";
+import { sumarImportes } from "./reportes.util";
 
 export type FilaRentabilidad = {
   tipo: "PRODUCTO" | "SERVICIO" | "MOTOTAXI";
@@ -19,8 +21,11 @@ export type FilaRentabilidad = {
  * Los servicios no tienen costo registrado, por eso nunca entran en `ventaConCosto`.
  */
 export async function consultarRentabilidad(rango: RangoFechas): Promise<FilaRentabilidad[]> {
+  const ajustes = await consultarAjustesPorLinea(rango, "VENTA");
   const filas = await db.execute(sql`
     SELECT d.tipo AS tipo,
+      array_agg(d.id::text) AS detalles,
+      array_agg(d.id::text) FILTER (WHERE (m.id IS NOT NULL AND m.costo_unitario_base > 0) OR (u.id IS NOT NULL AND u.costo_adquisicion > 0)) AS detalles_con_costo,
       cat.nombre AS categoria,
       COALESCE(SUM(d.subtotal), 0)::numeric(16,2)::text AS venta,
       COALESCE(SUM(d.subtotal) FILTER (WHERE (m.id IS NOT NULL AND m.costo_unitario_base > 0) OR (u.id IS NOT NULL AND u.costo_adquisicion > 0)), 0)::numeric(16,2)::text AS venta_con_costo,
@@ -40,6 +45,8 @@ export async function consultarRentabilidad(rango: RangoFechas): Promise<FilaRen
       AND COALESCE(i.datos_nubefact->'anulacion'->>'estado', '') <> 'ANULADO'
     GROUP BY d.tipo, cat.nombre
     ORDER BY SUM(d.subtotal) DESC
-  `) as unknown as Array<{ tipo: FilaRentabilidad["tipo"]; categoria: string | null; venta: string; venta_con_costo: string; costo: string }>;
-  return filas.map((fila) => ({ tipo: fila.tipo, categoria: fila.categoria, venta: fila.venta, ventaConCosto: fila.venta_con_costo, costo: fila.costo }));
+  `) as unknown as Array<{ tipo: FilaRentabilidad["tipo"]; categoria: string | null; venta: string; venta_con_costo: string; costo: string; detalles: string[]; detalles_con_costo: string[] | null }>;
+  // Las notas vigentes cambian la venta sin IGV, no el costo (son ajustes de valor, sin devolución de mercadería).
+  const neto = (importe: string, detalles: string[] | null) => sumarImportes(importe, ...ajustes.filter((ajuste) => detalles?.includes(ajuste.detalle_id)).map((ajuste) => ajuste.subtotal));
+  return filas.map((fila) => ({ tipo: fila.tipo, categoria: fila.categoria, venta: neto(fila.venta, fila.detalles), ventaConCosto: neto(fila.venta_con_costo, fila.detalles_con_costo), costo: fila.costo }));
 }

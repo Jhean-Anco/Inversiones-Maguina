@@ -23,6 +23,15 @@ export function consultarFlujoNotasDebito(rango: RangoFechas) {
     .groupBy(comprobantesRelacionados.fecha).orderBy(asc(comprobantesRelacionados.fecha));
 }
 
+/** Notas de crédito vigentes, en positivo: restan ingreso en la fecha en que se emiten. */
+export function consultarFlujoNotasCredito(rango: RangoFechas) {
+  return db.select({ fecha: comprobantesRelacionados.fecha, total: sql<string>`sum(${comprobantesRelacionados.total})::numeric(16,2)` })
+    .from(comprobantesRelacionados)
+    .where(and(gte(comprobantesRelacionados.fecha, rango.desde), lte(comprobantesRelacionados.fecha, rango.hasta), eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"),
+      inArray(comprobantesRelacionados.estado, ["EMITIDO", "ANULACION_PENDIENTE"]), sql`${comprobantesRelacionados.datosNubefact}->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'`))
+    .groupBy(comprobantesRelacionados.fecha).orderBy(asc(comprobantesRelacionados.fecha));
+}
+
 /** Adelantos de órdenes de servicio. Solo cuentan mientras la orden no se factura; luego los reemplaza el importe de la venta. */
 export function consultarFlujoAdelantos(rango: RangoFechas) {
   return db.select({ fecha: ordenesServicio.fechaRecepcion, total: sql<string>`sum(${ordenesServicio.adelanto})::numeric(16,2)` })

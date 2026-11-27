@@ -1,3 +1,4 @@
+import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { db, marcasProductos, modelosMototaxis, productos } from "@magina/database";
 import { asc, eq } from "drizzle-orm";
@@ -25,6 +26,7 @@ export class ServicioMarcas {
   async actualizar(id: string, datos: DatosMarca) {
     const nombre = datos.nombre === undefined ? undefined : this.validarNombre(datos.nombre);
     const uso = datos.uso === undefined ? undefined : this.validarUso(datos.uso);
+    if (nombre === undefined && uso === undefined && datos.descripcion === undefined && typeof datos.activo !== "boolean") throw new BadRequestException("Indica al menos un dato para actualizar.");
     if (uso) await this.validarCambioUso(id, uso);
     try {
       const [marca] = await db.update(marcasProductos).set({
@@ -64,7 +66,7 @@ export class ServicioMarcas {
   }
 
   private manejarDuplicado(error: unknown): never {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+    if (esViolacionUnicidad(error)) {
       throw new ConflictException("Ya existe una marca con ese nombre.");
     }
     throw error;

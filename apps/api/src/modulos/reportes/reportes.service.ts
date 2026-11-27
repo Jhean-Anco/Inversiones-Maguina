@@ -1,10 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { lineaMototaxiVigente, lineaRepuestoVigente } from "../inventario/compras-vigentes.sql";
 import { db, categoriasProductos, clientes, comprasMototaxisDetalle, comprobantesRelacionados, comprobantesRelacionadosDetalle, entradasStockDetalle, garantiasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosModelosMototaxis, movimientosStock, ordenesServicio, personas, productos, productosPresentaciones, reclamosGarantiaMototaxis, saldosStock, unidadesMedida } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
-import { consultarFlujoAdelantos, consultarFlujoNotasDebito, consultarFlujoPorComprobante, ventaVigente, type RangoFechas } from "./flujo-ingresos.consultas";
-import { aplicarPermisosDeCosto, sumarFlujosDiarios } from "./reportes.util";
+import { consultarFlujoAdelantos, consultarFlujoNotasCredito, consultarFlujoNotasDebito, consultarFlujoPorComprobante, ventaVigente, type RangoFechas } from "./flujo-ingresos.consultas";
+import { aplicarPermisosDeCosto, sumarFlujosDiarios, sumarImportes } from "./reportes.util";
 import { consultarRentabilidad } from "./rentabilidad.consultas";
+import { consultarAjusteNetoPorDia, consultarAjustesPorLinea } from "./ajustes-notas.consultas";
 import { consultarCobranza } from "./cobranza.consultas";
 import { consultarHorarios } from "./horarios.consultas";
 import { consultarArticulosMasVendidos } from "./articulos.consultas";
@@ -49,6 +51,9 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       const fila = actividadDiaria.find((item) => item.fecha === iso);
       return { fecha: iso, operaciones: Number(fila?.operaciones ?? 0), total: fila?.total ?? "0.00" };
     });
+    // Las notas vigentes ajustan lo vendido en la fecha en que se emiten.
+    const ajustes = await consultarAjusteNetoPorDia({ desde: desdeMes < desdeGrafico ? desdeMes : desdeGrafico, hasta: hoy });
+    const conAjustes = (total: string, desde: string, hasta: string) => sumarImportes(total, ...ajustes.filter((ajuste) => ajuste.fecha >= desde && ajuste.fecha <= hasta).map((ajuste) => ajuste.total));
     const puedeLeerIngresos = permisos.includes("INGRESOS.LEER");
     const puedeLeerPersonas = permisos.includes("PERSONAS.LEER");
     const puedeLeerInventario = permisos.includes("INVENTARIO.LEER");
@@ -56,10 +61,10 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     return {
       generadoPara: hoy,
       ...(puedeLeerIngresos ? {
-        ventasHoy: { operaciones: Number(ventasHoy[0]?.operaciones ?? 0), total: ventasHoy[0]?.total ?? "0.00" },
-        ventasMes: { operaciones: Number(ventasMes[0]?.operaciones ?? 0), total: ventasMes[0]?.total ?? "0.00" },
+        ventasHoy: { operaciones: Number(ventasHoy[0]?.operaciones ?? 0), total: conAjustes(ventasHoy[0]?.total ?? "0.00", hoy, hoy) },
+        ventasMes: { operaciones: Number(ventasMes[0]?.operaciones ?? 0), total: conAjustes(ventasMes[0]?.total ?? "0.00", desdeMes, hoy) },
         notasInternas: { hoy: { operaciones: Number(notasHoy[0]?.operaciones ?? 0), total: notasHoy[0]?.total ?? "0.00" }, mes: { operaciones: Number(notasMes[0]?.operaciones ?? 0), total: notasMes[0]?.total ?? "0.00" }, recientes: notasRecientes.map((nota) => ({ ...nota, cliente: nota.cliente || "Cliente varios" })) },
-        ventasUltimosSieteDias: dias,
+        ventasUltimosSieteDias: dias.map((dia) => ({ ...dia, total: conAjustes(dia.total, dia.fecha, dia.fecha) })),
         ventasPorMedioPago: ventasPorMedioPago.map((pago) => ({ ...pago, operaciones: Number(pago.operaciones) })),
         ventasRecientes: recientes.map((venta) => ({ ...venta, cliente: venta.cliente || "Cliente varios" })),
         principalesArticulos: principales,
@@ -159,7 +164,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
     const fechasMes = and(gte(ingresos.fecha, mes.desde), lte(ingresos.fecha, mes.hasta), comprobantesVenta);
     const fechasAnuales = and(gte(ingresos.fecha, anual.desde), lte(ingresos.fecha, anual.hasta));
     const documentosAnuales = and(fechasAnuales, inArray(ingresos.tipoComprobante, ["BOLETA", "FACTURA", "NOTA_VENTA"]), ventaVigente);
-    const [porMedioPago, flujoPorComprobante, flujoPorConcepto, flujoPorNotaDebito, flujoPorAdelanto] = await Promise.all([
+    const [porMedioPago, flujoPorComprobante, flujoPorConcepto, flujoPorNotaDebito, flujoPorAdelanto, ajustesPorLinea] = await Promise.all([
       db.select({ medioPago: ingresos.medioPago, ventas: sql<number>`count(*)::int`, total: sql<string>`sum(${ingresos.total})::numeric(16,2)` })
         .from(ingresos).where(fechasMes).groupBy(ingresos.medioPago).orderBy(desc(sql`sum(${ingresos.total})`)),
       consultarFlujoPorComprobante(anual),
@@ -168,10 +173,14 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
         .where(documentosAnuales).groupBy(ingresos.fecha, ingresosDetalle.tipo).orderBy(asc(ingresos.fecha), asc(ingresosDetalle.tipo)),
       consultarFlujoNotasDebito(anual),
       consultarFlujoAdelantos(anual),
+      consultarAjustesPorLinea(anual),
     ]);
     return {
       mes: { porMedioPago },
-      anual: { rango: anual, flujoPorComprobante, flujoPorConcepto, flujoPorNotaDebito, flujoPorAdelanto },
+      // Las notas de crédito restan (filas negativas) al tipo de comprobante de origen; ambas notas ajustan el concepto de su línea.
+      anual: { rango: anual,
+        flujoPorComprobante: [...flujoPorComprobante, ...ajustesPorLinea.filter((ajuste) => ajuste.nota_tipo === "NOTA_CREDITO").map(({ fecha, comprobante, total }) => ({ fecha, tipoComprobante: comprobante, ventas: 0, total }))],
+        flujoPorConcepto: [...flujoPorConcepto, ...ajustesPorLinea.map(({ fecha, tipo, total }) => ({ fecha, tipo, total }))], flujoPorNotaDebito, flujoPorAdelanto },
     };
   }
 
@@ -180,12 +189,13 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
    * (documentos de venta + notas de débito + adelantos de órdenes sin facturar). Solo devuelve días con movimiento.
    */
   async ingresosComparativo(rango: RangoFechas) {
-    const [comprobantes, notasDebito, adelantos] = await Promise.all([
+    const [comprobantes, notasDebito, adelantos, notasCredito] = await Promise.all([
       consultarFlujoPorComprobante(rango),
       consultarFlujoNotasDebito(rango),
       consultarFlujoAdelantos(rango),
+      consultarFlujoNotasCredito(rango),
     ]);
-    return { rango, dias: sumarFlujosDiarios(comprobantes, notasDebito, adelantos) };
+    return { rango, dias: sumarFlujosDiarios(comprobantes, notasDebito, adelantos, notasCredito.map((nota) => ({ fecha: nota.fecha, total: `-${nota.total}` }))) };
   }
 
   /** Artículos más vendidos del rango y total de ventas del mismo rango. */
@@ -218,7 +228,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       productoId: entradasStockDetalle.productoId,
       precio: sql<string>`coalesce(sum(${entradasStockDetalle.subtotal}) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
       cantidad: sql<string>`coalesce(sum(${entradasStockDetalle.cantidadBase}), 0)::numeric(18,3)`.as("cantidad_compra_total"),
-    }).from(entradasStockDetalle).groupBy(entradasStockDetalle.productoId).as("promedios_compra_producto");
+    }).from(entradasStockDetalle).where(lineaRepuestoVigente).groupBy(entradasStockDetalle.productoId).as("promedios_compra_producto");
     const promediosVenta = db.select({
       productoId: ingresosDetalle.productoId,
       precio: sql<string>`coalesce(sum(${ingresosDetalle.total}) / nullif(sum(${ingresosDetalle.cantidadBase}), 0), 0)::numeric(18,6)`.as("precio_promedio_venta"),
@@ -253,7 +263,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       modeloId: comprasMototaxisDetalle.modeloId,
       precio: sql<string>`coalesce(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / nullif(sum(${comprasMototaxisDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_compra"),
       cantidad: sql<string>`coalesce(sum(${comprasMototaxisDetalle.cantidad}), 0)::numeric(18,3)`.as("cantidad_compra_total"),
-    }).from(comprasMototaxisDetalle).groupBy(comprasMototaxisDetalle.modeloId).as("promedios_compra_mototaxi");
+    }).from(comprasMototaxisDetalle).where(lineaMototaxiVigente).groupBy(comprasMototaxisDetalle.modeloId).as("promedios_compra_mototaxi");
     const promediosVentaMototaxi = db.select({
       modeloId: ingresosDetalle.mototaxiModeloId,
       precio: sql<string>`coalesce(sum(${ingresosDetalle.total}) / nullif(sum(${ingresosDetalle.cantidad}), 0), 0)::numeric(18,6)`.as("precio_promedio_venta"),
@@ -272,7 +282,7 @@ export class ServicioReportes {  async resumenGerencial(permisos: string[]) {
       cantidadCompraTotal: sql<string>`coalesce(${promediosCompraMototaxi.cantidad}, 0)::numeric(18,3)`,
       cantidadVendidaTotal: sql<string>`coalesce(${promediosVentaMototaxi.cantidad}, 0)::numeric(18,3)`,
       entradasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} in ('COMPRA', 'ANULACION_VENTA') or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} > ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadFinal} - ${movimientosModelosMototaxis.cantidadAnterior} else 0 end), 0)::int`,
-      salidasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} = 'VENTA' or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} < ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadAnterior} - ${movimientosModelosMototaxis.cantidadFinal} else 0 end), 0)::int`,
+      salidasPeriodo: sql<number>`coalesce(sum(case when ${movimientosModelosMototaxis.tipo} in ('VENTA', 'ANULACION_COMPRA') or (${movimientosModelosMototaxis.tipo} = 'AJUSTE' and ${movimientosModelosMototaxis.cantidadFinal} < ${movimientosModelosMototaxis.cantidadAnterior}) then ${movimientosModelosMototaxis.cantidadAnterior} - ${movimientosModelosMototaxis.cantidadFinal} else 0 end), 0)::int`,
       precioPromedioCompra: sql<string>`coalesce(${promediosCompraMototaxi.precio}, 0)::numeric(18,6)`,
       precioPromedioVenta: sql<string>`coalesce(${promediosVentaMototaxi.precio}, 0)::numeric(18,6)`,
     }).from(modelosMototaxis)

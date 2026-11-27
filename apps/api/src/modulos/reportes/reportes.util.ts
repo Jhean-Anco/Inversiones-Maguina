@@ -18,6 +18,11 @@ export function sumarFlujosDiarios(...series: ReadonlyArray<ReadonlyArray<FilaDi
     .map(([fecha, total]) => ({ fecha, total: (total / 100).toFixed(2) }));
 }
 
+/** Suma importes en centavos enteros y devuelve el total con dos decimales. */
+export function sumarImportes(...importes: ReadonlyArray<string>) {
+  return (importes.reduce((suma, importe) => suma + Math.round(Number(importe) * 100), 0) / 100).toFixed(2);
+}
+
 /** Días calendario entre dos fechas ISO, ambas incluidas. */
 export function diasEntreFechas(desde: string, hasta: string) {
   const inicio = Date.parse(`${desde}T00:00:00.000Z`);

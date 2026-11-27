@@ -14,7 +14,6 @@ const documentos = {
   GUIA_REMISION: "Guía de remisión",
   NOTA: "Nota",
   SIN_DOCUMENTO: "Sin documento",
-  OTRO: "Otro documento",
 };
 
 type ModuloEntradas = ReturnType<typeof useEntradasStock>;
@@ -76,17 +75,18 @@ export function EntradaStockFormulario({ modulo, cerrar, alAgregarProducto }: {
           const tipo = evento.target.value;
           setTipoDocumento(tipo);
           if (tipo === "FACTURA") setProveedorTipoDocumento("RUC");
+          if (tipo === "SIN_DOCUMENTO") { modulo.limpiarProveedor(); setNumeroDocumento(""); }
         }}>
           {Object.entries(documentos).map(([valor, etiqueta]) => <option key={valor} value={valor}>{etiqueta}</option>)}
         </select>
       </label>
       <label>Fecha de ingreso<input type="date" value={fecha} onChange={(evento) => setFecha(evento.target.value)} required /></label>
-      <label>Número del documento
+      {tipoDocumento !== "SIN_DOCUMENTO" && <label>Número del documento
         <input value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value)} maxLength={60}
           placeholder={tipoDocumento === "SIN_DOCUMENTO" ? "Opcional" : "Ej. F001-00001234"} required={!["SIN_DOCUMENTO", "OTRO"].includes(tipoDocumento)} />
-      </label>
+      </label>}
     </div>
-    <ProveedorCompraRepuestos modulo={modulo} />
+    {tipoDocumento === "SIN_DOCUMENTO" ? <p className="compra-ayuda">Se asignará una serie y número interno al guardar. No necesitas registrar ni buscar un proveedor.</p> : <ProveedorCompraRepuestos modulo={modulo} />}
   </>;
 
   const detalle = detalles.length ? <div className="compra-tabla-scroll" role="region" aria-label="Detalle de repuestos" tabIndex={0}>
@@ -113,7 +113,7 @@ export function EntradaStockFormulario({ modulo, cerrar, alAgregarProducto }: {
   </div> : <div className="venta-empty"><strong>Agrega el primer repuesto</strong><span>Busca en el catálogo e indica la cantidad y el precio total de la línea.</span></div>;
 
   const revision = <CompraRevision
-    proveedor={<>{proveedor || "Sin nombre registrado"}<small>{proveedorTipoDocumento} {proveedorNumeroDocumento}</small></>}
+    proveedor={tipoDocumento === "SIN_DOCUMENTO" ? "Sin registro de proveedor" : <>{proveedor || "Sin nombre registrado"}<small>{proveedorTipoDocumento} {proveedorNumeroDocumento}</small></>}
     fecha={fecha}
     documento={<>{tituloDocumento}{numeroDocumento && <small>{numeroDocumento}</small>}</>}
     observacion={observacion}

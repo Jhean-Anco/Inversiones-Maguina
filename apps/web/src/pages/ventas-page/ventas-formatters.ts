@@ -46,6 +46,12 @@ export const estadoSunat = (venta: VentaListado) => {
   return "Pendiente";
 };
 
+/** Documento a la espera de que SUNAT confirme su emisión o su baja: el sistema lo consulta automáticamente. */
+export const pendienteSunat = (venta: VentaListado) =>
+  venta.tipoComprobante !== "NOTA_VENTA" &&
+  (venta.estado === "ANULACION_PENDIENTE" ||
+    ["PENDIENTE_CONFIRMACION", "EN_PROCESO", "NUBEFACT_PENDIENTE", "ANULACION_PENDIENTE"].includes(venta.estadoProveedor));
+
 export const medioPago = (valor: string) =>
   valor
     .replaceAll("_", " ")

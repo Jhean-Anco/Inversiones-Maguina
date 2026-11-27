@@ -223,7 +223,8 @@ const resumen = await sql.begin(async (tx) => {
   }
 
   // Amplía el catálogo del inventario y mantiene unidades disponibles en varios modelos.
-  const [marcaMotoDemo] = await tx`select marca_id from modelos_mototaxis where id=${idModelo}`;
+  // En una base recién migrada aún no hay modelos: se omite la ampliación en vez de consultar con un id indefinido.
+  const [marcaMotoDemo] = idModelo ? await tx`select marca_id from modelos_mototaxis where id=${idModelo}` : [];
   const modelosMotoDemo = [idModelo];
   if (marcaMotoDemo) for (let i = 2; i <= 12; i += 1) {
     const n = String(i).padStart(3, "0");

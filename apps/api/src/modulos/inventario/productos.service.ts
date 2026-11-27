@@ -1,3 +1,4 @@
+import { codigoErrorPostgres, esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import {
   categoriasProductos,
@@ -20,6 +21,7 @@ import {
 import { and, asc, count, desc, eq, exists, gt, ilike, lte, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { generarCodigoBarrasInterno } from "./codigo-barras";
+import { lineaRepuestoVigente } from "./compras-vigentes.sql";
 
 type RegistroPresentacion = { clave?: unknown; unidadMedidaCodigo?: unknown; nombre?: unknown; factorAUnidadBase?: unknown; seCompra?: unknown; seVende?: unknown };
 type RegistroPrecio = { presentacionId?: unknown; tipoListaPrecioId?: unknown; precio?: unknown; cantidadMinima?: unknown; vigenteDesde?: unknown; vigenteHasta?: unknown; precioAnterior?: unknown };
@@ -279,10 +281,10 @@ export class ServicioProductos {
     const [[ultima], [promedio]] = await Promise.all([
       db.select({ fecha: entradasStock.fecha, importe: costo })
         .from(entradasStockDetalle).innerJoin(entradasStock, eq(entradasStockDetalle.entradaId, entradasStock.id))
-        .where(eq(entradasStockDetalle.productoId, id))
+        .where(and(eq(entradasStockDetalle.productoId, id), eq(entradasStock.estado, "REGISTRADA")))
         .groupBy(entradasStock.id).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn), desc(entradasStock.id)).limit(1),
       db.select({ importe: costo })
-        .from(entradasStockDetalle).where(eq(entradasStockDetalle.productoId, id)),
+        .from(entradasStockDetalle).where(and(eq(entradasStockDetalle.productoId, id), lineaRepuestoVigente)),
     ]);
     return { ultima: ultima ?? null, promedioPonderado: promedio?.importe ?? null };
   }
@@ -325,7 +327,7 @@ export class ServicioProductos {
       }).from(movimientosStock).where(eq(movimientosStock.productoId, id)).orderBy(desc(movimientosStock.creadoEn)).limit(15),
       db.select({ fecha: entradasStock.fecha, importe: sql<string>`(${entradasStockDetalle.costoUnitario} / nullif(${entradasStockDetalle.factorAUnidadBase}, 0))::numeric(18,4)` })
         .from(entradasStockDetalle).innerJoin(entradasStock, eq(entradasStockDetalle.entradaId, entradasStock.id))
-        .where(eq(entradasStockDetalle.productoId, id)).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(1),
+        .where(and(eq(entradasStockDetalle.productoId, id), eq(entradasStock.estado, "REGISTRADA"))).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(1),
       db.select({ fecha: ingresos.fecha, importe: sql<string>`(${ingresosDetalle.precioUnitario} / nullif(${ingresosDetalle.factorAUnidadBase}, 0))::numeric(18,4)` })
         .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
         .where(and(eq(ingresosDetalle.productoId, id), sql`${ingresos.estado} <> 'ANULADO'`)).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(1),
@@ -361,9 +363,9 @@ export class ServicioProductos {
       return this.consultar(productoId);
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") throw new ConflictException("El código de barras o uno de los códigos del repuesto ya está registrado. Revisa el código ingresado e intenta de nuevo; si era autogenerado, vuelve a guardar para obtener otro.");
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23503") throw new BadRequestException("Una categoría, marca, unidad o lista seleccionada ya no está disponible. Actualiza los catálogos e intenta nuevamente.");
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23514") throw new BadRequestException("Los datos del producto no cumplen las reglas del inventario. Revisa presentaciones, precios y códigos.");
+      if (esViolacionUnicidad(error)) throw new ConflictException("El código de barras o uno de los códigos del repuesto ya está registrado. Revisa el código ingresado e intenta de nuevo; si era autogenerado, vuelve a guardar para obtener otro.");
+      if (codigoErrorPostgres(error) === "23503") throw new BadRequestException("Una categoría, marca, unidad o lista seleccionada ya no está disponible. Actualiza los catálogos e intenta nuevamente.");
+      if (codigoErrorPostgres(error) === "23514") throw new BadRequestException("Los datos del producto no cumplen las reglas del inventario. Revisa presentaciones, precios y códigos.");
       throw error;
     }
   }

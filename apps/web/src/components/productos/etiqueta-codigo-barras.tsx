@@ -96,8 +96,8 @@ export function EtiquetaCodigoBarras({ producto, alCerrar }: { producto: Product
       onCerrar={alCerrar}
       pie={
         <>
-          <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={alCerrar}>Cerrar</button>
-          <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={!patronEan13(codigo)} onClick={imprimirEtiqueta}>Imprimir etiqueta</button>
+          <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={alCerrar}>Cerrar</button>
+          <button type="button" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={!patronEan13(codigo)} onClick={imprimirEtiqueta}>Imprimir etiqueta</button>
         </>
       }
     >

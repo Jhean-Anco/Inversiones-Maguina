@@ -1,0 +1,1 @@
+ALTER TABLE "comprobantes_relacionados" ADD COLUMN "importe_reembolsado" numeric(14, 2);

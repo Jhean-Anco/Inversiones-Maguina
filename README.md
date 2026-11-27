@@ -81,3 +81,4 @@ La documentación distingue código presente, pruebas declaradas y comportamient
 - [18 Solución de problemas](docs/18-solucion-de-problemas.md)
 - [19 Matriz de funcionalidades](docs/19-matriz-de-funcionalidades.md)
 - [20 Proceso de versiones](docs/20-proceso-de-versiones.md)
+- [21 Impresión de comprobantes](docs/21-impresion-de-comprobantes.md)

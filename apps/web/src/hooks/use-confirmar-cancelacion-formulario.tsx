@@ -15,6 +15,8 @@ export function useConfirmarCancelacionFormulario(referencia: RefObject<HTMLForm
   const [abierto, setAbierto] = useState(false);
   const firmaInicial = useRef<string | null>(null);
   const firmaDatosInicial = useRef(firmaDatos);
+  const firmaDatosActual = useRef(firmaDatos);
+  firmaDatosActual.current = firmaDatos;
   const descartarRef = useRef(onDescartar);
   descartarRef.current = onDescartar;
 
@@ -23,7 +25,7 @@ export function useConfirmarCancelacionFormulario(referencia: RefObject<HTMLForm
   }, [referencia]);
 
   const cancelar = useCallback(() => {
-    if (firmaInicial.current !== (firmaDatos ?? obtenerFirma(referencia.current))) {
+    if (firmaInicial.current !== (firmaDatosActual.current ?? obtenerFirma(referencia.current))) {
       setAbierto(true);
       return;
     }

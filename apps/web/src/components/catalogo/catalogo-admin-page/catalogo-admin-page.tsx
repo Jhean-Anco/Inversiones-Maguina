@@ -145,8 +145,8 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
         onCerrar={cerrarModal}
         pie={
           <>
-            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={cerrarModal} disabled={guardando}>Cancelar</button>
-            <button type="submit" form="catalogo-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button>
+            <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={cerrarModal} disabled={guardando}>Cancelar</button>
+            <button type="submit" form="catalogo-form" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={guardando || !nombre.trim()}>{guardando ? "Guardando…" : registroEditado ? "Guardar cambios" : `Crear ${singular}`}</button>
           </>
         }
       >
@@ -168,8 +168,8 @@ export function CatalogoAdminPage<T extends RegistroCatalogo>({ tipo, ejemplo, s
         onCerrar={cerrarConfirmacionEstado}
         pie={
           <>
-            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button>
-            <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button>
+            <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={cerrarConfirmacionEstado} disabled={confirmandoEstado}>Cancelar</button>
+            <button type="button" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" onClick={() => void confirmarCambioEstado()} disabled={confirmandoEstado}>{confirmandoEstado ? "Actualizando…" : confirmacionEstado.activo ? "Sí, desactivar" : "Sí, habilitar"}</button>
           </>
         }
       >

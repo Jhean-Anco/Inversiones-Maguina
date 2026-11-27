@@ -1,0 +1,3 @@
+ALTER TABLE "ordenes_servicio" ADD COLUMN "trabajador_responsable_id" uuid;--> statement-breakpoint
+ALTER TABLE "ordenes_servicio" ADD COLUMN "condicion_recepcion" text;--> statement-breakpoint
+ALTER TABLE "ordenes_servicio" ADD CONSTRAINT "ordenes_servicio_trabajador_responsable_id_trabajadores_persona_id_fk" FOREIGN KEY ("trabajador_responsable_id") REFERENCES "public"."trabajadores"("persona_id") ON DELETE restrict ON UPDATE no action;

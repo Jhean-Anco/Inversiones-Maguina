@@ -7,12 +7,20 @@ import { fileURLToPath } from "node:url";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const category = process.argv[2] ?? "unit";
 const coverage = process.argv.includes("--coverage");
+/** Umbral de cobertura (90% por defecto). Puede bajarse solo de forma explícita, p. ej. COVERAGE_MIN_LINES=80. */
+const umbralCobertura = (metrica) => {
+  const valor = Number(process.env[`COVERAGE_MIN_${metrica}`] ?? process.env.COVERAGE_MIN ?? "90");
+  if (!Number.isFinite(valor) || valor < 0 || valor > 100) throw new Error(`Umbral de cobertura inválido para ${metrica}.`);
+  return valor;
+};
 const suffixes = {
   unit: [".spec.ts"],
   integration: [".integration.spec.ts"],
   api: [".api.spec.ts"],
   security: [".security.spec.ts"],
   all: [".spec.ts"],
+  // Unitarias + integración con PostgreSQL, sin exigir una API HTTP levantada (útil en local).
+  local: [".spec.ts"],
 };
 
 if (!Object.hasOwn(suffixes, category)) {
@@ -40,8 +48,7 @@ const archivos = (await archivosRecursivos(join(packageRoot, "src")))
   .filter(
     (ruta) =>
       category === "all" ||
-      category !== "unit" ||
-      !/\.(?:integration|api|security)\.spec\.ts$/.test(ruta),
+      (category === "local" ? !/\.(?:api|security)\.spec\.ts$/.test(ruta) : category !== "unit" || !/\.(?:integration|api|security)\.spec\.ts$/.test(ruta)),
   )
   .sort((a, b) => a.localeCompare(b));
 
@@ -63,7 +70,7 @@ for (const nombre of ["SystemRoot", "WINDIR", "TEMP", "TMP", "PATHEXT", "ComSpec
   if (process.env[nombre]) entorno[nombre] = process.env[nombre];
 }
 
-if (category === "integration" || category === "all") {
+if (category === "integration" || category === "all" || category === "local") {
   const valor = process.env.DATABASE_URL;
   if (!valor) {
     console.error("Define DATABASE_URL con una instancia PostgreSQL local desechable *_test.");
@@ -129,9 +136,13 @@ if (coverage) {
     "--test-reporter-destination=stdout",
     "--test-reporter=lcov",
     "--test-reporter-destination=coverage/lcov.info",
-    "--test-coverage-lines=65",
-    "--test-coverage-branches=68",
-    "--test-coverage-functions=65",
+    "--test-coverage-include=src/**/*.ts",
+    "--test-coverage-exclude=src/**/*.spec.ts",
+    "--test-coverage-exclude=src/comandos/**",
+    "--test-coverage-exclude=src/main.ts",
+    `--test-coverage-lines=${umbralCobertura("LINES")}`,
+    `--test-coverage-branches=${umbralCobertura("BRANCHES")}`,
+    `--test-coverage-functions=${umbralCobertura("FUNCTIONS")}`,
   );
 }
 argumentos.push("--test");

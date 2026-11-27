@@ -121,6 +121,10 @@ Restricciones e indices declarados:
 | `observacion` | `text` | NULL | - | - | - |
 | `clave_idempotencia` | `uuid` | NULL | - | - | - |
 | `huella_solicitud` | `varchar` | NULL | - | - | - |
+| `estado` | `varchar` | NOT NULL | - | yes | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 Restricciones e indices declarados:
@@ -131,6 +135,8 @@ Restricciones e indices declarados:
 - CHECK `compras_mototaxis_documento_tipo_ck`
 - CHECK `compras_mototaxis_moneda_ck`
 - CHECK `compras_mototaxis_total_ck`
+- CHECK `compras_mototaxis_estado_ck`
+- CHECK `compras_mototaxis_anulacion_ck`
 
 
 ### `compras_mototaxis_detalle`
@@ -167,6 +173,7 @@ Restricciones e indices declarados:
 | `subtotal` | `numeric` | NOT NULL | - | - | - |
 | `igv` | `numeric` | NOT NULL | - | - | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
+| `importe_reembolsado` | `numeric` | NULL | - | - | - |
 | `cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `estado` | `varchar` | NOT NULL | - | - | - |
 | `inventario_devuelto` | `boolean` | NOT NULL | - | yes | - |
@@ -182,6 +189,7 @@ Restricciones e indices declarados:
 - UNIQUE INDEX `comprobantes_relacionados_huella_uq`
 - CHECK `comprobantes_relacionados_tipo_ck`
 - CHECK `comprobantes_relacionados_motivo_ck`
+- UNIQUE INDEX `comprobantes_relacionados_origen_motivo_unico`
 - CHECK `comprobantes_relacionados_importes_ck`
 
 
@@ -215,6 +223,30 @@ Restricciones e indices declarados:
 
 - UNIQUE INDEX `conductores_licencia_unica`
 - INDEX `conductores_activo_idx`
+
+
+### `configuracion_empresa`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `integer` | NULL | PK | yes | - |
+| `ruc` | `varchar` | NOT NULL | - | - | - |
+| `razon_social` | `varchar` | NOT NULL | - | - | - |
+| `nombre_comercial` | `varchar` | NULL | - | - | - |
+| `direccion` | `varchar` | NOT NULL | - | - | - |
+| `telefono` | `varchar` | NULL | - | - | - |
+| `correo` | `varchar` | NULL | - | - | - |
+| `sitio_web` | `varchar` | NULL | - | - | - |
+| `mensaje_pie` | `varchar` | NULL | - | - | - |
+| `url_consulta_comprobantes` | `varchar` | NULL | - | - | - |
+| `actualizado_por` | `uuid` | NULL | FK | - | usuarios.id |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+| `actualizadoEn` | `fechaActualizacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- CHECK `configuracion_empresa_fila_unica_ck`
+- CHECK `configuracion_empresa_ruc_ck`
+- CHECK `configuracion_empresa_url_consulta_ck`
 
 
 ### `correlativos_documentos_internos`
@@ -328,6 +360,9 @@ Restricciones e indices declarados:
 | `medio_pago` | `varchar` | NOT NULL | - | - | - |
 | `cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `clave_idempotencia` | `uuid` | NOT NULL | UNIQUE | - | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 Restricciones e indices declarados:
@@ -335,6 +370,7 @@ Restricciones e indices declarados:
 - INDEX `egresos_pagos_egreso_fecha_idx`
 - INDEX `egresos_pagos_fecha_idx`
 - CHECK `egresos_pagos_importe_positivo_ck`
+- CHECK `egresos_pagos_anulacion_ck`
 - CHECK `egresos_pagos_medio_pago_ck`
 
 
@@ -358,6 +394,10 @@ Restricciones e indices declarados:
 | `cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `monto` | `numeric` | NOT NULL | - | - | - |
 | `identificador_activo` | `varchar` | NULL | - | - | - |
+| `estado` | `varchar` | NOT NULL | - | yes | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
 | `mototaxi_marca` | `varchar` | NULL | - | - | - |
 | `mototaxi_modelo` | `varchar` | NULL | - | - | - |
 | `mototaxi_numero_motor` | `varchar` | NULL | - | - | - |
@@ -376,6 +416,8 @@ Restricciones e indices declarados:
 - CHECK `egresos_registros_moneda_ck`
 - CHECK `egresos_registros_medio_pago_ck`
 - CHECK `egresos_registros_monto_positivo_ck`
+- CHECK `egresos_registros_estado_ck`
+- CHECK `egresos_registros_anulacion_ck`
 - CHECK `egresos_registros_mototaxi_datos_ck`
 - UNIQUE INDEX `egresos_registros_mototaxi_motor_unique`
 - UNIQUE INDEX `egresos_registros_mototaxi_chasis_unique`
@@ -401,6 +443,12 @@ Restricciones e indices declarados:
 | `proveedor_direccion` | `varchar` | NULL | - | - | - |
 | `observacion` | `text` | NULL | - | - | - |
 | `total_documento` | `numeric` | NULL | - | - | - |
+| `estado` | `varchar` | NOT NULL | - | yes | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
+| `clave_idempotencia` | `uuid` | NULL | - | - | - |
+| `huella_solicitud` | `varchar` | NULL | - | - | - |
 | `total` | `numeric` | NOT NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
@@ -416,6 +464,9 @@ Restricciones e indices declarados:
 - CHECK `entradas_stock_proveedor_documento_numero_ck`
 - CHECK `entradas_stock_proveedor_juridico_ruc_ck`
 - CHECK `entradas_stock_total_no_negativo_ck`
+- UNIQUE INDEX `entradas_stock_idempotencia_unica`
+- CHECK `entradas_stock_estado_ck`
+- CHECK `entradas_stock_anulacion_ck`
 - CHECK `entradas_stock_pago_ck`
 - CHECK `entradas_stock_medio_pago_ck`
 
@@ -652,6 +703,23 @@ Restricciones e indices declarados:
 - CHECK `ingresos_detalle_totales_no_negativos_ck`
 
 
+### `ingresos_ediciones`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `ingreso_id` | `uuid` | NOT NULL | FK | - | ingresos.id |
+| `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
+| `cambios` | `jsonb` | NOT NULL | - | yes | - |
+| `antes` | `jsonb` | NOT NULL | - | - | - |
+| `despues` | `jsonb` | NOT NULL | - | - | - |
+| `efectos` | `jsonb` | NOT NULL | - | yes | - |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- INDEX `ingresos_ediciones_ingreso_idx`
+
+
 ### `ingresos_pagos`
 
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
@@ -846,6 +914,30 @@ Restricciones e indices declarados:
 - CHECK `nubefact_correlativos_numero_ck`
 
 
+### `nubefact_seguimientos`
+
+| Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
+|---|---|---|---|---|---|
+| `id` | `uuid` | NULL | PK | yes | - |
+| `entidad_tipo` | `varchar` | NOT NULL | - | - | - |
+| `entidad_id` | `uuid` | NOT NULL | - | - | - |
+| `operacion` | `varchar` | NOT NULL | - | - | - |
+| `estado` | `varchar` | NOT NULL | - | yes | - |
+| `intentos` | `integer` | NOT NULL | - | yes | - |
+| `proximo_intento` | `timestamp` | NOT NULL | - | - | - |
+| `ultimo_intento` | `timestamp` | NULL | - | - | - |
+| `ultimo_error` | `text` | NULL | - | - | - |
+| `resuelto_en` | `timestamp` | NULL | - | - | - |
+| `creadoEn` | `fechaCreacion` | NULL | - | - | - |
+Restricciones e indices declarados:
+
+- UNIQUE INDEX `nubefact_seguimientos_entidad_operacion_uq`
+- INDEX `nubefact_seguimientos_pendientes_idx`
+- CHECK `nubefact_seguimientos_entidad_ck`
+- CHECK `nubefact_seguimientos_operacion_ck`
+- CHECK `nubefact_seguimientos_estado_ck`
+
+
 ### `ordenes_servicio`
 
 | Columna | Tipo declarado | Nulabilidad | Clave | Default | Referencia |
@@ -890,12 +982,16 @@ Restricciones e indices declarados:
 | `medio_pago` | `varchar` | NOT NULL | - | - | - |
 | `cuenta_financiera_id` | `uuid` | NULL | FK | - | cuentasFinancieras.id |
 | `clave_idempotencia` | `uuid` | NOT NULL | UNIQUE | - | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 Restricciones e indices declarados:
 
 - INDEX `pagos_compras_mototaxis_compra_fecha_idx`
 - CHECK `pagos_compras_mototaxis_importe_ck`
+- CHECK `pagos_compras_mototaxis_anulacion_ck`
 - CHECK `pagos_compras_mototaxis_medio_ck`
 
 
@@ -912,11 +1008,15 @@ Restricciones e indices declarados:
 | `usuario_id` | `uuid` | NOT NULL | FK | - | usuarios.id |
 | `clasificado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
 | `clasificado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_en` | `timestamp` | NULL | - | - | - |
+| `anulado_por_usuario_id` | `uuid` | NULL | FK | - | usuarios.id |
+| `motivo_anulacion` | `text` | NULL | - | - | - |
 | `creadoEn` | `fechaCreacion` | NULL | - | - | - |
 Restricciones e indices declarados:
 
 - INDEX `pagos_entradas_stock_entrada_fecha_idx`
 - CHECK `pagos_entradas_stock_importes_ck`
+- CHECK `pagos_entradas_stock_anulacion_ck`
 - CHECK `pagos_entradas_stock_medio_ck`
 
 

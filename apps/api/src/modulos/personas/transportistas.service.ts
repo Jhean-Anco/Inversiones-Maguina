@@ -1,3 +1,4 @@
+import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, eq, ilike, or } from "drizzle-orm";
 import { db, personas, tiposDocumento, tiposPersona, transportistas } from "@magina/database";
@@ -42,7 +43,7 @@ export class ServicioTransportistas {
       });
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-      if ((error as { code?: string })?.code === "23505") throw new ConflictException("El RUC ya está registrado.");
+      if (esViolacionUnicidad(error)) throw new ConflictException("El RUC ya está registrado.");
       throw error;
     }
   }

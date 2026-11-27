@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { db, cuentasFinancieras } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
+import { cobroVigente, importeCajaNota } from "./movimientos-venta.sql";
 
 const tiposCuenta = ["EFECTIVO", "BANCO", "BILLETERA", "TARJETA"] as const;
 const monedas = ["PEN", "USD", "EUR"] as const;
@@ -86,14 +87,14 @@ export class ServicioFinanzas {
         COALESCE(SUM(importe) FILTER (WHERE sentido = 'INGRESO'), 0)::numeric(14,2)::text AS ingresos,
         COALESCE(SUM(importe) FILTER (WHERE sentido = 'EGRESO'), 0)::numeric(14,2)::text AS egresos
       FROM (
-        SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+        SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos WHERE ${cobroVigente()}
         UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
-        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
-        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
-        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos WHERE anulado_en IS NULL
+        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock WHERE anulado_en IS NULL
+        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis WHERE anulado_en IS NULL
         UNION ALL SELECT cuenta_financiera_id,
-          CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
-          FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+          CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, ${importeCajaNota()}, fecha
+          FROM comprobantes_relacionados WHERE ${importeCajaNota()} > 0 AND estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
       ) AS pagos
       WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
       GROUP BY cuenta_id
@@ -122,29 +123,30 @@ export class ServicioFinanzas {
         FROM ingresos_pagos pago
         LEFT JOIN ordenes_servicio orden ON orden.ingreso_id = pago.ingreso_id
           AND pago.observacion = ('Adelanto de la orden ' || orden.codigo)
-        WHERE orden.id IS NULL
+        WHERE orden.id IS NULL AND ${cobroVigente("pago")}
         UNION ALL
         SELECT orden.adelanto_cuenta_financiera_id, orden.fecha_recepcion, orden.adelanto,
           'INGRESO'::text, 'PEN'::varchar
         FROM ordenes_servicio orden WHERE orden.adelanto > 0
+          AND NOT EXISTS (SELECT 1 FROM ingresos venta WHERE venta.id = orden.ingreso_id AND venta.estado = 'ANULADO')
         UNION ALL
         SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
           'EGRESO'::text, egreso.moneda
-        FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id
+        FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id AND pago.anulado_en IS NULL
         UNION ALL
         SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
           'EGRESO'::text, 'PEN'::varchar
-        FROM pagos_entradas_stock pago
+        FROM pagos_entradas_stock pago WHERE pago.anulado_en IS NULL
         UNION ALL
         SELECT pago.cuenta_financiera_id, pago.fecha_pago, pago.importe_pagado,
           'EGRESO'::text, compra.moneda
-        FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id
+        FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id AND pago.anulado_en IS NULL
         UNION ALL
-        SELECT nota.cuenta_financiera_id, nota.fecha, nota.total,
+        SELECT nota.cuenta_financiera_id, nota.fecha, ${importeCajaNota("nota")},
           CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END::text,
           'PEN'::varchar
         FROM comprobantes_relacionados nota
-        WHERE nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE')
+        WHERE ${importeCajaNota("nota")} > 0 AND nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE')
           AND nota.datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
       )
       SELECT cuenta.id::text AS cuenta_id,
@@ -202,14 +204,14 @@ export class ServicioFinanzas {
           COALESCE(SUM(pagos.importe) FILTER (WHERE pagos.sentido = 'INGRESO'), 0)::numeric(14,2)::text AS ingresos,
           COALESCE(SUM(pagos.importe) FILTER (WHERE pagos.sentido = 'EGRESO'), 0)::numeric(14,2)::text AS egresos
         FROM (
-          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha, 'PEN'::varchar AS moneda FROM ingresos_pagos
+          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha, 'PEN'::varchar AS moneda FROM ingresos_pagos WHERE ${cobroVigente()}
           UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion, 'PEN'::varchar FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
-          UNION ALL SELECT pago.cuenta_financiera_id, 'EGRESO', pago.importe_pagado, pago.fecha_pago, egreso.moneda FROM egresos_pagos AS pago INNER JOIN egresos_registros AS egreso ON egreso.id = pago.egreso_id
-          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_entradas_stock
-          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_compras_mototaxis
+          UNION ALL SELECT pago.cuenta_financiera_id, 'EGRESO', pago.importe_pagado, pago.fecha_pago, egreso.moneda FROM egresos_pagos AS pago INNER JOIN egresos_registros AS egreso ON egreso.id = pago.egreso_id AND pago.anulado_en IS NULL
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_entradas_stock WHERE anulado_en IS NULL
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_compras_mototaxis WHERE anulado_en IS NULL
           UNION ALL SELECT cuenta_financiera_id,
-            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha, 'PEN'::varchar
-            FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, ${importeCajaNota()}, fecha, 'PEN'::varchar
+            FROM comprobantes_relacionados WHERE ${importeCajaNota()} > 0 AND estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
         ) AS pagos
         LEFT JOIN cuentas_financieras AS cuenta ON cuenta.id = pagos.cuenta_id
         WHERE pagos.fecha >= ${desde}::date AND pagos.fecha <= ${hasta}::date
@@ -233,18 +235,18 @@ export class ServicioFinanzas {
       SELECT COALESCE(cuenta.moneda, pagos.moneda, 'PEN') AS moneda, pagos.sentido, pagos.concepto,
         COALESCE(SUM(pagos.importe), 0)::numeric(14,2)::text AS importe
       FROM (
-        SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, 'COBRANZA' AS concepto, importe_aplicado AS importe, fecha_pago AS fecha, 'PEN'::varchar AS moneda FROM ingresos_pagos
+        SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, 'COBRANZA' AS concepto, importe_aplicado AS importe, fecha_pago AS fecha, 'PEN'::varchar AS moneda FROM ingresos_pagos WHERE ${cobroVigente()}
         UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', 'ADELANTO_ORDEN', adelanto, fecha_recepcion, 'PEN'::varchar FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
         UNION ALL SELECT pago.cuenta_financiera_id, 'EGRESO',
           CASE WHEN egreso.tipo = 'MOTOTAXI' THEN 'COMPRA_MOTOTAXIS' WHEN egreso.tipo = 'ACTIVO_HERRAMIENTA' THEN 'ACTIVOS' ELSE 'GASTOS' END,
-          pago.importe_pagado, pago.fecha_pago, egreso.moneda FROM egresos_pagos AS pago INNER JOIN egresos_registros AS egreso ON egreso.id = pago.egreso_id
-        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', 'COMPRA_REPUESTOS', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_entradas_stock
-        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', 'COMPRA_MOTOTAXIS', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_compras_mototaxis
+          pago.importe_pagado, pago.fecha_pago, egreso.moneda FROM egresos_pagos AS pago INNER JOIN egresos_registros AS egreso ON egreso.id = pago.egreso_id AND pago.anulado_en IS NULL
+        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', 'COMPRA_REPUESTOS', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_entradas_stock WHERE anulado_en IS NULL
+        UNION ALL SELECT cuenta_financiera_id, 'EGRESO', 'COMPRA_MOTOTAXIS', importe_pagado, fecha_pago, 'PEN'::varchar FROM pagos_compras_mototaxis WHERE anulado_en IS NULL
         UNION ALL SELECT cuenta_financiera_id,
           CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END,
           CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'NOTA_DEBITO' ELSE 'NOTA_CREDITO' END,
-          total, fecha, 'PEN'::varchar
-          FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+          ${importeCajaNota()}, fecha, 'PEN'::varchar
+          FROM comprobantes_relacionados WHERE ${importeCajaNota()} > 0 AND estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
       ) AS pagos
       LEFT JOIN cuentas_financieras AS cuenta ON cuenta.id = pagos.cuenta_id
       WHERE pagos.fecha >= ${rango.desde}::date AND pagos.fecha <= ${rango.hasta}::date
@@ -286,14 +288,14 @@ export class ServicioFinanzas {
         SELECT cuenta_id, sentido,
           COALESCE(SUM(importe), 0)::numeric(14,2)::text AS importe
         FROM (
-          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos
+          SELECT cuenta_financiera_id AS cuenta_id, 'INGRESO' AS sentido, importe_aplicado AS importe, fecha_pago AS fecha FROM ingresos_pagos WHERE ${cobroVigente()}
           UNION ALL SELECT adelanto_cuenta_financiera_id, 'INGRESO', adelanto, fecha_recepcion FROM ordenes_servicio WHERE ingreso_id IS NULL AND adelanto_cuenta_financiera_id IS NOT NULL AND adelanto > 0
-          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos
-          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock
-          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM egresos_pagos WHERE anulado_en IS NULL
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_entradas_stock WHERE anulado_en IS NULL
+          UNION ALL SELECT cuenta_financiera_id, 'EGRESO', importe_pagado, fecha_pago FROM pagos_compras_mototaxis WHERE anulado_en IS NULL
           UNION ALL SELECT cuenta_financiera_id,
-            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, total, fecha
-            FROM comprobantes_relacionados WHERE estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+            CASE WHEN tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END, ${importeCajaNota()}, fecha
+            FROM comprobantes_relacionados WHERE ${importeCajaNota()} > 0 AND estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
         ) AS pagos
         WHERE cuenta_id IS NOT NULL AND fecha >= ${desde}::date AND fecha <= ${hasta}::date
         GROUP BY cuenta_id, sentido
@@ -315,6 +317,7 @@ export class ServicioFinanzas {
       SELECT ('VENTA:' || pago.id::text) AS id, pago.fecha_pago AS fecha, ('Venta ' || ingreso.codigo) AS descripcion,
         pago.cuenta_financiera_id AS cuenta_id, 'INGRESO'::text AS sentido, pago.importe_aplicado AS importe, 'Venta'::text AS clase
       FROM ingresos_pagos pago INNER JOIN ingresos ingreso ON ingreso.id = pago.ingreso_id
+      WHERE ingreso.estado <> 'ANULADO'
       UNION ALL
       SELECT ('ADELANTO:' || orden.id::text), orden.fecha_recepcion, ('Anticipo de orden ' || orden.codigo),
         orden.adelanto_cuenta_financiera_id, 'INGRESO'::text, orden.adelanto, 'Orden de servicio'::text
@@ -323,23 +326,23 @@ export class ServicioFinanzas {
       UNION ALL
       SELECT ('EGRESO:' || pago.id::text), pago.fecha_pago, (egreso.concepto || ' · ' || egreso.codigo),
         pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Gasto'::text
-      FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id
+      FROM egresos_pagos pago INNER JOIN egresos_registros egreso ON egreso.id = pago.egreso_id AND pago.anulado_en IS NULL
       UNION ALL
       SELECT ('REPUESTOS:' || pago.id::text), pago.fecha_pago, ('Compra de repuestos · ' || entrada.codigo),
         pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Compra'::text
-      FROM pagos_entradas_stock pago INNER JOIN entradas_stock entrada ON entrada.id = pago.entrada_id
+      FROM pagos_entradas_stock pago INNER JOIN entradas_stock entrada ON entrada.id = pago.entrada_id AND pago.anulado_en IS NULL
       UNION ALL
       SELECT ('MOTOTAXIS:' || pago.id::text), pago.fecha_pago, ('Compra de mototaxis · ' || compra.codigo),
         pago.cuenta_financiera_id, 'EGRESO'::text, pago.importe_pagado, 'Compra'::text
-      FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id
+      FROM pagos_compras_mototaxis pago INNER JOIN compras_mototaxis compra ON compra.id = pago.compra_id AND pago.anulado_en IS NULL
       UNION ALL
       SELECT ('NOTA:' || nota.id::text), nota.fecha,
         ((CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'Nota de débito ' ELSE 'Nota de crédito ' END) || nota.serie || '-' || lpad(nota.numero::text, 6, '0')),
         nota.cuenta_financiera_id,
         (CASE WHEN nota.tipo_comprobante = 'NOTA_DEBITO' THEN 'INGRESO' ELSE 'EGRESO' END)::text,
-        nota.total, 'Nota'::text
+        ${importeCajaNota("nota")}, 'Nota'::text
       FROM comprobantes_relacionados nota
-      WHERE nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND nota.datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
+      WHERE ${importeCajaNota("nota")} > 0 AND nota.estado IN ('EMITIDO', 'ANULACION_PENDIENTE') AND nota.datos_nubefact->'anulacion'->>'estado' IS DISTINCT FROM 'ANULADO'
     `;
     const filtroCuentaSql = cuentaId ? sql`AND cuenta_id = ${cuentaId}::uuid` : sql``;
     const [conteoMovimientos] = await db.execute(sql`

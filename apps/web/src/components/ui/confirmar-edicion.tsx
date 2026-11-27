@@ -26,8 +26,8 @@ export function DialogoConfirmacion({ titulo, descripcion, etiquetaCancelar, eti
       enfocarAlAbrir={cancelarRef}
       pie={
         <>
-          <button ref={cancelarRef} className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" onClick={onCancelar}>{etiquetaCancelar}</button>
-          <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" type="button" onClick={onConfirmar}>{iconoAccion}{etiquetaConfirmar}</button>
+          <button ref={cancelarRef} className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" type="button" onClick={onCancelar}>{etiquetaCancelar}</button>
+          <button className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" type="button" onClick={onConfirmar}>{iconoAccion}{etiquetaConfirmar}</button>
         </>
       }
     >

@@ -11,3 +11,4 @@ coverage/
 apps/api/storage/
 storage/
 .playwright-mcp/
+graphify-out/

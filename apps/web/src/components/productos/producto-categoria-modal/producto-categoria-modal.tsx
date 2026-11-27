@@ -26,8 +26,8 @@ export function ProductoCategoriaModal({ nombre, guardando, error, alCambiarNomb
       onCerrar={alCerrar}
       pie={
         <>
-          <button className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" disabled={guardando} onClick={alCerrar}>Cancelar</button>
-          <button className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" type="submit" form="producto-categoria-form" disabled={guardando}>
+          <button className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" type="button" disabled={guardando} onClick={alCerrar}>Cancelar</button>
+          <button className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" type="submit" form="producto-categoria-form" disabled={guardando}>
             {guardando ? "Guardando…" : "Guardar categoría"}
           </button>
         </>

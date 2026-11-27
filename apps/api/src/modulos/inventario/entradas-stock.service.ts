@@ -1,15 +1,16 @@
+import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
-import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
+import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida, correlativosDocumentosInternos } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown; importeTotal?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
-type DatosEntrada = { fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; pagos?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
-const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO", "OTRO"] as const;
+type DatosEntrada = { claveIdempotencia?: unknown; fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; pagos?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
+const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
 function texto(valor: unknown, etiqueta: string, maximo: number, opcional = false) {
@@ -25,6 +26,11 @@ function decimal(valor: unknown, etiqueta: string, escala: number, minimo: numbe
   const numero = typeof valor === "number" ? valor : typeof valor === "string" && valor.trim() ? Number(valor) : NaN;
   if (!Number.isFinite(numero) || numero < minimo || Number(numero.toFixed(escala)) !== numero) throw new BadRequestException(`${etiqueta} debe ser un número válido con hasta ${escala} decimales.`);
   return numero;
+}
+function motivoAnulacion(datos: unknown) {
+  const motivo = typeof datos === "object" && datos !== null && !Array.isArray(datos) ? (datos as { motivo?: unknown }).motivo : undefined;
+  if (typeof motivo !== "string" || motivo.trim().length < 5 || motivo.trim().length > 500) throw new BadRequestException("Indica el motivo de la anulación (entre 5 y 500 caracteres).");
+  return motivo.trim();
 }
 function fechaValida(valor: unknown) {
   if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) throw new BadRequestException("Indica una fecha válida para la entrada.");
@@ -66,30 +72,42 @@ export class ServicioEntradasStock {
     const busqueda = typeof filtros.busqueda === "string" ? filtros.busqueda.trim().slice(0, 100) : "";
     const coincidencia = busqueda ? `%${busqueda.replace(/[\\%_]/g, "\\$&")}%` : "";
     const condicion = coincidencia ? or(ilike(entradasStock.codigo, coincidencia), ilike(entradasStock.proveedor, coincidencia), ilike(entradasStock.numeroDocumento, coincidencia), ilike(entradasStock.proveedorNumeroDocumento, coincidencia)) : undefined;
-    const estadoPago = filtros.estadoPago === "PAGADAS" || filtros.estadoPago === "PENDIENTES" ? filtros.estadoPago : "TODAS";
+    const estadoPago = filtros.estadoPago === "PAGADAS" || filtros.estadoPago === "PENDIENTES" || filtros.estadoPago === "ANULADAS" ? filtros.estadoPago : "TODAS";
     const totalCompra = sql`coalesce(${entradasStock.totalDocumento}, ${entradasStock.total})`;
     const montoPagado = sql`coalesce(${entradasStock.montoPagado}, 0)`;
-    const condicionEstadoPago = estadoPago === "PAGADAS" ? and(isNotNull(entradasStock.montoPagado), gte(montoPagado, totalCompra))
-      : estadoPago === "PENDIENTES" ? or(isNull(entradasStock.montoPagado), lt(montoPagado, totalCompra)) : undefined;
+    // Una compra anulada nunca cuenta como pagada ni como pendiente: sale de las pestañas de pago y tiene la suya.
+    const vigente = eq(entradasStock.estado, "REGISTRADA");
+    const condicionEstadoPago = estadoPago === "PAGADAS" ? and(vigente, isNotNull(entradasStock.montoPagado), gte(montoPagado, totalCompra))
+      : estadoPago === "PENDIENTES" ? and(vigente, or(isNull(entradasStock.montoPagado), lt(montoPagado, totalCompra)))
+      : estadoPago === "ANULADAS" ? eq(entradasStock.estado, "ANULADA") : undefined;
     const condicionListado = and(condicion, condicionEstadoPago);
-    const [items, [total]] = await Promise.all([
-      db.select({
+    const consultarItems = (numeroPagina: number) => db.select({
         id: entradasStock.id, codigo: entradasStock.codigo, fecha: entradasStock.fecha,
         tipoDocumento: entradasStock.tipoDocumento, numeroDocumento: entradasStock.numeroDocumento,
         proveedor: entradasStock.proveedor, proveedorTipoPersona: entradasStock.proveedorTipoPersona,
         proveedorTipoDocumento: entradasStock.proveedorTipoDocumento, proveedorNumeroDocumento: entradasStock.proveedorNumeroDocumento,
         medioPago: entradasStock.medioPago, montoPagado: entradasStock.montoPagado,
         totalDocumento: entradasStock.totalDocumento, total: entradasStock.total, creadoEn: entradasStock.creadoEn,
-        cantidadProductos: sql<number>`(select count(*)::int from entradas_stock_detalle d where d.entrada_id = ${entradasStock.id})`,
-      }).from(entradasStock).where(condicionListado).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
+        estado: entradasStock.estado, anuladoEn: entradasStock.anuladoEn,
+        cantidadProductos: sql<number>`(select count(*)::int from entradas_stock_detalle d where d.entrada_id = entradas_stock.id)`,
+      }).from(entradasStock).where(condicionListado).orderBy(desc(entradasStock.fecha), desc(entradasStock.creadoEn)).limit(porPagina).offset((numeroPagina - 1) * porPagina);
+    const [itemsSolicitados, [total], [filtrado]] = await Promise.all([
+      consultarItems(pagina),
       db.select({
         total: count(),
-        pagadas: sql<number>`count(*) filter (where ${entradasStock.montoPagado} is not null and ${montoPagado} >= ${totalCompra})::int`,
-        pendientes: sql<number>`count(*) filter (where ${entradasStock.montoPagado} is null or ${montoPagado} < ${totalCompra})::int`,
+        pagadas: sql<number>`count(*) filter (where ${entradasStock.estado} = 'REGISTRADA' and ${entradasStock.montoPagado} is not null and ${montoPagado} >= ${totalCompra})::int`,
+        pendientes: sql<number>`count(*) filter (where ${entradasStock.estado} = 'REGISTRADA' and (${entradasStock.montoPagado} is null or ${montoPagado} < ${totalCompra}))::int`,
+        anuladas: sql<number>`count(*) filter (where ${entradasStock.estado} = 'ANULADA')::int`,
       }).from(entradasStock).where(condicion),
+      // El total paginado respeta el filtro de estado de pago; los contadores de pestañas no.
+      db.select({ total: count() }).from(entradasStock).where(condicionListado),
     ]);
-    const totalRegistros = total?.total ?? 0;
-    return { items: items.map((item) => ({ ...item, cantidadProductos: Number(item.cantidadProductos ?? 0) })), total: totalRegistros, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(totalRegistros / porPagina)), conteosPago: { todas: Number(total?.total ?? 0), pagadas: Number(total?.pagadas ?? 0), pendientes: Number(total?.pendientes ?? 0) } };
+    const totalRegistros = filtrado?.total ?? 0;
+    const totalPaginas = Math.max(1, Math.ceil(totalRegistros / porPagina));
+    // Una página fuera de rango (p. ej. tras anular el último registro de la última página) devuelve la última página real.
+    const paginaEfectiva = Math.min(pagina, totalPaginas);
+    const items = paginaEfectiva === pagina ? itemsSolicitados : await consultarItems(paginaEfectiva);
+    return { items: items.map((item) => ({ ...item, cantidadProductos: Number(item.cantidadProductos ?? 0) })), total: totalRegistros, pagina: paginaEfectiva, porPagina, totalPaginas, conteosPago: { todas: Number(total?.total ?? 0), pagadas: Number(total?.pagadas ?? 0), pendientes: Number(total?.pendientes ?? 0), anuladas: Number(total?.anuladas ?? 0) } };
   }
 
   async consultar(idEntrada: string) {
@@ -100,6 +118,8 @@ export class ServicioEntradasStock {
       proveedorNumeroDocumento: entradasStock.proveedorNumeroDocumento, proveedorDireccion: entradasStock.proveedorDireccion,
       medioPago: entradasStock.medioPago, montoPagado: entradasStock.montoPagado, totalDocumento: entradasStock.totalDocumento,
       observacion: entradasStock.observacion, total: entradasStock.total,
+      estado: entradasStock.estado, anuladoEn: entradasStock.anuladoEn, motivoAnulacion: entradasStock.motivoAnulacion,
+      anuladoPor: sql<string | null>`(select u.nombre_usuario from usuarios u where u.id = entradas_stock.anulado_por_usuario_id)`,
       creadoEn: entradasStock.creadoEn }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
     if (!entrada) throw new NotFoundException("No se encontró la entrada de stock.");
     const [detalles, detallesDocumento] = await Promise.all([
@@ -124,11 +144,14 @@ export class ServicioEntradasStock {
     if (typeof entrada !== "object" || entrada === null || Array.isArray(entrada)) throw new BadRequestException("Los datos de la entrada no son válidos.");
     const datos = entrada as DatosEntrada;
     const fecha = fechaValida(datos.fecha);
+    if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha de la compra no puede ser posterior a hoy.");
+    if (datos.claveIdempotencia !== undefined && datos.claveIdempotencia !== null) uuid(datos.claveIdempotencia, "La referencia de la compra");
+    const claveIdempotencia = typeof datos.claveIdempotencia === "string" ? datos.claveIdempotencia.toLowerCase() : null;
     const tipoDocumento = texto(datos.tipoDocumento, "El tipo de documento", 30)!;
     if (!(tiposDocumento as readonly string[]).includes(tipoDocumento)) throw new BadRequestException("Selecciona un tipo de documento válido.");
     let numeroDocumento = texto(datos.numeroDocumento, "El número de documento", 60, true);
     if (tipoDocumento === "FACTURA" && numeroDocumento) numeroDocumento = numeroDocumento.toUpperCase();
-    if (!numeroDocumento && !["SIN_DOCUMENTO", "OTRO"].includes(tipoDocumento)) throw new BadRequestException("Ingresa el número del comprobante o guía.");
+    if (!numeroDocumento && tipoDocumento !== "SIN_DOCUMENTO") throw new BadRequestException("Ingresa el número del comprobante o guía.");
     const proveedor = texto(datos.proveedor, "El proveedor", 180, true);
     const proveedorTipoPersona = texto(datos.proveedorTipoPersona, "El tipo de persona proveedora", 20, true);
     const proveedorTipoDocumento = texto(datos.proveedorTipoDocumento, "El tipo de documento del proveedor", 10, true);
@@ -192,14 +215,24 @@ export class ServicioEntradasStock {
     if (new Set(pares).size !== pares.length) throw new BadRequestException("Hay productos y presentaciones repetidos. Agrupa sus cantidades en una sola línea.");
 
     try {
-      const id = await db.transaction(async (tx) => {
+      const huellaSolicitud = createHash("sha256").update(JSON.stringify({ usuarioId, fecha, tipoDocumento, numeroDocumento, proveedorNumeroDocumento, pagos, detalles })).digest("hex");
+      const resultado = await db.transaction(async (tx) => {
+        if (claveIdempotencia) {
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${`compra-repuestos:${claveIdempotencia}`}, 0))`);
+          const [existente] = await tx.select({ id: entradasStock.id, huella: entradasStock.huellaSolicitud, estado: entradasStock.estado }).from(entradasStock).where(eq(entradasStock.claveIdempotencia, claveIdempotencia)).limit(1);
+          if (existente) {
+            if (existente.huella !== huellaSolicitud) throw new ConflictException("La referencia ya corresponde a otra compra. Actualiza el listado antes de seguir.");
+            if (existente.estado === "ANULADA") throw new ConflictException("Esa compra fue anulada. Registra la compra corregida con una referencia nueva.");
+            return { id: existente.id };
+          }
+        }
         if (["FACTURA", "BOLETA"].includes(tipoDocumento) && proveedorTipoDocumento === "RUC" && proveedorNumeroDocumento && numeroDocumento) {
           const claveDocumento = `COMPROBANTE_COMPRA:${proveedorNumeroDocumento}:${tipoDocumento}:${numeroDocumento}`;
           await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${claveDocumento}, 0))`);
           const [duplicadoEgreso] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
-            .where(and(eq(egresosRegistros.documentoTipo, tipoDocumento), eq(egresosRegistros.proveedorRuc, proveedorNumeroDocumento), eq(egresosRegistros.documentoNumero, numeroDocumento))).limit(1);
+            .where(and(eq(egresosRegistros.estado, "REGISTRADO"), eq(egresosRegistros.documentoTipo, tipoDocumento), eq(egresosRegistros.proveedorRuc, proveedorNumeroDocumento), eq(egresosRegistros.documentoNumero, numeroDocumento))).limit(1);
           const [duplicadoCompra] = await tx.select({ id: entradasStock.id }).from(entradasStock)
-            .where(and(eq(entradasStock.tipoDocumento, tipoDocumento), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorNumeroDocumento), eq(entradasStock.numeroDocumento, numeroDocumento))).limit(1);
+            .where(and(eq(entradasStock.estado, "REGISTRADA"), eq(entradasStock.tipoDocumento, tipoDocumento), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorNumeroDocumento), eq(entradasStock.numeroDocumento, numeroDocumento))).limit(1);
           if (duplicadoEgreso || duplicadoCompra) throw new ConflictException("Esta factura ya está registrada en Compras o en un egreso; evita duplicarla.");
         }
         const codigo = `ENT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
@@ -216,23 +249,36 @@ export class ServicioEntradasStock {
           const factor = Number(producto.factorAUnidadBase);
           const cantidadBase = Number((detalle.cantidad * factor).toFixed(6));
           const subtotal = detalle.importeTotal ?? Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          const subtotalPorPrecioUnitario = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          if (detalle.importeTotal !== null && Math.round(subtotalPorPrecioUnitario * 100) !== Math.round(subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
           const costoUnitario = Number((subtotal / detalle.cantidad).toFixed(4));
           if (!Number.isFinite(cantidadBase) || cantidadBase <= 0 || !Number.isFinite(subtotal)) throw new BadRequestException("La cantidad o el subtotal calculado no es válido.");
           productosValidados.push({ ...detalle, costoUnitario, producto, factor, cantidadBase, subtotal, costoBase: Number((costoUnitario / factor).toFixed(6)) });
         }
         const total = productosValidados.reduce((suma, detalle) => suma + detalle.subtotal, 0);
         const totalPagos = pagos.reduce((suma, pago) => suma + pago.importe, 0);
-        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
+        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el monto pagado completo entre los medios de pago.");
+        for (const detalle of productosValidados) {
+          const calculado = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          if (Math.round(calculado * 100) !== Math.round(detalle.subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
+        }
+        if (tipoDocumento === "SIN_DOCUMENTO") {
+          const [correlativo] = await tx.insert(correlativosDocumentosInternos).values({ tipo: "COMPRA_REPUESTOS_SIN_DOCUMENTO", ultimoNumero: 1 })
+            .onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } })
+            .returning({ numero: correlativosDocumentosInternos.ultimoNumero });
+          numeroDocumento = `CRI-${String(correlativo.numero).padStart(6, "0")}`;
+        }
+        if (totalDocumento !== null && Math.round(totalDocumento * 100) < Math.round(total * 100)) throw new BadRequestException("El total del documento no puede ser menor que la suma de los productos recibidos.");
         const [nuevaEntrada] = await tx.insert(entradasStock).values({
-          codigo, fecha, tipoDocumento, numeroDocumento, proveedor, proveedorTipoPersona, proveedorTipoDocumento,
-          proveedorNumeroDocumento, proveedorDireccion,
+          codigo, fecha, tipoDocumento, numeroDocumento, proveedor: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedor, proveedorTipoPersona: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoPersona, proveedorTipoDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoDocumento,
+          proveedorNumeroDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorNumeroDocumento, proveedorDireccion: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorDireccion,
           medioPago: pagos.length === 1 ? pagos[0].medio : null,
           cuentaFinancieraId,
-          montoPagado: totalPagos.toFixed(2), observacion,
+          montoPagado: totalPagos.toFixed(2), observacion, claveIdempotencia, huellaSolicitud: claveIdempotencia ? huellaSolicitud : null,
           totalDocumento: totalDocumento === null ? null : totalDocumento.toFixed(2), total: total.toFixed(2), usuarioId,
         }).returning({ id: entradasStock.id });
         if (pagos.length) await tx.insert(pagosEntradasStock).values(pagos.map((pago) => ({
-          entradaId: nuevaEntrada.id, fechaPago: fechaActualPeru(), importePagado: pago.importe.toFixed(2), medioPago: pago.medio,
+          entradaId: nuevaEntrada.id, fechaPago: fecha, importePagado: pago.importe.toFixed(2), medioPago: pago.medio,
           cuentaFinancieraId: pago.cuentaId, usuarioId,
         })));
         const idsDocumento = new Map<string, string>();
@@ -261,14 +307,64 @@ export class ServicioEntradasStock {
             costoUnitarioBase: detalle.costoBase.toFixed(6), usuarioId,
           });
         }
-        return nuevaEntrada.id;
+        return { id: nuevaEntrada.id };
       });
-      return this.consultar(id);
+      return this.consultar(resultado.id);
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") throw new ConflictException("La entrada o un movimiento duplicado ya existe.");
+      if (esViolacionUnicidad(error)) throw new ConflictException("La entrada o un movimiento duplicado ya existe.");
       throw error;
     }
+  }
+
+  /**
+   * Anula una compra de repuestos de forma atómica: devuelve el stock ingresado (movimiento SALIDA ANULACION_ENTRADA por línea),
+   * marca sus pagos como anulados (dejan de contar en cuentas y flujo) y registra quién, cuándo y por qué.
+   * Si parte de lo comprado ya se vendió o se ajustó (saldo menor al ingresado) responde 409 sin tocar nada.
+   */
+  async anular(idEntrada: string, datos: unknown, usuarioIdEntrada: string) {
+    const id = uuid(idEntrada, "La compra");
+    const usuarioId = uuid(usuarioIdEntrada, "El usuario");
+    const motivo = motivoAnulacion(datos);
+    await db.transaction(async (tx) => {
+      const [compra] = await tx.select({ id: entradasStock.id, estado: entradasStock.estado }).from(entradasStock).where(eq(entradasStock.id, id)).for("update").limit(1);
+      if (!compra) throw new NotFoundException("No se encontró la compra de repuestos.");
+      if (compra.estado === "ANULADA") throw new ConflictException("La compra ya fue anulada.");
+      const lineas = await tx.select({ id: entradasStockDetalle.id, productoId: entradasStockDetalle.productoId, nombre: entradasStockDetalle.nombreProducto, cantidadBase: entradasStockDetalle.cantidadBase })
+        .from(entradasStockDetalle).where(eq(entradasStockDetalle.entradaId, id)).orderBy(asc(entradasStockDetalle.productoId), asc(entradasStockDetalle.id));
+      const requerido = new Map<string, { nombre: string; milesimas: bigint }>();
+      for (const linea of lineas) {
+        const actual = requerido.get(linea.productoId) ?? { nombre: linea.nombre, milesimas: 0n };
+        actual.milesimas += BigInt(Math.round(Number(linea.cantidadBase) * 1_000_000));
+        requerido.set(linea.productoId, actual);
+      }
+      const insuficientes: string[] = [];
+      for (const productoId of [...requerido.keys()].sort()) {
+        const [saldo] = await tx.select({ cantidad: saldosStock.cantidad }).from(saldosStock).where(eq(saldosStock.productoId, productoId)).for("update");
+        const disponible = BigInt(Math.round(Number(saldo?.cantidad ?? 0) * 1_000_000));
+        const necesario = requerido.get(productoId)!;
+        if (disponible < necesario.milesimas) insuficientes.push(`${necesario.nombre} (ingresó ${Number(necesario.milesimas) / 1_000_000}, hay ${Number(disponible) / 1_000_000})`);
+      }
+      if (insuficientes.length) throw new ConflictException(`No se puede anular la compra: parte del stock ya se vendió o se ajustó. Revisa: ${insuficientes.join("; ")}.`);
+      for (const linea of lineas) {
+        const [original] = await tx.select({ costo: movimientosStock.costoUnitarioBase }).from(movimientosStock)
+          .where(and(eq(movimientosStock.origenTipo, "ENTRADA_STOCK"), eq(movimientosStock.origenDetalleId, linea.id))).limit(1);
+        const [actualizado] = await tx.update(saldosStock).set({ cantidad: sql`${saldosStock.cantidad} - ${linea.cantidadBase}::numeric`, actualizadoEn: new Date() })
+          .where(and(eq(saldosStock.productoId, linea.productoId), sql`${saldosStock.cantidad} >= ${linea.cantidadBase}::numeric`))
+          .returning({ cantidad: saldosStock.cantidad });
+        if (!actualizado) throw new ConflictException(`No se puede anular la compra: el stock de ${linea.nombre} ya no alcanza.`);
+        await tx.insert(movimientosStock).values({
+          productoId: linea.productoId, tipo: "SALIDA", origenTipo: "ANULACION_ENTRADA", origenId: id, origenDetalleId: linea.id,
+          cantidadBase: linea.cantidadBase, costoUnitarioBase: original?.costo ?? "0", sentido: "RETIRO", observacion: motivo, usuarioId,
+          saldoAnterior: sql`(${actualizado.cantidad}::numeric + ${linea.cantidadBase}::numeric)`, saldoFinal: actualizado.cantidad,
+        });
+      }
+      const ahora = new Date();
+      await tx.update(pagosEntradasStock).set({ anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo })
+        .where(and(eq(pagosEntradasStock.entradaId, id), isNull(pagosEntradasStock.anuladoEn)));
+      await tx.update(entradasStock).set({ estado: "ANULADA", anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo }).where(eq(entradasStock.id, id));
+    });
+    return this.consultar(id);
   }
 }
 

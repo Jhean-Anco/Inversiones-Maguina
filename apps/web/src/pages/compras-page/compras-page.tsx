@@ -16,7 +16,7 @@ import {
 import { FilaCompra } from "./fila-compra";
 
 const encabezadoCompras = <tr><th>Fecha</th><th>Compra y documento</th><th>Proveedor</th><th>Artículos</th><th>Pago</th><th className={egresosTableNumberClasses}>Total</th><th>Estado</th><th>Detalle</th></tr>;
-export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean }) {
+export function ComprasPage({ esNuevaCompra = false, puedeAnular = false }: { esNuevaCompra?: boolean; puedeAnular?: boolean }) {
   const navegar = useNavigate();
   const ubicacion = useLocation();
   const modulo = useEntradasStock(esNuevaCompra ? () => navegar("/egresos/compras") : undefined);
@@ -50,6 +50,7 @@ export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean
             ["TODAS", "Todas", modulo.conteosPago.todas],
             ["PAGADAS", "Pagadas", modulo.conteosPago.pagadas],
             ["PENDIENTES", "Con saldo pendiente", modulo.conteosPago.pendientes],
+            ["ANULADAS", "Anuladas", modulo.conteosPago.anuladas ?? 0],
           ] as const).map(([valor, etiqueta, conteo]) => <button key={valor} type="button" aria-pressed={modulo.filtroPago === valor}
             className={`inline-flex min-h-[44px] items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold transition-colors ${modulo.filtroPago === valor ? "border-[#0b2545] bg-[#0b2545] text-white" : "border-[#c5d1db] bg-white text-[#27445f] hover:border-[#8eacc9] hover:bg-[#f5f9fd]"}`}
             onClick={() => { modulo.cambiarPagina(1); modulo.setFiltroPago(valor); }}>
@@ -74,7 +75,7 @@ export function ComprasPage({ esNuevaCompra = false }: { esNuevaCompra?: boolean
       alAgregarProducto={() => setProductoFormularioAbierto(true)}
     />}
     {productoFormularioAbierto && <ProductoNuevoCompra alCerrar={() => setProductoFormularioAbierto(false)} alCrear={(nombre) => { setProductoFormularioAbierto(false); modulo.cambiarBusquedaProducto(nombre); }} />}
-    {!esNuevaCompra && modulo.entradaDetalle && <EntradaStockDetalle entrada={modulo.entradaDetalle} alCerrar={modulo.cerrarDetalle} />}
+    {!esNuevaCompra && modulo.entradaDetalle && <EntradaStockDetalle entrada={modulo.entradaDetalle} alCerrar={modulo.cerrarDetalle} alAnular={puedeAnular ? modulo.anularCompra : undefined} />}
   </>;
 }
 

@@ -1,5 +1,6 @@
+import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, count, desc, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomUUID } from "node:crypto";
 import { db, ajustesInventarioMototaxis, comprasMototaxis, comprasMototaxisDetalle, entradasStock, garantiasModelosMototaxis, garantiasMototaxis, garantiasVentasMototaxis, ingresos, ingresosDetalle, marcasProductos, modelosMototaxis, movimientosMototaxis, movimientosModelosMototaxis, preciosModelosMototaxis, pagosComprasMototaxis, personas, proveedores, reclamosGarantiaMototaxis, tiposDocumento, tiposPersona, unidadesMototaxis, usuarios } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
@@ -30,6 +31,12 @@ function texto(valor: unknown, campo: string, maximo: number, requerido = false)
   }
   if (valor.trim().length > maximo) throw new BadRequestException(`${campo} supera el máximo permitido.`);
   return valor.trim();
+}
+
+function motivoAnulacion(valor: unknown) {
+  const motivo = typeof valor === "object" && valor !== null && !Array.isArray(valor) ? (valor as { motivo?: unknown }).motivo : undefined;
+  if (typeof motivo !== "string" || motivo.trim().length < 5 || motivo.trim().length > 500) throw new BadRequestException("Indica el motivo de la anulación (entre 5 y 500 caracteres).");
+  return motivo.trim();
 }
 
 function importe(valor: unknown, campo: string, minimo = 0) {
@@ -188,10 +195,10 @@ export class ServicioMototaxis {
       }).from(movimientosModelosMototaxis).innerJoin(usuarios, eq(usuarios.id, movimientosModelosMototaxis.usuarioId))
         .where(eq(movimientosModelosMototaxis.modeloId, id)).orderBy(desc(movimientosModelosMototaxis.creadoEn), desc(movimientosModelosMototaxis.id)).limit(15),
       db.select({ unidades: sql<string>`coalesce(sum(${comprasMototaxisDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${comprasMototaxisDetalle.cantidad}) > 0 then round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
-        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(eq(comprasMototaxisDetalle.modeloId, id)),
+        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(and(eq(comprasMototaxisDetalle.modeloId, id), eq(comprasMototaxis.estado, "REGISTRADA"))),
       db.select({ precio: sql<string>`round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)`, cantidad: sql<number>`sum(${comprasMototaxisDetalle.cantidad})::int`, fecha: comprasMototaxis.fecha, codigo: comprasMototaxis.codigo, documentoTipo: comprasMototaxis.documentoTipo, documentoNumero: comprasMototaxis.documentoNumero, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))` })
         .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).innerJoin(personas, eq(comprasMototaxis.proveedorPersonaId, personas.id))
-        .where(eq(comprasMototaxisDetalle.modeloId, id)).groupBy(comprasMototaxis.id, personas.id)
+        .where(and(eq(comprasMototaxisDetalle.modeloId, id), eq(comprasMototaxis.estado, "REGISTRADA"))).groupBy(comprasMototaxis.id, personas.id)
         .orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn), desc(comprasMototaxis.id)).limit(1),
       db.select({ unidades: sql<string>`coalesce(sum(${ingresosDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${ingresosDetalle.cantidad}) > 0 then round(sum(${ingresosDetalle.precioUnitario} * ${ingresosDetalle.cantidad}) / sum(${ingresosDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
         .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
@@ -200,7 +207,7 @@ export class ServicioMototaxis {
         .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
         .where(and(eq(ingresosDetalle.mototaxiModeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).orderBy(desc(ingresos.fecha), desc(ingresos.creadoEn)).limit(1),
       db.select({ mes: sql<string>`to_char(date_trunc('month', ${comprasMototaxis.fecha}::date), 'YYYY-MM')`, promedio: sql<string>`round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)::text`, cantidad: sql<string>`sum(${comprasMototaxisDetalle.cantidad})` })
-        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(eq(comprasMototaxisDetalle.modeloId, id)).groupBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date)`).orderBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date) desc`).limit(12),
+        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(and(eq(comprasMototaxisDetalle.modeloId, id), eq(comprasMototaxis.estado, "REGISTRADA"))).groupBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date)`).orderBy(sql`date_trunc('month', ${comprasMototaxis.fecha}::date) desc`).limit(12),
       db.select({ mes: sql<string>`to_char(date_trunc('month', ${ingresos.fecha}::date), 'YYYY-MM')`, promedio: sql<string>`round(sum(${ingresosDetalle.precioUnitario} * ${ingresosDetalle.cantidad}) / sum(${ingresosDetalle.cantidad}), 2)::text`, cantidad: sql<string>`sum(${ingresosDetalle.cantidad})` })
         .from(ingresosDetalle).innerJoin(ingresos, eq(ingresosDetalle.ingresoId, ingresos.id))
         .where(and(eq(ingresosDetalle.mototaxiModeloId, id), eq(ingresosDetalle.tipo, "MOTOTAXI"), notInArray(ingresos.estado, ["ANULADO"]))).groupBy(sql`date_trunc('month', ${ingresos.fecha}::date)`).orderBy(sql`date_trunc('month', ${ingresos.fecha}::date) desc`).limit(12),
@@ -254,7 +261,7 @@ export class ServicioMototaxis {
   }
 
   async obtenerFichaProveedor(idEntrada: string, permisosUsuario: string[] = []) {
-    if (!uuidValido(idEntrada)) throw new BadRequestException("El proveedor no es vÃ¡lido.");
+    if (!uuidValido(idEntrada)) throw new BadRequestException("El proveedor no es válido.");
     const [proveedor] = await db.select({ id: proveedores.personaId,
       nombre: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}), ${proveedores.nombreComercial})`,
       nombreComercial: proveedores.nombreComercial,
@@ -262,17 +269,19 @@ export class ServicioMototaxis {
       apellidoMaterno: personas.apellidoMaterno, tipoDocumento: tiposDocumento.codigo, numeroDocumento: personas.numeroDocumento })
       .from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id))
       .innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(eq(proveedores.personaId, idEntrada)).limit(1);
-    if (!proveedor) throw new NotFoundException("No se encontrÃ³ el proveedor.");
+    if (!proveedor) throw new NotFoundException("No se encontró el proveedor.");
 
     const puedeVerRepuestos = permisosUsuario.includes("INVENTARIO.LEER");
     const puedeVerMototaxis = permisosUsuario.includes("MOTOTAXIS.LEER");
-    const filtroRepuestos = and(eq(entradasStock.proveedorTipoDocumento, proveedor.tipoDocumento),
+    // entradas_stock guarda el tipo como RUC/DNI/EXT, mientras el catálogo usa códigos SUNAT (06/01/...).
+    const tipoDocumentoEntrada = ({ "06": "RUC", "01": "DNI" } as Record<string, string>)[proveedor.tipoDocumento] ?? "EXT";
+    const filtroRepuestos = and(eq(entradasStock.estado, "REGISTRADA"), eq(entradasStock.proveedorTipoDocumento, tipoDocumentoEntrada),
       eq(entradasStock.proveedorNumeroDocumento, proveedor.numeroDocumento));
-    const filtroMototaxis = eq(comprasMototaxis.proveedorPersonaId, proveedor.id);
+    const filtroMototaxis = and(eq(comprasMototaxis.estado, "REGISTRADA"), eq(comprasMototaxis.proveedorPersonaId, proveedor.id));
     const totalRepuestos = sql<string>`coalesce(${entradasStock.totalDocumento}, ${entradasStock.total})`;
-    const pagadoRepuestos = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_entradas_stock p where p.entrada_id = ${entradasStock.id}), ${entradasStock.montoPagado}, 0)::numeric(14,2)`;
+    const pagadoRepuestos = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_entradas_stock p where p.entrada_id = entradas_stock.id and p.anulado_en is null), ${entradasStock.montoPagado}, 0)::numeric(14,2)`;
     const saldoRepuestos = sql<string>`greatest(${totalRepuestos} - ${pagadoRepuestos}, 0)::numeric(14,2)`;
-    const pagadoMototaxis = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = ${comprasMototaxis.id}), 0)::numeric(14,2)`;
+    const pagadoMototaxis = sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = compras_mototaxis.id and p.anulado_en is null), 0)::numeric(14,2)`;
     const saldoMototaxis = sql<string>`greatest(${comprasMototaxis.total} - ${pagadoMototaxis}, 0)::numeric(14,2)`;
 
     const [estadisticasRepuestos, comprasRepuestos, estadisticasMototaxis, comprasMototaxisRecientes] = await Promise.all([
@@ -424,11 +433,18 @@ export class ServicioMototaxis {
         const [existente] = await tx.select().from(comprasMototaxis).where(eq(comprasMototaxis.claveIdempotencia, claveIdempotencia));
         if (existente) {
           if (existente.huellaSolicitud !== huellaSolicitud) throw new ConflictException("La referencia ya corresponde a otra compra. Actualiza el listado antes de seguir.");
+          if (existente.estado === "ANULADA") throw new ConflictException("Esa compra fue anulada. Registra la compra corregida con una referencia nueva.");
           return { id: existente.id, codigo: existente.codigo, fecha: existente.fecha, total: existente.total, unidades, importePagado: existente.total, saldoPendiente: "0.00" };
         }
       }
       const [proveedor] = await tx.select({ id: proveedores.personaId, numeroDocumento: personas.numeroDocumento, tipoDocumento: tiposDocumento.codigo }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
       if (!proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
+      if (documentoNumero && ["FACTURA", "BOLETA"].includes(documentoTipo)) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`compra-mototaxis-documento:${proveedorId}:${documentoTipo}:${documentoNumero.toUpperCase()}`}, 0))`);
+        const [repetida] = await tx.select({ codigo: comprasMototaxis.codigo }).from(comprasMototaxis)
+          .where(and(eq(comprasMototaxis.estado, "REGISTRADA"), eq(comprasMototaxis.proveedorPersonaId, proveedorId), eq(comprasMototaxis.documentoTipo, documentoTipo), sql`upper(${comprasMototaxis.documentoNumero}) = ${documentoNumero.toUpperCase()}`)).limit(1);
+        if (repetida) throw new ConflictException(`Este comprobante del proveedor ya está registrado en la compra ${repetida.codigo}.`);
+      }
       const idsModelos = [...new Set(detalles.map((detalle) => detalle.modeloId))];
       const modelos = await bloquearModelos(tx, idsModelos);
       if (modelos.length !== idsModelos.length || modelos.some((modelo) => !modelo.activo)) throw new BadRequestException("Selecciona modelos activos del catálogo de mototaxis.");
@@ -448,15 +464,64 @@ export class ServicioMototaxis {
     });
   }
 
+  /**
+   * Anula una compra de mototaxis de forma atómica: descuenta del stock del modelo lo que ingresó (movimiento ANULACION_COMPRA),
+   * anula sus pagos (dejan de contar en cuentas y flujo) y deja sus garantías con proveedor fuera de los listados.
+   * Responde 409 sin cambios si el stock ya se vendió o ajustó, si una garantía tiene reclamos o si hay unidades físicas ya no disponibles.
+   */
+  async anularCompra(compraId: string, valor: unknown, usuarioId: string) {
+    if (!uuidValido(compraId) || !uuidValido(usuarioId)) throw new BadRequestException("La compra o el usuario no son válidos.");
+    const motivo = motivoAnulacion(valor);
+    await db.transaction(async (tx) => {
+      const [compra] = await tx.select({ id: comprasMototaxis.id, estado: comprasMototaxis.estado }).from(comprasMototaxis).where(eq(comprasMototaxis.id, compraId)).for("update").limit(1);
+      if (!compra) throw new NotFoundException("No se encontró la compra de mototaxi.");
+      if (compra.estado === "ANULADA") throw new ConflictException("La compra ya fue anulada.");
+      const detalles = await tx.select({ id: comprasMototaxisDetalle.id, modeloId: comprasMototaxisDetalle.modeloId, cantidad: comprasMototaxisDetalle.cantidad })
+        .from(comprasMototaxisDetalle).where(eq(comprasMototaxisDetalle.compraId, compraId)).orderBy(asc(comprasMototaxisDetalle.orden));
+      const idsDetalle = detalles.map((detalle) => detalle.id);
+      const [reclamo] = await tx.select({ id: reclamosGarantiaMototaxis.id }).from(reclamosGarantiaMototaxis)
+        .innerJoin(garantiasMototaxis, eq(garantiasMototaxis.id, reclamosGarantiaMototaxis.garantiaId))
+        .where(inArray(garantiasMototaxis.compraDetalleId, idsDetalle)).limit(1);
+      if (reclamo) throw new ConflictException("No se puede anular la compra: sus garantías con proveedor ya tienen reclamos registrados.");
+      const unidades = await tx.select({ id: unidadesMototaxis.id, codigo: unidadesMototaxis.codigo, estado: unidadesMototaxis.estado }).from(unidadesMototaxis)
+        .where(inArray(unidadesMototaxis.compraDetalleId, idsDetalle)).for("update");
+      const noDisponibles = unidades.filter((unidad) => unidad.estado !== "DISPONIBLE");
+      if (noDisponibles.length) throw new ConflictException(`No se puede anular la compra: las unidades ${noDisponibles.map((unidad) => unidad.codigo).join(", ")} ya no están disponibles (vendidas, reservadas o dadas de baja).`);
+      const idsModelos = [...new Set(detalles.map((detalle) => detalle.modeloId))];
+      const modelos = await bloquearModelos(tx, idsModelos);
+      const nombres = await tx.select({ id: modelosMototaxis.id, nombre: modelosMototaxis.nombre, version: modelosMototaxis.version }).from(modelosMototaxis).where(inArray(modelosMototaxis.id, idsModelos));
+      const requerido = new Map<string, number>();
+      for (const detalle of detalles) requerido.set(detalle.modeloId, (requerido.get(detalle.modeloId) ?? 0) + detalle.cantidad);
+      const insuficientes = modelos.filter((modelo) => modelo.saldo < (requerido.get(modelo.id) ?? 0)).map((modelo) => {
+        const nombre = nombres.find((item) => item.id === modelo.id);
+        return `${nombre ? [nombre.nombre, nombre.version].filter(Boolean).join(" ") : modelo.id} (ingresaron ${requerido.get(modelo.id)}, hay ${modelo.saldo})`;
+      });
+      if (insuficientes.length) throw new ConflictException(`No se puede anular la compra: parte de las unidades ya se vendió o se ajustó. Revisa: ${insuficientes.join("; ")}.`);
+      for (const detalle of detalles) await moverSaldoModelo(tx, { modeloId: detalle.modeloId, tipo: "ANULACION_COMPRA", origenId: detalle.id, diferencia: -detalle.cantidad, usuarioId });
+      for (const unidad of unidades) {
+        await tx.update(unidadesMototaxis).set({ estado: "BAJA" }).where(eq(unidadesMototaxis.id, unidad.id));
+        await tx.insert(movimientosMototaxis).values({ unidadId: unidad.id, tipo: "BAJA", estadoAnterior: unidad.estado, estadoNuevo: "BAJA", motivo: "ANULACION_COMPRA", observacion: motivo, usuarioId });
+      }
+      const ahora = new Date();
+      await tx.update(pagosComprasMototaxis).set({ anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo })
+        .where(and(eq(pagosComprasMototaxis.compraId, compraId), isNull(pagosComprasMototaxis.anuladoEn)));
+      await tx.update(comprasMototaxis).set({ estado: "ANULADA", anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo }).where(eq(comprasMototaxis.id, compraId));
+    });
+    const [anulada] = await db.select({ id: comprasMototaxis.id, codigo: comprasMototaxis.codigo, estado: comprasMototaxis.estado, anuladoEn: comprasMototaxis.anuladoEn, motivoAnulacion: comprasMototaxis.motivoAnulacion })
+      .from(comprasMototaxis).where(eq(comprasMototaxis.id, compraId));
+    return anulada;
+  }
+
   async listarCompras(busqueda = "") {
     const q = busqueda.trim().slice(0, 100);
     const patron = q ? `%${q.replace(/[\\%_]/g, "\\$&")}%` : "";
     return db.select({ id: comprasMototaxis.id, codigo: comprasMototaxis.codigo, fecha: comprasMototaxis.fecha, documentoTipo: comprasMototaxis.documentoTipo,
       documentoNumero: comprasMototaxis.documentoNumero, moneda: comprasMototaxis.moneda, total: comprasMototaxis.total, observacion: comprasMototaxis.observacion,
+      estado: comprasMototaxis.estado, anuladoEn: comprasMototaxis.anuladoEn, motivoAnulacion: comprasMototaxis.motivoAnulacion,
       proveedor: sql<string>`coalesce(${proveedores.nombreComercial}, ${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))`,
-      unidades: sql<number>`coalesce((select sum(d.cantidad)::int from compras_mototaxis_detalle d where d.compra_id = ${comprasMototaxis.id}),0)`,
-      pagado: sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = ${comprasMototaxis.id}),0)::numeric(14,2)`,
-      saldo: sql<string>`greatest(${comprasMototaxis.total} - coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = ${comprasMototaxis.id}),0),0)::numeric(14,2)` })
+      unidades: sql<number>`coalesce((select sum(d.cantidad)::int from compras_mototaxis_detalle d where d.compra_id = compras_mototaxis.id),0)`,
+      pagado: sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = compras_mototaxis.id and p.anulado_en is null),0)::numeric(14,2)`,
+      saldo: sql<string>`(case when ${comprasMototaxis.estado} = 'ANULADA' then 0 else greatest(${comprasMototaxis.total} - coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = compras_mototaxis.id and p.anulado_en is null),0),0) end)::numeric(14,2)` })
       .from(comprasMototaxis).innerJoin(proveedores, eq(comprasMototaxis.proveedorPersonaId, proveedores.personaId)).innerJoin(personas, eq(proveedores.personaId, personas.id))
       .where(patron ? or(ilike(comprasMototaxis.codigo, patron), ilike(comprasMototaxis.documentoNumero, patron), ilike(personas.razonSocial, patron), ilike(personas.nombres, patron), ilike(personas.numeroDocumento, patron)) : undefined)
       .orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn)).limit(100);
@@ -465,7 +530,8 @@ export class ServicioMototaxis {
   async listarPagosCompra(compraId: string) {
     if (!uuidValido(compraId)) throw new BadRequestException("La compra no es válida.");
     return db.select({ id: pagosComprasMototaxis.id, fechaPago: pagosComprasMototaxis.fechaPago, importePagado: pagosComprasMototaxis.importePagado,
-      medioPago: pagosComprasMototaxis.medioPago, cuentaFinancieraId: pagosComprasMototaxis.cuentaFinancieraId, creadoEn: pagosComprasMototaxis.creadoEn })
+      medioPago: pagosComprasMototaxis.medioPago, cuentaFinancieraId: pagosComprasMototaxis.cuentaFinancieraId, creadoEn: pagosComprasMototaxis.creadoEn,
+      anuladoEn: pagosComprasMototaxis.anuladoEn, motivoAnulacion: pagosComprasMototaxis.motivoAnulacion })
       .from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.compraId, compraId)).orderBy(asc(pagosComprasMototaxis.fechaPago), asc(pagosComprasMototaxis.creadoEn));
   }
 
@@ -480,15 +546,18 @@ export class ServicioMototaxis {
     const cuentaFinancieraId = await validarCuentaFinanciera(d.cuentaFinancieraId, medioPago, true);
     if (!uuidValido(d.claveIdempotencia)) throw new BadRequestException("La clave de idempotencia del pago no es válida.");
     return db.transaction(async (tx) => {
+      // El bloqueo de la compra va primero: dos reintentos simultáneos con la misma clave se serializan y el segundo recibe el pago ya guardado.
+      const [compra] = await tx.select().from(comprasMototaxis).where(eq(comprasMototaxis.id, compraId)).for("update").limit(1);
+      if (!compra) throw new NotFoundException("No se encontró la compra de mototaxi.");
       const [existente] = await tx.select().from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.claveIdempotencia, d.claveIdempotencia as string)).limit(1);
       if (existente) {
         if (existente.compraId !== compraId || existente.fechaPago !== fechaPago || Number(existente.importePagado) !== importePagado || existente.medioPago !== medioPago || existente.cuentaFinancieraId !== cuentaFinancieraId) throw new ConflictException("La clave de pago ya se utilizó para otra operación.");
+        if (existente.anuladoEn) throw new ConflictException("Ese pago fue anulado junto con la compra.");
         return existente;
       }
-      const [compra] = await tx.select().from(comprasMototaxis).where(eq(comprasMototaxis.id, compraId)).for("update").limit(1);
-      if (!compra) throw new NotFoundException("No se encontró la compra de mototaxi.");
+      if (compra.estado === "ANULADA") throw new ConflictException("La compra está anulada y no admite pagos.");
       const [resumen] = await tx.select({ pagado: sql<string>`coalesce(sum(${pagosComprasMototaxis.importePagado}),0)::numeric(14,2)` })
-        .from(pagosComprasMototaxis).where(eq(pagosComprasMototaxis.compraId, compraId));
+        .from(pagosComprasMototaxis).where(and(eq(pagosComprasMototaxis.compraId, compraId), isNull(pagosComprasMototaxis.anuladoEn)));
       const saldo = redondear(Number(compra.total) - Number(resumen?.pagado ?? 0));
       if (Math.round(importePagado * 100) !== Math.round(saldo * 100)) throw new BadRequestException(`Las compras de mototaxi se cancelan al contado. Registra el saldo completo de S/ ${saldo.toFixed(2)} en una sola operación.`);
       const [pago] = await tx.insert(pagosComprasMototaxis).values({ compraId, fechaPago, importePagado: importePagado.toFixed(2), medioPago, cuentaFinancieraId,
@@ -607,6 +676,7 @@ export class ServicioMototaxis {
       .innerJoin(modelosMototaxis, eq(modelosMototaxis.id, sql<string>`coalesce(${comprasMototaxisDetalle.modeloId}, ${unidadesMototaxis.modeloId})`))
       .innerJoin(marcasProductos, eq(modelosMototaxis.marcaId, marcasProductos.id))
       .innerJoin(personas, eq(garantiasMototaxis.proveedorPersonaId, personas.id))
+      .where(sql`${comprasMototaxis.estado} is distinct from 'ANULADA'`)
       .orderBy(desc(garantiasMototaxis.terminaEn), asc(garantiasMototaxis.id));
   }
 
@@ -643,8 +713,17 @@ export class ServicioMototaxis {
     const proveedorCentimos = (totalCentimos * BigInt(porcentaje) + 50n) / 100n;
     const importeProveedor = Number(proveedorCentimos) / 100;
     const importeEmpresa = Number(totalCentimos - proveedorCentimos) / 100;
-    const [reclamo] = await db.insert(reclamosGarantiaMototaxis).values({ garantiaId: d.garantiaId, ingresoDetalleId, fecha, descripcionFalla, costoTotal: costoTotal.toFixed(2), porcentajeProveedorAplicado: String(porcentaje), importeProveedor: importeProveedor.toFixed(2), importeEmpresa: importeEmpresa.toFixed(2), estado: "ABIERTO", usuarioId }).returning();
-    return reclamo;
+    const garantiaId = d.garantiaId;
+    return db.transaction(async (tx) => {
+      // Bloqueo compartido de la compra de origen: no puede anularse mientras se registra el reclamo, ni al revés.
+      if (garantia.compraDetalleId) {
+        const [origen] = await tx.select({ estado: comprasMototaxis.estado }).from(comprasMototaxis)
+          .where(sql`${comprasMototaxis.id} = (select detalle.compra_id from compras_mototaxis_detalle detalle where detalle.id = ${garantia.compraDetalleId})`).for("share");
+        if (origen?.estado === "ANULADA") throw new ConflictException("La compra de esta garantía fue anulada; no admite reclamos.");
+      }
+      const [reclamo] = await tx.insert(reclamosGarantiaMototaxis).values({ garantiaId, ingresoDetalleId, fecha, descripcionFalla, costoTotal: costoTotal.toFixed(2), porcentajeProveedorAplicado: String(porcentaje), importeProveedor: importeProveedor.toFixed(2), importeEmpresa: importeEmpresa.toFixed(2), estado: "ABIERTO", usuarioId }).returning();
+      return reclamo;
+    });
   }
 
   async avanzarReclamo(id: string, valor: unknown) {
@@ -674,5 +753,5 @@ export class ServicioMototaxis {
       .orderBy(desc(reclamosGarantiaMototaxis.fecha), desc(reclamosGarantiaMototaxis.creadoEn));
   }
 
-  private esDuplicado(error: unknown) { return typeof error === "object" && error !== null && "code" in error && error.code === "23505"; }
+  private esDuplicado(error: unknown) { return esViolacionUnicidad(error); }
 }

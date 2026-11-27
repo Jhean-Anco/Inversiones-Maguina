@@ -38,9 +38,9 @@ export function FilaCompra({ entrada, alAbrir }: { entrada: EntradaStock; alAbri
       </td>
       <td className={egresosTableNumberClasses}><strong>{soles(total)}</strong></td>
       <td>
-        <Etiqueta tono={saldo === null ? "neutral" : saldo > 0 ? "advertencia" : "positiva"}>
+        {entrada.estado === "ANULADA" ? <Etiqueta tono="neutral">Anulada</Etiqueta> : <Etiqueta tono={saldo === null ? "neutral" : saldo > 0 ? "advertencia" : "positiva"}>
           {saldo === null ? "Sin pago" : saldo > 0 ? `Saldo ${soles(saldo)}` : "Pagada"}
-        </Etiqueta>
+        </Etiqueta>}
       </td>
       <td><button className={egresosRowButtonClasses} type="button" onClick={() => alAbrir(entrada.id)}>Ver detalle</button></td>
     </tr>

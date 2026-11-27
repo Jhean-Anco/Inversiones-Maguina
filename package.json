@@ -17,14 +17,16 @@
     "test:security": "turbo run test:security --filter=@magina/api",
     "test:e2e": "playwright test --config apps/api/playwright.config.ts",
     "test:all:api": "turbo run test:all --filter=@magina/api",
-    "test:all": "pnpm test:all:api && pnpm test:e2e",
+    "test:all": "pnpm test:all:api && pnpm test:web:coverage && pnpm test:e2e",
     "test:coverage": "turbo run test:coverage --filter=@magina/api",
     "format": "prettier --write .",
     "format:check": "prettier --check package.json pnpm-workspace.yaml turbo.json biome.jsonc \".github/workflows/*.yml\" \"compose*.yaml\"",
     "docs:api": "node scripts/documentar-api.mjs",
     "docs:data": "node scripts/documentar-datos.mjs",
     "docs:check": "pnpm docs:api && pnpm docs:data && node scripts/comprobar-documentacion.mjs",
-    "check:frontend-architecture": "node scripts/check-frontend-architecture.mjs"
+    "check:frontend-architecture": "node scripts/check-frontend-architecture.mjs",
+    "test:web": "pnpm --filter @magina/web test",
+    "test:web:coverage": "pnpm --filter @magina/web test:coverage"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

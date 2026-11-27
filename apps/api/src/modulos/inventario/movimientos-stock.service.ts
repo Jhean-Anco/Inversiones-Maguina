@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, or, sql, inArray } from "drizzle-orm";
+import { lineaRepuestoVigente } from "./compras-vigentes.sql";
 import { db, entradasStock, entradasStockDetalle, ingresos, marcasProductos, movimientosStock, productos, productosCodigos, saldosStock, unidadesMedida, usuarios } from "@magina/database";
 
 const motivosAjuste = ["INVENTARIO_FISICO", "MERMA", "DANIO", "PERDIDA", "DEVOLUCION", "CORRECCION", "OTRO"] as const;
@@ -75,13 +76,13 @@ export class ServicioMovimientosStock {
         .innerJoin(usuarios, eq(usuarios.id, movimientosStock.usuarioId))
         .innerJoin(productos, eq(movimientosStock.productoId, productos.id))
         .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
-        .leftJoin(entradasStock, and(eq(movimientosStock.origenTipo, "ENTRADA_STOCK"), eq(movimientosStock.origenId, entradasStock.id)))
-        .leftJoin(ingresos, and(eq(movimientosStock.origenTipo, "INGRESO"), eq(movimientosStock.origenId, ingresos.id)))
+        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
+        .leftJoin(ingresos, and(inArray(movimientosStock.origenTipo, ["INGRESO", "ANULACION_INGRESO"]), eq(movimientosStock.origenId, ingresos.id)))
         .where(condicion).orderBy(desc(movimientosStock.creadoEn), desc(movimientosStock.id)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(movimientosStock)
         .innerJoin(productos, eq(movimientosStock.productoId, productos.id))
-        .leftJoin(entradasStock, and(eq(movimientosStock.origenTipo, "ENTRADA_STOCK"), eq(movimientosStock.origenId, entradasStock.id)))
-        .leftJoin(ingresos, and(eq(movimientosStock.origenTipo, "INGRESO"), eq(movimientosStock.origenId, ingresos.id)))
+        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
+        .leftJoin(ingresos, and(inArray(movimientosStock.origenTipo, ["INGRESO", "ANULACION_INGRESO"]), eq(movimientosStock.origenId, ingresos.id)))
         .where(condicion),
     ]);
     const numeroTotal = Number(total?.total ?? 0);
@@ -123,7 +124,7 @@ export class ServicioMovimientosStock {
       const sentido = actualizado.diferencia.startsWith("-") ? "RETIRO" : "INGRESO";
       const cantidadBase = actualizado.diferencia.replace(/^-/, "");
       const [costo] = await tx.select({ valor: sql<string>`coalesce(sum(${entradasStockDetalle.cantidadBase} * ${entradasStockDetalle.costoUnitario} / nullif(${entradasStockDetalle.factorAUnidadBase}, 0)) / nullif(sum(${entradasStockDetalle.cantidadBase}), 0), 0)::numeric(14,6)` })
-        .from(entradasStockDetalle).where(eq(entradasStockDetalle.productoId, producto.id));
+        .from(entradasStockDetalle).where(and(eq(entradasStockDetalle.productoId, producto.id), lineaRepuestoVigente));
       const origenId = randomUUID();
       const detalleId = randomUUID();
       const [movimiento] = await tx.insert(movimientosStock).values({

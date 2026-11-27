@@ -96,7 +96,7 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(7,25,46,0.55)] p-6 max-sm:items-end max-sm:p-0"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--erp-overlay)] p-6 backdrop-blur-[3px] max-sm:items-end max-sm:p-0"
       onMouseDown={(evento) => {
         if (evento.target === evento.currentTarget) cerrarSiPermitido();
       }}
@@ -106,18 +106,18 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
         role={tipo === "alerta" ? "alertdialog" : "dialog"}
         aria-modal="true"
         aria-labelledby={idTitulo}
-        className={`flex max-h-full w-full ${anchos[ancho]} flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(6,23,43,0.35)] max-sm:max-h-[88%] max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] ${pantallaCompletaMovil ? "dialogo-pantalla-completa-movil" : ""} ${className}`}
+        className={`flex max-h-full w-full ${anchos[ancho]} flex-col overflow-hidden rounded-[var(--erp-radius-xl)] border border-[var(--erp-border)] bg-[var(--erp-surface)] shadow-[var(--erp-shadow-lg)] max-sm:max-h-[88%] max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-[20px] ${pantallaCompletaMovil ? "dialogo-pantalla-completa-movil" : ""} ${className}`}
       >
         {!pantallaCompletaMovil && <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden="true">
-          <span className="h-1 w-10 rounded-sm bg-[#c5d1db]" />
+          <span className="h-1 w-10 rounded-full bg-[var(--erp-border-strong)]" />
         </div>}
-        <header className="flex items-start justify-between gap-4 border-b border-[#dbe3e9] px-6 pb-[18px] pt-[22px] max-sm:px-5">
+        <header className="flex items-start justify-between gap-4 border-b border-[var(--erp-border-subtle)] px-6 pb-4 pt-5 max-sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {icono}
             <div className="min-w-0">
-              {kicker && <span className="block text-[11px] font-bold tracking-[0.08em] text-[#52697d]">{kicker}</span>}
-              <h2 id={idTitulo} className="m-0 mt-1 text-xl font-extrabold text-[#0b2545]">{titulo}</h2>
-              {subtitulo && <div className="mt-1 text-sm text-[#52697d]">{subtitulo}</div>}
+              {kicker && <span className="block text-[11px] font-semibold uppercase tracking-[var(--erp-tracking-caps)] text-[var(--erp-ink-soft)]">{kicker}</span>}
+              <h2 id={idTitulo} className="m-0 mt-1 text-[19px] font-bold leading-tight tracking-[var(--erp-tracking-heading)] text-[var(--erp-ink)]">{titulo}</h2>
+              {subtitulo && <div className="mt-1 text-sm text-[var(--erp-ink-muted)]">{subtitulo}</div>}
             </div>
           </div>
           <button
@@ -125,14 +125,14 @@ export function Dialogo({ titulo, kicker, children, pie, onCerrar, cerrable = tr
             aria-label="Cerrar"
             disabled={!cerrable}
             onClick={cerrarSiPermitido}
-            className="flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-[#dbe3e9] bg-white text-[#27445f] disabled:opacity-50"
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-[var(--erp-radius-md)] border border-transparent bg-transparent text-[var(--erp-ink-soft)] transition-colors hover:border-[var(--erp-border)] hover:bg-[var(--erp-surface-sunken)] hover:text-[var(--erp-ink)] disabled:opacity-50 max-sm:h-11 max-sm:w-11"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </header>
         <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-6 py-5 max-sm:px-5">{children}</div>
         {pie && (
-          <footer className="flex flex-wrap justify-end gap-2.5 border-t border-[#dbe3e9] bg-[#f7f9fb] px-6 py-4 max-sm:flex-col-reverse max-sm:px-5 max-sm:pb-[18px]">
+          <footer className="flex flex-wrap justify-end gap-2.5 border-t border-[var(--erp-border-subtle)] bg-[var(--erp-surface-muted)] px-6 py-4 max-sm:flex-col-reverse max-sm:px-5 max-sm:pb-[18px]">
             {pie}
           </footer>
         )}

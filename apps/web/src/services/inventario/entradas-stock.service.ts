@@ -57,19 +57,24 @@ export type EntradaStock = {
   totalDocumento?: string | null;
   cantidadProductos?: number;
   creadoEn: string;
+  estado?: "REGISTRADA" | "ANULADA";
+  anuladoEn?: string | null;
+  anuladoPor?: string | null;
+  motivoAnulacion?: string | null;
   detalles?: DetalleEntradaStock[];
   detallesDocumento?: Array<Omit<LineaDocumentoCompra, "codigo" | "unidad"> & { id: string; orden: number; codigo: string | null; unidad: string | null }>;
 };
 
-export type FiltroEstadoPagoEntrada = "TODAS" | "PAGADAS" | "PENDIENTES";
-export type PaginaEntradasStock = { items: EntradaStock[]; total: number; pagina: number; porPagina: number; totalPaginas: number; conteosPago: { todas: number; pagadas: number; pendientes: number } };
+export type FiltroEstadoPagoEntrada = "TODAS" | "PAGADAS" | "PENDIENTES" | "ANULADAS";
+export type PaginaEntradasStock = { items: EntradaStock[]; total: number; pagina: number; porPagina: number; totalPaginas: number; conteosPago: { todas: number; pagadas: number; pendientes: number; anuladas?: number } };
 export type DatosEntradaStock = {
+  claveIdempotencia?: string;
   fecha: string;
   tipoDocumento: string;
   numeroDocumento: string;
   proveedor: string;
-  proveedorTipoPersona: string;
-  proveedorTipoDocumento: string;
+  proveedorTipoPersona: string | null;
+  proveedorTipoDocumento: string | null;
   proveedorNumeroDocumento: string;
   proveedorDireccion: string;
   medioPago: string | null;
@@ -87,6 +92,9 @@ export const servicioEntradasStock = {
     return solicitarApi<PaginaEntradasStock>(`/inventario/entradas-stock?${parametros.toString()}`);
   },
   consultar: (id: string) => solicitarApi<EntradaStock>(`/inventario/entradas-stock/${id}`),
+  anular: (id: string, motivo: string) => solicitarApi<EntradaStock>(`/inventario/entradas-stock/${encodeURIComponent(id)}/anular`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ motivo }),
+  }),
   buscarProductos: (busqueda: string) => solicitarApi<ProductoParaCompra[]>(`/inventario/entradas-stock/productos?busqueda=${encodeURIComponent(busqueda)}`),
   crear: (datos: DatosEntradaStock) => solicitarApi<EntradaStock>("/inventario/entradas-stock", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos),

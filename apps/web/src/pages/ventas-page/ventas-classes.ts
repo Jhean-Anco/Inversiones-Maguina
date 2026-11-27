@@ -10,7 +10,7 @@ export const ventasClasses = {
   searchInput: "ventas-search-input h-full w-full min-w-0 border-0 bg-transparent p-0 text-[14px] text-[#173554] outline-none shadow-none focus:border-0 focus:shadow-none",
   tableScroll: "min-w-0 overflow-x-auto",
   table: "w-full min-w-0 border-collapse text-left text-[12px] leading-[1.45] text-[#52697d] mobile-landscape:min-w-[900px] mobile-portrait:min-w-[900px] [&_th]:h-11 [&_th]:border-y [&_th]:border-[#e8eef4] [&_th]:bg-[#f3f7fb] [&_th]:px-[14px] [&_th]:text-[10px] [&_th]:font-extrabold [&_th]:tracking-[.085em] [&_th]:text-[#687e96] [&_th]:uppercase [&_th]:whitespace-nowrap [&_td]:h-[68px] [&_td]:border-t [&_td]:border-[#e9eff5] [&_td]:px-[15px] [&_td]:py-[10px] [&_td]:align-middle [&_td]:text-[#52697d] [&_td]:whitespace-nowrap [&_tbody_tr]:transition-colors [&_tbody_tr]:duration-[140ms] [&_tbody_tr:hover]:bg-[#f7faff] [&_td:first-child]:text-[#506b87] [&_td:first-child]:[font-variant-numeric:tabular-nums] [&_td:nth-child(2)]:min-w-[110px] [&_td:nth-child(2)]:font-[650] [&_td:nth-child(2)]:text-[#31577c] [&_td:nth-child(3)]:min-w-[110px] [&_td:nth-child(4)]:min-w-[110px]",
-  documentCode: "block text-[12px] tracking-[.01em] text-[#173d68] [font-variant-numeric:tabular-nums]",
+  documentCode: "block text-[12px] tracking-[.01em] text-[var(--erp-brand,#173d68)]",
   clientName: `${nombreRelacionListadoClasses} max-w-[280px]`,
   minorText: "mt-[3px] block text-[11px] leading-[1.35] text-[#71839a]",
   itemDetail: "mt-[3px] block max-w-[260px] overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-[1.3] text-[#58718a]",

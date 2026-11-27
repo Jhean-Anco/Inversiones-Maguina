@@ -1,10 +1,16 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, egresosPagos, egresosRegistros, entradasStock } from "@magina/database";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
+import { esViolacionUnicidad } from "../../utilidades/error-postgres";
+
+const comoConflicto = (mensaje: string) => (error: unknown): never => {
+  if (esViolacionUnicidad(error)) throw new ConflictException(mensaje);
+  throw error;
+};
 
 const tiposEgreso = ["MOTOTAXI"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
@@ -18,6 +24,12 @@ function texto(valor: unknown, etiqueta: string, maximo: number, requerido = fal
   }
   if (typeof valor !== "string" || valor.trim().length > maximo || (requerido && !valor.trim())) throw new BadRequestException(`${etiqueta} no es válido.`);
   return valor.trim() || null;
+}
+
+function motivoAnulacion(datos: unknown) {
+  const motivo = typeof datos === "object" && datos !== null && !Array.isArray(datos) ? (datos as { motivo?: unknown }).motivo : undefined;
+  if (typeof motivo !== "string" || motivo.trim().length < 5 || motivo.trim().length > 500) throw new BadRequestException("Indica el motivo de la anulación (entre 5 y 500 caracteres).");
+  return motivo.trim();
 }
 
 function fechaValida(fecha: string) {
@@ -46,21 +58,23 @@ export class ServicioEgresos {
         monto: egresosRegistros.monto, identificadorActivo: egresosRegistros.identificadorActivo,
         mototaxiMarca: egresosRegistros.mototaxiMarca, mototaxiModelo: egresosRegistros.mototaxiModelo,
         mototaxiNumeroMotor: egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroChasis: egresosRegistros.mototaxiNumeroChasis,
-        observacion: egresosRegistros.observacion, creadoEn: egresosRegistros.creadoEn })
+        observacion: egresosRegistros.observacion, creadoEn: egresosRegistros.creadoEn,
+        estado: egresosRegistros.estado, anuladoEn: egresosRegistros.anuladoEn, motivoAnulacion: egresosRegistros.motivoAnulacion })
         .from(egresosRegistros).where(condicion).orderBy(desc(egresosRegistros.fecha), desc(egresosRegistros.creadoEn)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(egresosRegistros).where(condicion),
     ]);
     const total = conteo?.total ?? 0;
     const pagos = registros.length ? await db.select({ id: egresosPagos.id, egresoId: egresosPagos.egresoId,
       fechaPago: egresosPagos.fechaPago, importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago,
-      creadoEn: egresosPagos.creadoEn }).from(egresosPagos)
+      creadoEn: egresosPagos.creadoEn, anuladoEn: egresosPagos.anuladoEn, motivoAnulacion: egresosPagos.motivoAnulacion }).from(egresosPagos)
       .where(inArray(egresosPagos.egresoId, registros.map((item) => item.id)))
       .orderBy(asc(egresosPagos.fechaPago), asc(egresosPagos.creadoEn)) : [];
     const items = registros.map((registro) => {
       const pagosDelEgreso = pagos.filter((pago) => pago.egresoId === registro.id);
-      const pagado = pagosDelEgreso.reduce((suma, pago) => suma + Number(pago.importePagado), 0);
+      // Los pagos anulados se muestran en el historial pero no cuentan como pagado; un egreso anulado no tiene saldo.
+      const pagado = pagosDelEgreso.reduce((suma, pago) => suma + (pago.anuladoEn ? 0 : Number(pago.importePagado)), 0);
       return { ...registro, pagos: pagosDelEgreso, importePagadoAcumulado: pagado.toFixed(2),
-        saldoPendiente: Math.max(0, Number(registro.monto) - pagado).toFixed(2) };
+        saldoPendiente: registro.estado === "ANULADO" ? "0.00" : Math.max(0, Number(registro.monto) - pagado).toFixed(2) };
     });
     return { items, total, pagina, porPagina, totalPaginas: Math.max(1, Math.ceil(total / porPagina)) };
   }
@@ -99,16 +113,16 @@ export class ServicioEgresos {
     const registroId = await db.transaction(async (tx) => {
       if (tipo === "MOTOTAXI" && mototaxiNumeroMotor && mototaxiNumeroChasis) {
         const [duplicado] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
-          .where(and(eq(egresosRegistros.tipo, "MOTOTAXI"), or(eq(egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroMotor), eq(egresosRegistros.mototaxiNumeroChasis, mototaxiNumeroChasis)))).limit(1);
+          .where(and(eq(egresosRegistros.tipo, "MOTOTAXI"), eq(egresosRegistros.estado, "REGISTRADO"), or(eq(egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroMotor), eq(egresosRegistros.mototaxiNumeroChasis, mototaxiNumeroChasis)))).limit(1);
         if (duplicado) throw new ConflictException("Ya existe una compra registrada con ese número de motor o chasis.");
       }
       if ((documentoTipo === "FACTURA" || documentoTipo === "BOLETA") && proveedorRuc && documentoNumero) {
         const clave = `COMPROBANTE_COMPRA:${proveedorRuc}:${documentoTipo}:${documentoNumero}`;
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${clave}, 0))`);
         const [duplicadoCompra] = await tx.select({ id: entradasStock.id }).from(entradasStock)
-          .where(and(eq(entradasStock.tipoDocumento, documentoTipo), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorRuc), eq(entradasStock.numeroDocumento, documentoNumero))).limit(1);
+          .where(and(eq(entradasStock.estado, "REGISTRADA"), eq(entradasStock.tipoDocumento, documentoTipo), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorRuc), eq(entradasStock.numeroDocumento, documentoNumero))).limit(1);
         const [duplicadoEgreso] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
-          .where(and(eq(egresosRegistros.documentoTipo, documentoTipo), eq(egresosRegistros.proveedorRuc, proveedorRuc), eq(egresosRegistros.documentoNumero, documentoNumero))).limit(1);
+          .where(and(eq(egresosRegistros.estado, "REGISTRADO"), eq(egresosRegistros.documentoTipo, documentoTipo), eq(egresosRegistros.proveedorRuc, proveedorRuc), eq(egresosRegistros.documentoNumero, documentoNumero))).limit(1);
         if (duplicadoCompra || duplicadoEgreso) throw new ConflictException("Esta factura ya está registrada en Compras o en otro egreso.");
       }
       const [registro] = await tx.insert(egresosRegistros).values({ codigo, tipo, fecha: datos.fecha as string, categoria,
@@ -120,7 +134,7 @@ export class ServicioEgresos {
         importePagado: importePagoInicial.toFixed(2), medioPago, cuentaFinancieraId,
         claveIdempotencia: randomUUID(), usuarioId });
       return registro.id;
-    });
+    }).catch(comoConflicto("Ya existe una compra registrada con ese número de motor o chasis."));
     return this.obtenerRegistro(registroId);
   }
 
@@ -139,18 +153,21 @@ export class ServicioEgresos {
     const claveIdempotencia = texto(datos.claveIdempotencia, "la clave de idempotencia", 36, true)!;
     if (!uuid.test(claveIdempotencia)) throw new BadRequestException("La clave de idempotencia no es válida.");
     return db.transaction(async (tx) => {
-      const [egreso] = await tx.select({ id: egresosRegistros.id, monto: egresosRegistros.monto, moneda: egresosRegistros.moneda, fecha: egresosRegistros.fecha })
+      const [egreso] = await tx.select({ id: egresosRegistros.id, monto: egresosRegistros.monto, moneda: egresosRegistros.moneda, fecha: egresosRegistros.fecha, estado: egresosRegistros.estado })
         .from(egresosRegistros).where(eq(egresosRegistros.id, idEntrada)).for("update").limit(1);
       if (!egreso) throw new NotFoundException("No se encontró el egreso indicado.");
+      if (egreso.estado === "ANULADO") throw new ConflictException("El egreso está anulado y no admite pagos.");
       const [duplicado] = await tx.select({ id: egresosPagos.id, egresoId: egresosPagos.egresoId, fechaPago: egresosPagos.fechaPago,
-        importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, cuentaFinancieraId: egresosPagos.cuentaFinancieraId, claveIdempotencia: egresosPagos.claveIdempotencia })
+        importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, cuentaFinancieraId: egresosPagos.cuentaFinancieraId, claveIdempotencia: egresosPagos.claveIdempotencia, anuladoEn: egresosPagos.anuladoEn })
         .from(egresosPagos).where(eq(egresosPagos.claveIdempotencia, claveIdempotencia)).limit(1);
       if (duplicado) {
         if (duplicado.egresoId !== idEntrada || Number(duplicado.importePagado) !== importe || duplicado.fechaPago !== fechaPago || duplicado.medioPago !== medioPago || duplicado.cuentaFinancieraId !== cuentaFinancieraId) throw new ConflictException("La clave de pago ya fue usada con otros datos.");
-        return duplicado;
+        if (duplicado.anuladoEn) throw new ConflictException("Ese pago fue anulado. Registra el pago de nuevo con una clave nueva.");
+        const { anuladoEn: _anuladoEn, ...pagoExistente } = duplicado;
+        return pagoExistente;
       }
       const [suma] = await tx.select({ total: sql<string>`coalesce(sum(${egresosPagos.importePagado}), 0)::numeric(14,2)` })
-        .from(egresosPagos).where(eq(egresosPagos.egresoId, idEntrada));
+        .from(egresosPagos).where(and(eq(egresosPagos.egresoId, idEntrada), isNull(egresosPagos.anuladoEn)));
       const saldo = Number(egreso.monto) - Number(suma?.total ?? 0);
       if (importe > saldo + 0.001) throw new BadRequestException(`El pago supera el saldo pendiente de ${egreso.moneda} ${Math.max(0, saldo).toFixed(2)}.`);
       if (fechaPago < egreso.fecha) throw new BadRequestException("La fecha del pago no puede ser anterior al egreso.");
@@ -158,6 +175,52 @@ export class ServicioEgresos {
         medioPago, cuentaFinancieraId, claveIdempotencia, usuarioId }).returning({ id: egresosPagos.id, egresoId: egresosPagos.egresoId,
         fechaPago: egresosPagos.fechaPago, importePagado: egresosPagos.importePagado, medioPago: egresosPagos.medioPago, cuentaFinancieraId: egresosPagos.cuentaFinancieraId });
       return pago;
+    }).catch(comoConflicto("La clave de pago ya fue usada con otros datos."));
+  }
+
+  /**
+   * Anula un egreso completo: todos sus pagos vigentes dejan de contar en cuentas y flujo, y el registro queda marcado
+   * con quién, cuándo y por qué. Un egreso MOTOTAXI libera su número de motor y chasis (se conserva el original con prefijo ANUL-)
+   * para poder registrar de nuevo la compra corregida. Los egresos no mueven inventario.
+   */
+  async anular(idEntrada: string, datos: unknown, usuarioId: string) {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid.test(idEntrada) || !uuid.test(usuarioId)) throw new BadRequestException("El egreso o el usuario no son válidos.");
+    const motivo = motivoAnulacion(datos);
+    await db.transaction(async (tx) => {
+      const [egreso] = await tx.select({ id: egresosRegistros.id, codigo: egresosRegistros.codigo, estado: egresosRegistros.estado, tipo: egresosRegistros.tipo,
+        motor: egresosRegistros.mototaxiNumeroMotor, chasis: egresosRegistros.mototaxiNumeroChasis })
+        .from(egresosRegistros).where(eq(egresosRegistros.id, idEntrada)).for("update").limit(1);
+      if (!egreso) throw new NotFoundException("No se encontró el egreso indicado.");
+      if (egreso.estado === "ANULADO") throw new ConflictException("El egreso ya fue anulado.");
+      const ahora = new Date();
+      await tx.update(egresosPagos).set({ anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo })
+        .where(and(eq(egresosPagos.egresoId, idEntrada), isNull(egresosPagos.anuladoEn)));
+      await tx.update(egresosRegistros).set({ estado: "ANULADO", anuladoEn: ahora, anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo,
+        ...(egreso.tipo === "MOTOTAXI" ? { mototaxiNumeroMotor: `ANUL-${egreso.codigo}-${egreso.motor ?? ""}`.slice(0, 100), mototaxiNumeroChasis: `ANUL-${egreso.codigo}-${egreso.chasis ?? ""}`.slice(0, 100) } : {}) })
+        .where(eq(egresosRegistros.id, idEntrada));
+    });
+    return this.obtenerRegistro(idEntrada);
+  }
+
+  /** Anula un pago puntual de un egreso (error de cuenta o de importe): el saldo del egreso vuelve a quedar pendiente. */
+  async anularPago(idEntrada: string, pagoIdEntrada: string, datos: unknown, usuarioId: string) {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuid.test(idEntrada) || !uuid.test(pagoIdEntrada) || !uuid.test(usuarioId)) throw new BadRequestException("El egreso, el pago o el usuario no son válidos.");
+    const motivo = motivoAnulacion(datos);
+    return db.transaction(async (tx) => {
+      const [egreso] = await tx.select({ id: egresosRegistros.id, estado: egresosRegistros.estado }).from(egresosRegistros)
+        .where(eq(egresosRegistros.id, idEntrada)).for("update").limit(1);
+      if (!egreso) throw new NotFoundException("No se encontró el egreso indicado.");
+      if (egreso.estado === "ANULADO") throw new ConflictException("El egreso ya está anulado.");
+      const [pago] = await tx.select({ id: egresosPagos.id, anuladoEn: egresosPagos.anuladoEn }).from(egresosPagos)
+        .where(and(eq(egresosPagos.id, pagoIdEntrada), eq(egresosPagos.egresoId, idEntrada))).limit(1);
+      if (!pago) throw new NotFoundException("No se encontró el pago indicado en este egreso.");
+      if (pago.anuladoEn) throw new ConflictException("El pago ya fue anulado.");
+      const [anulado] = await tx.update(egresosPagos).set({ anuladoEn: new Date(), anuladoPorUsuarioId: usuarioId, motivoAnulacion: motivo })
+        .where(and(eq(egresosPagos.id, pagoIdEntrada), isNull(egresosPagos.anuladoEn)))
+        .returning({ id: egresosPagos.id, egresoId: egresosPagos.egresoId, importePagado: egresosPagos.importePagado, anuladoEn: egresosPagos.anuladoEn });
+      return anulado;
     });
   }
 
@@ -170,7 +233,7 @@ export class ServicioEgresos {
       identificadorActivo: egresosRegistros.identificadorActivo,
       mototaxiMarca: egresosRegistros.mototaxiMarca, mototaxiModelo: egresosRegistros.mototaxiModelo,
       mototaxiNumeroMotor: egresosRegistros.mototaxiNumeroMotor, mototaxiNumeroChasis: egresosRegistros.mototaxiNumeroChasis,
-      observacion: egresosRegistros.observacion,
+      observacion: egresosRegistros.observacion, estado: egresosRegistros.estado,
       creadoEn: egresosRegistros.creadoEn }).from(egresosRegistros).where(eq(egresosRegistros.id, id)).limit(1);
     if (!registro) throw new NotFoundException("No se encontró el egreso recién registrado.");
     return registro;

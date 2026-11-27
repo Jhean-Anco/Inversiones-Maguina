@@ -23,8 +23,8 @@
 
 :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla tbody {
   display: grid !important;
-  gap: 8px;
-  padding: 9px;
+  gap: 10px;
+  padding: 10px;
 }
 
 :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla tbody tr {
@@ -33,11 +33,11 @@
   align-items: start;
   gap: 9px 10px;
   min-width: 0;
-  padding: 11px;
+  padding: 12px 13px;
   border: 1px solid var(--erp-border, #e5ebf2);
-  border-radius: 12px;
+  border-radius: var(--erp-radius-lg, 14px);
   background: var(--erp-surface, #fff);
-  box-shadow: 0 2px 8px #15344f08;
+  box-shadow: var(--erp-shadow-xs, 0 1px 2px #15344f0d);
 }
 
 :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla tbody tr > td {
@@ -56,10 +56,12 @@
 
 :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla tbody tr > td::before {
   content: attr(data-label);
-  color: var(--erp-ink-muted, #71849b);
-  font-size: 9px;
-  font-weight: 750;
+  color: var(--erp-ink-soft, #5d7286);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   line-height: 1.2;
+  text-transform: uppercase;
 }
 
 :where(html[data-responsive-profile="mobile-portrait"]) .listado-maestro-tabla tbody tr > td:first-child,
@@ -75,5 +77,5 @@
   flex-wrap: wrap;
   gap: 5px;
   padding-top: 7px !important;
-  border-top: 1px solid var(--erp-border, #e5ebf2) !important;
+  border-top: 1px solid var(--erp-border-subtle, #edf1f5) !important;
 }

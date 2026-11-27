@@ -1345,6 +1345,55 @@
       "when": 1795596875879,
       "tag": "0191_curved_ezekiel_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 192,
+      "version": "7",
+      "when": 1795719930123,
+      "tag": "0192_configuracion_empresa",
+      "breakpoints": true
+    },
+    {
+      "idx": 193,
+      "version": "7",
+      "when": 1795731800655,
+      "tag": "0193_seguimiento_nubefact",
+      "breakpoints": true
+    },
+    {
+      "idx": 194,
+      "version": "7",
+      "when": 1795731827048,
+      "tag": "0194_nota_venta_ediciones",
+      "breakpoints": true
+    },
+    {
+      "idx": 195,
+      "version": "7",
+      "when": 1795731972543,
+      "tag": "0195_anulacion_compras_egresos",
+      "breakpoints": true
+    },
+    {
+      "idx": 196,
+      "version": "7",
+      "when": 1795732006009,
+      "tag": "0196_nota_credito_reembolso",
+      "breakpoints": true
+    },
+    {
+      "idx": 197,
+      "version": "7",
+      "when": 1795733397061,
+      "tag": "0197_notas_restricciones_declaradas",
+      "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1795742355987,
+      "tag": "0198_living_queen_noir",
+      "breakpoints": true
     }
   ]
 }

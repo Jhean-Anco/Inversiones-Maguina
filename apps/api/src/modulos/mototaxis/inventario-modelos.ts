@@ -30,7 +30,7 @@ export function bloquearModelos(tx: Transaccion, ids: string[]) {
 
 export async function moverSaldoModelo(tx: Transaccion, movimiento: {
   modeloId: string;
-  tipo: "COMPRA" | "VENTA" | "AJUSTE" | "ANULACION_VENTA";
+  tipo: "COMPRA" | "VENTA" | "AJUSTE" | "ANULACION_VENTA" | "ANULACION_COMPRA";
   origenId: string;
   diferencia: number;
   usuarioId: string;

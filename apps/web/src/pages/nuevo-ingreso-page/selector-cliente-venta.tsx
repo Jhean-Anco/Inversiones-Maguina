@@ -63,7 +63,7 @@ export function SelectorClienteVenta({ venta, formulario, esFactura, nombreClien
             cerrable={!venta.registrandoCliente}
             onCerrar={() => setMostrarRegistroCliente(false)}
             pie={
-              <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={venta.registrandoCliente || !documentoNuevoValido} onClick={() => void guardarClienteNuevo()}>
+              <button type="button" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={venta.registrandoCliente || !documentoNuevoValido} onClick={() => void guardarClienteNuevo()}>
                 {venta.registrandoCliente ? "Guardando cliente…" : "Guardar y usar en esta venta"}
               </button>
             }

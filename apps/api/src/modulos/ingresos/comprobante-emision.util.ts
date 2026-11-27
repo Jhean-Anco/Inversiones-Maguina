@@ -28,8 +28,13 @@ export function analizarEstadoComprobante(
   const codigoNoAceptado = Boolean(codigoSunat && !["0", "0000"].includes(codigoSunat));
   const descripcionRechazo = /rechaz|no acept|inv[aá]lid|no coincide|no corresponde|no existe|inconsistente/i.test(`${descripcionSunat} ${notaSunat}`);
 
+  const rechazoExplicito = respuesta.aceptada_por_sunat === false && (estadoRechazado || codigoNoAceptado);
   if (errorSunat) return { estadoProveedor: "ERROR_SUNAT", detalleProveedor: errorSunat };
-  if (estadoPendiente || descripcionPendiente || estado === "NUBEFACT_PENDIENTE") return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: descripcionSunat || notaSunat || errorTexto || "NubeFact aún no confirma el resultado del comprobante." };
+  // El estado local NUBEFACT_PENDIENTE solo indica que falta confirmar: no puede pesar más que la aceptación explícita de SUNAT.
+  if (estadoPendiente || descripcionPendiente || (estado === "NUBEFACT_PENDIENTE" && respuesta.aceptada_por_sunat !== true && !rechazoExplicito)) return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: descripcionSunat || notaSunat || errorTexto || "NubeFact aún no confirma el resultado del comprobante." };
+  // Aceptación explícita de SUNAT: el mensaje local guardado al fallar el envío ("sin respuesta") es obsoleto y no la invalida.
+  const errorRespuesta = [respuesta.errors, respuesta.error, respuesta.mensaje, respuesta.message].map(textoProveedor).filter(Boolean).join(". ");
+  if (respuesta.aceptada_por_sunat === true && !estadoRechazado && !errorRespuesta) return { estadoProveedor: "ACEPTADO_SUNAT", detalleProveedor: descripcionSunat || null };
   if (respuesta.aceptada_por_sunat === false && (estadoRechazado || codigoNoAceptado || descripcionRechazo)) return { estadoProveedor: "RECHAZADO_SUNAT", detalleProveedor: detalleRechazo };
   if (respuesta.aceptada_por_sunat === false && errorTexto) return { estadoProveedor: "ERROR_NUBEFACT", detalleProveedor: errorTexto };
   if (respuesta.aceptada_por_sunat === false) return { estadoProveedor: "PENDIENTE_CONFIRMACION", detalleProveedor: "NubeFact aún no confirma el resultado. La respuesta no contiene un rechazo SUNAT detallado; consulta el estado antes de volver a enviar." };
@@ -58,7 +63,8 @@ export function validarElegibilidadReintento(input: {
   if (input.tipoComprobante !== "BOLETA" && input.tipoComprobante !== "FACTURA") {
     throw new BadRequestException("Solo se puede reintentar la emisión de una boleta o factura electrónica.");
   }
-  if (analizarEstadoComprobante(input.estado, input.datos, input.respuesta).estadoProveedor !== "RECHAZADO_SUNAT") {
+  // Un envío todavía en curso no se reintenta aunque ya exista una respuesta negativa: primero debe consultarse.
+  if (input.estado === "NUBEFACT_PENDIENTE" || analizarEstadoComprobante(input.estado, input.datos, input.respuesta).estadoProveedor !== "RECHAZADO_SUNAT") {
     throw new ConflictException("Solo se puede reintentar una emisión que SUNAT haya rechazado. Si el estado está pendiente, consulta su resultado antes de enviar otra vez.");
   }
   const plazoEnvio = input.tipoComprobante === "BOLETA" ? 5 : 3;

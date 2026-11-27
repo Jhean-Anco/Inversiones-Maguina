@@ -72,6 +72,7 @@ export const elementosAside: ModuloAside[] = [
       { nombre: "Clientes", ruta: "/clientes", permiso: "PERSONAS.LEER" },
       { nombre: "Proveedores", ruta: "/personas/proveedores", permiso: "PERSONAS.LEER" },
       { nombre: "Conductores", ruta: "/personas/conductores", permiso: "PERSONAS.LEER" },
+      { nombre: "Personal", ruta: "/personas/personal", permiso: "PERSONAS.LEER" },
     ],
   },
   { nombre: "Finanzas", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }, { nombre: "Movimientos por cuenta", ruta: "/finanzas/movimientos", permiso: "FINANZAS.LEER" }] },

@@ -12,7 +12,9 @@
     "test:api": "node scripts/run-tests.mjs api",
     "test:security": "node scripts/run-tests.mjs security",
     "test:all": "node scripts/run-tests.mjs all",
-    "test:coverage": "node scripts/run-tests.mjs all --coverage"
+    "test:coverage": "node scripts/run-tests.mjs all --coverage",
+    "test:local": "node scripts/run-tests.mjs local",
+    "test:local:coverage": "node scripts/run-tests.mjs local --coverage"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",
