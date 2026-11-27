@@ -11,6 +11,7 @@ Propósito: índice para desarrolladores basado en el código y la configuració
 | [05 Frontend](05-frontend.md) | React, rutas y cliente HTTP |
 | [06 Modelo de datos](06-modelo-de-datos.md) | Drizzle, tablas y migraciones |
 | [Catálogo de datos](catalogo-de-datos.md) | Columnas y relaciones generadas de Drizzle |
+| [Auditoría de egresos e inventario](auditoria-flujos-egresos-inventario.md) | Escenarios verificados, anulaciones y riesgos de compras y egresos |
 | [07 Módulos y reglas de negocio](07-modulos-y-reglas-de-negocio.md) | Flujos documentados y vacíos |
 | [08 Autenticación y permisos](08-autenticacion-y-permisos.md) | Cookies, guards y permisos |
 | [09 Integraciones externas](09-integraciones-externas.md) | NubeFact y API Perú |

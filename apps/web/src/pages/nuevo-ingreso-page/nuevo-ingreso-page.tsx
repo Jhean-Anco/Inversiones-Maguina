@@ -15,7 +15,11 @@ import { DesgloseImportes } from "../../components/ingresos/desglose-importes";
 import { precioRepuestoEnLinea, importeLinea, subtotalSinIgv, TASA_IGV } from "../../domain/ingresos/importes-venta";
 import { PagoIngresoDialog } from "../../components/ingresos/pago-ingreso-dialog/pago-ingreso-dialog";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
-import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { NotificacionFlotante, useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
+import { documentoDeIngreso } from "../../impresion/servicio-impresion";
+import type { FormatoImpresion } from "../../impresion/tipos";
+import { tamanoInicial, useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
 import { ClienteDetalleDialog } from "./cliente-detalle-dialog";
 import { NuevaVentaEditor } from "./nueva-venta-editor";
 import { CatalogoVenta } from "./catalogo-venta";
@@ -38,7 +42,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const [cuentaPagoId, setCuentaPagoId] = useState("");
   const [paso, setPaso] = useState<"datos" | "previa">("datos");
   const [confirmarDescarteVenta, setConfirmarDescarteVenta] = useState(false);
-  const [tamano, setTamano] = useState<"A4" | "TICKET">("A4");
+  const [tamano, setTamano] = useState<FormatoImpresion>(tamanoInicial);
+  const imprimirAlEmitir = useImprimirAlEmitir(useAlertas());
   const [intentoIdentificacionComprobante, setIntentoIdentificacionComprobante] = useState(false);
   const [clienteEnDetalle, setClienteEnDetalle] = useState<ClienteRegistrado | null>(null);
   const [numeraciones, setNumeraciones] = useState<Awaited<ReturnType<typeof servicioIngresos.numeraciones>> | null>(null);
@@ -150,20 +155,11 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     if (identificacionComprobantePendiente) { setIntentoIdentificacionComprobante(true); return; }
     if (!venta.exito) {
       void (async () => {
-        const abrirPdfNubefact = venta.tipoComprobante !== "NOTA_VENTA" && tamano === "A4";
-        const ventanaPdf = abrirPdfNubefact ? window.open("about:blank", "_blank") : null;
+        // El dispositivo de impresión se resuelve en el clic; luego se imprime la representación oficial (QR/hash).
+        const impresion = await imprimirAlEmitir.preparar(tamano);
         const resultado = await venta.guardar(evento);
-        if (!resultado) { ventanaPdf?.close(); return; }
-        if (resultado.tipoComprobante === "NOTA_VENTA" || (resultado.nubefact?.estado === "EMITIDO" && tamano === "TICKET")) {
-          ventanaPdf?.close();
-          window.setTimeout(() => window.print(), 180);
-        } else if (resultado.nubefact?.estado === "EMITIDO") {
-          const enlace = resultado.nubefact.enlacePdf ?? resultado.nubefact.enlace;
-          if (enlace && ventanaPdf) ventanaPdf.location.replace(enlace.startsWith("/") ? urlApi(enlace) : enlace);
-          else ventanaPdf?.close();
-        } else {
-          ventanaPdf?.close();
-        }
+        if (!resultado) return;
+        if (resultado.tipoComprobante === "NOTA_VENTA" || resultado.nubefact?.estado === "EMITIDO") await imprimirAlEmitir.imprimir(documentoDeIngreso({ ingresoId: resultado.id }), impresion);
       })();
     }
   }
@@ -177,6 +173,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       mensaje={venta.exito.tipoComprobante === "NOTA_VENTA" ? `Nota interna ${venta.exito.codigo} registrada.` : cpeEmitido ? `Comprobante ${venta.exito.nubefact?.codigo ?? venta.exito.codigo} emitido.` : `Venta ${venta.exito.codigo} registrada. NubeFact aún no confirma la emisión.`}
     />}
     {venta.exito && <section className="grid justify-items-start gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm" aria-label="Detalle de la venta registrada">
+      {(venta.exito.tipoComprobante === "NOTA_VENTA" || cpeEmitido) && <span className="flex items-center gap-2 text-[12.5px] font-semibold">Reimprimir <MenuImpresion origen={{ ingresoId: venta.exito.id }} codigo={venta.exito.nubefact?.codigo ?? venta.exito.codigo} /></span>}
       <strong>{venta.exito.tipoComprobante === "NOTA_VENTA" ? "Nota interna registrada" : "Venta registrada"}: {venta.exito.codigo}</strong><span>{venta.exito.tipoComprobante === "NOTA_VENTA" ? "Valor referencial" : "Total"} {soles(Number(venta.exito.total))}</span>
       {venta.exito.tipoComprobante === "NOTA_VENTA" ? <span>Salida de inventario registrada. {enlaceNotaVenta ? <a href={urlApi(enlaceNotaVenta)} target="_blank" rel="noreferrer">Abrir e imprimir nota</a> : venta.exito.archivos?.errores.length ? `No se pudo archivar la nota: ${venta.exito.archivos.errores[0].mensaje}` : "La nota se archivó para su consulta e impresión."}</span> : cpeEmitido ? <span>Comprobante emitido: {venta.exito.nubefact?.codigo}{venta.exito.nubefact?.enlacePdf ? <>  · <a href={venta.exito.nubefact.enlacePdf.startsWith("/") ? urlApi(venta.exito.nubefact.enlacePdf) : venta.exito.nubefact.enlacePdf} target="_blank" rel="noreferrer">Abrir documento</a></> : venta.exito.nubefact?.enlace ? <>  · <a href={venta.exito.nubefact.enlace} target="_blank" rel="noreferrer">Ver comprobante</a></> : null}</span> : <span>La venta quedó registrada, pero NubeFact no confirmó la emisión: {venta.exito.nubefact?.mensaje || "revisa la configuración y el estado del comprobante antes de volver a intentarlo."}</span>}
       {cobranzaContadoPendiente && <>
@@ -214,7 +211,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       </>}
 
       {paso === "previa" && <section className={`venta-preview-stage paper-${tamano.toLowerCase()}`}>
-        <div className="venta-preview-toolbar"><button type="button" className="venta-back" onClick={() => setPaso("datos")}>← Volver a editar</button><fieldset className="venta-size-picker"><legend>Tamaño de impresión</legend>{(["A4", "TICKET"] as const).map((opcion) => <button key={opcion} type="button" className={tamano === opcion ? "is-selected" : ""} aria-pressed={tamano === opcion} onClick={() => setTamano(opcion)}>{opcion === "TICKET" ? "Ticket 80 mm" : opcion}</button>)}</fieldset><span className="venta-preview-hint">Vista previa del documento</span></div>
+        <div className="venta-preview-toolbar"><button type="button" className="venta-back" onClick={() => setPaso("datos")}>← Volver a editar</button><fieldset className="venta-size-picker"><legend>Tamaño de impresión</legend>{(["A4", "TICKET"] as const).map((opcion) => <button key={opcion} type="button" className={tamano === opcion ? "is-selected" : ""} aria-pressed={tamano === opcion} onClick={() => setTamano(opcion)}>{opcion === "TICKET" ? "Ticket" : opcion}</button>)}</fieldset><span className="venta-preview-hint">Vista previa del documento</span></div>
       <aside className="boleta-preview" aria-label="Documento para impresión">
         <article className="boleta-paper">
           <div className="boleta-title"><strong>{presentacionComprobante.titulo}</strong>{esNotaVenta && venta.exito?.codigo && <span>{venta.exito.codigo}</span>}</div>
@@ -253,8 +250,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
         onCerrar={() => setMostrarAltaProducto(false)}
         pie={
           <>
-            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button>
-            <button type="button" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" onClick={() => void abrirAltaProducto()}>Reintentar</button>
+            <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={() => setMostrarAltaProducto(false)}>Cancelar</button>
+            <button type="button" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" onClick={() => void abrirAltaProducto()}>Reintentar</button>
           </>
         }
       >

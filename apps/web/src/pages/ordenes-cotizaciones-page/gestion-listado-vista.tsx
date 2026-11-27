@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import type { Cotizacion } from "../../services/ingresos.service";
 import { CotizacionesListado } from "./cotizaciones-listado";
 import { cotizacionClases } from "./cotizacion-clases";
@@ -25,7 +26,7 @@ type Props = {
   estadoVisible: (cotizacion: Cotizacion) => EstadoVisibleCotizacion;
   documentoCompletado: (cotizacion: Cotizacion) => boolean;
   mensajeWhatsApp: (cotizacion: Cotizacion) => string;
-  imprimir: (cotizacion: Cotizacion, formato: "A4" | "TICKET") => unknown;
+  documentoImprimible: (cotizacion: Cotizacion) => ObtenerDocumento;
   prepararDocumento: (cotizacion: Cotizacion, tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => void;
   puedeCrear: boolean;
   editar: (cotizacion: Cotizacion) => void;
@@ -35,7 +36,7 @@ export function GestionListadoVista(props: Props) {
   const {
     busqueda, setBusqueda, desde, setDesde, hasta, setHasta,
     cotizaciones, cargando, estadoVisible, documentoCompletado, mensajeWhatsApp,
-    imprimir, prepararDocumento, puedeCrear, editar,
+    documentoImprimible, prepararDocumento, puedeCrear, editar,
   } = props;
   const [filtro, setFiltro] = useState<FiltroCotizacion>("TODAS");
   const conteos = useMemo(() => {
@@ -86,8 +87,7 @@ export function GestionListadoVista(props: Props) {
     estadoVisible={estadoVisible}
     documentoCompletado={documentoCompletado}
     mensajeWhatsApp={mensajeWhatsApp}
-    imprimirA4={(cotizacion) => () => imprimir(cotizacion, "A4")}
-    imprimirTicket={(cotizacion) => () => imprimir(cotizacion, "TICKET")}
+    documentoImprimible={documentoImprimible}
     prepararDocumento={prepararDocumento}
     puedeCrear={puedeCrear}
     editar={editar}

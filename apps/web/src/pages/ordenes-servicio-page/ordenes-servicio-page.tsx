@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
-import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
-import { imprimirDocumento } from "../../services/impresion-documentos";
+import { documentoDeOrden } from "./documento-orden";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import { useOrdenesServicioListado } from "./use-ordenes-servicio-listado";
 import { OrdenServicioEditor } from "./orden-servicio-editor";
@@ -12,7 +11,7 @@ import { lineaServicioIncompleta, useOrdenServicioLineas } from "./use-orden-ser
 import { useOrdenServicioClientes } from "./use-orden-servicio-clientes";
 import type { LineaOrden } from "./types";
 import { OrdenesServicioListado } from "./ordenes-servicio-listado";
-import { importesOrden, TASA_IGV_ORDEN } from "./importes-orden";
+import { importesOrden } from "./importes-orden";
 import { ConfirmarDescartarOrden } from "./confirmar-descartar-orden";
 import { etiquetasEstadoOrden } from "./estados-orden";
 import "../nuevo-ingreso-page/nuevo-ingreso-page.css";
@@ -41,7 +40,6 @@ type EstadoFormularioOrden = {
 };
 const claveEstadoFormulario = (datos: EstadoFormularioOrden) => JSON.stringify(datos);
 export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
-  const { error: notificarError } = useAlertas();
   const navegar = useNavigate();
   const listado = useOrdenesServicioListado();
   const { ordenes, busqueda, setBusqueda, cargando, error, setError, cargarOrdenes } = listado;
@@ -229,12 +227,6 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
     navegar("/ingresos/nuevo/repuestos", { state: { ordenServicio: { ...orden, tipoComprobante } } });
   }
 
-  function imprimirOrden(orden: OrdenServicio, formato: "A4" | "TICKET") {
-    const detalles = orden.detalles as LineaOrden[];
-    const importes = importesOrden(detalles);
-    imprimirDocumento({ tipo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: fechaLegible(orden.fechaRecepcion), fechaAcabado: orden.fechaAcabado ? fechaLegible(orden.fechaAcabado) : undefined, cliente: orden.clienteNombre, vehiculo: orden.vehiculoPlaca, estado: estadosOrden[orden.estado], motivo: orden.motivo, adelanto: soles(Number(orden.adelanto)), lineas: detalles.map((linea) => { const cantidad = Number(linea.cantidad ?? 1); const precio = Number(linea.precioUnitario ?? 0); return { descripcion: linea.nombreVisible || linea.descripcion || "Servicio", cantidad: String(cantidad), precio: soles(precio), total: soles(Math.max(0, cantidad * precio - Number(linea.descuento ?? 0))) }; }), subtotal: soles(importes.subtotal), igv: soles(importes.igv), tasaIgv: TASA_IGV_ORDEN, total: soles(importes.total) }, formato, { alError: notificarError });
-  }
-
   if (!enFormulario) return <>
     <OrdenesServicioListado
       ordenes={ordenes}
@@ -245,7 +237,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       onBuscar={setBusqueda}
       onCrear={nuevaOrden}
       onEmitir={emitirDocumento}
-      onImprimir={imprimirOrden}
+      documentoImprimible={(orden) => () => documentoDeOrden(orden)}
       onEditar={abrirOrden}
       formatearFecha={fechaLegible}
       formatearTotal={(lineas) => soles(totalOrden(lineas))}

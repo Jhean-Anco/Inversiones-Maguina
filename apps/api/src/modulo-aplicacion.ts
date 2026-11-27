@@ -8,6 +8,8 @@ import { ModuloMototaxis } from "./modulos/mototaxis/mototaxis.module";
 import { ModuloFinanzas } from "./modulos/finanzas/finanzas.module";
 import { ModuloPersonas } from "./modulos/personas/personas.module";
 import { ModuloAlmacenamiento } from "./modulos/almacenamiento/almacenamiento.module";
+import { ModuloEmpresa } from "./modulos/empresa/empresa.module";
+import { ModuloImpresion } from "./modulos/impresion/impresion.module";
 import { ServiceUnavailableException } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { db } from "@magina/database";
@@ -36,7 +38,7 @@ class ControladorSalud {
 }
 
 @Module({
-  imports: [ModuloAutenticacion, ModuloPersonas, ModuloAlmacenamiento, ModuloInventario, ModuloIngresos, ModuloReportes, ModuloEgresos, ModuloMototaxis, ModuloFinanzas],
+  imports: [ModuloAutenticacion, ModuloPersonas, ModuloAlmacenamiento, ModuloInventario, ModuloIngresos, ModuloReportes, ModuloEgresos, ModuloMototaxis, ModuloFinanzas, ModuloEmpresa, ModuloImpresion],
   controllers: [ControladorSalud],
 })
 export class ModuloAplicacion {}

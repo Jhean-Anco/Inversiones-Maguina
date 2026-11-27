@@ -49,7 +49,7 @@ export type GarantiaMototaxi = { id: string; modeloId: string; unidadId: string 
 export type GarantiaModeloMototaxi = { id: string; modeloId: string; activa: boolean; mesesVigencia: number; alcance: string; exclusiones: string | null };
 export type GarantiaVentaMototaxi = { id: string; iniciaEn: string; terminaEn: string; mesesVigencia: number; cantidad: number; alcance: string; exclusiones: string | null };
 export type ReclamoGarantia = { id: string; garantiaId: string; ingresoDetalleId?: string | null; ventaCodigo?: string | null; ventaCliente?: string | null; ventaMototaxi?: string | null; fecha: string; descripcionFalla: string; costoTotal: string; porcentajeProveedorAplicado: string; importeProveedor: string; importeEmpresa: string; estado: string; resolucion: string | null };
-export type CompraMototaxi = { id: string; codigo: string; fecha: string; documentoTipo: string; documentoNumero: string | null; moneda: string; total: string; proveedor: string; unidades: number; pagado: string; saldo: string; observacion: string | null };
+export type CompraMototaxi = { id: string; codigo: string; fecha: string; documentoTipo: string; documentoNumero: string | null; moneda: string; total: string; proveedor: string; unidades: number; pagado: string; saldo: string; observacion: string | null; estado?: "REGISTRADA" | "ANULADA"; motivoAnulacion?: string | null };
 export type PagoCompraMototaxi = { id: string; fechaPago: string; importePagado: string; medioPago: string; cuentaFinancieraId: string | null; creadoEn: string };
 export type ReconteoModeloMototaxi = { modelo: { id: string; marca: string; nombre: string; version: string | null }; cantidadSistema: number };
 export type AjusteInventarioMototaxi = { id: string; codigo: string; modeloId: string; marca: string; modelo: string; version: string | null; cantidadSistema: number; cantidadContada: number; motivo: string; observacion: string | null; creadoEn: string; usuario: string; aplicado: boolean };
@@ -78,6 +78,7 @@ export const servicioMototaxis = {
   },
   comprar: (datos: Record<string, unknown>) => solicitarApi<{ id: string; codigo: string; fecha: string; total: string; unidades: number; importePagado: string; saldoPendiente: string }>("/mototaxis/compras", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   compras: (busqueda = "") => solicitarApi<CompraMototaxi[]>(`/mototaxis/compras?busqueda=${encodeURIComponent(busqueda)}`),
+  anularCompra: (id: string, motivo: string) => solicitarApi<{ id: string; codigo: string }>(`/mototaxis/compras/${encodeURIComponent(id)}/anular`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ motivo }) }),
   pagosCompra: (id: string) => solicitarApi<PagoCompraMototaxi[]>(`/mototaxis/compras/${id}/pagos`),
   aplicarPagoCompra: (id: string, datos: Record<string, unknown>) => solicitarApi<PagoCompraMototaxi>(`/mototaxis/compras/${id}/pagos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   cambiarEstado: (id: string, datos: { estado: string; motivo: string; observacion?: string }) => solicitarApi<UnidadMototaxi>(`/mototaxis/unidades/${id}/estado`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),

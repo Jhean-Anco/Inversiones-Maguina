@@ -64,25 +64,35 @@ export class ServicioAlmacenamiento {
     const guardados: { id: string; tipo: string; nombre: string; ruta: string }[] = [];
     const errores: { tipo: string; mensaje: string }[] = [];
     const hostConfigurado = (() => { try { return new URL(process.env.NUBEFACT_RUTA ?? "").hostname.toLowerCase(); } catch { return ""; } })();
-    for (const doc of campos) {
+    // Los tres archivos se descargan en paralelo y con tiempo límite propio: un enlace lento no retiene a los demás ni a la venta.
+    const resultados = await Promise.all(campos.map(async (doc): Promise<{ guardado: (typeof guardados)[number] } | { error: (typeof errores)[number] } | null> => {
       const urlFuente = datos[doc.campo];
-      if (typeof urlFuente !== "string" || !urlFuente.trim()) continue;
+      if (typeof urlFuente !== "string" || !urlFuente.trim()) return null;
       try {
         const url = new URL(urlFuente);
         if (url.protocol !== "https:" || url.username || url.password || (url.hostname.toLowerCase() !== hostConfigurado && !["api.nubefact.com", "api.pse.pe", "nubefact.pse.pe"].includes(url.hostname.toLowerCase()))) throw new Error("NubeFact devolvió un enlace de documento no permitido.");
         const tipoArchivo = `${tipoComprobante}_${doc.sufijo}`;
-        const [existente] = await db.select({ id: archivosLocales.id, nombre: archivosLocales.nombre }).from(archivosLocales)
-          .where(and(eq(archivosLocales.entidadTipo, entidadTipo), eq(archivosLocales.entidadId, entidadId), eq(archivosLocales.tipoArchivo, tipoArchivo))).limit(1);
-        if (existente) { guardados.push({ ...existente, tipo: doc.sufijo, ruta: `/archivos/${existente.id}/contenido` }); continue; }
-        const respuesta = await fetch(url, { headers: { Authorization: process.env.NUBEFACT_TOKEN ?? "", Accept: "application/pdf, application/xml, application/zip, application/octet-stream" }, signal: AbortSignal.timeout(20000) });
+        const buscarExistente = async () => (await db.select({ id: archivosLocales.id, nombre: archivosLocales.nombre }).from(archivosLocales)
+          .where(and(eq(archivosLocales.entidadTipo, entidadTipo), eq(archivosLocales.entidadId, entidadId), eq(archivosLocales.tipoArchivo, tipoArchivo))).limit(1))[0];
+        const existente = await buscarExistente();
+        if (existente) return { guardado: { ...existente, tipo: doc.sufijo, ruta: `/archivos/${existente.id}/contenido` } };
+        const respuesta = await fetch(url, { headers: { Authorization: process.env.NUBEFACT_TOKEN ?? "", Accept: "application/pdf, application/xml, application/zip, application/octet-stream" }, signal: AbortSignal.timeout(10000) });
         if (!respuesta.ok) throw new Error(`NubeFact respondió ${respuesta.status} al descargar ${doc.sufijo}.`);
         const contenido = Buffer.from(await respuesta.arrayBuffer());
         if (!contenido.length || contenido.length > 20 * 1024 * 1024) throw new Error(`El archivo ${doc.sufijo} está vacío o supera 20 MB.`);
+        // Otra ejecución (p. ej. el seguimiento automático) pudo guardarlo mientras se descargaba: no se duplica.
+        const concurrente = await buscarExistente();
+        if (concurrente) return { guardado: { ...concurrente, tipo: doc.sufijo, ruta: `/archivos/${concurrente.id}/contenido` } };
         const mime = respuesta.headers.get("content-type")?.split(";")[0]?.trim() || doc.mime;
         const nombre = `${codigo.replace(/[^A-Za-z0-9_-]/g, "_")}-${doc.sufijo.toLowerCase()}.${doc.extension}`;
         const guardado = await this.guardarArchivo(tipoBase, tipoArchivo, entidadTipo, entidadId, nombre, mime, contenido, urlFuente);
-        guardados.push({ id: guardado.id, tipo: doc.sufijo, nombre, ruta: guardado.ruta });
-      } catch (error) { errores.push({ tipo: doc.sufijo, mensaje: error instanceof Error ? error.message : "No se pudo guardar el documento de NubeFact." }); }
+        return { guardado: { id: guardado.id, tipo: doc.sufijo, nombre, ruta: guardado.ruta } };
+      } catch (error) { return { error: { tipo: doc.sufijo, mensaje: error instanceof Error ? error.message : "No se pudo guardar el documento de NubeFact." } }; }
+    }));
+    for (const resultado of resultados) {
+      if (!resultado) continue;
+      if ("guardado" in resultado) guardados.push(resultado.guardado);
+      else errores.push(resultado.error);
     }
     return { guardados, errores };
   }

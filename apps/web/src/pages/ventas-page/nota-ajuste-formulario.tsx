@@ -1,12 +1,9 @@
-import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Ban, ChevronDown, Files } from "lucide-react";
 import { ConfirmarDescarteFormulario } from "../../components/ui/confirmar-descarte-formulario";
 import { Etiqueta } from "../../components/ui/etiqueta";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
-import { BotonImprimir } from "../../components/documentos/boton-imprimir";
-import { imprimirDocumento } from "../../services/impresion-documentos";
-import { urlApi } from "../../services/api-cliente";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import type { FuenteNota, NotaRelacionada, VentaListado } from "../../services/ingresos.service";
 import { estado, fecha, soles } from "./ventas-formatters";
 import { DocumentoEnlaces } from "./documento-enlaces";
@@ -46,24 +43,6 @@ export function NotaAjusteFormulario({ venta, fuente, notas, tipo, ajustes, tota
   useEffect(() => {
     tituloRef.current?.focus();
   }, []);
-  const { error: notificarError } = useAlertas();
-  const imprimirNota = (nota: NotaRelacionada, formato: "A4" | "TICKET") => imprimirDocumento({
-    tipo: nota.tipoComprobante === "NOTA_CREDITO" ? "NOTA DE CRÉDITO" : "NOTA DE DÉBITO",
-    codigo: nota.codigoComprobante,
-    fecha: fecha(nota.fecha),
-    cliente: venta.clienteNombre,
-    documentoCliente: venta.clienteNumeroDocumento,
-    referencia: venta.codigoComprobante,
-    motivo: nota.motivo,
-    estado: estado(nota.estado),
-    total: soles(nota.total),
-  }, formato, { alError: notificarError });
-  const abrirPdfNota = (nota: NotaRelacionada) => {
-    if (!nota.enlacePdf) { imprimirNota(nota, "A4"); return; }
-    const enlace = nota.enlacePdf.startsWith("/") ? urlApi(nota.enlacePdf) : nota.enlacePdf;
-    window.open(enlace, "_blank", "noopener,noreferrer");
-  };
-
   const esCredito = tipo === "NOTA_CREDITO";
   const nombreNota = esCredito ? "nota de crédito" : "nota de débito";
   function solicitarCancelacion() {
@@ -162,7 +141,7 @@ export function NotaAjusteFormulario({ venta, fuente, notas, tipo, ajustes, tota
             </div>
             <span className={`${c.rowActions} nota-ajuste-nota-acciones`}>
               <DocumentoEnlaces pdf={nota.enlacePdf} xml={nota.enlaceXml} cdr={nota.enlaceCdr} codigo={nota.codigoComprobante} whatsapp={false} pdfComoDocumento={false} />
-              <BotonImprimir etiqueta={`Imprimir nota ${nota.codigoComprobante}`} alImprimirA4={() => abrirPdfNota(nota)} alImprimirTicket={() => imprimirNota(nota, "TICKET")} />
+              {!/RECHAZ|ERROR/.test(nota.estado) && <MenuImpresion origen={{ ingresoId: venta.id, notaId: nota.id }} codigo={nota.codigoComprobante} />}
               {puedeAnular && (pendiente || nota.estado === "EMITIDO") && <button
                 className={pendiente ? c.iconButton : `${c.iconButton} ${c.cancelAction}`}
                 type="button"

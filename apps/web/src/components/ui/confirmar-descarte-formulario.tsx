@@ -24,8 +24,8 @@ export function ConfirmarDescarteFormulario({ elemento, detalle, accion, onSegui
       enfocarAlAbrir={seguirEditandoRef}
       pie={
         <>
-          <button ref={seguirEditandoRef} className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" type="button" onClick={onSeguirEditando}>Seguir editando</button>
-          <button className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white max-sm:w-full" type="button" onClick={onDescartar}>{accion ?? `Descartar ${elemento}`}</button>
+          <button ref={seguirEditandoRef} className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" type="button" onClick={onSeguirEditando}>Seguir editando</button>
+          <button className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" type="button" onClick={onDescartar}>{accion ?? `Descartar ${elemento}`}</button>
         </>
       }
     >

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Eye, Mail, Phone } from "lucide-react";
 import { AccionIcono } from "../../components/ui/accion-icono";
-import { BotonImprimir } from "../../components/documentos/boton-imprimir";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
+import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import { clasesOpcionMenu } from "../../components/documentos/menu-accion-classes";
 import type { OrdenServicio } from "../../services/ingresos.service";
 import { ordenesListadoClasses as c } from "./ordenes-tabla-classes";
@@ -17,14 +18,13 @@ type OrdenServicioRowProps = {
   puedeCrear: boolean;
   menuDocumento: ReactNode;
   formatearFecha: (fecha: string) => string;
-  alImprimirA4: () => void;
-  alImprimirTicket: () => void;
+  documentoImprimible: ObtenerDocumento;
   alEditar: () => void;
 };
 
 const telefonoParaLlamar = (telefono: string) => telefono.trim().replace(/[^+\d]/g, "");
 
-export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menuDocumento, formatearFecha, alImprimirA4, alImprimirTicket, alEditar }: OrdenServicioRowProps) {
+export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menuDocumento, formatearFecha, documentoImprimible, alEditar }: OrdenServicioRowProps) {
   const tono = tonosEstadoOrden[orden.estado];
   const modificable = orden.estado !== "FACTURADA" && orden.estado !== "ANULADA";
   return (
@@ -40,7 +40,7 @@ export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menu
       <td className={`${c.number} ${c.total}`}><strong className="block">{total}</strong></td>
       <td><div className={`${c.rowActions} ordenes-row-actions`}>
         {modificable && <AccionIcono accion="editar" etiqueta={`Editar orden ${orden.codigo}`} confirmacion={{ titulo: "¿Editar esta orden de servicio?", descripcion: `Vas a abrir ${orden.codigo} para revisar sus datos. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar orden" }} onClick={alEditar} />}
-        <BotonImprimir etiqueta={`Imprimir orden ${orden.codigo}`} tono="neutral" alImprimirA4={alImprimirA4} alImprimirTicket={alImprimirTicket} />
+        <MenuImpresion codigo={orden.codigo} etiqueta={`Imprimir orden ${orden.codigo}`} tono="neutral" obtener={documentoImprimible} />
         {modificable && puedeCrear && menuDocumento}
         {(orden.clienteTelefono || orden.clienteCorreo || orden.ingresoId) && <MenuMasAccionesOrden>
           {orden.clienteTelefono && <a className={`${clasesOpcionMenu} flex items-center gap-2 text-[12px]`} href={`tel:${telefonoParaLlamar(orden.clienteTelefono)}`} role="menuitem"><Phone aria-hidden="true" size={16} />Llamar</a>}

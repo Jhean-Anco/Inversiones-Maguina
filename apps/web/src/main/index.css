@@ -44,10 +44,12 @@
 
 :root {
   color-scheme: light;
-  font-family: Inter, Segoe UI, sans-serif;
-  color: #172336;
-  background: #f4f7fb;
+  font-family: var(--erp-font-body);
+  color: var(--erp-ink);
+  background: var(--erp-canvas);
   font-synthesis: none;
+  font-optical-sizing: auto;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -56,44 +58,108 @@
   --blue: #0b376a;
   --blue-deep: #071e3c;
   --red: #ed2535;
-  --muted: #7b879a;
+  --muted: #6b7a8d;
   --action-primary: #c91f32;
-  --action-primary-hover: #a91b2b;
+  --action-primary-hover: #ab1a2a;
   --action-primary-solid: #c91f32;
-  --action-primary-solid-hover: #a91b2b;
-  --action-primary-surface: #fff4f5;
-  --action-primary-hover-surface: #ffe8ea;
-  --action-primary-border: #edbbc1;
-  --action-primary-focus: #c91f3266;
+  --action-primary-solid-hover: #ab1a2a;
+  --action-primary-surface: #fdf1f2;
+  --action-primary-hover-surface: #fbe4e7;
+  --action-primary-border: #efc3c9;
+  --action-primary-focus: #c91f3259;
   --action-secondary: #174b78;
 
   /* Tokens del sistema visual ERP. */
-  --erp-ink: #142b42;
-  --erp-ink-muted: #52697d;
-  --erp-ink-soft: #687e91;
+  /* Marca */
   --erp-brand: #0b376a;
   --erp-brand-deep: #071e3c;
+  --erp-brand-strong: #0e4783;
+  --erp-brand-soft: #eef4fa;
+  --erp-brand-muted: #dbe6f2;
   --erp-accent: #c91f32;
-  --erp-canvas: #f3f6f9;
+  --erp-accent-hover: #ab1a2a;
+  --erp-accent-soft: #fdf1f2;
+  /* Texto (contraste AA sobre superficie y lienzo) */
+  --erp-ink: #10243a;
+  --erp-ink-muted: #4a6075;
+  --erp-ink-soft: #5d7286;
+  --erp-ink-faint: #8394a6;
+  --erp-ink-inverse: #ffffff;
+  /* Superficies */
+  --erp-canvas: #f3f5f8;
   --erp-surface: #ffffff;
-  --erp-surface-muted: #f7f9fb;
-  --erp-border: #dbe3e9;
-  --erp-border-strong: #c5d1db;
-  --erp-focus: #2878b9;
-  --erp-shadow-card: 0 8px 24px rgb(15 42 66 / 6%);
-  --erp-shadow-raised: 0 16px 38px rgb(15 42 66 / 12%);
+  --erp-surface-muted: #f8fafc;
+  --erp-surface-sunken: #f1f4f8;
+  --erp-surface-hover: #f5f8fb;
+  --erp-surface-selected: #eef4fa;
+  --erp-overlay: rgb(6 20 38 / 52%);
+  /* Bordes y foco */
+  --erp-border-subtle: #edf1f5;
+  --erp-border: #e1e7ee;
+  --erp-border-strong: #cbd5df;
+  --erp-focus: #2a73b8;
+  --erp-focus-ring: 0 0 0 3px color-mix(in srgb, var(--erp-focus) 24%, transparent);
+  /* Estados */
+  --erp-positive: #1b6a45;
+  --erp-positive-bg: #ebf7f0;
+  --erp-positive-border: #c2e2cf;
+  --erp-warning: #865600;
+  --erp-warning-bg: #fff6e3;
+  --erp-warning-border: #f0d6a0;
+  --erp-danger: #b01f2e;
+  --erp-danger-bg: #fdeff1;
+  --erp-danger-border: #f1c5cb;
+  --erp-info: #155d8d;
+  --erp-info-bg: #edf5fb;
+  --erp-info-border: #c5dbec;
+  --erp-neutral: #4b5e71;
+  --erp-neutral-bg: #f1f4f7;
+  --erp-neutral-border: #dce3ea;
+  /* Elevación */
+  --erp-shadow-xs: 0 1px 2px rgb(16 36 58 / 5%);
+  --erp-shadow-sm: 0 1px 2px rgb(16 36 58 / 4%), 0 2px 6px -1px rgb(16 36 58 / 6%);
+  --erp-shadow-md: 0 2px 4px -1px rgb(16 36 58 / 6%), 0 12px 28px -8px rgb(16 36 58 / 16%);
+  --erp-shadow-lg: 0 8px 16px -8px rgb(7 30 60 / 14%), 0 28px 56px -16px rgb(7 30 60 / 32%);
+  --erp-shadow-card: var(--erp-shadow-sm);
+  --erp-shadow-raised: var(--erp-shadow-md);
+  /* Radios */
+  --erp-radius-xs: 6px;
   --erp-radius-sm: 8px;
-  --erp-radius-md: 12px;
-  --erp-radius-lg: 16px;
+  --erp-radius-md: 10px;
+  --erp-radius-lg: 14px;
+  --erp-radius-xl: 18px;
+  --erp-radius-pill: 999px;
+  /* Espacio */
   --erp-space-1: 4px;
   --erp-space-2: 8px;
   --erp-space-3: 12px;
   --erp-space-4: 16px;
   --erp-space-5: 20px;
   --erp-space-6: 24px;
-  --erp-font-body: Inter, "Segoe UI", system-ui, sans-serif;
-  --erp-button-state-duration: 600ms;
-  --erp-button-state-easing: ease-in-out;
+  /* Tipografía */
+  --erp-font-body: "Inter", "InterVariable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --erp-text-2xs: 10px;
+  --erp-text-xs: 11px;
+  --erp-text-sm: 12px;
+  --erp-text-base: 13px;
+  --erp-text-md: 14px;
+  --erp-text-lg: 16px;
+  --erp-text-xl: 18px;
+  --erp-text-2xl: 22px;
+  --erp-text-3xl: 28px;
+  --erp-tracking-tight: -0.018em;
+  --erp-tracking-heading: -0.024em;
+  --erp-tracking-caps: 0.06em;
+  /* Controles */
+  --erp-control-h-sm: 32px;
+  --erp-control-h: 40px;
+  --erp-control-h-lg: 44px;
+  /* Movimiento */
+  --erp-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --erp-duration-fast: 120ms;
+  --erp-duration: 180ms;
+  --erp-button-state-duration: 180ms;
+  --erp-button-state-easing: var(--erp-ease);
 }
 
 * {

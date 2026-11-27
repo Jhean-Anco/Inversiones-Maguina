@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
 import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
-import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type FiltroEstadoPagoEntrada, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
+import { servicioEntradasStock, type DatosEntradaStock, type EntradaStock, type FiltroEstadoPagoEntrada, type PaginaEntradasStock, type ProductoParaCompra } from "../services/inventario/entradas-stock.service";
 import { useProveedorEntradaStock } from "./use-proveedor-entrada-stock";
 import { useCatalogoRecientes, type CatalogoReciente, MIN_CARACTERES_BUSQUEDA_CATALOGO } from "../components/catalogo/use-catalogo-recientes";
 
@@ -13,7 +13,7 @@ const fechaHoy = () => { const ahora = new Date(); return `${ahora.getFullYear()
 
 export function useEntradasStock(alGuardarse?: () => void) {
   const navegar = useNavigate();
-  const [paginaDatos, setPaginaDatos] = useState({ items: [] as EntradaStock[], total: 0, totalPaginas: 1, conteosPago: { todas: 0, pagadas: 0, pendientes: 0 } });
+  const [paginaDatos, setPaginaDatos] = useState({ items: [] as EntradaStock[], total: 0, totalPaginas: 1, conteosPago: { todas: 0, pagadas: 0, pendientes: 0 } as PaginaEntradasStock["conteosPago"] });
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
@@ -40,6 +40,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
   const [entradaDetalle, setEntradaDetalle] = useState<EntradaStock | null>(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const consultaActual = useRef(0);
+  const claveCompra = useRef<string | undefined>(globalThis.crypto?.randomUUID?.());
 
   const manejarError = useCallback((problema: unknown, alternativa: string) => {
     if (problema instanceof ErrorApi && problema.estado === 401) { navegar("/login", { replace: true }); return; }
@@ -116,6 +117,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
   }
 
   function abrirNuevo() {
+    claveCompra.current = globalThis.crypto?.randomUUID?.();
     setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); datosProveedor.limpiarProveedor(); setMedioPago(""); setCuentaFinancieraId(""); setObservacion(""); setPagosCompra([{ clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]);
     setProductoBusqueda(""); setProductosEncontrados([]); setProductoElegido(""); setCantidadProducto("1"); setCostoProducto(""); setDetalles([]); setModalAbierto(true);
   }
@@ -139,7 +141,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
     if (detalles.some((detalle) => Number(detalle.importeTotal) <= 0 || Number(detalle.cantidad) <= 0)) { setError("Completa la cantidad y el precio total de cada repuesto."); return; }
     const pagos = pagosCompra.map((pago) => ({ cuentaFinancieraId: pago.cuentaFinancieraId, medioPago: pago.medioPago, importePagado: pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "0") }));
     if (pagosCompra.some((pago) => !pago.cuentaFinancieraId || !pago.medioPago || Number(pago.importe || (pagosCompra.length === 1 ? totalBorrador : 0)) <= 0) || Math.round(pagos.reduce((suma, pago) => suma + Number(pago.importePagado), 0) * 100) !== Math.round(totalBorrador * 100)) { setError("Completa los importes y las cuentas. La suma debe coincidir con el total de la compra."); return; }
-    const datos: DatosEntradaStock = { fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: datosProveedor.proveedor.trim(), proveedorTipoPersona: datosProveedor.proveedorTipoPersona, proveedorTipoDocumento: datosProveedor.proveedorTipoDocumento, proveedorNumeroDocumento: datosProveedor.proveedorNumeroDocumento.trim(), proveedorDireccion: datosProveedor.proveedorDireccion.trim(), medioPago: pagos.length === 1 ? pagos[0].medioPago : null, cuentaFinancieraId: pagos.length === 1 ? pagos[0].cuentaFinancieraId : null, montoPagado: totalBorrador.toFixed(2), pagos, observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario, importeTotal }) => ({ productoId, presentacionId, cantidad, costoUnitario, importeTotal })) };
+    const datos: DatosEntradaStock = { claveIdempotencia: claveCompra.current, fecha, tipoDocumento, numeroDocumento: numeroDocumento.trim(), proveedor: datosProveedor.proveedor.trim(), proveedorTipoPersona: datosProveedor.proveedorTipoPersona, proveedorTipoDocumento: datosProveedor.proveedorTipoDocumento, proveedorNumeroDocumento: datosProveedor.proveedorNumeroDocumento.trim(), proveedorDireccion: datosProveedor.proveedorDireccion.trim(), medioPago: pagos.length === 1 ? pagos[0].medioPago : null, cuentaFinancieraId: pagos.length === 1 ? pagos[0].cuentaFinancieraId : null, montoPagado: totalBorrador.toFixed(2), pagos, observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario, importeTotal }) => ({ productoId, presentacionId, cantidad, costoUnitario, importeTotal })) };
     setGuardando(true);
     try {
       await servicioEntradasStock.crear(datos);
@@ -147,6 +149,11 @@ export function useEntradasStock(alGuardarse?: () => void) {
       alGuardarse?.();
     } catch (problema) { manejarError(problema, "No se pudo registrar la compra."); }
     finally { setGuardando(false); }
+  }
+  async function anularCompra(id: string, motivo: string) {
+    await servicioEntradasStock.anular(id, motivo);
+    setEntradaDetalle(null);
+    await cargarPagina();
   }
   function cambiarPorPagina(cantidad: number) { if ([4, 6, 8, 10].includes(cantidad)) { setPorPagina(cantidad); setPagina(1); } }
 
@@ -160,6 +167,6 @@ export function useEntradasStock(alGuardarse?: () => void) {
     productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, productosRecientes: catalogoRecienteRepuestos.recientes, seleccionarProductoReciente,
     seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto,
     detalles, setDetalles, totalBorrador, pagosCompra, setPagosCompra, agregarPagoCompra: () => setPagosCompra((actuales) => [...actuales, { clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]), quitarPagoCompra: (clave: string) => setPagosCompra((actuales) => actuales.filter((pago) => pago.clave !== clave)), agregarDetalle, quitarDetalle: (clave: string) => setDetalles((actuales) => actuales.filter((fila) => fila.clave !== clave)), guardar,
-    entradaDetalle, cerrarDetalle: () => setEntradaDetalle(null), abrirProductoDetalle, cargandoDetalle,
+    anularCompra, entradaDetalle, cerrarDetalle: () => setEntradaDetalle(null), abrirProductoDetalle, cargandoDetalle,
   };
 }

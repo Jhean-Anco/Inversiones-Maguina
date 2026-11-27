@@ -343,7 +343,7 @@ export const movimientosModelosMototaxis = pgTable("movimientos_modelos_mototaxi
 }, (tabla) => [
   uniqueIndex("movimientos_modelos_mototaxis_origen_unico").on(tabla.tipo, tabla.origenId),
   index("movimientos_modelos_mototaxis_modelo_fecha_idx").on(tabla.modeloId, tabla.creadoEn),
-  check("movimientos_modelos_mototaxis_tipo_ck", sql`${tabla.tipo} IN ('COMPRA', 'VENTA', 'AJUSTE', 'ANULACION_VENTA')`),
+  check("movimientos_modelos_mototaxis_tipo_ck", sql`${tabla.tipo} IN ('COMPRA', 'VENTA', 'AJUSTE', 'ANULACION_VENTA', 'ANULACION_COMPRA')`),
   check("movimientos_modelos_mototaxis_saldo_ck", sql`${tabla.cantidadAnterior} >= 0 AND ${tabla.cantidadFinal} >= 0`),
 ]);
 
@@ -385,6 +385,10 @@ export const comprasMototaxis = pgTable("compras_mototaxis", {
   observacion: text("observacion"),
   claveIdempotencia: uuid("clave_idempotencia"),
   huellaSolicitud: varchar("huella_solicitud", { length: 64 }),
+  estado: varchar("estado", { length: 12 }).notNull().default("REGISTRADA"),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
@@ -394,6 +398,8 @@ export const comprasMototaxis = pgTable("compras_mototaxis", {
   check("compras_mototaxis_documento_tipo_ck", sql`${tabla.documentoTipo} IN ('FACTURA', 'BOLETA', 'NOTA', 'OTRO', 'SIN_DOCUMENTO')`),
   check("compras_mototaxis_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
   check("compras_mototaxis_total_ck", sql`${tabla.total} > 0`),
+  check("compras_mototaxis_estado_ck", sql`${tabla.estado} IN ('REGISTRADA', 'ANULADA')`),
+  check("compras_mototaxis_anulacion_ck", sql`(${tabla.estado} = 'ANULADA' AND ${tabla.anuladoEn} IS NOT NULL AND ${tabla.anuladoPorUsuarioId} IS NOT NULL AND ${tabla.motivoAnulacion} IS NOT NULL) OR (${tabla.estado} = 'REGISTRADA' AND ${tabla.anuladoEn} IS NULL)`),
 ]);
 
 export const comprasMototaxisDetalle = pgTable("compras_mototaxis_detalle", {
@@ -419,11 +425,15 @@ export const pagosComprasMototaxis = pgTable("pagos_compras_mototaxis", {
   medioPago: varchar("medio_pago", { length: 30 }).notNull(),
   cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   claveIdempotencia: uuid("clave_idempotencia").notNull().unique(),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("pagos_compras_mototaxis_compra_fecha_idx").on(tabla.compraId, tabla.fechaPago),
   check("pagos_compras_mototaxis_importe_ck", sql`${tabla.importePagado} > 0`),
+  check("pagos_compras_mototaxis_anulacion_ck", sql`(${tabla.anuladoEn} IS NULL) = (${tabla.anuladoPorUsuarioId} IS NULL)`),
   check("pagos_compras_mototaxis_medio_ck", sql`${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
 ]);
 
@@ -624,6 +634,12 @@ export const entradasStock = pgTable("entradas_stock", {
   proveedorDireccion: varchar("proveedor_direccion", { length: 250 }),
   observacion: text("observacion"),
   totalDocumento: numeric("total_documento", { precision: 14, scale: 2 }),
+  estado: varchar("estado", { length: 12 }).notNull().default("REGISTRADA"),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
+  claveIdempotencia: uuid("clave_idempotencia"),
+  huellaSolicitud: varchar("huella_solicitud", { length: 64 }),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
@@ -638,6 +654,9 @@ export const entradasStock = pgTable("entradas_stock", {
   check("entradas_stock_proveedor_documento_numero_ck", sql`${tabla.proveedorNumeroDocumento} IS NULL OR (${tabla.proveedorTipoDocumento} = 'DNI' AND ${tabla.proveedorNumeroDocumento} ~ '^[0-9]{8}$') OR (${tabla.proveedorTipoDocumento} = 'RUC' AND ${tabla.proveedorNumeroDocumento} ~ '^[0-9]{11}$') OR (${tabla.proveedorTipoDocumento} = 'EXT' AND length(trim(${tabla.proveedorNumeroDocumento})) BETWEEN 1 AND 100)`),
   check("entradas_stock_proveedor_juridico_ruc_ck", sql`${tabla.proveedorTipoPersona} IS DISTINCT FROM 'JURIDICA' OR ${tabla.proveedorTipoDocumento} IN ('RUC', 'EXT')`),
   check("entradas_stock_total_no_negativo_ck", sql`${tabla.total} >= 0`),
+  uniqueIndex("entradas_stock_idempotencia_unica").on(tabla.claveIdempotencia).where(sql`${tabla.claveIdempotencia} IS NOT NULL`),
+  check("entradas_stock_estado_ck", sql`${tabla.estado} IN ('REGISTRADA', 'ANULADA')`),
+  check("entradas_stock_anulacion_ck", sql`(${tabla.estado} = 'ANULADA' AND ${tabla.anuladoEn} IS NOT NULL AND ${tabla.anuladoPorUsuarioId} IS NOT NULL AND ${tabla.motivoAnulacion} IS NOT NULL) OR (${tabla.estado} = 'REGISTRADA' AND ${tabla.anuladoEn} IS NULL)`),
   check("entradas_stock_pago_ck", sql`${tabla.montoPagado} IS NULL OR (${tabla.montoPagado} >= 0 AND ${tabla.montoPagado} <= coalesce(${tabla.totalDocumento}, ${tabla.total}))`),
   check("entradas_stock_medio_pago_ck", sql`${tabla.medioPago} IS NULL OR ${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
 ]);
@@ -652,10 +671,14 @@ export const pagosEntradasStock = pgTable("pagos_entradas_stock", {
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   clasificadoPorUsuarioId: uuid("clasificado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
   clasificadoEn: timestamp("clasificado_en", { withTimezone: true, precision: 3 }),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("pagos_entradas_stock_entrada_fecha_idx").on(tabla.entradaId, tabla.fechaPago),
   check("pagos_entradas_stock_importes_ck", sql`${tabla.importePagado} > 0`),
+  check("pagos_entradas_stock_anulacion_ck", sql`(${tabla.anuladoEn} IS NULL) = (${tabla.anuladoPorUsuarioId} IS NULL)`),
   check("pagos_entradas_stock_medio_ck", sql`${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
 ]);
 
@@ -721,6 +744,10 @@ export const egresosRegistros = pgTable("egresos_registros", {
   cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   monto: numeric("monto", { precision: 14, scale: 2 }).notNull(),
   identificadorActivo: varchar("identificador_activo", { length: 100 }),
+  estado: varchar("estado", { length: 12 }).notNull().default("REGISTRADO"),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
   mototaxiMarca: varchar("mototaxi_marca", { length: 100 }),
   mototaxiModelo: varchar("mototaxi_modelo", { length: 100 }),
   mototaxiNumeroMotor: varchar("mototaxi_numero_motor", { length: 100 }),
@@ -738,6 +765,8 @@ export const egresosRegistros = pgTable("egresos_registros", {
   check("egresos_registros_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
   check("egresos_registros_medio_pago_ck", sql`${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
   check("egresos_registros_monto_positivo_ck", sql`${tabla.monto} > 0`),
+  check("egresos_registros_estado_ck", sql`${tabla.estado} IN ('REGISTRADO', 'ANULADO')`),
+  check("egresos_registros_anulacion_ck", sql`(${tabla.estado} = 'ANULADO' AND ${tabla.anuladoEn} IS NOT NULL AND ${tabla.anuladoPorUsuarioId} IS NOT NULL AND ${tabla.motivoAnulacion} IS NOT NULL) OR (${tabla.estado} = 'REGISTRADO' AND ${tabla.anuladoEn} IS NULL)`),
   check("egresos_registros_mototaxi_datos_ck", sql`(${tabla.tipo} <> 'MOTOTAXI') OR (${tabla.mototaxiMarca} IS NOT NULL AND ${tabla.mototaxiModelo} IS NOT NULL AND ${tabla.mototaxiNumeroMotor} IS NOT NULL AND ${tabla.mototaxiNumeroChasis} IS NOT NULL)`),
   uniqueIndex("egresos_registros_mototaxi_motor_unique").on(tabla.mototaxiNumeroMotor).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
   uniqueIndex("egresos_registros_mototaxi_chasis_unique").on(tabla.mototaxiNumeroChasis).where(sql`${tabla.tipo} = 'MOTOTAXI'`),
@@ -781,12 +810,16 @@ export const egresosPagos = pgTable("egresos_pagos", {
   medioPago: varchar("medio_pago", { length: 30 }).notNull(),
   cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   claveIdempotencia: uuid("clave_idempotencia").notNull().unique(),
+  anuladoEn: timestamp("anulado_en", { withTimezone: true, precision: 3 }),
+  anuladoPorUsuarioId: uuid("anulado_por_usuario_id").references(() => usuarios.id, { onDelete: "restrict" }),
+  motivoAnulacion: text("motivo_anulacion"),
   usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
   creadoEn: fechaCreacion(),
 }, (tabla) => [
   index("egresos_pagos_egreso_fecha_idx").on(tabla.egresoId, tabla.fechaPago),
   index("egresos_pagos_fecha_idx").on(tabla.fechaPago),
   check("egresos_pagos_importe_positivo_ck", sql`${tabla.importePagado} > 0`),
+  check("egresos_pagos_anulacion_ck", sql`(${tabla.anuladoEn} IS NULL) = (${tabla.anuladoPorUsuarioId} IS NULL)`),
   check("egresos_pagos_medio_pago_ck", sql`${tabla.medioPago} IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'BILLETERA_DIGITAL', 'OTRO')`),
 ]);
 
@@ -869,6 +902,19 @@ export const correlativosDocumentosInternos = pgTable("correlativos_documentos_i
   ultimoNumero: integer("ultimo_numero").notNull().default(0),
 }, (tabla) => [
   check("correlativos_documentos_internos_numero_ck", sql`${tabla.ultimoNumero} >= 0`),
+]);
+
+export const ingresosEdiciones = pgTable("ingresos_ediciones", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ingresoId: uuid("ingreso_id").notNull().references(() => ingresos.id, { onDelete: "restrict" }),
+  usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "restrict" }),
+  cambios: jsonb("cambios").$type<string[]>().notNull().default([]),
+  antes: jsonb("antes").$type<Record<string, unknown>>().notNull(),
+  despues: jsonb("despues").$type<Record<string, unknown>>().notNull(),
+  efectos: jsonb("efectos").$type<Record<string, unknown>>().notNull().default({}),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  index("ingresos_ediciones_ingreso_idx").on(tabla.ingresoId, tabla.creadoEn),
 ]);
 
 export const ubigeosPeru = pgTable("ubigeos_peru", {
@@ -1018,6 +1064,8 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   subtotal: numeric("subtotal", { precision: 14, scale: 2 }).notNull(),
   igv: numeric("igv", { precision: 14, scale: 2 }).notNull(),
   total: numeric("total", { precision: 14, scale: 2 }).notNull(),
+  /** Parte de una nota de crédito que salió como devolución de dinero; el resto redujo el saldo por cobrar. NULL = todo el importe (notas anteriores). */
+  importeReembolsado: numeric("importe_reembolsado", { precision: 14, scale: 2 }),
   cuentaFinancieraId: uuid("cuenta_financiera_id").references(() => cuentasFinancieras.id, { onDelete: "restrict" }),
   estado: varchar("estado", { length: 24 }).notNull(),
   inventarioDevuelto: boolean("inventario_devuelto").notNull().default(false),
@@ -1032,7 +1080,9 @@ export const comprobantesRelacionados = pgTable("comprobantes_relacionados", {
   uniqueIndex("comprobantes_relacionados_huella_uq").on(tabla.ingresoOrigenId, tabla.huellaSolicitud).where(sql`${tabla.huellaSolicitud} IS NOT NULL`),
   check("comprobantes_relacionados_tipo_ck", sql`${tabla.tipoComprobante} IN ('NOTA_CREDITO', 'NOTA_DEBITO')`),
   check("comprobantes_relacionados_motivo_ck", sql`${tabla.codigoMotivo} > 0`),
-  check("comprobantes_relacionados_importes_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ${tabla.total} > 0`),
+  // El motivo SUNAT 13 solo admite importes en cero; 7 y 13 quedan fuera del índice de motivo único (migraciones 0134 y 0197).
+  uniqueIndex("comprobantes_relacionados_origen_motivo_unico").on(tabla.ingresoOrigenId, tabla.tipoComprobante, tabla.codigoMotivo).where(sql`${tabla.codigoMotivo} NOT IN (7, 13)`),
+  check("comprobantes_relacionados_importes_ck", sql`${tabla.subtotal} >= 0 AND ${tabla.igv} >= 0 AND ((${tabla.codigoMotivo} = 13 AND ${tabla.subtotal} = 0 AND ${tabla.igv} = 0 AND ${tabla.total} = 0) OR (${tabla.codigoMotivo} <> 13 AND ${tabla.total} > 0))`),
 ]);
 
 export const comprobantesRelacionadosDetalle = pgTable("comprobantes_relacionados_detalle", {
@@ -1115,4 +1165,49 @@ export const seriesComprobantes = pgTable("series_comprobantes", {
   uniqueIndex("series_comprobantes_tipo_serie_uq").on(tabla.tipoComprobante, tabla.serie),
   uniqueIndex("series_comprobantes_activa_tipo_uq").on(tabla.tipoComprobante).where(sql`${tabla.activa}`),
   check("series_comprobantes_tipo_ck", sql`${tabla.tipoComprobante} IN ('BOLETA', 'FACTURA', 'NOTA_CREDITO_FACTURA', 'NOTA_DEBITO_FACTURA', 'NOTA_CREDITO_BOLETA', 'NOTA_DEBITO_BOLETA', 'GUIA_REMITENTE', 'GUIA_TRANSPORTISTA', 'NOTA_VENTA', 'ORDEN_SERVICIO', 'COTIZACION')`),
+]);
+
+/**
+ * Datos del emisor que se muestran en la representación impresa (ticket/A4) de los comprobantes.
+ * Es una tabla de una sola fila (id = 1); la cuenta NubeFact sigue siendo la fuente fiscal.
+ */
+export const configuracionEmpresa = pgTable("configuracion_empresa", {
+  id: integer("id").primaryKey().default(1),
+  ruc: varchar("ruc", { length: 11 }).notNull(),
+  razonSocial: varchar("razon_social", { length: 200 }).notNull(),
+  nombreComercial: varchar("nombre_comercial", { length: 200 }),
+  direccion: varchar("direccion", { length: 300 }).notNull(),
+  telefono: varchar("telefono", { length: 60 }),
+  correo: varchar("correo", { length: 160 }),
+  sitioWeb: varchar("sitio_web", { length: 160 }),
+  mensajePie: varchar("mensaje_pie", { length: 300 }),
+  urlConsultaComprobantes: varchar("url_consulta_comprobantes", { length: 300 }),
+  actualizadoPor: uuid("actualizado_por").references(() => usuarios.id, { onDelete: "set null" }),
+  creadoEn: fechaCreacion(),
+  actualizadoEn: fechaActualizacion(),
+}, (tabla) => [
+  check("configuracion_empresa_fila_unica_ck", sql`${tabla.id} = 1`),
+  check("configuracion_empresa_ruc_ck", sql`${tabla.ruc} ~ '^(10|15|17|20)[0-9]{9}$'`),
+  check("configuracion_empresa_url_consulta_ck", sql`${tabla.urlConsultaComprobantes} IS NULL OR ${tabla.urlConsultaComprobantes} ~ '^https://'`),
+]);
+
+/** Seguimiento automático de documentos enviados a NubeFact/SUNAT que aún no tienen resultado final o archivos completos. */
+export const nubefactSeguimientos = pgTable("nubefact_seguimientos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  entidadTipo: varchar("entidad_tipo", { length: 40 }).notNull(),
+  entidadId: uuid("entidad_id").notNull(),
+  operacion: varchar("operacion", { length: 20 }).notNull(),
+  estado: varchar("estado", { length: 12 }).notNull().default("ACTIVO"),
+  intentos: integer("intentos").notNull().default(0),
+  proximoIntento: timestamp("proximo_intento", { withTimezone: true, precision: 3 }).notNull(),
+  ultimoIntento: timestamp("ultimo_intento", { withTimezone: true, precision: 3 }),
+  ultimoError: text("ultimo_error"),
+  resueltoEn: timestamp("resuelto_en", { withTimezone: true, precision: 3 }),
+  creadoEn: fechaCreacion(),
+}, (tabla) => [
+  uniqueIndex("nubefact_seguimientos_entidad_operacion_uq").on(tabla.entidadTipo, tabla.entidadId, tabla.operacion),
+  index("nubefact_seguimientos_pendientes_idx").on(tabla.estado, tabla.proximoIntento),
+  check("nubefact_seguimientos_entidad_ck", sql`${tabla.entidadTipo} IN ('INGRESO', 'COMPROBANTE_RELACIONADO', 'GUIA_REMISION')`),
+  check("nubefact_seguimientos_operacion_ck", sql`${tabla.operacion} IN ('EMISION', 'ANULACION', 'ARCHIVOS')`),
+  check("nubefact_seguimientos_estado_ck", sql`${tabla.estado} IN ('ACTIVO', 'RESUELTO', 'AGOTADO')`),
 ]);

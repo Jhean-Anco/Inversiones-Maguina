@@ -5,7 +5,8 @@ import { createPortal } from "react-dom";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ConfirmarDescarteFormulario } from "../../components/ui/confirmar-descarte-formulario";
 import { servicioIngresos, type ClienteRegistrado, type Cotizacion } from "../../services/ingresos.service";
-import { imprimirDocumento } from "../../services/impresion-documentos";
+import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
+import { documentoDeCotizacion } from "./documento-cotizacion";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import "../nuevo-ingreso-page/nuevo-ingreso-page.css";
 import "../ordenes-servicio-page/ordenes-servicio-page.css";
@@ -13,7 +14,7 @@ import { CotizacionEditor } from "./cotizacion-editor";
 import { useGestionListado } from "./use-gestion-listado";
 import { useGestionCliente } from "./use-gestion-cliente";
 import { useLineasGestion } from "./use-lineas-gestion";
-import { calcularTotalesCotizacion, importeLineaCotizacion, mensajeWhatsAppCotizacion as crearMensajeWhatsApp } from "./gestion-utils";
+import { calcularTotalesCotizacion, mensajeWhatsAppCotizacion as crearMensajeWhatsApp } from "./gestion-utils";
 import { GestionListadoVista } from "./gestion-listado-vista";
 import { useAccionesPersistencia } from "./use-acciones-persistencia";
 import { cotizacionClases } from "./cotizacion-clases";
@@ -26,7 +27,7 @@ const dinero = (valor: number) => new Intl.NumberFormat("es-PE", { style: "curre
 const nombreCliente = (cliente: ClienteRegistrado) => cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ");
 const claveDatosCotizacion = (datos: unknown) => JSON.stringify(datos);
 export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; puedeCrear: boolean }) {
-  const { error: notificarError } = useAlertas();
+  const imprimirAlGuardar = useImprimirAlEmitir(useAlertas());
   const navegar = useNavigate();
   const listado = useGestionListado();
   const { cotizacionesFiltradas, busqueda, setBusqueda, filtroVigenciaDesde, setFiltroVigenciaDesde, filtroVigenciaHasta, setFiltroVigenciaHasta, cargando, error, setError, cargar, documentoCotizacionCompletado, estadoVisibleCotizacion } = listado;
@@ -138,42 +139,14 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
     setMostrarFormularioCliente(false); setConfirmarDescarteCotizacion(false); setError(""); setMostrarFormulario(true);
   }
 
-  function imprimirCotizacion(cotizacion: Cotizacion, formato: "A4" | "TICKET", ventana?: Window, clienteNombreImpresion?: string | null) {
-    const { subtotal, igv, total, tasaIgv } = calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv);
-    return imprimirDocumento({
-      tipo: "COTIZACIÓN",
-      codigo: cotizacion.codigo,
-      fecha: cotizacion.fecha,
-      cliente: clienteNombreImpresion ?? cotizacion.clienteNombre ?? "Sin cliente",
-      vigencia: cotizacion.vigenteHasta ?? undefined,
-      estado: cotizacion.estado,
-      lineas: cotizacion.detalles.map((linea) => ({
-        descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"),
-        cantidad: String(Number(linea.cantidad ?? 1)),
-        precio: dinero(Number(linea.precioUnitario ?? 0)),
-        total: dinero(importeLineaCotizacion(linea)),
-      })),
-      subtotal: subtotal == null ? "—" : dinero(subtotal),
-      igv: igv == null ? "—" : dinero(igv),
-      tasaIgv,
-      total: dinero(total),
-      observacion: cotizacion.observacion ?? undefined,
-    }, formato, { ventanaExistente: ventana, alError: notificarError });
-  }
-
   async function guardarEImprimirCotizacion() {
-    const ventana = window.open("", "_blank", "popup,width=900,height=900");
-    if (!ventana) { setError("Permite las ventanas emergentes para guardar e imprimir la cotización."); return; }
-    ventana.document.open();
-    ventana.document.write("<!doctype html><html lang=\"es\"><meta charset=\"utf-8\"><title>Guardando cotización</title><body style=\"font:16px Arial,sans-serif;padding:32px;color:#173b60\">Guardando cotización y preparando la impresión…</body></html>");
-    ventana.document.close();
+    const preparada = await imprimirAlGuardar.preparar();
     const clienteNombreImpresion = cliente ? nombreCliente(cliente) : clienteInicialEdicionNombre;
     const guardada = await guardarGestion();
-    if (!guardada) { ventana.close(); return; }
-    imprimirCotizacion(guardada, "A4", ventana, clienteNombreImpresion);
+    if (guardada) await imprimirAlGuardar.imprimir(() => documentoDeCotizacion(guardada, clienteNombreImpresion), preparada);
   }
 
-  const listadoVistaProps = { busqueda, setBusqueda, desde: filtroVigenciaDesde, setDesde: setFiltroVigenciaDesde, hasta: filtroVigenciaHasta, setHasta: setFiltroVigenciaHasta, cotizaciones: cotizacionesFiltradas, cargando, estadoVisible: estadoVisibleCotizacion, documentoCompletado: documentoCotizacionCompletado, mensajeWhatsApp: (cotizacion: Cotizacion) => crearMensajeWhatsApp(cotizacion, dinero), imprimir: imprimirCotizacion, prepararDocumento: abrirVentaCotizacion, puedeCrear, editar: editarCotizacion };
+  const listadoVistaProps = { busqueda, setBusqueda, desde: filtroVigenciaDesde, setDesde: setFiltroVigenciaDesde, hasta: filtroVigenciaHasta, setHasta: setFiltroVigenciaHasta, cotizaciones: cotizacionesFiltradas, cargando, estadoVisible: estadoVisibleCotizacion, documentoCompletado: documentoCotizacionCompletado, mensajeWhatsApp: (cotizacion: Cotizacion) => crearMensajeWhatsApp(cotizacion, dinero), documentoImprimible: (cotizacion: Cotizacion) => () => documentoDeCotizacion(cotizacion), prepararDocumento: abrirVentaCotizacion, puedeCrear, editar: editarCotizacion };
 
   return <section className={`gestion-ingresos-page ${cotizacionClases.pageShared} is-cotizaciones ${cotizacionClases.page}${mostrarFormulario ? " is-editing" : ""}`}>
     {error && <NotificacionFlotante mensaje={error} />}

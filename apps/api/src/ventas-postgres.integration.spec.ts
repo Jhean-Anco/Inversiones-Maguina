@@ -463,6 +463,8 @@ test("las notas de crédito y débito mueven la cuenta seleccionada y el resumen
     await assert.rejects(emitirNota("NOTA_CREDITO", [{ detalleId: randomUUID(), monto: "1.00" }]), BadRequestException);
     await assert.rejects(emitirNota("NOTA_CREDITO", [{ detalleId: detalle.id, monto: "999.00" }]), BadRequestException);
     await assert.rejects(emitirNota("NOTA_CREDITO", [], "TRANSFERENCIA"), BadRequestException);
+    // Solo se reembolsa lo cobrado: sin cobro, la nota de crédito reduciría la deuda y no movería la cuenta.
+    await servicio.registrarPago(venta.id, { idempotencyKey: randomUUID(), fechaPago: venta.fecha, importeAplicado: venta.total, medioPago: "EFECTIVO", cuentaFinancieraId: cuentaId }, usuarioId);
     const resumenInicial = await finanzas.resumenDelMes();
     const cuentaInicial = resumenInicial.items.find((item) => item.id === cuentaId);
     assert.ok(cuentaInicial);
@@ -762,6 +764,7 @@ after(async () => {
       await db.delete(esquema.egresosRegistros).where(inArray(esquema.egresosRegistros.id, egresoIds));
     }
     if (cuentaFinancieraIds.length) {
+      await db.delete(esquema.ingresosPagos).where(inArray(esquema.ingresosPagos.cuentaFinancieraId, cuentaFinancieraIds));
       await db.delete(esquema.cuentasFinancieras).where(inArray(esquema.cuentasFinancieras.id, cuentaFinancieraIds));
     }
     const ventas = await ventasPorClaves(clavesVenta);

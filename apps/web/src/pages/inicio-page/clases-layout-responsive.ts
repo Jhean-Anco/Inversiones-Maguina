@@ -2,16 +2,16 @@ export const clasesLayoutResponsive = [
   "grid-cols-[76px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]",
   "laptop:grid-cols-[76px_minmax(0,1fr)]",
   "tablet-landscape:grid-cols-[76px_minmax(0,1fr)]",
-  "tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:grid-rows-[68px_minmax(0,1fr)]",
+  "tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:grid-rows-[64px_minmax(0,1fr)]",
   "mobile-landscape:grid-cols-[minmax(0,1fr)] mobile-landscape:grid-rows-[56px_minmax(0,1fr)]",
-  "mobile-portrait:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-rows-[60px_minmax(0,1fr)]",
+  "mobile-portrait:grid-cols-[minmax(0,1fr)] mobile-portrait:grid-rows-[56px_minmax(0,1fr)]",
 ].join(" ");
 
 export const clasesMainResponsive = [
-  "col-start-2 row-start-1 laptop:grid-rows-[76px_minmax(0,1fr)] tablet-landscape:grid-rows-[76px_minmax(0,1fr)]",
-  "tablet-portrait:col-start-1 tablet-portrait:row-[1_/_3] tablet-portrait:grid-rows-[68px_minmax(0,1fr)]",
+  "col-start-2 row-start-1 laptop:grid-rows-[64px_minmax(0,1fr)] tablet-landscape:grid-rows-[64px_minmax(0,1fr)]",
+  "tablet-portrait:col-start-1 tablet-portrait:row-[1_/_3] tablet-portrait:grid-rows-[64px_minmax(0,1fr)]",
   "mobile-landscape:col-start-1 mobile-landscape:row-[1_/_3] mobile-landscape:grid-rows-[56px_minmax(0,1fr)]",
-  "mobile-portrait:col-start-1 mobile-portrait:row-[1_/_3] mobile-portrait:grid-rows-[60px_minmax(0,1fr)]",
+  "mobile-portrait:col-start-1 mobile-portrait:row-[1_/_3] mobile-portrait:grid-rows-[56px_minmax(0,1fr)]",
 ].join(" ");
 
 export const clasesContenidoResponsive = [

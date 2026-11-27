@@ -16,6 +16,7 @@ import { CompraMototaxisEditor, type LineaCompraMototaxi } from "./compra-motota
 import type { PagoDocumentoCompra } from "../../components/documentos/compra-documento";
 import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO, useCatalogoRecientes, type CatalogoReciente } from "../../components/catalogo/use-catalogo-recientes";
 import { ComprasMototaxisListado } from "./compras-mototaxis-listado";
+import { ConfirmarAnulacion } from "../../components/ui/confirmar-anulacion";
 const fechaHoy = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America/Lima" });
 const soles = (n: string | number) => `S/ ${Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -23,7 +24,7 @@ const nuevaLinea = (): LineaCompraMototaxi => ({ modeloId: "", cantidad: "1", co
 const nuevaCompra = () => ({ proveedorPersonaId: "", fecha: fechaHoy(), documentoTipo: "FACTURA", documentoNumero: "", observacion: "", ...nuevaLinea() });
 const lineaValida = (linea: LineaCompraMototaxi) => linea.modeloId && Number.isInteger(Number(linea.cantidad)) && Number(linea.cantidad) > 0 && Number(linea.cantidad) <= 2_147_483_647 && Number(linea.costoUnitario) > 0 && Number(Number(linea.costoUnitario).toFixed(2)) === Number(linea.costoUnitario) && Number.isInteger(Number(linea.mesesGarantia)) && Number(linea.mesesGarantia) >= 1 && Number(linea.mesesGarantia) <= 120;
 
-export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = false, puedeCrearReclamo = false, esNuevaCompra = false }: { seccion?: SeccionMototaxis; puedeAjustarInventario?: boolean; puedeCrearReclamo?: boolean; esNuevaCompra?: boolean }) {
+export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = false, puedeCrearReclamo = false, esNuevaCompra = false, puedeAnularCompra = false }: { puedeAnularCompra?: boolean; seccion?: SeccionMototaxis; puedeAjustarInventario?: boolean; puedeCrearReclamo?: boolean; esNuevaCompra?: boolean }) {
   const navegar = useNavigate();
   const [busquedaCompras, setBusquedaCompras] = useState("");
   const [filtroPagoCompra, setFiltroPagoCompra] = useState("TODOS");
@@ -46,7 +47,15 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
   const [buscandoIdentidadProveedor, setBuscandoIdentidadProveedor] = useState(false);
   const datos = useDatosMototaxis({ seccion, busquedaCompras });
   const { marcas, modelos, proveedores, garantias, reclamos, compras, cargando, error, setError, manejarError, cargar, setProveedores } = datos;
-  const comprasFiltradas = useMemo(() => filtroPagoCompra === "TODOS" ? compras : compras.filter((item) => filtroPagoCompra === "PENDIENTES" ? Number(item.saldo) > 0 : Number(item.saldo) <= 0), [compras, filtroPagoCompra]);
+  const comprasFiltradas = useMemo(() => filtroPagoCompra === "TODOS" ? compras : compras.filter((item) => filtroPagoCompra === "ANULADAS" ? item.estado === "ANULADA" : item.estado !== "ANULADA" && (filtroPagoCompra === "PENDIENTES" ? Number(item.saldo) > 0 : Number(item.saldo) <= 0)), [compras, filtroPagoCompra]);
+  const [compraPorAnular, setCompraPorAnular] = useState<typeof compras[number] | null>(null);
+  async function anularCompra(motivo: string) {
+    if (!compraPorAnular) return;
+    await servicioMototaxis.anularCompra(compraPorAnular.id, motivo);
+    setExito(`Compra ${compraPorAnular.codigo} anulada. Se revirtieron sus unidades y su pago.`);
+    setCompraPorAnular(null);
+    await cargar();
+  }
   const catalogoRecienteModelos = useCatalogoRecientes("mototaxis-modelos");
   const modelosParaCompra = modeloBusquedaCompra.trim().length >= MIN_CARACTERES_BUSQUEDA_CATALOGO
     ? modelos.filter((m) => `${m.marca} ${m.nombre} ${m.version ?? ""} ${m.codigo}`.toLocaleLowerCase().includes(modeloBusquedaCompra.trim().toLocaleLowerCase())).slice(0, MAX_RESULTADOS_CATALOGO)
@@ -181,8 +190,8 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
         onCerrar={() => setProveedorModal(false)}
         pie={
           <>
-            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setProveedorModal(false)}>Cancelar</button>
-            <button type="submit" form="moto-provider-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando || buscandoIdentidadProveedor}><span aria-hidden="true">+</span>Guardar y usar en esta compra</button>
+            <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={() => setProveedorModal(false)}>Cancelar</button>
+            <button type="submit" form="moto-provider-form" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={guardando || buscandoIdentidadProveedor}><span aria-hidden="true">+</span>Guardar y usar en esta compra</button>
           </>
         }
       >
@@ -199,7 +208,8 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
     {!esNuevaCompra && <section className={`mototaxis-page ${mototaxisClasses.page}`}>
     {seccion === "compras" && <ComprasMototaxisListado compras={comprasFiltradas} cargando={cargando}
       busqueda={busquedaCompras} filtroPago={filtroPagoCompra} alBuscar={setBusquedaCompras} alFiltrarPago={setFiltroPagoCompra}
-      alCrear={() => navegar("/mototaxis/compras/nueva")} alPagar={(compra) => void abrirPago(compra)} />}
+      alCrear={() => navegar("/mototaxis/compras/nueva")} alPagar={(compra) => void abrirPago(compra)} alAnular={puedeAnularCompra ? setCompraPorAnular : undefined} />}
+    {compraPorAnular && <ConfirmarAnulacion titulo={`¿Anular la compra ${compraPorAnular.codigo}?`} descripcion="Se descontarán sus unidades del inventario, quedarán sin efecto sus garantías con el proveedor y su pago dejará de contar en las cuentas. No se puede deshacer." etiquetaConfirmar="Anular compra" onCancelar={() => setCompraPorAnular(null)} onConfirmar={anularCompra} />}
 
     {seccion === "garantias" && <GarantiasMototaxis garantias={garantias} reclamos={reclamos} cargando={cargando} puedeCrear={puedeCrearReclamo} puedeEditar={puedeAjustarInventario} alActualizar={cargar} />}
     {seccion === "movimientos" && <AjusteInventarioMototaxis puedeAjustar={puedeAjustarInventario} />}
@@ -212,8 +222,8 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
         onCerrar={() => setCompraPago(null)}
         pie={
           <>
-            <button type="button" className="min-h-11 rounded-xl border border-[#c5d1db] bg-white px-5 text-sm font-semibold text-[#27445f] max-sm:w-full" onClick={() => setCompraPago(null)}>Cancelar</button>
-            <button type="submit" form="moto-payment-form" className="min-h-11 rounded-xl border border-[#b91e30] bg-gradient-to-br from-[#d92c40] to-[#bb1d30] px-5 text-sm font-bold text-white disabled:opacity-60 max-sm:w-full" disabled={guardando}><span aria-hidden="true">+</span>{guardando ? "Aplicando…" : "Cancelar saldo completo"}</button>
+            <button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" onClick={() => setCompraPago(null)}>Cancelar</button>
+            <button type="submit" form="moto-payment-form" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={guardando}><span aria-hidden="true">+</span>{guardando ? "Aplicando…" : "Cancelar saldo completo"}</button>
           </>
         }
       >

@@ -6,11 +6,13 @@
 .erp-sidebar {
   --aside-colapsado: 76px;
   --aside-expandido: 272px;
-  --aside-fondo: #0b2545;
-  --aside-texto: #c5d1e0;
+  --aside-fondo: linear-gradient(180deg, #0c3566 0%, #0a2b55 34%, #08234a 68%, #071e3c 100%);
+  --aside-texto: #b8c7d9;
   --aside-tenue: #8fa4be;
   --aside-acento: #d41e32;
-  --aside-foco: #ed5360;
+  --aside-hover: rgb(255 255 255 / 7%);
+  --aside-activo: rgb(255 255 255 / 11%);
+  --aside-foco: #ff7a86;
   --aside-curva: cubic-bezier(0.22, 1, 0.36, 1);
   /* Expandir/contraer: lento y parejo para que el movimiento se vea completo. */
   --aside-duracion: 1s;
@@ -35,18 +37,19 @@
   padding: 18px 8px 12px;
   overflow: hidden;
   background: var(--aside-fondo);
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 6%);
   transition: width var(--aside-duracion) var(--aside-suave), box-shadow var(--aside-duracion) ease !important;
 }
 .erp-aside::before {
   position: absolute;
   inset: 0 0 auto;
   height: 3px;
-  background: var(--aside-acento);
+  background: linear-gradient(90deg, var(--aside-acento), #ef4456);
   content: "";
 }
 .erp-aside.is-expanded {
   width: var(--aside-expandido);
-  box-shadow: 10px 0 28px rgb(11 37 69 / 0.22);
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 6%), 16px 0 40px -12px rgb(7 30 60 / 0.45);
 }
 
 /* Marca */
@@ -63,17 +66,18 @@
   width: 42px;
   height: 42px;
   flex: none;
-  border-radius: 10px;
+  border-radius: 11px;
   background: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%), 0 6px 14px -4px rgb(0 8 24 / 45%);
   object-fit: contain;
 }
 .erp-aside__nombre {
   flex: 1;
   overflow: hidden;
-  color: #f2f6fc;
-  font-size: 16px;
+  color: #f4f7fb;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   white-space: nowrap;
 }
 
@@ -105,15 +109,16 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 0;
+  border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 6%);
   color: var(--aside-texto);
   cursor: pointer;
 }
 .erp-aside__colapsar:hover,
 .erp-aside__expandir:hover {
-  background: rgb(255 255 255 / 0.16);
+  border-color: rgb(255 255 255 / 16%);
+  background: rgb(255 255 255 / 12%);
   color: #fff;
 }
 /* Siempre montado: el botón se desvanece y colapsa su espacio al expandir. */
@@ -181,8 +186,9 @@
   background: transparent;
   color: var(--aside-texto);
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 550;
+  letter-spacing: -0.006em;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -197,9 +203,10 @@
 .erp-aside__fila .erp-icon {
   position: absolute;
   top: 9px;
-  left: calc(50% - 11px);
-  width: 22px;
-  height: 22px;
+  left: calc(50% - 10px);
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.75;
   transition:
     top var(--aside-duracion) var(--aside-suave),
     left var(--aside-duracion) var(--aside-suave),
@@ -216,10 +223,12 @@
 .erp-aside__mini {
   position: absolute;
   right: 2px;
-  bottom: 9px;
+  bottom: 10px;
   left: 2px;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 550;
+  letter-spacing: 0.005em;
   line-height: 1;
   text-align: center;
   text-overflow: ellipsis;
@@ -259,17 +268,30 @@
   transform: rotate(180deg);
 }
 .erp-aside__fila:hover {
-  background: rgb(255 255 255 / 0.08);
+  background: var(--aside-hover);
   color: #fff;
 }
 .erp-aside__fila.is-current {
-  background: rgb(255 255 255 / 0.1);
+  background: var(--aside-activo);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 6%);
   color: #fff;
+  font-weight: 650;
 }
-/* Colapsado: baldosa con barra roja lateral, como el riel de iconos */
-.erp-aside:not(.is-expanded) .erp-aside__fila.is-current {
-  background: rgb(255 255 255 / 0.14);
-  box-shadow: inset 3px 0 0 #ef3447;
+/* Indicador activo: barra roja pegada al borde del riel */
+.erp-aside__fila.is-current::before {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--aside-acento);
+  box-shadow: 0 0 10px rgb(239 52 71 / 55%);
+  content: "";
+}
+.is-expanded .erp-aside__fila.is-current::before {
+  top: 12px;
+  bottom: 12px;
 }
 .erp-aside__fila:focus-visible,
 .erp-aside__sub:focus-visible,
@@ -302,7 +324,7 @@
   margin-left: 31px;
   overflow: hidden;
 }
-.erp-aside__subnav.is-open .erp-aside__subnav-lista {
+.erp-aside.is-expanded .erp-aside__subnav.is-open .erp-aside__subnav-lista {
   padding: 2px 0 6px;
 }
 .erp-aside__sub {
@@ -328,11 +350,12 @@
   content: "";
 }
 .erp-aside__sub:hover {
-  background: rgb(255 255 255 / 0.08);
+  background: var(--aside-hover);
   color: #fff;
 }
 .erp-aside__sub.is-current {
-  background: var(--aside-acento);
+  background: linear-gradient(135deg, #d6283b, #bd1c2e);
+  box-shadow: 0 4px 12px -4px rgb(201 31 50 / 60%);
   color: #fff;
   font-weight: 600;
 }
@@ -360,7 +383,8 @@
   inset: 0;
   z-index: 30;
   border: 0;
-  background: #061a2d80;
+  background: var(--erp-overlay, #061a2d80);
+  backdrop-filter: blur(2px);
 }
 :where(
     html[data-responsive-profile="tablet-portrait"],

@@ -1,15 +1,12 @@
-import { Ban, FileCheck, FileCode, MoreVertical, RefreshCw, ShieldCheck } from "lucide-react";
+import { Ban, FileCheck, FileCode, MoreVertical, Pencil, RefreshCw, ShieldCheck } from "lucide-react";
 import { useId } from "react";
 import { clasesOpcionMenu, clasesOpcionesMenu } from "../../components/documentos/menu-accion-classes";
-import { BotonImprimir } from "../../components/documentos/boton-imprimir";
+import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import { BotonAccion } from "../../components/ui/boton-accion";
 import { Etiqueta } from "../../components/ui/etiqueta";
-import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
-import { imprimirDocumento } from "../../services/impresion-documentos";
 import type { VentaListado } from "../../services/ingresos.service";
-import { DocumentoEnlaces } from "./documento-enlaces";
-import { comprobante, estadoSunat, fecha, medioPago, soles } from "./ventas-formatters";
+import { comprobante, estadoSunat, fecha, medioPago, pendienteSunat, soles } from "./ventas-formatters";
 import type { DocumentoAnulacion } from "./ventas-types";
 import { ventasClasses as c } from "./ventas-classes";
 import { anchoMinimoColumnaRelacionClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
@@ -23,26 +20,18 @@ type VentaRowProps = {
   onEmitirNota: (venta: VentaListado, tipo: "NOTA_CREDITO" | "NOTA_DEBITO") => void;
   onAnular: (documento: DocumentoAnulacion) => void;
   onAplicarGarantia?: (venta: VentaListado) => void;
+  onEditarNota?: (venta: VentaListado) => void;
 };
 
-export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEstado, onEmitirNota, onAnular, onAplicarGarantia }: VentaRowProps) {
-  const { error: notificarError } = useAlertas();
+export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEstado, onEmitirNota, onAnular, onAplicarGarantia, onEditarNota }: VentaRowProps) {
   const estadoFiscal = estadoSunat(venta);
   const menu = useMenuAccionExclusivo(`mas-venta-${useId()}`);
   const puedeConsultar = ["RECHAZADO_SUNAT", "PENDIENTE_CONFIRMACION", "EN_PROCESO", "ERROR_SUNAT", "ERROR_NUBEFACT", "ERROR_EMISION", "NUBEFACT_PENDIENTE"].includes(venta.estadoProveedor);
   const puedeEmitirNota = puedeEmitirNotas && venta.estado === "EMITIDO" && venta.tipoComprobante !== "NOTA_VENTA";
   const puedeAnularVenta = puedeAnular && venta.tipoComprobante !== "NOTA_VENTA" && (venta.estado === "ANULACION_PENDIENTE" || (venta.estado === "EMITIDO" && venta.estadoProveedor === "ACEPTADO_SUNAT"));
   const tieneOtrasAcciones = Boolean(venta.enlaceXml || venta.enlaceCdr || puedeConsultar);
-  const imprimirNotaVenta = (formato: "A4" | "TICKET") => imprimirDocumento({
-    tipo: "NOTA DE VENTA",
-    codigo: venta.codigoComprobante,
-    fecha: fecha(venta.fecha),
-    cliente: venta.clienteNombre,
-    documentoCliente: venta.clienteNumeroDocumento,
-    estado: "Registrada",
-    lineas: (venta.lineasImpresion ?? []).map((linea) => ({ descripcion: linea.descripcion, cantidad: linea.cantidad, precio: soles(linea.precioUnitario), total: soles(linea.total) })),
-    total: soles(venta.total),
-  }, formato, { alError: notificarError });
+  // Solo se imprimen comprobantes válidos: notas de venta y electrónicos ya enviados (no rechazados ni con error).
+  const puedeImprimir = venta.tipoComprobante === "NOTA_VENTA" || (venta.estado !== "ERROR_NUBEFACT" && estadoFiscal !== "Rechazado" && Boolean(venta.enlacePdf || venta.estadoProveedor === "ACEPTADO_SUNAT"));
 
   return (
     <tr>
@@ -68,12 +57,11 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
         <div className="flex flex-wrap items-center gap-1"><Etiqueta tono="marca" compacta>{medioPago(venta.medioPago)}</Etiqueta><Etiqueta tono={venta.condicionPago === "CREDITO" ? "advertencia" : "neutral"} compacta>{venta.condicionPago === "CREDITO" ? "Credito" : "Contado"}</Etiqueta></div>
       </td>
       <td className="min-w-[150px]"><strong className="block whitespace-nowrap text-right font-bold tabular-nums text-[var(--erp-ink)]">{soles(venta.total)}</strong></td>
-      <td><Etiqueta tono={estadoFiscal === "Rechazado" ? "peligro" : estadoFiscal === "Emitido" ? "positiva" : "advertencia"}>{estadoFiscal}</Etiqueta></td>
+      <td><Etiqueta tono={estadoFiscal === "Rechazado" ? "peligro" : estadoFiscal === "Emitido" ? "positiva" : "advertencia"}>{estadoFiscal}</Etiqueta>{pendienteSunat(venta) && <small className={c.minorText}>{venta.estado === "ANULACION_PENDIENTE" ? "Baja en espera de SUNAT" : "Confirmando con SUNAT"}</small>}</td>
       <td>
         <div className={c.rowActions}>
-          {venta.tipoComprobante === "NOTA_VENTA"
-            ? <BotonImprimir etiqueta={`Imprimir nota de venta ${venta.codigoComprobante}`} alImprimirA4={() => imprimirNotaVenta("A4")} alImprimirTicket={() => imprimirNotaVenta("TICKET")} />
-            : <DocumentoEnlaces pdf={venta.enlacePdf} xml={null} cdr={null} codigo={venta.codigoComprobante} whatsapp={false} />}
+          {puedeImprimir && <MenuImpresion origen={{ ingresoId: venta.id }} codigo={venta.codigoComprobante} />}
+          {onEditarNota && venta.tipoComprobante === "NOTA_VENTA" && venta.estado === "REGISTRADO" && <BotonAccion tono="informativa" etiqueta={`Editar ${venta.codigoComprobante}`} onClick={() => onEditarNota(venta)} icono={<Pencil aria-hidden="true" size={16} />} />}
           {onAplicarGarantia && venta.estado === "EMITIDO" && (venta.mototaxis?.length ?? 0) > 0 && <BotonAccion tono="advertencia" etiqueta={`Aplicar garantía a la venta ${venta.codigoComprobante}`} onClick={() => onAplicarGarantia(venta)} icono={<ShieldCheck aria-hidden="true" size={16} />} />}
           {puedeEmitirNota && (
             <>
@@ -88,6 +76,7 @@ export function VentaRow({ venta, puedeEmitirNotas, puedeAnular, onConsultarEsta
               <BotonAccion tono="peligro" etiqueta={`Anular ${venta.codigoComprobante}`} onClick={() => onAnular({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: false })} icono={<Ban aria-hidden="true" size={16} />} />
             )
           )}
+          {puedeAnular && venta.tipoComprobante === "NOTA_VENTA" && venta.estado === "REGISTRADO" && <BotonAccion tono="peligro" etiqueta={`Anular ${venta.codigoComprobante}`} onClick={() => onAnular({ ingresoId: venta.id, documentoId: venta.id, codigo: venta.codigoComprobante, tipo: comprobante(venta.tipoComprobante), esNota: false, pendiente: false, interna: true })} icono={<Ban aria-hidden="true" size={16} />} />}
           {tieneOtrasAcciones && <span ref={menu.raizRef} className="relative inline-flex items-center">
             <BotonAccion etiqueta={`Otras acciones de ${venta.codigoComprobante}`} tono="informativa" icono={<MoreVertical aria-hidden="true" />} aria-haspopup="menu" aria-expanded={menu.abierto} onClick={menu.alternar} />
             {menu.presente && <div className={`${clasesOpcionesMenu} w-[min(280px,calc(100vw-32px))]`} data-menu-state={menu.fase} role="menu" aria-hidden={!menu.abierto} aria-label={`Otras acciones de ${venta.codigoComprobante}`} onClick={(evento) => {

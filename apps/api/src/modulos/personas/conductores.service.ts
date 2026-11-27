@@ -1,3 +1,4 @@
+import { codigoErrorPostgres } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { and, asc, count, eq, ilike, or } from "drizzle-orm";
 import { conductores, db, personas, tiposDocumento, tiposPersona } from "@magina/database";
@@ -99,7 +100,7 @@ export class ServicioConductores {
       });
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException) throw error;
-      const codigo = (error as { code?: string })?.code;
+      const codigo = codigoErrorPostgres(error);
       if (codigo === "23505") throw new ConflictException("El documento o la licencia ya está registrado.");
       if (codigo === "23503") throw new NotFoundException("No se encontró la configuración del documento seleccionado.");
       throw error;

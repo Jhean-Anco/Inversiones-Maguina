@@ -26,6 +26,18 @@ export class ControladorMototaxisInventario {
     return this.egresos.crear({ ...datos, tipo: "MOTOTAXI" }, solicitud.usuario.id);
   }
 
+  @Post(":id/anular")
+  @RequierePermiso("EGRESOS.ANULAR")
+  anular(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
+    return this.egresos.anular(id, datos, solicitud.usuario.id);
+  }
+
+  @Post(":id/pagos/:pagoId/anular")
+  @RequierePermiso("EGRESOS.ANULAR")
+  anularPago(@Param("id") id: string, @Param("pagoId") pagoId: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {
+    return this.egresos.anularPago(id, pagoId, datos, solicitud.usuario.id);
+  }
+
   @Post(":id/pagos")
   @RequierePermiso("EGRESOS.CREAR")
   registrarPago(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) {

@@ -81,3 +81,38 @@ test("rechaza orígenes HTTP fuera de loopback", () => {
     /FRONTEND_ORIGIN debe usar HTTPS/,
   );
 });
+
+test("rechaza datos de empresa incompletos en el entorno", () => {
+  configurarEntornoSeguro();
+  process.env.EMPRESA_RUC = "20100066603";
+  try {
+    assert.throws(() => validarConfiguracionEntorno(), /Datos de empresa del entorno inválidos/);
+    Object.assign(process.env, { EMPRESA_RAZON_SOCIAL: "Demo SAC", EMPRESA_DIRECCION: "Av. Uno 1" });
+    assert.doesNotThrow(() => validarConfiguracionEntorno());
+  } finally {
+    for (const nombre of ["EMPRESA_RUC", "EMPRESA_RAZON_SOCIAL", "EMPRESA_DIRECCION"]) delete process.env[nombre];
+  }
+});
+
+test("configura y valida el seguimiento automático de NubeFact", () => {
+  configurarEntornoSeguro();
+  const nombres = ["NUBEFACT_SEGUIMIENTO_ACTIVO", "NUBEFACT_SEGUIMIENTO_ESPERAS_SEGUNDOS", "NUBEFACT_CONSULTA_INMEDIATA_ESPERAS_MS"] as const;
+  try {
+    Object.assign(process.env, { NUBEFACT_SEGUIMIENTO_ACTIVO: "true", NUBEFACT_SEGUIMIENTO_ESPERAS_SEGUNDOS: "5, 10", NUBEFACT_CONSULTA_INMEDIATA_ESPERAS_MS: "0" });
+    const configuracion = validarConfiguracionEntorno();
+    assert.equal(configuracion.seguimientoNubefact.activo, true);
+    assert.deepEqual(configuracion.seguimientoNubefact.esperasSegundos, [5, 10]);
+    assert.deepEqual(configuracion.esperasConsultaInmediataMs, []);
+    process.env.NUBEFACT_SEGUIMIENTO_ACTIVO = "no";
+    assert.equal(validarConfiguracionEntorno().seguimientoNubefact.activo, false);
+    process.env.NUBEFACT_SEGUIMIENTO_ACTIVO = "quizás";
+    assert.throws(() => validarConfiguracionEntorno(), /debe ser true o false/);
+    process.env.NUBEFACT_SEGUIMIENTO_ACTIVO = "false";
+    process.env.NUBEFACT_SEGUIMIENTO_ESPERAS_SEGUNDOS = "15,x";
+    assert.throws(() => validarConfiguracionEntorno(), /lista de enteros/);
+    process.env.NUBEFACT_SEGUIMIENTO_ESPERAS_SEGUNDOS = "0";
+    assert.throws(() => validarConfiguracionEntorno(), /lista de enteros/);
+  } finally {
+    for (const nombre of nombres) delete process.env[nombre];
+  }
+});
