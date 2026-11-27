@@ -108,7 +108,7 @@ export function EditorNotaVenta({ ingresoId, codigo, esMototaxi, onCerrar, onGua
               </div>
               {esMototaxi
                 ? <BuscadorEdicionNota etiqueta="Agregar modelo de mototaxi" placeholder="Buscar mototaxi por modelo, marca o código…" buscar={(texto) => servicioIngresos.buscarMototaxis(texto)}
-                    describir={(moto) => ({ id: moto.mototaxiModeloId, titulo: `${moto.marca} ${moto.modelo}`, detalle: `${moto.stockDisponible} disponibles` })}
+                    describir={(moto) => ({ id: moto.mototaxiModeloId, titulo: `${moto.marca} ${moto.modelo}`, detalle: "Mototaxi", precio: moto.precioVenta ? soles(moto.precioVenta) : undefined })}
                     onElegir={(moto) => { setModificada(true); edicion.agregarLinea(lineaDesdeMototaxi(nuevaClave(), moto)); }} />
                 : <BuscadorEdicionNota etiqueta="Agregar repuesto" placeholder="Buscar repuesto por nombre o código…" buscar={(texto) => servicioIngresos.buscarProductos(texto, false, false, true)}
                     describir={(producto) => ({ id: producto.presentacionId, titulo: producto.nombre, detalle: producto.presentacion, precio: soles(producto.precio) })}

@@ -26,8 +26,8 @@ export function CatalogoVenta({ venta, tipoVenta, onCrearRepuesto, onKeyDownBusq
     ? venta.resultadosMototaxi.slice(0, MAX_RESULTADOS_CATALOGO).map((mototaxi) => ({
       id: mototaxi.mototaxiModeloId,
       nombre: `${mototaxi.marca} ${mototaxi.modelo}${mototaxi.version ? ` ${mototaxi.version}` : ""}`,
-      detalle: `${mototaxi.codigo} · ${mototaxi.stockDisponible} disponibles`,
-      precio: mototaxi.precioVenta ? soles(Number(mototaxi.precioVenta)) : "Precio pendiente",
+      detalle: "Mototaxi",
+      precio: !mototaxi.stockDisponible ? "Sin stock" : mototaxi.precioVenta ? soles(Number(mototaxi.precioVenta)) : "Precio pendiente",
       deshabilitado: !mototaxi.stockDisponible || !mototaxi.precioVenta,
       agregar: () => venta.agregarMototaxi(mototaxi),
     }))

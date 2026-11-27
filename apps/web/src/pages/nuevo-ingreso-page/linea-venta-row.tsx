@@ -20,7 +20,6 @@ export function LineaVentaRow({ linea, esFactura, precio, importe, nombreLinea, 
   const listas = linea.tipo === "PRODUCTO" && linea.listaPrecioCodigo
     ? [...new Map(linea.producto.tramos?.map((tramo) => [tramo.listaCodigo, tramo.listaNombre])).entries()] : [];
   const precioPendiente = linea.tipo === "PRODUCTO" && precioRepuestoEnLinea(linea) == null;
-  const detalle = linea.tipo === "MOTOTAXI" ? `${linea.mototaxi.codigo} · Disponibles ${linea.mototaxi.stockDisponible}` : null;
 
   return (
     <div className={`os-linea ${esServicio ? "es-servicio" : "es-producto"}`}>
@@ -28,7 +27,6 @@ export function LineaVentaRow({ linea, esFactura, precio, importe, nombreLinea, 
         {esServicio
           ? <input aria-label="Descripción del servicio" placeholder="Descripción del servicio" maxLength={240} value={linea.descripcion.toLocaleUpperCase("es-PE")} onChange={(e) => onActualizar({ descripcion: e.target.value.toLocaleUpperCase("es-PE") })} />
           : <input aria-label={`Descripción de ${nombreLinea}`} title={nombreLinea} value={nombreLinea} readOnly />}
-        {detalle && <small className="venta-linea-detalle">{detalle}</small>}
       </div>
       <label className="os-linea-campo os-linea-cantidad"><span>Cant.</span>
         <input aria-label={`Cantidad de ${nombreLinea}`} type="number" min={linea.tipo === "MOTOTAXI" ? 1 : 0.001} max={linea.tipo === "MOTOTAXI" ? linea.mototaxi.stockDisponible : undefined} step={linea.tipo === "MOTOTAXI" ? 1 : 0.001} value={linea.cantidad} onChange={(e) => onActualizar({ cantidad: e.target.value })} />
