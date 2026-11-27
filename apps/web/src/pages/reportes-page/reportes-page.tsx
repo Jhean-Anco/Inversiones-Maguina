@@ -1,24 +1,24 @@
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
-import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { BotonDescargarPdf } from "./boton-descargar-pdf";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioReportes, type FiltroReporte, type ReporteInventario } from "../../services/reportes.service";
 import { hoy, numero, primerDiaMes, soles } from "./reportes-formatters";
 import { descargarReporteInventarioPdf } from "./inventario-pdf";
-import { useViewportProfile } from "../../utilidades/use-viewport-profile";
+import { reportesClasses as r } from "./reportes-classes";
+import { ventasClasses as v } from "../ventas-page/ventas-classes";
 
 type VistaInventario = "repuestos" | "mototaxis";
 type Resultado = { tipo: "inventario"; datos: ReporteInventario };
 type FiltroExistencia = "todas" | "con-stock" | "sin-stock";
 type FilaInventario = { id: string; codigo: string; nombre: string; marca: string; categoria: string; unidad: string; stock: number; precioPromedioCompra: number; cantidadCompraTotal: number; precioPromedioVenta: number; cantidadVendidaTotal: number; precioVentaActual?: number | null };
 
+
 function Indicadores({ datos }: { datos: { titulo: string; valor: string; detalle?: string }[] }) {
-  return <dl className="m-0 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--erp-border)] bg-[var(--erp-border)] lg:grid-cols-4">
-    {datos.map(({ titulo, valor, detalle }) => <div key={titulo} className="bg-[var(--erp-surface-muted)] px-3 py-4 text-center">
-      <dt className="text-sm">{titulo}</dt><dd className="m-0 text-xl font-bold tabular-nums text-[var(--erp-focus)]">{valor}</dd>
-      {detalle && <dd className="m-0 text-xs">{detalle}</dd>}
-    </div>)}
+  return <dl className={r.kpis}>
+    {datos.map(({ titulo, valor, detalle }) => <div key={titulo}><dt>{titulo}</dt><dd>{valor}</dd>{detalle && <small>{detalle}</small>}</div>)}
   </dl>;
 }
 
@@ -27,12 +27,11 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
   busqueda: string; setBusqueda: (busqueda: string) => void; existencia: FiltroExistencia;
   setExistencia: (existencia: FiltroExistencia) => void; alExportar: () => void;
 }) {
-  const perfilViewport = useViewportProfile();
-  const usarTarjetasMoviles = Boolean(vista === "mototaxis" && (perfilViewport === "mobile-portrait" || perfilViewport === "mobile-landscape"));
   const motos = vista === "mototaxis" ? datos.mototaxis : undefined;
   const registros = useMemo<FilaInventario[]>(() => (motos
     ? motos.items.map((m) => ({ id: m.id, codigo: m.codigo, nombre: m.nombre, marca: m.marca, categoria: "Mototaxi", unidad: "", stock: m.stockActual, precioPromedioCompra: Number(m.precioPromedioCompra) || 0, cantidadCompraTotal: Number(m.cantidadCompraTotal) || 0, precioPromedioVenta: Number(m.precioPromedioVenta) || 0, cantidadVendidaTotal: Number(m.cantidadVendidaTotal) || 0, precioVentaActual: m.precioVentaActual == null ? null : Number(m.precioVentaActual) || 0 }))
     : datos.items.map((p) => ({ id: p.id, codigo: p.codigo, nombre: p.nombre, marca: p.marca, categoria: p.categoria || "Sin categoría", unidad: p.unidad, stock: Number(p.stockActual) || 0, precioPromedioCompra: Number(p.precioPromedioCompra) || 0, cantidadCompraTotal: Number(p.cantidadCompraTotal) || 0, precioPromedioVenta: Number(p.precioPromedioVenta) || 0, cantidadVendidaTotal: 0 }))), [datos.items, motos]);
+  const conteos = useMemo(() => ({ todas: registros.length, conStock: registros.filter((i) => i.stock > 0).length, sinStock: registros.filter((i) => i.stock <= 0).length }), [registros]);
   const visibles = useMemo(() => {
     const consulta = busqueda.trim().toLocaleLowerCase("es-PE");
     return registros.filter((item) => {
@@ -48,14 +47,12 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
   const precioVigentes = motos ? registros.filter((item) => item.precioVentaActual != null && item.precioVentaActual > 0 && item.cantidadVendidaTotal > 0) : [];
   const cantidadVentaVigente = precioVigentes.reduce((total, item) => total + item.cantidadVendidaTotal, 0);
   const precioPromedioVentaVigente = cantidadVentaVigente > 0 ? precioVigentes.reduce((total, item) => total + (item.precioVentaActual ?? 0) * item.cantidadVendidaTotal, 0) / cantidadVentaVigente : 0;
-  const controles = <>
-    <label className="listado-maestro-busqueda">Buscar producto<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Código, nombre o marca" /></label>
-    {datos.mototaxis && <label className="listado-maestro-filtro">Inventario<select value={vista} onChange={(e) => setVista(e.target.value as VistaInventario)}><option value="repuestos">Repuestos</option><option value="mototaxis">Mototaxis</option></select></label>}
-    <label className="listado-maestro-filtro">Existencia<select value={existencia} onChange={(e) => setExistencia(e.target.value as FiltroExistencia)}><option value="todas">Todos</option><option value="con-stock">Con stock</option><option value="sin-stock">Sin stock</option></select></label>
-    <RegistrarAccionPrincipal etiqueta="Descargar inventario en PDF" onClick={alExportar} />
-  </>;
   const columnas = motos ? ["Modelo", "Marca", "Existencias", "Costo promedio", "Precio vigente"] : ["Código", "Repuesto", "Marca", "Categoría", "Stock actual", "Precio promedio de compra", "Precio promedio de venta"];
-  return <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+  const existencias = (item: FilaInventario) => <span className={`${r.stock} ${item.stock > 0 ? r.conStock : r.sinStock}`}>
+    <span aria-hidden="true" className={`h-[7px] w-[7px] rounded-full ${item.stock > 0 ? "bg-[#1b5e40]" : "bg-[#8a9bab]"}`} />
+    {numero(item.stock)}{motos ? " unidades" : item.unidad && ` ${item.unidad}`}
+  </span>;
+  return <div className={v.page}>
     <Indicadores datos={motos ? [
       { titulo: "Modelos activos", valor: numero(motos.resumen.modelos), detalle: "En catálogo" },
       { titulo: "Existencias", valor: numero(motos.resumen.unidades), detalle: "Unidades en almacén" },
@@ -67,21 +64,28 @@ function ResumenInventario({ datos, vista, setVista, busqueda, setBusqueda, exis
       { titulo: "Sin stock", valor: numero(datos.resumen.sinStock) },
       { titulo: "Precio prom. compras", valor: precioPromedioCompras > 0 ? soles(precioPromedioCompras) : "—" },
     ]} />
-    {usarTarjetasMoviles
-      ? <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tarjetas" titulo="Existencias por modelo de mototaxi"
-        registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
-        controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
-        columnas={1} renderizarTarjeta={(item) => <article key={item.id} className="grid gap-3 rounded-xl border border-[var(--erp-border)] bg-[var(--erp-surface)] p-4">
-          <header className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><h3 className="m-0 break-words text-base font-bold text-[var(--erp-text)]">{item.nombre}</h3><p className="m-0 mt-1 text-sm text-[var(--erp-text-muted)]">{item.marca}</p></div></header>
-          <dl className="m-0 grid grid-cols-2 gap-3 border-t border-[var(--erp-border)] pt-3 text-sm"><div><dt className="text-xs text-[var(--erp-text-muted)]">Existencias</dt><dd className="m-0 font-semibold tabular-nums">{numero(item.stock)} unidades</dd></div><div><dt className="text-xs text-[var(--erp-text-muted)]">Costo promedio</dt><dd className="m-0 font-semibold tabular-nums">{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</dd></div><div className="col-span-2"><dt className="text-xs text-[var(--erp-text-muted)]">Precio vigente</dt><dd className="m-0 font-semibold tabular-nums">{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</dd></div></dl>
-        </article>} />
-      : <ListadoMaestro<FilaInventario> claseRaiz="!h-auto min-h-0 flex-1" variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
-        registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
-        controlesCabecera={controles} vacio={busqueda || existencia !== "todas" ? "No hay productos que coincidan con estos filtros." : "No hay productos para mostrar."}
-        encabezadoTabla={<tr>{columnas.map((columna) => <th key={columna}>{columna}</th>)}</tr>}
-        renderizarFila={(item) => motos
-          ? <tr key={item.id}><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{numero(item.stock)} unidades</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</td></tr>
-          : <tr key={item.id}><td><span className="font-mono font-semibold text-[var(--erp-focus)]">{item.codigo}</span></td><td><strong>{item.nombre}</strong></td><td>{item.marca}</td><td>{item.categoria}</td><td>{numero(item.stock)}{item.unidad && ` ${item.unidad}`}</td><td>{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />}
+    <div className={v.toolbar}>
+      <label className={`${v.search} listado-maestro-busqueda-icono`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+        <input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por código, nombre o marca" aria-label="Buscar producto" />
+      </label>
+      <label className={v.selectField}><select aria-label="Existencias" value={existencia} onChange={(e) => setExistencia(e.target.value as FiltroExistencia)}>
+        <option value="todas">Todas las existencias ({conteos.todas})</option><option value="con-stock">Con stock ({conteos.conStock})</option><option value="sin-stock">Sin stock ({conteos.sinStock})</option>
+      </select><ChevronDown aria-hidden="true" /></label>
+      {datos.mototaxis && <div className={v.filters} role="group" aria-label="Inventario">
+        {([["repuestos", "Repuestos", datos.items.length], ["mototaxis", "Mototaxis", datos.mototaxis.items.length]] as const).map(([valor, etiqueta, cantidad]) =>
+          <button key={valor} type="button" className={v.chip} aria-pressed={vista === valor} onClick={() => setVista(valor)}>{etiqueta}<span className={v.chipCount}>{cantidad}</span></button>)}
+      </div>}
+      <BotonDescargarPdf onClick={alExportar} />
+    </div>
+    <ListadoMaestro<FilaInventario> variante="tabla" titulo={motos ? "Existencias por modelo de mototaxi" : "Existencias por repuesto"}
+      registros={visibles} paginacion={{ modo: "local" }} resetKey={`${vista}|${busqueda}|${existencia}|${datos.rango.desde}|${datos.rango.hasta}`}
+      claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
+      vacio={<div className={v.empty}><strong>No hay productos para mostrar</strong><span>{busqueda || existencia !== "todas" ? "Prueba con otra búsqueda o filtro de existencias." : "Aún no hay productos en el inventario."}</span></div>}
+      encabezadoTabla={<tr>{columnas.map((columna) => <th key={columna}>{columna}</th>)}</tr>}
+      renderizarFila={(item) => motos
+        ? <tr key={item.id}><td><strong className="text-[#142b42]">{item.nombre}</strong></td><td>{item.marca}</td><td>{existencias(item)}</td><td className="tabular-nums">{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td className={v.total}>{item.precioVentaActual != null && item.precioVentaActual > 0 ? soles(item.precioVentaActual) : "Sin precio"}</td></tr>
+        : <tr key={item.id}><td><span className={v.documentCode}>{item.codigo}</span></td><td><strong className="text-[#142b42]">{item.nombre}</strong></td><td>{item.marca}</td><td>{item.categoria}</td><td>{existencias(item)}</td><td className="tabular-nums">{item.precioPromedioCompra > 0 ? soles(item.precioPromedioCompra) : "—"}</td><td className={v.total}>{item.precioPromedioVenta > 0 ? soles(item.precioPromedioVenta) : "—"}</td></tr>} />
   </div>;
 }
 
@@ -110,13 +114,11 @@ export function ReportesPage() {
     return () => { vigente = false; };
   }, [filtro]);
 
-  return <section className="flex h-full min-h-0 min-w-0 flex-col gap-3">
-    {cargando ? <p role="status">Cargando reporte…</p> : error ? <p role="alert" className="text-[var(--erp-accent)]">{error}</p> : resultado?.tipo === "inventario" && <ResumenInventario datos={resultado.datos} vista={vistaInventario} setVista={setVistaInventario} busqueda={busqueda} setBusqueda={setBusqueda} existencia={existencia} setExistencia={setExistencia}
+  return <section className={v.page}>
+    {cargando ? <p role="status" className={r.mensaje}>Cargando reporte…</p> : error ? <p role="alert" className={`${r.mensaje} ${r.mensajeError}`}>{error}</p> : resultado?.tipo === "inventario" && <ResumenInventario datos={resultado.datos} vista={vistaInventario} setVista={setVistaInventario} busqueda={busqueda} setBusqueda={setBusqueda} existencia={existencia} setExistencia={setExistencia}
       alExportar={() => {
         if (!window.confirm("¿Deseas descargar el reporte actual de inventario en PDF?")) return;
-        alertas.informacion("Preparando la descarga del PDF…");
         void descargarReporteInventarioPdf(resultado.datos, filtro, vistaInventario)
-          .then(() => alertas.exito("El archivo PDF se descargó correctamente."))
           .catch((problema: unknown) => alertas.error(problema instanceof Error ? problema.message : "No se pudo exportar el reporte."));
       }} />}
   </section>;

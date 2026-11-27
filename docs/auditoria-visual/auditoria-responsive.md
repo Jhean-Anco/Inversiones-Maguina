@@ -20,7 +20,7 @@
 | `/clientes` | 390×844 | mobile-portrait | Captura estable muestra aside cerrado y vista completa; evaluaciones DOM contradictorias requieren reproducción sincronizada | Parcial |
 | `/personas/proveedores` | 390×844 | mobile-portrait | Búsqueda/tablas visibles; tabla con scroll interno; gran espacio sobre el campo de búsqueda | Parcial |
 | `/personas/conductores` | 390×844 | mobile-portrait | Búsqueda/tablas visibles; tabla con scroll interno; gran espacio sobre el campo de búsqueda | Parcial |
-| `/inicio`, `/finanzas/cuentas`, `/finanzas/movimientos`, `/configuracion/series`, `/reportes/inventario`, `/reportes/ingresos` | 390×844 | mobile-portrait | Vistas capturadas; se desenfocaron tarjetas, importes y filas | Parcial |
+| `/inicio`, `/finanzas/cuentas`, `/configuracion/series`, `/reportes/inventario`, `/reportes/ingresos` | 390×844 | mobile-portrait | Vistas capturadas; se desenfocaron tarjetas, importes y filas | Parcial |
 | `/ingresos/ordenes-servicio`, `/ingresos/cotizaciones`, `/ingresos/ventas/repuestos`, `/ingresos/ventas/mototaxis`, `/ingresos/guias` | 1440×900 | laptop | Listas y acciones visibles; no se activaron operaciones externas | Parcial |
 | `/egresos/compras` | 1536×690 | laptop | Lista observada; botón principal 56×56 px | Parcial |
 

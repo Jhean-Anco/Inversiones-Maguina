@@ -11,7 +11,6 @@ Las rutas y parámetros de transporte provienen de los decoradores TypeScript. �
 | GET | `/empresa` | `obtener` | Sí | No declarado | — | [`apps/api/src/modulos/empresa/empresa.controller.ts`](../apps/api/src/modulos/empresa/empresa.controller.ts) |
 | GET | `/finanzas/cuentas/composicion` | `composicion` | Sí | `FINANZAS.LEER` | Query(desde), Query(hasta) | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |
 | GET | `/finanzas/cuentas/flujo` | `flujo` | Sí | `FINANZAS.LEER` | Query(periodo) | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |
-| GET | `/finanzas/cuentas/movimientos` | `movimientos` | Sí | `FINANZAS.LEER` | Query(periodo), Query(fecha), Query(cuentaId), Query(pagina), Query(porPagina) | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |
 | GET | `/finanzas/cuentas/opciones` | `opciones` | Sí | No declarado | — | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |
 | GET | `/finanzas/cuentas/resumen` | `resumen` | Sí | `FINANZAS.LEER` | — | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |
 | GET | `/finanzas/cuentas` | `listar` | Sí | `FINANZAS.ADMINISTRAR` | — | [`apps/api/src/modulos/finanzas/finanzas.controller.ts`](../apps/api/src/modulos/finanzas/finanzas.controller.ts) |

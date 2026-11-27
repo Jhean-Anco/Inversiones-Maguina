@@ -298,7 +298,7 @@ describe("rutas protegidas con un usuario administrador", () => {
     assert.equal((await enviar("POST", `/inventario/mototaxis/${idAleatorio()}/pagos`, { fechaPago: "x" })).statusCode, 400);
   });
 
-  test("finanzas: cuentas, resumen, flujo y movimientos", async () => {
+  test("finanzas: cuentas, resumen y flujo", async () => {
     const creada = await enviar("POST", "/finanzas/cuentas", { tipo: "EFECTIVO", nombre: `Caja HTTP ${contexto.sufijo}` });
     assert.equal(creada.statusCode, 201);
     const id = creada.json().id;
@@ -311,8 +311,6 @@ describe("rutas protegidas con un usuario administrador", () => {
     assert.equal((await get("/finanzas/cuentas/flujo?periodo=SEMANA")).json().periodo, "SEMANA");
     assert.equal((await get(`/finanzas/cuentas/composicion?desde=${inicioAnio}&hasta=${hoy}`)).json().desde, inicioAnio);
     assert.equal((await get("/finanzas/cuentas/composicion?desde=2026-13-01&hasta=2026-01-01")).statusCode, 400);
-    assert.equal((await get("/finanzas/cuentas/movimientos?periodo=DIA")).statusCode, 400);
-    assert.equal((await get(`/finanzas/cuentas/movimientos?periodo=DIA&fecha=${hoy}&cuentaId=${id}`)).json().totalMovimientos, 0);
   });
 
   test("personas: conductores, transportistas, proveedores y consulta de identidad", async () => {

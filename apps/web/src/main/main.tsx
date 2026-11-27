@@ -34,7 +34,6 @@ function App() {
             <Route path="/inicio" element={<InicioPage />} />
             <Route path="/configuracion/series" element={<InicioPage />} />
             <Route path="/finanzas/cuentas" element={<InicioPage />} />
-            <Route path="/finanzas/movimientos" element={<InicioPage />} />
             <Route path="/ingresos/nuevo" element={<Navigate to="/ingresos/nuevo/repuestos" replace />} />
             <Route path="/ingresos/nuevo/repuestos" element={<InicioPage />} />
             <Route path="/ingresos/nuevo/mototaxis" element={<InicioPage />} />

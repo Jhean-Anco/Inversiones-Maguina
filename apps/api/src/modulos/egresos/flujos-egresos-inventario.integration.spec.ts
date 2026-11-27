@@ -35,14 +35,18 @@ after(async () => { if (contexto) await contexto.cerrar(); });
 
 const crearCuenta = () => contexto.crearCuenta(usuarioId, { saldoInicial: "100000.00", fechaSaldoInicial: hoy });
 
-/** Salidas del día de una cuenta según Finanzas y, si la conciliación es posible, su saldo actual. */
+/** Salidas del mes de una cuenta según Finanzas, pagos vigentes asociados y, si la conciliación es posible, su saldo actual. */
 async function caja(cuentaId: string) {
-  const dia = await finanzas.movimientosPorPeriodo("DIA", hoy, cuentaId);
   const resumen = (await finanzas.resumenDelMes()).items.find((item) => item.id === cuentaId)!;
-  const egresado = dia.items.find((item) => item.id === cuentaId)!.egresos;
-  assert.equal(resumen.egresosMes, egresado);
+  const egresado = resumen.egresosMes;
   if (resumen.saldoEstado === "CONCILIADO") assert.equal(resumen.saldoActual, (100000 - Number(egresado)).toFixed(2));
-  return { egresado, movimientos: dia.totalMovimientos };
+  const [conteo] = await filas<{ total: number }>(`
+    SELECT count(*)::int AS total FROM (
+      SELECT cuenta_financiera_id FROM egresos_pagos WHERE anulado_en IS NULL
+      UNION ALL SELECT cuenta_financiera_id FROM pagos_entradas_stock WHERE anulado_en IS NULL
+      UNION ALL SELECT cuenta_financiera_id FROM pagos_compras_mototaxis WHERE anulado_en IS NULL
+    ) AS pagos WHERE cuenta_financiera_id = $1`, [cuentaId]);
+  return { egresado, movimientos: conteo?.total ?? 0 };
 }
 
 async function filas<T extends object>(consulta: string, parametros: string[]) {

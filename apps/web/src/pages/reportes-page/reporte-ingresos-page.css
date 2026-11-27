@@ -1,17 +1,32 @@
-.reporte-ingresos-page{min-width:0;color:var(--erp-text,#193b58);font-size:14px}.reporte-ingresos-toolbar{display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:14px 16px;background:var(--erp-surface,#fff);border:1px solid var(--erp-border,#dce5ed);border-radius:14px}.reporte-ingresos-toolbar label{display:grid;gap:6px;min-width:150px;color:#526b81;font-size:12px;font-weight:700}.reporte-ingresos-toolbar input,.reporte-ingresos-toolbar select{min-height:40px;width:100%;padding:0 10px;border:1px solid #ccd8e3;border-radius:9px;background:#fff;color:#193b58;font:inherit}.reporte-ingresos-export{min-height:40px;margin-left:auto;padding:0 16px;border:0;border-radius:9px;background:#1769a5;color:#fff;font-weight:700;cursor:pointer}.reporte-ingresos-export:disabled{opacity:.55;cursor:wait}.reporte-ingresos-content{display:grid;gap:14px;margin-top:14px}.reporte-ingresos-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}.reporte-ingresos-kpis>div,.reporte-ingresos-panel{min-width:0;padding:18px;background:var(--erp-surface,#fff);border:1px solid var(--erp-border,#dce5ed);border-radius:14px}.reporte-ingresos-kpis dt{color:#526b81;font-weight:650}.reporte-ingresos-kpis dd{margin:8px 0 4px;color:#1769a5;font-size:clamp(20px,2vw,26px);font-weight:800;font-variant-numeric:tabular-nums}.reporte-ingresos-kpis small,.reporte-ingresos-panel-heading p{color:#74879a}.reporte-ingresos-panel-heading{display:flex;justify-content:space-between;align-items:start;gap:12px}.reporte-ingresos-panel-heading h2{margin:0;color:#193b58;font-size:16px;font-weight:750}.reporte-ingresos-panel-heading p{margin:5px 0 0;font-size:12px}.reporte-ingresos-legend{display:flex;align-items:center;gap:6px;color:#526b81;font-size:12px}.reporte-ingresos-legend i{width:9px;height:9px;border-radius:50%;background:#2488bf}.reporte-ingresos-chart{display:flex;align-items:stretch;gap:clamp(5px,2vw,18px);height:210px;margin-top:18px;padding:8px 4px 0;border-bottom:1px solid #dce5ed;overflow-x:auto}.reporte-ingresos-column{display:grid;grid-template-rows:20px 1fr 22px;flex:1 0 54px;min-width:0;text-align:center}.reporte-ingresos-bar-value{color:#657d91;font-size:10px;white-space:nowrap}.reporte-ingresos-bar-track{display:flex;align-items:end;justify-content:center;min-height:0}.reporte-ingresos-bar-track i{display:block;width:min(34px,70%);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#49a6d4,#1f76aa)}.reporte-ingresos-month{padding-top:6px;color:#657d91;font-size:11px;text-transform:capitalize}.reporte-ingresos-empty,.reporte-ingresos-message{padding:18px;color:#526b81}.reporte-ingresos-message.is-error{color:#a33135}.reporte-ingresos-table-wrap{overflow:auto}.reporte-ingresos-table{width:100%;border-collapse:collapse;margin-top:14px;text-align:left}.reporte-ingresos-table th,.reporte-ingresos-table td{padding:12px;border-bottom:1px solid #e5ebf0}.reporte-ingresos-table thead th{color:#657d91;font-size:11px;text-transform:uppercase;letter-spacing:.04em}.reporte-ingresos-table tbody th{font-weight:650}.reporte-ingresos-table td{text-align:right;font-variant-numeric:tabular-nums}.reporte-ingresos-table td.is-credit{color:#a13d43}
-@media(max-width:700px){.reporte-ingresos-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}.reporte-ingresos-toolbar label{min-width:0}.reporte-ingresos-toolbar label:nth-child(3){grid-column:1/-1}.reporte-ingresos-export{grid-column:1/-1;width:100%;margin:0}.reporte-ingresos-content{gap:10px;margin-top:10px}.reporte-ingresos-kpis{grid-template-columns:1fr;gap:8px}.reporte-ingresos-kpis>div{padding:13px 15px}.reporte-ingresos-kpis dd{margin:4px 0;font-size:22px}.reporte-ingresos-panel{padding:14px}.reporte-ingresos-chart{height:185px;gap:8px}.reporte-ingresos-column{flex-basis:48px}.reporte-ingresos-table th,.reporte-ingresos-table td{padding:11px 7px;font-size:12px}.reporte-ingresos-table thead th{font-size:10px}}
-@media print{.erp-aside,.erp-topbar,.reporte-ingresos-toolbar{display:none!important}.erp-layout,.erp-main,.erp-content{display:block!important;width:auto!important;height:auto!important;min-height:0!important;overflow:visible!important}.reporte-ingresos-page{color:#132e45}.reporte-ingresos-content{margin-top:0}.reporte-ingresos-kpis>div,.reporte-ingresos-panel{break-inside:avoid;border-color:#cbd5df;box-shadow:none}.reporte-ingresos-chart{overflow:visible}}
-.reporte-ingresos-doc-cards{display:grid;gap:9px;margin-top:14px}.reporte-ingresos-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 12px;padding:13px;border:1px solid var(--erp-border,#dce5ed);border-radius:11px;background:var(--erp-surface,#fff)}.reporte-ingresos-doc-card h3{grid-column:1/-1;margin:0;padding-bottom:8px;border-bottom:1px solid #e5ebf0;color:#193b58;font-size:14px;font-weight:750}.reporte-ingresos-doc-card div{display:flex;justify-content:space-between;gap:10px;color:#657d91;font-size:12px}.reporte-ingresos-doc-card strong{color:#193b58;font-variant-numeric:tabular-nums}.reporte-ingresos-doc-card strong.is-credit{color:#a13d43}
-
-@media(min-width:701px){
-  .reporte-ingresos-toolbar label{box-sizing:border-box;flex:0 0 170px;width:170px;min-width:170px}
-  .reporte-ingresos-toolbar input,.reporte-ingresos-toolbar select{min-height:46px}
-  .reporte-ingresos-export{min-height:46px}
-  .reporte-ingresos-content{gap:20px;margin-top:20px}
-  .reporte-ingresos-kpis>div{box-sizing:border-box;height:98px;padding:14px 20px}
-  .reporte-ingresos-kpis dd{margin:3px 0 4px;font-size:24px;line-height:29px}
-  .reporte-ingresos-content>.reporte-ingresos-panel:first-of-type{box-sizing:border-box;display:flex;height:521px;min-height:521px;flex-direction:column;padding:23px 24px}
-  .reporte-ingresos-content>.reporte-ingresos-panel:first-of-type .reporte-ingresos-chart{box-sizing:border-box;flex:1 1 auto;height:423px;min-height:0;margin-top:14px}
-  .reporte-ingresos-documentos-heading{display:none}
-}
-@media(max-width:700px){.reporte-ingresos-documentos-heading{display:flex}}
+.reporte-ingresos-page{font-size:14px}
+.reporte-ingresos-fecha{min-width:0;gap:8px;padding-left:14px}
+.reporte-ingresos-fecha>span{color:#6d8093;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.reporte-ingresos-fecha input{height:100%;min-width:0;padding:0 12px 0 0;border:0;background:transparent;color:#142b42;font:inherit;font-size:14px;outline:none}
+.reporte-ingresos-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+.reporte-ingresos-content{display:grid;gap:20px}
+.reporte-ingresos-panel{min-width:0;padding:20px 24px;background:#fff;border:1px solid #dbe3e9;border-radius:14px}
+.reporte-ingresos-panel-heading{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.reporte-ingresos-panel-heading h2{margin:0;color:#0b2545;font-size:16px;font-weight:750}
+.reporte-ingresos-panel-heading p,.reporte-ingresos-panel-heading>span{margin:5px 0 0;color:#6d8093;font-size:11px}
+.reporte-ingresos-legend{display:flex;align-items:center;gap:6px;color:#52697d;font-size:11px}
+.reporte-ingresos-legend i{width:9px;height:9px;border-radius:50%;background:#2878b9}
+.reporte-ingresos-chart{display:flex;align-items:stretch;gap:clamp(5px,2vw,18px);height:360px;margin-top:16px;padding:8px 4px 0;border-bottom:1px solid #dbe3e9;overflow-x:auto}
+.reporte-ingresos-column{display:grid;grid-template-rows:20px 1fr 22px;flex:1 0 54px;min-width:0;text-align:center}
+.reporte-ingresos-bar-value{color:#52697d;font-size:10px;white-space:nowrap}
+.reporte-ingresos-bar-track{display:flex;align-items:end;justify-content:center;min-height:0}
+.reporte-ingresos-bar-track i{display:block;width:min(34px,70%);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#3f8fcc,#0b2545)}
+.reporte-ingresos-month{padding-top:6px;color:#52697d;font-size:11px;text-transform:capitalize}
+.reporte-ingresos-empty{padding:18px;color:#52697d}
+.reporte-ingresos-documentos{padding:0;overflow:hidden}
+.reporte-ingresos-documentos-heading{padding:16px 20px}
+.reporte-ingresos-table tbody th{color:#142b42;font-weight:650}
+.reporte-ingresos-table .is-credit{color:#9b2c2c;font-weight:800;font-variant-numeric:tabular-nums}
+.reporte-ingresos-doc-cards{display:grid;gap:9px;padding:0 14px 14px}
+.reporte-ingresos-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 12px;padding:13px;border:1px solid #dbe3e9;border-radius:10px;background:#f8fafc}
+.reporte-ingresos-doc-card h3{grid-column:1/-1;margin:0;padding-bottom:8px;border-bottom:1px solid #dbe3e9;color:#0b2545;font-size:14px;font-weight:750}
+.reporte-ingresos-doc-card div{display:flex;justify-content:space-between;gap:10px;color:#6d8093;font-size:12px}
+.reporte-ingresos-doc-card strong{color:#142b42;font-variant-numeric:tabular-nums}
+.reporte-ingresos-doc-card strong.is-credit{color:#9b2c2c}
+@media(min-width:701px){.reporte-ingresos-documentos-heading{display:none}}
+@media(max-width:700px){.reporte-ingresos-toolbar>label{width:100%}.reporte-ingresos-kpis{grid-template-columns:1fr}.reporte-ingresos-panel{padding:14px}.reporte-ingresos-documentos{padding:0}.reporte-ingresos-chart{height:200px;gap:8px}.reporte-ingresos-column{flex-basis:48px}}
+@media print{.erp-aside,.erp-topbar,.reporte-ingresos-toolbar{display:none!important}.erp-layout,.erp-main,.erp-content{display:block!important;width:auto!important;height:auto!important;min-height:0!important;overflow:visible!important}.reporte-ingresos-kpis>div,.reporte-ingresos-panel{break-inside:avoid;box-shadow:none}.reporte-ingresos-chart{overflow:visible}}

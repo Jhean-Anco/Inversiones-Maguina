@@ -256,9 +256,8 @@ async function movimientos(productoId: string) {
   return filas.map((fila) => `${fila.tipo}:${fila.origenTipo}:${Number(fila.cantidadBase)}`).sort();
 }
 async function caja(cuentaId: string) {
-  const resultado = await finanzas.movimientosPorPeriodo("ANIO", hoy.slice(0, 4), cuentaId);
-  const fila = resultado.items.find((item) => item.id === cuentaId)!;
-  return Number(fila.neto);
+  const fila = (await finanzas.resumenDelMes()).items.find((item) => item.id === cuentaId)!;
+  return Number(fila.netoMes);
 }
 async function vender(opciones: { tipo?: "BOLETA" | "NOTA_VENTA"; credito?: { inicial: number }; cantidad?: number; stock?: number; cuenta: string }) {
   const producto = await crearProducto({ stock: opciones.stock ?? 10, precio: "10.00" });
