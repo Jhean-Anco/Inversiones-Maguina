@@ -102,19 +102,6 @@ input[type="reset"] {
   background: transparent;
 }
 
-.venta-form-paper.comprobante-boleta .venta-form-heading {
-  border-left-color: var(--erp-accent) !important;
-  background: linear-gradient(
-    112deg,
-    var(--erp-brand-deep),
-    var(--erp-brand) 64%,
-    #103f72
-  ) !important;
-}
-.venta-form-paper .venta-form-heading {
-  color: #fff;
-}
-
 .erp-content .inicio-panel {
   border-color: var(--erp-border);
   border-radius: var(--erp-radius-lg);
@@ -130,9 +117,7 @@ input[type="reset"] {
   height: 2px;
   background: var(--erp-accent);
 }
-.erp-content .inicio-panel-heading h2,
-.erp-content .inicio-recent-list strong,
-.erp-content .inicio-recent-list b {
+.erp-content .inicio-panel-heading h2 {
   color: var(--erp-ink);
   letter-spacing: var(--erp-tracking-heading);
 }
@@ -141,8 +126,7 @@ input[type="reset"] {
   font-weight: 700;
 }
 .erp-content .inicio-panel-heading p,
-.erp-content .inicio-panel-kicker,
-.erp-content .inicio-recent-list small {
+.erp-content .inicio-panel-kicker {
   color: var(--erp-ink-soft);
 }
 .erp-content .inicio-panel-heading p {
@@ -238,38 +222,6 @@ input[type="reset"] {
 }
 
 /* Distinguish each document type with a consistent header and series card palette. */
-.venta-form-paper.comprobante-nota-venta {
-  --doc-start: #702532;
-  --doc-end: #9f3040;
-  --doc-accent: #f08b96;
-  --doc-ink: #7d2938;
-  --doc-tint: #fff1f2;
-  --doc-border: #edc5ca;
-}
-.venta-form-paper.comprobante-boleta {
-  --doc-start: #0b376a;
-  --doc-end: #1764a4;
-  --doc-accent: #e63243;
-  --doc-ink: #164f82;
-  --doc-tint: #edf5fc;
-  --doc-border: #bfd4e7;
-}
-.venta-form-paper.comprobante-factura {
-  --doc-start: #123e67;
-  --doc-end: #28658f;
-  --doc-accent: #f06470;
-  --doc-ink: #194b73;
-  --doc-tint: #edf4f9;
-  --doc-border: #bed0df;
-}
-.gestion-cotizacion-paper {
-  --doc-start: #193956;
-  --doc-end: #365f82;
-  --doc-accent: #e14b59;
-  --doc-ink: #244b6c;
-  --doc-tint: #f0f5f9;
-  --doc-border: #c7d6e2;
-}
 
 /* ==========================================================================
  * Capa premium: primitivas que consumen los tokens de index.css.
@@ -316,11 +268,6 @@ input[type="reset"] {
     padding: 0 20px;
     font-size: var(--erp-text-md);
   }
-  .erp-btn--sm {
-    min-height: var(--erp-control-h-sm);
-    padding: 0 12px;
-    font-size: var(--erp-text-sm);
-  }
   .erp-btn--primary {
     border-color: #b51d2f;
     background: linear-gradient(180deg, #d42a3e, var(--erp-accent));
@@ -332,15 +279,6 @@ input[type="reset"] {
     background: linear-gradient(180deg, #c62539, var(--erp-accent-hover));
     box-shadow: 0 4px 12px -3px rgb(140 26 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
   }
-  .erp-btn--brand {
-    border-color: var(--erp-brand-deep);
-    background: linear-gradient(180deg, var(--erp-brand-strong), var(--erp-brand));
-    color: #fff;
-    box-shadow: 0 1px 2px rgb(7 30 60 / 24%), inset 0 1px 0 rgb(255 255 255 / 12%);
-  }
-  .erp-btn--brand:hover:not(:disabled) {
-    background: linear-gradient(180deg, var(--erp-brand), var(--erp-brand-deep));
-  }
   .erp-btn--secondary {
     border-color: var(--erp-border-strong);
     background: var(--erp-surface);
@@ -351,23 +289,6 @@ input[type="reset"] {
     border-color: #b6c3d0;
     background: var(--erp-surface-hover);
   }
-  .erp-btn--ghost {
-    background: transparent;
-    color: var(--erp-ink-muted);
-  }
-  .erp-btn--ghost:hover:not(:disabled) {
-    background: var(--erp-surface-sunken);
-    color: var(--erp-ink);
-  }
-  .erp-btn--danger {
-    border-color: var(--erp-danger-border);
-    background: var(--erp-danger-bg);
-    color: var(--erp-danger);
-  }
-  .erp-btn--danger:hover:not(:disabled) {
-    border-color: #e5a5ae;
-    background: #fbe2e6;
-  }
   .erp-btn:disabled,
   .erp-btn[aria-disabled="true"] {
     cursor: not-allowed;
@@ -376,11 +297,6 @@ input[type="reset"] {
   }
 
   /* Esqueleto de carga. */
-  .erp-skeleton {
-    border-radius: var(--erp-radius-sm);
-    background: linear-gradient(90deg, var(--erp-surface-sunken) 0%, #e9eef4 45%, var(--erp-surface-sunken) 90%) 0 0 / 220% 100%;
-    animation: erp-skeleton 1.4s ease-in-out infinite;
-  }
 }
 @keyframes erp-skeleton {
   from { background-position: 100% 0; }

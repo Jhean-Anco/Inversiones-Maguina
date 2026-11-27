@@ -1394,6 +1394,20 @@
       "when": 1795742355987,
       "tag": "0198_living_queen_noir",
       "breakpoints": true
+    },
+    {
+      "idx": 199,
+      "version": "7",
+      "when": 1795763388285,
+      "tag": "0199_compra_mototaxi_sin_proveedor",
+      "breakpoints": true
+    },
+    {
+      "idx": 200,
+      "version": "7",
+      "when": 1795763533782,
+      "tag": "0200_compra_mototaxi_sin_tipo_otro",
+      "breakpoints": true
     }
   ]
 }

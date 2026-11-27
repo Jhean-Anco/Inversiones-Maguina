@@ -19,9 +19,7 @@ import { useLineasGestion } from "./use-lineas-gestion";
 import { calcularTotalesCotizacion, mensajeWhatsAppCotizacion as crearMensajeWhatsApp } from "./gestion-utils";
 import { GestionListadoVista } from "./gestion-listado-vista";
 import { useAccionesPersistencia } from "./use-acciones-persistencia";
-import { cotizacionClases } from "./cotizacion-clases";
 import type { LineaGestion } from "./gestion-utils";
-import "./ordenes-cotizaciones-page.css";
 
 const hoy = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
 const sumarDias = (fecha: string, dias: number) => { const resultado = new Date(`${fecha}T00:00:00Z`); resultado.setUTCDate(resultado.getUTCDate() + dias); return resultado.toISOString().slice(0, 10); };
@@ -211,7 +209,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
     {modales}
   </>;
 
-  return <section className={`gestion-ingresos-page ${cotizacionClases.pageShared} is-cotizaciones ${cotizacionClases.page}`}>
+  return <section className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-[18px] text-[#173653] [&_button]:!cursor-pointer [&_:is(button,input,select,textarea):focus-visible]:outline-[3px] [&_:is(button,input,select,textarea):focus-visible]:outline-offset-2">
     {error && <NotificacionFlotante mensaje={error} />}
     <GestionListadoVista {...listadoVistaProps} />
     {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear cotización" onClick={nuevaGestion} />}

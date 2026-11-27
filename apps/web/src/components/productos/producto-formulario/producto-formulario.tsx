@@ -58,7 +58,7 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
       <p className="m-0 -mt-2 text-[13px] text-[#52697d]">Identifica el repuesto y define sus presentaciones.</p>
       {!formulario.categoriaModalAbierto && !formulario.marcaModalAbierto && <NotificacionFlotante titulo={formulario.errorLocal ? "Revisa los datos del formulario" : "No se guardó el repuesto"} mensaje={formulario.errorLocal || error} />}
       <form id="producto-form" ref={formularioRef} className="grid gap-5" onSubmit={formulario.guardar}>
-        <div className="producto-form-scroll mobile-portrait:gap-[14px] mobile-portrait:px-[18px] mobile-portrait:py-6 mobile-portrait:[.catalog-modal.producto-modal_&]:px-[18px]">
+        <div className="producto-form-scroll">
           <fieldset className="producto-form-section mobile-portrait:p-3">
             <legend>Identificación</legend>
             <div className="producto-form-grid mobile-portrait:grid-cols-1">

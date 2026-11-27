@@ -1,110 +1,17 @@
 
-.venta-submit{color:white}
-.venta-submit:disabled{opacity:.52;cursor:not-allowed;filter:saturate(.55)}
-:where(html[data-responsive-profile="laptop"]) .venta-page{padding-bottom:16px}:where(html[data-responsive-profile="tablet-landscape"]) .venta-page{padding-bottom:16px}:where(html[data-responsive-profile="laptop"]) .venta-editor{gap:10px}:where(html[data-responsive-profile="tablet-landscape"]) .venta-editor{gap:10px}:where(html[data-responsive-profile="laptop"]) .venta-data-footer{margin-top:10px}:where(html[data-responsive-profile="tablet-landscape"]) .venta-data-footer{margin-top:10px}.venta-form-heading{background:linear-gradient(112deg,#0b376a 0%,#103f72 64%,#092c53 100%)}
-.venta-page { display: block; min-height: 100%; box-sizing: border-box; padding: 4px 0 24px; overflow: visible; }
+:where(html[data-responsive-profile="laptop"]) .venta-editor{gap:10px}:where(html[data-responsive-profile="tablet-landscape"]) .venta-editor{gap:10px}
 /* Jerarquía de captura: cliente, catálogo y cierre de venta. */
-.venta-page{overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable}
-.venta-layout.is-data-step .venta-form-paper{min-height:max-content;flex:0 0 auto}
-.venta-layout.is-data-step .venta-form-header-fields{display:grid;gap:14px;padding:16px 22px 12px}
-.venta-form-body-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.venta-form-body-heading h3{margin:0;font-size:16px}
-.venta-product-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.venta-product-tools button{min-height:34px;padding:0 12px;border:1px solid #dbe5f0;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:12px;font-weight:650;cursor:pointer}
-.venta-layout.is-data-step .venta-form-body{min-height:280px;flex:1 1 auto;overflow:visible;padding:4px 22px 16px}
-.venta-product-tools>span{padding:0 8px;color:#657b95;font-size:12px}
-.venta-product-tools button{min-height:32px}
-.venta-layout.is-data-step .venta-lines{height:auto;min-height:140px;max-height:36vh;flex:0 1 auto}
-.venta-layout.is-data-step .venta-empty{min-height:118px;flex:0 0 auto}
-.venta-layout.is-data-step .venta-data-footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);align-items:stretch;gap:14px;margin:0 22px 18px}
-.venta-observation-card{display:grid;gap:7px;padding:12px;border:1px solid #e2eaf3;border-radius:10px;color:#183e68;font-size:13px;font-weight:700}
-.venta-observation-card>span{display:inline;color:#70839a;font-size:11px;font-weight:500}
-.venta-observation-card textarea{box-sizing:border-box;width:100%;min-height:76px;resize:vertical;padding:10px 12px;border:1px solid #d8e2ee;border-radius:8px;background:#fff;color:#172f4d;font:inherit;font-weight:400}
-.venta-checkout-actions{display:grid;gap:10px;align-content:start}
-.venta-checkout-total{display:grid;grid-template-columns:minmax(90px,.8fr) minmax(140px,1.2fr);align-items:end;gap:10px}.venta-checkout-amount{display:grid;gap:3px;align-self:center}.venta-checkout-amount>span{color:#617b97;font-size:11px;font-weight:700}.venta-checkout-amount>strong{color:#0f3b68;font-size:21px;white-space:nowrap}.venta-checkout-total .selector-cuenta-financiera{display:grid;gap:5px;min-width:0;color:#355372;font-size:11px;font-weight:700}.venta-checkout-total .selector-cuenta-financiera select{box-sizing:border-box;width:100%;min-height:38px;padding:0 9px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:12px}
-.venta-checkout-buttons{display:flex;justify-content:flex-end;gap:9px}
-.venta-checkout-buttons .venta-clear{min-width:86px;min-height:42px;padding:0 14px;border:1px solid #d9e3ed;border-radius:9px;background:#fff;color:#425c7a;font:inherit;font-weight:650;cursor:pointer}
-.venta-checkout-buttons .venta-submit{min-height:44px}:where(html[data-responsive-profile="tablet-portrait"]) .venta-layout.is-data-step .venta-data-footer{grid-template-columns:1fr}:where(html[data-responsive-profile="tablet-portrait"]) .venta-product-tools{justify-content:flex-end}:where(html[data-responsive-profile="tablet-portrait"]) .venta-layout.is-data-step .venta-lines{max-height:42vh}:where(html[data-responsive-profile="mobile-landscape"]) .venta-layout.is-data-step .venta-data-footer{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-landscape"]) .venta-product-tools{justify-content:flex-end}:where(html[data-responsive-profile="mobile-landscape"]) .venta-layout.is-data-step .venta-lines{max-height:42vh}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .venta-data-footer{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-portrait"]) .venta-product-tools{justify-content:flex-end}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .venta-lines{max-height:42vh}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .venta-form-header-fields{padding:12px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .venta-form-body{padding:4px 12px 12px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-form-body-heading{align-items:flex-start;flex-direction:column}:where(html[data-responsive-profile="mobile-portrait"]) .venta-product-tools{justify-content:flex-start}:where(html[data-responsive-profile="mobile-portrait"]) .venta-product-tools button{padding:0 9px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-layout.is-data-step .venta-data-footer{margin:0 12px 14px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-checkout-buttons{display:grid;grid-template-columns:1fr 2fr}:where(html[data-responsive-profile="mobile-portrait"]) .venta-checkout-buttons .venta-submit{width:100%}
-.venta-number-card{display:grid;gap:3px;min-width:132px;padding:8px 12px;border:1px solid #f2dddd;border-radius:10px;background:#fff7f7}
-.venta-number-card span{color:#bd6870;font-size:9px;font-weight:800;letter-spacing:.07em}
-.venta-number-card strong{color:#c92435;font-size:15px;font-variant-numeric:tabular-nums}
 .venta-editor.is-catalog-open{display:grid!important;grid-template-columns:minmax(300px,.84fr) minmax(0,1.35fr);align-items:start;gap:16px;overflow:visible}
-.venta-editor.is-catalog-open .venta-form-paper{min-width:0;height:max-content;max-height:none;overflow:visible}
-.venta-editor.is-catalog-open .venta-form-body{min-height:220px;flex:none}
-.venta-editor.is-catalog-open .venta-form-body .venta-lines{max-height:35vh;overflow:auto}
-.venta-catalog-sidebar{display:flex;min-width:0;max-height:min(76vh,820px);flex-direction:column;overflow:hidden;border:1px solid #dce6ef;border-radius:14px;background:#fff;box-shadow:0 10px 28px #183b5d0b}
-.venta-catalog-sidebar>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 14px;border-bottom:1px solid #e5ebf2}
-.venta-catalog-sidebar>header span{color:#71849b;font-size:9px;font-weight:800;letter-spacing:.12em}
-.venta-catalog-sidebar>header h2{margin:4px 0 3px;color:#173b65;font-size:19px}
-.venta-catalog-sidebar>header p{margin:0;color:#71849b;font-size:12px}
-.venta-catalog-sidebar>header>button{width:34px;height:34px;border:1px solid #e0e7ef;border-radius:9px;background:#fff;color:#526982;font-size:20px;cursor:pointer}
-.venta-catalog-search{display:flex;align-items:center;gap:9px;margin:14px 14px 8px;padding:0 12px;border:1px solid #d6e1ed;border-radius:10px;background:#fff;color:#486a91}
-.venta-catalog-search input{width:100%;height:42px;border:0;outline:0;background:transparent;color:#183a60;font:inherit;font-size:13px}
-.venta-catalog-results{display:grid;gap:9px;min-height:0;padding:6px 14px 14px;overflow:auto;overscroll-behavior:contain}
-.venta-catalog-product{display:grid;gap:10px;padding:12px;border:1px solid #e2eaf2;border-radius:11px;background:#fff}
-.venta-catalog-sidebar{container-type:inline-size}
-.venta-catalog-results{grid-template-columns:repeat(3,minmax(0,1fr));align-content:start}
-.venta-catalog-status{grid-column:1/-1;padding:10px 4px}
-.venta-catalog-empty{grid-column:1/-1}
-.venta-catalog-product-title{display:grid;gap:4px;min-width:0}
-.venta-catalog-product-title strong{overflow:hidden;color:#203f62;font-size:13px;text-overflow:ellipsis}
-.venta-catalog-product-title span,.venta-catalog-product-meta>span{color:#75869a;font-size:11px}
-.venta-catalog-product-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:8px;border-top:1px solid #edf1f5}
-.venta-catalog-product-meta>strong{color:#153e70;font-size:15px;font-variant-numeric:tabular-nums}
-.venta-catalog-product>button,.venta-catalog-empty>button{min-height:34px;border:1px solid #d5e1ed;border-radius:8px;background:#f4f8fc;color:#164a7c;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
-.venta-catalog-product>button:disabled{color:#8793a1;cursor:not-allowed}
-.venta-catalog-empty{display:grid;gap:7px;justify-items:start;padding:25px 12px;color:#284a70}
-.venta-catalog-empty.is-hint{justify-items:center;padding:14px 12px;color:#71849b;text-align:center}
-.venta-catalog-empty span,.venta-catalog-status{color:#73849a;font-size:12px}
-.venta-catalog-empty>button{padding:0 12px}
-  :where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor > .venta-catalog-sidebar{display:none!important}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor > .venta-catalog-sidebar{display:none!important}
-  :where(html[data-responsive-profile="tablet-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}:where(html[data-responsive-profile="tablet-portrait"]) .venta-number-card{grid-column:2;grid-row:1}:where(html[data-responsive-profile="mobile-landscape"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}:where(html[data-responsive-profile="mobile-landscape"]) .venta-number-card{grid-column:2;grid-row:1}:where(html[data-responsive-profile="mobile-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-number-card{grid-column:2;grid-row:1}
-:where(html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"],html[data-responsive-profile="mobile-portrait"]) .venta-catalog-results{grid-template-columns:repeat(2,minmax(0,1fr))}
-:where(html[data-responsive-profile="mobile-portrait"]) .venta-catalog-results{grid-template-columns:1fr}
-:where(html[data-responsive-profile="mobile-landscape"]) .venta-editor.is-catalog-open{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-landscape"]) .venta-catalog-sidebar{max-height:56vh}:where(html[data-responsive-profile="mobile-landscape"]) .venta-editor.is-catalog-open .venta-form-paper{max-height:none}:where(html[data-responsive-profile="mobile-landscape"]) .venta-number-card{min-width:100px;padding:7px 9px}:where(html[data-responsive-profile="mobile-landscape"]) .venta-number-card strong{font-size:13px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-portrait"]) .venta-catalog-sidebar{max-height:56vh}:where(html[data-responsive-profile="mobile-portrait"]) .venta-editor.is-catalog-open .venta-form-paper{max-height:none}:where(html[data-responsive-profile="mobile-portrait"]) .venta-number-card{min-width:100px;padding:7px 9px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-number-card strong{font-size:13px}.venta-editor.is-catalog-open .venta-form-paper{width:auto;min-height:0}
+  :where(html[data-responsive-profile="tablet-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}:where(html[data-responsive-profile="mobile-landscape"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:10px}
+:where(html[data-responsive-profile="mobile-landscape"]) .venta-editor.is-catalog-open{grid-template-columns:1fr}:where(html[data-responsive-profile="mobile-portrait"]) .venta-editor.is-catalog-open{grid-template-columns:1fr}
 
 /* La vista de venta aprovecha el encabezado del comprobante y el espacio superior. */
-.venta-page.is-data-step .venta-form-heading { min-height: 78px; justify-content: space-between; }
-.venta-form-heading .venta-number-card { min-width: 170px; padding: 8px 12px; text-align: left; }
-.venta-form-heading .venta-number-card span { white-space: nowrap; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-form-heading { min-height: 66px; gap: 8px; padding: 10px 12px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-form-heading h2 { font-size: 17px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-form-heading .venta-number-card { min-width: 0; max-width: 42%; padding: 6px 8px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-form-heading .venta-number-card span { font-size: 7px; white-space: normal; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-form-heading .venta-number-card strong { font-size: 12px; overflow-wrap: anywhere; }
 
 /* El shell queda quieto; el formulario conserva sus cabeceras y pie mientras desplaza el cuerpo. */
 .erp-content.is-new-sale-view { min-height: 0; overflow: hidden; }
 .erp-content.is-new-sale-view > .modulo-route-transition { min-height: 0; overflow: hidden; }
-.venta-page.is-data-step { display: flex; width: 100%; height: 100%; max-height: 100%; min-height: 0; flex-direction: column; padding: 0; overflow: hidden !important; scrollbar-gutter: auto; }
-.venta-page.is-data-step > .venta-layout.is-data-step { height: 100%; min-height: 0; flex: 1 1 0%; overflow: hidden; }
-.venta-page.is-data-step .venta-editor.is-catalog-open { width: 100%; height: 100%; min-height: 0; grid-template-columns: minmax(260px, .4fr) minmax(0, 2fr); align-items: stretch; overflow: hidden; }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper { width: 100%; height: 100% !important; max-height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
-.venta-page.is-data-step .venta-form-header-fields { flex: 0 0 auto; }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper > .venta-form-body { display: flex; height: auto !important; min-height: 0 !important; max-height: none !important; flex: 1 1 0% !important; flex-direction: column; overflow-x: hidden !important; overflow-y: auto !important; overscroll-behavior: contain; scrollbar-gutter: stable; }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper > .venta-form-body > .venta-form-body-heading { position: sticky; z-index: 2; top: 0; flex: 0 0 auto; padding: 8px 0; background: var(--venta-surface, #fff); }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper > .venta-form-body > .venta-lines { height: auto !important; min-height: 0 !important; max-height: none !important; flex: 0 0 auto !important; overflow: visible !important; }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper > .venta-form-body > .venta-empty { min-height: 148px; flex: 0 0 auto; }
-.venta-page.is-data-step .venta-data-footer { flex: 0 0 auto; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open { height: 100%; grid-template-columns: minmax(0, 1fr); }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open { height: 100%; grid-template-columns: minmax(0, 1fr); }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer { margin-bottom: 10px; }
 
 /* Las líneas aumentan la venta; el catálogo conserva el alto visible y su pie. */
-.venta-page.is-data-step{display:flex;height:100%;min-height:0;flex-direction:column;overflow-x:hidden;overflow-y:auto;padding-bottom:16px;scrollbar-gutter:stable}
-.venta-page.is-data-step>.venta-layout.is-data-step{min-height:0;flex:0 0 auto;overflow:visible}
-.venta-page.is-data-step .venta-editor.is-catalog-open{height:auto;min-height:0;grid-template-columns:minmax(300px,.58fr) minmax(0,1.7fr);align-items:start;overflow:visible}
-.venta-page.is-data-step .venta-catalog-sidebar{height:max(320px,calc(100dvh - 120px));max-height:none;min-height:0;box-sizing:border-box}
-.venta-page.is-data-step .venta-catalog-sidebar{position:sticky;top:0;align-self:start}
-.venta-page.is-data-step .venta-catalog-results{min-height:0;flex:1 1 auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
-.venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper{height:auto;min-height:0;flex:0 0 auto;overflow:visible}
-.venta-page.is-data-step .venta-form-body{min-height:0;flex:0 0 auto;overflow:visible}
-.venta-page.is-data-step .venta-lines{height:auto;min-height:0;max-height:none;flex:0 0 auto;overflow:visible;scrollbar-gutter:auto}
-.venta-page.is-data-step .venta-table-head,.venta-page.is-data-step .venta-line{width:100%;min-width:0;box-sizing:border-box;grid-template-columns:minmax(140px,1.4fr) 52px minmax(82px,.7fr) minmax(82px,.7fr) minmax(120px,.9fr) minmax(82px,.7fr) 20px;gap:clamp(4px,.65vw,9px)}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step{height:auto;min-height:100%;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step>.venta-layout.is-data-step{flex:0 0 auto;overflow:visible}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open{height:auto;min-height:0;grid-template-columns:1fr;overflow:visible}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-catalog-sidebar{position:static;height:max(320px,calc(100dvh - 140px));max-height:none;box-sizing:border-box}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper{height:auto;min-height:0;overflow:visible}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step{height:auto;min-height:100%;overflow-y:auto;overflow-x:hidden;padding-bottom:16px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step>.venta-layout.is-data-step{flex:0 0 auto;overflow:visible}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open{height:auto;min-height:0;grid-template-columns:1fr;overflow:visible}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-catalog-sidebar{position:static;height:max(320px,calc(100dvh - 140px));max-height:none;box-sizing:border-box}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper{height:auto;min-height:0;overflow:visible}
-.venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper{height:auto!important;max-height:none!important;overflow:visible!important}
-.venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper .venta-form-body{height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;overflow:visible!important}
-.venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper .venta-form-body .venta-lines{height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;scrollbar-gutter:auto!important}:where(html[data-responsive-profile="laptop"]) .venta-layout.is-data-step .venta-form-header-fields{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}:where(html[data-responsive-profile="tablet-landscape"]) .venta-layout.is-data-step .venta-form-header-fields{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
 
 /* Lista de agregados guardados, visualmente separada del resultado de búsqueda. */
 .venta-recent-products{display:grid;gap:7px;margin:10px 12px 12px;padding:12px;border:1px solid #e5ebf2;border-radius:11px;background:#f8fafc;overflow:auto;max-height:32vh}
@@ -114,7 +21,6 @@
 .venta-recent-products>button strong{font-size:12px}
 .venta-recent-products>button small{color:#71849b;font-size:10px}
 .venta-recent-products>p{margin:0;color:#71849b;font-size:12px}
-.venta-catalog-results>.venta-recent-products{min-height:0;max-height:none;flex:1 1 auto;margin:0 0 2px;align-content:start}
 .venta-recent-products>button{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:10px;row-gap:4px;width:100%;min-height:80px;padding:9px 10px;border:1px solid #e1e9f2;border-radius:10px;background:#fff;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
 .venta-recent-products>button:hover{transform:translateY(-1px);border-color:#b9cde2;box-shadow:0 5px 14px #173b6312}
 .venta-recent-products>button:focus-visible{outline:3px solid #2563a044;outline-offset:2px}
@@ -125,150 +31,29 @@
 
 
 /* Alinea los controles con la primera línea del nombre aunque la fila incluya operación e impuestos. */
-.venta-page.is-data-step .venta-line{align-items:start}
-.venta-page.is-data-step .venta-line input{height:40px;padding:0 10px;border-radius:8px}
-.venta-page.is-data-step .venta-line-name>strong>input{font-size:13px;font-weight:600;text-align:left}
-.venta-page.is-data-step .venta-line>strong{align-self:start;margin-top:9px}
-.venta-page.is-data-step .venta-line>button{align-self:start;margin-top:4px}
-:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-lines{overflow-x:auto!important}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper .venta-form-body .venta-lines{overflow-x:auto!important}:where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-table-head, :where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-line{min-width:760px}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-lines{overflow-x:auto!important}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open .venta-form-paper .venta-form-body .venta-lines{overflow-x:auto!important}:where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-table-head, :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-line{min-width:760px}
 
 /* La boleta NRUS no muestra afectación de IGV; Factura conserva esa columna en su vista previa. */
 
 /* El único desplazamiento de la captura queda dentro del cuerpo y el pie del comprobante. */
 .erp-content.is-new-sale-view { min-height: 0 !important; overflow: hidden !important; }
 .erp-content.is-new-sale-view > .modulo-route-transition { height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
-.venta-page.is-data-step { display: flex !important; width: 100% !important; height: 100% !important; max-height: 100% !important; min-height: 0 !important; padding: 0 !important; overflow: hidden !important; }
-.venta-page.is-data-step > .venta-layout.is-data-step { display: flex !important; width: 100% !important; height: 100% !important; min-height: 0 !important; flex: 1 1 0% !important; overflow: hidden !important; }
-.venta-page.is-data-step .venta-editor.is-catalog-open { width: 100% !important; height: 100% !important; min-height: 0 !important; grid-template-columns: minmax(280px, .425fr) minmax(0, 1.975fr) !important; align-items: stretch !important; overflow: hidden !important; }
-.venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper { width: 100% !important; height: 100% !important; max-height: 100% !important; min-height: 0 !important; flex: 1 1 auto !important; overflow: hidden !important; }
-.venta-page.is-data-step .venta-form-header-fields { flex: 0 0 auto !important; }
-  :where(html[data-responsive-profile="laptop"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper { display: flex !important; flex-direction: column !important; }
-  :where(html[data-responsive-profile="tablet-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper { display: flex !important; flex-direction: column !important; }
-  :where(html[data-responsive-profile="tablet-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-form-paper { display: flex !important; flex-direction: column !important; }
-.venta-page.is-data-step .venta-form-scroll { display: flex !important; min-height: 0 !important; flex: 1 1 0% !important; flex-direction: column !important; overflow-x: hidden !important; overflow-y: scroll !important; overscroll-behavior: contain; scrollbar-gutter: stable; }
-.venta-page.is-data-step .venta-form-scroll > .venta-form-body { display: flex !important; width: auto !important; height: auto !important; min-height: 0 !important; max-height: none !important; flex: 1 0 auto !important; flex-direction: column !important; overflow: visible !important; }
-.venta-page.is-data-step .venta-form-scroll > .venta-form-body > .venta-form-body-heading { position: sticky; z-index: 2; top: 0; flex: 0 0 auto; padding: 8px 0; background: var(--venta-surface, #fff); }
-.venta-page.is-data-step .venta-form-scroll > .venta-form-body > .venta-lines { width: 100%; height: auto !important; min-height: 0 !important; max-height: none !important; flex: 0 0 auto !important; overflow: visible !important; }
-.venta-page.is-data-step .venta-form-scroll > .venta-form-body > .venta-empty { min-height: 148px; flex: 1 0 148px !important; }
-.venta-page.is-data-step .venta-form-scroll > .venta-data-footer { width: auto !important; flex: 0 0 auto !important; margin: auto 22px 14px !important; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-form-scroll > .venta-data-footer { margin: 0 12px 14px !important; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-form-scroll > .venta-data-footer { margin: 0 12px 14px !important; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open { grid-template-columns: minmax(0, 1fr) !important; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open { grid-template-columns: minmax(0, 1fr) !important; }
 
 /* Centra horizontal y verticalmente todas las celdas de la tabla de boleta. */
 /* Factura usa las mismas alineaciones para Precio y Total, además de su columna Operación. */
-  :where(html[data-responsive-profile="laptop"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-catalog-sidebar {
-    position: static !important;
-    align-self: stretch !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: none !important;
-  }
-  :where(html[data-responsive-profile="tablet-landscape"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-catalog-sidebar {
-    position: static !important;
-    align-self: stretch !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: none !important;
-  }
-  :where(html[data-responsive-profile="tablet-portrait"]) .venta-page.is-data-step .venta-editor.is-catalog-open > .venta-catalog-sidebar {
-    position: static !important;
-    align-self: stretch !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: none !important;
-  }
 
 /* Observaciones queda a la misma altura que el bloque de pago. */
-.venta-page.is-data-step .venta-observation-card { box-sizing: border-box; align-self: stretch; gap: 5px; padding: 7px 10px; }
-.venta-page.is-data-step .venta-observation-card textarea { height: 44px; min-height: 44px; max-height: 44px; padding: 7px 9px; resize: none; }
-.venta-page.is-data-step .venta-data-footer .venta-checkout-total { justify-content: flex-end; align-items: center; gap: 12px; }
 
 /* Medio de pago y los controles de Cliente comparten alto y alineación. */
 
 /* En celular, pagos y búsqueda de cliente ocupan una fila compacta. */
 
-
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-actions{display:grid!important;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:8px;min-width:0}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-total{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);justify-content:stretch!important;gap:8px!important;min-width:0;white-space:normal;font-size:10px}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-amount>strong{font-size:16px}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons{display:grid!important;grid-template-columns:1fr 2fr;gap:6px}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-clear{min-width:0;min-height:40px;padding:0 6px;font-size:11px}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-submit{width:auto!important;min-width:0!important;min-height:40px;height:40px;padding:0 8px;font-size:11px;gap:5px}
-  :where(html[data-responsive-profile="mobile-portrait"]) .venta-page.is-data-step .venta-data-footer .venta-checkout-buttons .venta-submit span{font-size:15px}
-
-.venta-page .selector-cuenta-financiera{display:grid;gap:5px;min-width:0;color:#355372;font-size:11px;font-weight:700}.venta-page .selector-cuenta-financiera .selector-cuenta-hint{font-size:10px;line-height:1.4}.venta-page .selector-cuenta-financiera select{box-sizing:border-box;width:100%;min-height:38px;padding:0 9px;border:1px solid #d5e0ec;border-radius:8px;background:#fff;color:#173c67;font:inherit;font-size:12px}
-
 /* Sin la tarjeta de condición de pago, los dos datos del comprobante ocupan la fila completa. */
-:where(html[data-responsive-profile="laptop"], html[data-responsive-profile="tablet-landscape"]) .venta-page.is-data-step .venta-form-header-fields {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 
 /* El catálogo y la boleta o nota comparten una vista de dos paneles en escritorio. */
-:where(html[data-responsive-profile="laptop"],html[data-responsive-profile="tablet-landscape"],html[data-responsive-profile="tablet-portrait"],html[data-responsive-profile="mobile-landscape"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open {
-  display: grid !important;
-  grid-template-columns: minmax(250px, .42fr) minmax(0, 1.58fr) !important;
-}
 
 /* Fallback cuando el shell no ha asignado un perfil responsive al documento. */
-#root .venta-page.is-data-step .venta-editor.is-catalog-open {
-  display: grid;
-  grid-template-columns: minmax(250px, .42fr) minmax(0, 1.58fr);
-}
-:where(html[data-responsive-profile="mobile-portrait"]) #root .venta-page.is-data-step .venta-editor.is-catalog-open {
-  grid-template-columns: minmax(0, 1fr) !important;
-}
 
 /* El encabezado azul queda fuera del desplazamiento; el resto del formulario comparte un solo scroll. */
-.venta-page.is-data-step .venta-form-scroll { min-height: 0 !important; flex: 1 1 0% !important; overflow-x: hidden !important; overflow-y: auto !important; }
-.venta-page.is-data-step .venta-form-scroll > .venta-form-header-fields { flex: 0 0 auto !important; }
 /* Monto, cuenta y acciones forman una cuadr?cula de dos columnas por dos filas. */
-.venta-page.is-data-step .venta-checkout-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; grid-template-rows: auto auto; align-items: center; gap: 10px 12px; }
-.venta-page.is-data-step .venta-checkout-total,
-.venta-page.is-data-step .venta-checkout-buttons { display: contents !important; }
-.venta-page.is-data-step .venta-checkout-amount { grid-column: 1; grid-row: 1; }
-.venta-page.is-data-step .venta-checkout-total > .selector-cuenta-financiera { grid-column: 2; grid-row: 1; }
-.venta-page.is-data-step .venta-checkout-buttons .venta-clear { grid-column: 1; grid-row: 2; }
-.venta-page.is-data-step .venta-checkout-buttons .venta-submit { grid-column: 2; grid-row: 2; width: 100%; }
-.venta-page.is-data-step .venta-checkout-buttons { display: contents !important; }
 
 /* Composición de captura alineada al rediseño: formulario principal y cierre lateral. */
-
-@media (max-width: 960px) {
-  .venta-page.is-data-step {
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-  }
-
-  .venta-page.is-data-step > .venta-layout.is-data-step {
-    height: max-content !important;
-    min-height: 0 !important;
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-  }
-}
-
-@media (max-width: 960px) {
-  #root .venta-page.is-data-step {
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-  }
-
-  #root .venta-page.is-data-step > .venta-layout.is-data-step {
-    height: max-content !important;
-    min-height: max-content !important;
-    max-height: none !important;
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-  }
-}
