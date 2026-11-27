@@ -277,7 +277,8 @@ test("el rol de almacén crea y edita una categoría sin archivo", async ({ page
     await expect(page).toHaveURL(/\/inicio$/);
 
     await page.goto("/inventario/categorias");
-    await expect(page.locator(".catalog-manager.is-category-manager")).toBeVisible();
+    const tablaCategorias = page.getByRole("table");
+    await expect(page.getByRole("heading", { name: "Categorías", exact: true })).toBeVisible();
     const nombreCategoria = `Categoría E2E ${sufijo}`;
     const nombreEditado = `${nombreCategoria} editada`;
 
@@ -294,8 +295,8 @@ test("el rol de almacén crea y edita una categoría sin archivo", async ({ page
     expect(creada.ok()).toBeTruthy();
     assert.ok(categoriaPruebaId, "La API debe devolver el identificador de la categoría creada.");
 
-    const tarjeta = page.locator(".catalog-manager-card").filter({ hasText: nombreCategoria });
-    await expect(tarjeta).toBeVisible();
+    const filaCategoria = tablaCategorias.getByRole("row").filter({ hasText: nombreCategoria });
+    await expect(filaCategoria).toBeVisible();
     const [categoriaGuardada] = await db
       .select({ nombre: categoriasProductos.nombre })
       .from(categoriasProductos)
@@ -303,13 +304,13 @@ test("el rol de almacén crea y edita una categoría sin archivo", async ({ page
       .limit(1);
     expect(categoriaGuardada?.nombre).toBe(nombreCategoria);
 
-    await tarjeta.getByRole("button", { name: `Editar categoría ${nombreCategoria}` }).click();
+    await filaCategoria.getByRole("button", { name: `Editar categoría ${nombreCategoria}` }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Sí, editar" }).click();
     const dialogoEdicion = page.getByRole("dialog");
     await dialogoEdicion.getByRole("textbox", { name: /Nombre/ }).fill(nombreEditado);
     await dialogoEdicion.getByRole("button", { name: "Guardar cambios" }).click();
-    const tarjetaEditada = page.locator(".catalog-manager-card").filter({ hasText: nombreEditado });
-    await expect(tarjetaEditada).toBeVisible();
+    const filaCategoriaEditada = tablaCategorias.getByRole("row").filter({ hasText: nombreEditado });
+    await expect(filaCategoriaEditada).toBeVisible();
 
     const [categoriaEditada] = await db
       .select({ nombre: categoriasProductos.nombre })
@@ -395,7 +396,7 @@ test("el rol de almacén abre el formulario integrado de compra", async ({ page 
     await page.getByRole("button", { name: "Iniciar sesión" }).click();
     await expect(page).toHaveURL(/\/inicio$/);
     await page.goto("/egresos/compras");
-    await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Compra de repuestos", exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
     const formularioNuevo = page.locator(".compra-documento");
@@ -403,7 +404,7 @@ test("el rol de almacén abre el formulario integrado de compra", async ({ page 
     await expect(formularioNuevo.getByLabel("Tipo de documento")).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Buscar repuestos para comprar" })).toBeVisible();
     await formularioNuevo.getByRole("button", { name: "Cancelar" }).click();
-    await expect(page.getByRole("heading", { name: "Compras de repuestos" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Compra de repuestos", exact: true })).toBeVisible();
     return;
 
     const formulario = page.locator(".compra-documento");
@@ -551,8 +552,7 @@ test("Ventas resume el Estado SUNAT y ofrece un reintento accesible", async ({ p
     const filaRechazada = page.getByRole("row").filter({ hasText: "BBB1-000001" });
     await expect(filaRechazada.getByText("Rechazado", { exact: true })).toBeVisible();
     await expect(filaRechazada.getByText(/El documento del cliente no coincide/)).toHaveCount(0);
-    await filaRechazada.getByRole("button", { name: "Otras acciones de BBB1-000001" }).click();
-    await page.getByRole("menu", { name: "Otras acciones de BBB1-000001" }).getByRole("menuitem", { name: "Consultar estado SUNAT" }).click();
+    await filaRechazada.getByRole("button", { name: "Consultar estado SUNAT de BBB1-000001" }).click();
     const dialogo = page.getByRole("dialog", { name: "BBB1-000001" });
     await expect(dialogo.getByText(/El documento del cliente no coincide/)).toBeVisible();
     await expect(dialogo.getByText(/2335/)).toBeVisible();

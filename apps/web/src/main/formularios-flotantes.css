@@ -127,23 +127,6 @@
 
 /* Contenido desplazable con acciones siempre visibles en catálogos y compras. */
 
-.moto-modal[role="dialog"] {
-  box-sizing: border-box;
-  max-height: min(92dvh, 900px) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  border: 1px solid #dbe5ed !important;
-  border-radius: 20px !important;
-  background: #fff !important;
-  box-shadow: 0 30px 90px #0c213747 !important;
-}
-.moto-modal[role="dialog"] > footer { position: sticky; bottom: 0; z-index: 3; margin-top: auto; padding: 16px 24px !important; border-top: 1px solid #e2eaf1; background: #fff; }
-.moto-modal[role="dialog"]::before { display: none !important; }
-  :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
 .catalog-modal .producto-form-scroll { padding-right: 24px; padding-left: 24px; }
   :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .producto-form-scroll { padding-right: 14px; padding-left: 14px; }
 

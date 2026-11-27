@@ -11,39 +11,13 @@ import { ErrorApi } from "../../services/api-cliente";
 import { servicioIdentidad } from "../../services/identidad.service";
 import { servicioProveedores, type DatosProveedorNuevo, type FichaProveedor, type ProveedorRegistrado } from "../../services/proveedores.service";
 import { tamanioListadoSegunPantalla } from "../../components/ui/listado-maestro/paginacion-responsive";
-import { Etiqueta } from "../../components/ui/etiqueta";
-import { anchoMinimoColumnaRelacionClasses, nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
 import { BotonAccion } from "../../components/ui/boton-accion";
 import { Eye } from "lucide-react";
-import "./proveedores-page.css";
+import { BuscadorDirectorio, directorioClasses, Opcional, SelectDirectorio } from "../../components/ui/directorio/directorio";
+import { ventasClasses as v } from "../ventas-page/ventas-classes";
 
 const nombreDe = (proveedor: ProveedorRegistrado) => proveedor.nombre || proveedor.razonSocial || [proveedor.nombres, proveedor.apellidoPaterno, proveedor.apellidoMaterno].filter(Boolean).join(" ");
 
-const clase = {
-  page: "grid gap-[18px] px-[clamp(18px,4vw,54px)] pt-7 pb-10 text-[var(--blue-deep,#163a60)] [html[data-responsive-profile='mobile-portrait']_&]:px-[14px] [html[data-responsive-profile='mobile-portrait']_&]:pt-5 [html[data-responsive-profile='mobile-portrait']_&]:pb-[30px]",
-  heading: "hidden items-center justify-between gap-5 border-b border-[#dce5ee] pb-[18px] [html[data-responsive-profile='mobile-portrait']_&]:items-start [html[data-responsive-profile='mobile-portrait']_&]:flex-col",
-  kicker: "text-[10px] font-extrabold tracking-[.14em] text-[#7187a0]",
-  success: "flex justify-between rounded-[10px] bg-[#edf8f1] px-[14px] py-3 text-[13px] text-[#276b49]",
-  successClose: "cursor-pointer border-0 bg-transparent text-[18px] text-inherit focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3784bd55]",
-  card: "flex min-w-0 items-center gap-3 rounded-[13px] border border-[#dce5ee] bg-white p-4 shadow-[0_4px_14px_#17345108]",
-  cardTitle: "mb-[5px] mt-0 text-sm",
-  cardDetail: "my-0 block text-[11px] text-[#72849a]",
-  tag: "ml-auto whitespace-nowrap rounded-[20px] bg-[#eaf5ef] px-2 py-[5px] text-[10px] font-[750] text-[#24724f]",
-  backdrop: "fixed inset-0 z-[80] grid place-items-center overflow-y-auto overscroll-contain bg-[#071a2d80] p-5 [html[data-responsive-profile='mobile-portrait']_&]:items-end [html[data-responsive-profile='mobile-portrait']_&]:p-2",
-  form: "max-h-[calc(100vh-40px)] w-full max-w-[620px] overflow-auto overscroll-contain rounded-2xl border border-[#dce5ee] bg-white p-[22px] shadow-[0_22px_70px_#061a2d40] [scrollbar-gutter:stable] [html[data-responsive-profile='mobile-portrait']_&]:max-h-[calc(100dvh-16px)] [html[data-responsive-profile='mobile-portrait']_&]:rounded-[16px_16px_10px_10px] [html[data-responsive-profile='mobile-portrait']_&]:p-4",
-  formHeader: "sticky top-[-22px] z-[1] -mx-[22px] -mt-[22px] mb-[18px] flex items-center justify-between border-b border-[#e8eef4] bg-inherit px-[22px] pt-[22px] pb-[14px] [html[data-responsive-profile='mobile-portrait']_&]:top-[-16px] [html[data-responsive-profile='mobile-portrait']_&]:-mx-4 [html[data-responsive-profile='mobile-portrait']_&]:-mt-4 [html[data-responsive-profile='mobile-portrait']_&]:mb-[14px] [html[data-responsive-profile='mobile-portrait']_&]:px-4 [html[data-responsive-profile='mobile-portrait']_&]:pt-4 [html[data-responsive-profile='mobile-portrait']_&]:pb-3",
-  formClose: "h-[38px] w-[38px] cursor-pointer rounded-[9px] border border-[#dce5ee] bg-white text-xl text-[#58708a] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3784bd55]",
-  fields: "grid grid-cols-2 gap-[14px] [html[data-responsive-profile='mobile-portrait']_&]:grid-cols-1",
-  label: "grid gap-1.5 text-xs font-bold text-[#526981]",
-  documentRow: "flex gap-2",
-  input: "min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3784bd55] disabled:opacity-50",
-  search: "min-w-24 cursor-pointer rounded-[9px] border border-[#c7d8e7] bg-[#f4f8fb] font-[750] text-[#174f88] hover:bg-[#edf4f9] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3784bd55]",
-  wide: "col-span-2 [html[data-responsive-profile='mobile-portrait']_&]:col-span-1",
-  alert: "rounded-[10px] bg-[#fff0ef] px-[14px] py-3 text-[13px] text-[#a3382f]",
-  footer: "sticky bottom-[-22px] -mx-[22px] -mb-[22px] mt-5 flex justify-end gap-[9px] border-t border-[#e8eef4] bg-inherit px-[22px] pt-[14px] pb-[22px] [html[data-responsive-profile='mobile-portrait']_&]:bottom-[-16px] [html[data-responsive-profile='mobile-portrait']_&]:-mx-4 [html[data-responsive-profile='mobile-portrait']_&]:-mb-4 [html[data-responsive-profile='mobile-portrait']_&]:mt-[14px] [html[data-responsive-profile='mobile-portrait']_&]:px-4 [html[data-responsive-profile='mobile-portrait']_&]:pt-3 [html[data-responsive-profile='mobile-portrait']_&]:pb-4",
-  cancel: "cursor-pointer rounded-[9px] border border-[#d5e0ea] bg-white px-[14px] text-[#49627b] hover:bg-[#f7f9fb] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#3784bd55]",
-  primary: "min-h-10 cursor-pointer rounded-[10px] border border-[var(--action-primary-border)] bg-[var(--action-primary-surface)] px-[14px] text-xs font-[750] text-[var(--action-primary)] hover:border-[var(--action-primary-border)] hover:bg-[var(--action-primary-hover-surface)] hover:text-[var(--action-primary-hover)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--action-primary-focus)] disabled:cursor-wait disabled:opacity-[.65]",
-};
 
 export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
   const navegar = useNavigate();
@@ -71,9 +45,28 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
     catch (problema) { return problema instanceof Error ? problema.message : "No se pudo registrar el proveedor."; }
   }
 
-  return <section className="proveedores-page min-w-0">
+  return <section className={v.page}>
     {exito && <NotificacionFlotante tipo="exito" mensaje={exito} onCerrar={() => setExito("")} />}
-    <ListadoMaestro<ProveedorRegistrado> variante="tabla" titulo="Directorio de proveedores" claseRaiz="proveedores-listado" claseCabecera="proveedores-cabecera" claseControlesCabecera="proveedores-cabecera-controles" contenidoCabecera={<div className="proveedores-directorio-heading"><span>DIRECTORIO COMERCIAL</span><h2>Directorio de proveedores</h2></div>} registros={proveedores} cargando={cargando} error={error || undefined} resetKey={busqueda} paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }} controlesCabecera={<><label className="proveedores-busqueda"><span className="sr-only">Buscar por nombre o documento</span><input id="proveedores-search" aria-label="Buscar" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); setPagina(1); }} placeholder="Nombre, DNI o RUC" /></label>{puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear proveedor" onClick={() => { setError(""); setAbierto(true); }} />}</>} vacio={<><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>{busqueda ? "Revisa el nombre o documento." : "Los proveedores registrados aquí también estarán disponibles al registrar compras."}</span></>} encabezadoTabla={<tr><th>Proveedor</th><th>Documento</th><th>Número</th><th>Tipo</th><th>Acciones</th></tr>} renderizarFila={(proveedor) => <tr key={proveedor.id}><td className={`${anchoMinimoColumnaRelacionClasses} w-[28%]`}><strong className={nombreRelacionListadoClasses}>{nombreDe(proveedor)}</strong><small>{proveedor.nombreComercial || "Sin nombre comercial"}</small></td><td><Etiqueta tono="marca">{proveedor.tipoDocumento}</Etiqueta></td><td className="font-mono text-xs">{proveedor.numeroDocumento}</td><td>{proveedor.tipoDocumento === "RUC" && proveedor.numeroDocumento.startsWith("20") ? "Empresa" : "Persona"}</td><td><div className="flex justify-end"><BotonAccion etiqueta={`Ver ficha de ${nombreDe(proveedor)}`} tono="neutral" icono={<Eye aria-hidden="true" size={16} />} onClick={() => setProveedorEnDetalle(proveedor)} /></div></td></tr>} />
+    {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear proveedor" onClick={() => { setError(""); setAbierto(true); }} />}
+    <div className={v.toolbar}>
+      <BuscadorDirectorio id="proveedores-search" valor={busqueda} alCambiar={(valor) => { setBusqueda(valor); setPagina(1); }} placeholder="Buscar por nombre, DNI o RUC" etiqueta="Buscar proveedor" />
+    </div>
+    <ListadoMaestro<ProveedorRegistrado> variante="tabla" titulo="Directorio de proveedores"
+      claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
+      registros={proveedores} cargando={cargando} error={error || undefined} resetKey={busqueda}
+      paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
+      vacio={<div className={v.empty}><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>{busqueda ? "Revisa el nombre o documento." : "Los proveedores registrados aquí también estarán disponibles al registrar compras."}</span></div>}
+      encabezadoTabla={<tr><th>Proveedor</th><th>Documento</th><th>Tipo</th><th>Acciones</th></tr>}
+      renderizarFila={(proveedor) => {
+        const nombre = nombreDe(proveedor);
+        const esEmpresa = proveedor.tipoDocumento === "RUC" && proveedor.numeroDocumento.startsWith("20");
+        return <tr key={proveedor.id}>
+          <td><strong className={v.clientName}>{nombre}</strong><small className={v.minorText}>{proveedor.nombreComercial || "Sin nombre comercial"}</small></td>
+          <td><strong className={`${v.documentCode} [font-variant-numeric:tabular-nums]`}>{proveedor.numeroDocumento}</strong><small className={v.minorText}>{proveedor.tipoDocumento}</small></td>
+          <td><span className={`${v.status} border-[#dbe3e9] bg-[#f3f6f9] text-[#3d566e]`}>{esEmpresa ? "Empresa" : "Persona"}</span></td>
+          <td><div className={v.rowActions}><BotonAccion etiqueta={`Ver ficha de ${nombre}`} tono="neutral" icono={<Eye aria-hidden="true" />} onClick={() => setProveedorEnDetalle(proveedor)} /></div></td>
+        </tr>;
+      }} />
     {abierto && createPortal(<FormularioProveedor onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
     {proveedorEnDetalle && createPortal(<ProveedorFichaDialog proveedor={proveedorEnDetalle} onCerrar={() => setProveedorEnDetalle(null)} />, document.body)}
   </section>;
@@ -165,12 +158,14 @@ function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
       pantallaCompletaMovil
       cerrable={!guardando}
       onCerrar={solicitarCancelacion}
-      pie={<><button className={clase.cancel} type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="proveedor-form" className={clase.primary} disabled={guardando}>{guardando ? "Guardando…" : "Guardar proveedor"}</button></>}
+      pie={<><button className="clientes-secondary-action" type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="proveedor-form" className="clientes-primary-action" disabled={guardando}>{guardando ? "Guardando…" : "Guardar proveedor"}</button></>}
     >
       <form id="proveedor-form" ref={dialogoRef} className="grid gap-4" onSubmit={(evento) => void submit(evento)}>
-        <div className={clase.fields}><label className={clase.label}>Documento<select className={clase.input} disabled={buscando} value={tipoDocumento} onChange={(evento) => { setTipoDocumento(evento.target.value as "DNI" | "RUC"); setNumeroDocumento(""); setRazonSocial(""); setNombres(""); setApellidoPaterno(""); setApellidoMaterno(""); }}><option value="RUC">RUC</option><option value="DNI">DNI</option></select></label><label className={clase.label}>Número de documento<div className={clase.documentRow}><input className={clase.input} required disabled={buscando} inputMode="numeric" maxLength={tipoDocumento === "DNI" ? 8 : 11} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{11}"} value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value.replace(/\D/g, ""))} /><button className={clase.search} type="button" disabled={buscando || numeroDocumento.length !== (tipoDocumento === "DNI" ? 8 : 11)} onClick={() => void buscarIdentidad()}>{buscando ? "Buscando…" : "Buscar"}</button></div></label>
-      {esJuridica ? <label className={`${clase.label} ${clase.wide}`}>Razón social<input className={clase.input} required maxLength={180} value={razonSocial} onChange={(evento) => setRazonSocial(evento.target.value)} /></label> : <><label className={clase.label}>Nombres<input className={clase.input} required maxLength={120} value={nombres} onChange={(evento) => setNombres(evento.target.value)} /></label><label className={clase.label}>Apellido paterno<input className={clase.input} required maxLength={120} value={apellidoPaterno} onChange={(evento) => setApellidoPaterno(evento.target.value)} /></label><label className={clase.label}>Apellido materno<input className={clase.input} maxLength={120} value={apellidoMaterno} onChange={(evento) => setApellidoMaterno(evento.target.value)} /></label></>}
-      <label className={`${clase.label} ${clase.wide}`}>Nombre comercial<input className={clase.input} maxLength={180} value={nombreComercial} onChange={(evento) => setNombreComercial(evento.target.value)} placeholder="Opcional" /></label>
+        <div className="directorio-form-grid">
+      <label>Documento *<SelectDirectorio disabled={buscando} value={tipoDocumento} onChange={(evento) => { setTipoDocumento(evento.target.value as "DNI" | "RUC"); setNumeroDocumento(""); setRazonSocial(""); setNombres(""); setApellidoPaterno(""); setApellidoMaterno(""); }}><option value="RUC">RUC</option><option value="DNI">DNI</option></SelectDirectorio></label>
+      <label>Número de documento *<span className="grid grid-cols-[minmax(0,1fr)_auto] gap-[7px]"><input required disabled={buscando} inputMode="numeric" maxLength={tipoDocumento === "DNI" ? 8 : 11} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : "[0-9]{11}"} value={numeroDocumento} onChange={(evento) => setNumeroDocumento(evento.target.value.replace(/D/g, ""))} /><button className={directorioClasses.boton} type="button" disabled={buscando || numeroDocumento.length !== (tipoDocumento === "DNI" ? 8 : 11)} onClick={() => void buscarIdentidad()}>{buscando ? "Buscando…" : tipoDocumento === "RUC" ? "Consultar en SUNAT" : "Buscar"}</button></span></label>
+      {esJuridica ? <label className="directorio-form-wide">Razón social *<input required maxLength={180} value={razonSocial} onChange={(evento) => setRazonSocial(evento.target.value)} /></label> : <><label>Nombres *<input required maxLength={120} value={nombres} onChange={(evento) => setNombres(evento.target.value)} /></label><label>Apellido paterno *<input required maxLength={120} value={apellidoPaterno} onChange={(evento) => setApellidoPaterno(evento.target.value)} /></label><label>Apellido materno <Opcional /><input maxLength={120} value={apellidoMaterno} onChange={(evento) => setApellidoMaterno(evento.target.value)} /></label></>}
+      <label className="directorio-form-wide">Nombre comercial <Opcional /><input maxLength={180} value={nombreComercial} onChange={(evento) => setNombreComercial(evento.target.value)} placeholder="Ej.: Repuestos El Sol" /></label>
     </div>{error && <NotificacionFlotante mensaje={error} />}
       </form>
     </Dialogo></>;
