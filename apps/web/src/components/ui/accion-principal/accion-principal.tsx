@@ -73,7 +73,9 @@ export function RegistrarAccionPrincipal(props: { etiqueta: string; onClick: () 
   return null;
 }
 
-export function BotonAccionPrincipal({ etiqueta, icono = "+", type = "button", ...props }: Props) {
+const iconoMas = <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 4v16M4 12h16" /></svg>;
+
+export function BotonAccionPrincipal({ etiqueta, icono = iconoMas, type = "button", ...props }: Props) {
   return <button className={`erp-accion-principal is-floating ${botonAccionPrincipal}`} type={type} aria-label={etiqueta} title={etiqueta} {...props}>
     <span className={`erp-accion-principal-icon ${iconoAccionPrincipal}`} aria-hidden="true">{icono}</span>
     <span className={`erp-accion-principal-label ${etiquetaAccionPrincipal}`}>{etiqueta}</span>
