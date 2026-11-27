@@ -123,3 +123,98 @@
     grid-column: 1 / -2;
   }
 }
+
+/* Cobro repartido en varias cuentas (resumen). */
+.venta-cobro {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #dbe3e9;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.venta-cobro-parte {
+  display: grid;
+  gap: 8px;
+}
+.venta-cobro-parte + .venta-cobro-parte {
+  padding-top: 10px;
+  border-top: 1px dashed #c5d1db;
+}
+.venta-cobro-fila {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.venta-cobro-fila .os-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.venta-cobro-quitar {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a8da0;
+  cursor: pointer;
+}
+.venta-cobro-quitar:hover {
+  background: #fff1f2;
+  color: #b42335;
+}
+.venta-cobro-importe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 10px;
+  color: #3d566e;
+  font-size: 12px;
+  font-weight: 600;
+}
+.venta-cobro-importe > strong {
+  justify-self: end;
+  color: #0b2545;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.venta-cobro-importe .os-monto {
+  height: 40px;
+}
+.venta-cobro-importe .os-monto input {
+  height: 40px;
+}
+.venta-cobro .es-error {
+  color: #b42335;
+}
+.venta-cobro-agregar {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px dashed #8eacc9;
+  border-radius: 8px;
+  background: #fff;
+  color: #174b78;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.venta-cobro-agregar:hover {
+  background: #f5f9fd;
+}
+.venta-cobro-ayuda {
+  margin: 0;
+  color: #6d8093;
+  font-size: 12px;
+}
+.venta-cobro-ayuda.es-error {
+  color: #b42335;
+}

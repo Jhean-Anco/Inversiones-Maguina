@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { NotificacionFlotante } from "../../ui/notificacion-flotante/notificacion-flotante";
 import { servicioFinanzas, type CuentaFinanciera } from "../../../services/finanzas.service";
 
-const medioPorTipo: Record<CuentaFinanciera["tipo"], string> = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" };
+export const medioPorTipo: Record<CuentaFinanciera["tipo"], string> = { EFECTIVO: "EFECTIVO", BANCO: "TRANSFERENCIA", BILLETERA: "BILLETERA_DIGITAL", TARJETA: "TARJETA" };
 
 export function SelectorCuentaFinanciera({ value, medioActual, onChange, required = true, etiqueta = "Cuenta / medio de pago", mostrarAyudaMedio = true }: { value: string; medioActual: string; onChange: (cuentaId: string, medioPago: string) => void; required?: boolean; etiqueta?: string; mostrarAyudaMedio?: boolean }) {
   const [cuentas, setCuentas] = useState<CuentaFinanciera[]>([]);

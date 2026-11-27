@@ -24,6 +24,7 @@ import { useNuevoIngresoClienteForm } from "./use-nuevo-ingreso-cliente-form";
 import { useNuevoIngresoCatalogo } from "./use-nuevo-ingreso-catalogo";
 import { obtenerVistaNuevoIngreso } from "./obtener-vista-nuevo-ingreso";
 import { SelectorClienteVenta } from "./selector-cliente-venta";
+import { CobroVenta, importesCobro, parteCobroVacia, validarCobro, type ParteCobro } from "./cobro-venta";
 import { fechaHoyPeru, soles } from "./nuevo-ingreso-formatters";
 
 export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { tipoVenta?: TipoVenta; permisos?: string[] }) {
@@ -35,7 +36,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const transferenciaOS = (ubicacion.state as { ordenServicio?: OrdenServicioTransferida } | null)?.ordenServicio ?? null;
   const [cuentaSaldoOS, setCuentaSaldoOS] = useState("");
   const [medioSaldoOS, setMedioSaldoOS] = useState("EFECTIVO");
-  const [cuentaPagoId, setCuentaPagoId] = useState("");
+  const [partesCobro, setPartesCobro] = useState<ParteCobro[]>(() => [parteCobroVacia()]);
+  const cuentaPagoId = partesCobro[0]?.cuentaId ?? "";
   const [confirmarDescarteVenta, setConfirmarDescarteVenta] = useState(false);
   const imprimirAlEmitir = useImprimirAlEmitir(useAlertas());
   const [intentoIdentificacionComprobante, setIntentoIdentificacionComprobante] = useState(false);
@@ -45,6 +47,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
   const [cargandoMediosPago, setCargandoMediosPago] = useState(true);
   const [errorMediosPago, setErrorMediosPago] = useState("");
   const [mostrarCobranza, setMostrarCobranza] = useState(false);
+  const [errorCobro, setErrorCobro] = useState("");
   const [cobranzaContadoRegistradaId, setCobranzaContadoRegistradaId] = useState<string | null>(null);
   const catalogo = useNuevoIngresoCatalogo(venta);
   const { buscarProductoConEnter } = catalogo;
@@ -68,8 +71,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
 
 
   useEffect(() => {
-    if (cobranzaContadoPendiente) setMostrarCobranza(true);
-  }, [cobranzaContadoPendiente]);
+    if (cobranzaContadoPendiente && errorCobro) setMostrarCobranza(true);
+  }, [cobranzaContadoPendiente, errorCobro]);
 
   function cargarNumeraciones() { void servicioIngresos.numeraciones().then(setNumeraciones).catch(() => undefined); }
   useEffect(() => { let vigente = true; void servicioIngresos.numeraciones().then((data) => { if (vigente) setNumeraciones(data); }).catch(() => undefined); return () => { vigente = false; }; }, []);
@@ -93,7 +96,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     venta.setFecha(fechaNueva);
     venta.actualizarCampoNubefact("fecha_de_emision", fechaNueva);
     venta.setMedioPago("EFECTIVO");
-    setCuentaPagoId("");
+    setPartesCobro([parteCobroVacia()]);
+    setErrorCobro("");
     venta.setTipoComprobante("BOLETA");
     venta.reiniciarIdempotencia();
     cargarNumeraciones();
@@ -132,6 +136,21 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     : venta.guardando ? (esFactura ? "Emitiendo factura…" : esNotaVenta ? "Registrando nota de venta…" : "Emitiendo boleta…")
     : `Imprimir ${nombreDocumento}`;
 
+  /** El cobro se arma en el formulario salvo cuando viene de una orden de servicio (su saldo lo liquida la API). */
+  const cobroEnFormulario = !transferenciaOS && !esNotaVenta;
+  async function registrarCobro(ingresoId: string, fecha: string) {
+    const importes = importesCobro(partesCobro, venta.totales.total);
+    try {
+      await servicioIngresos.registrarCobroDividido(ingresoId, { idempotencyKey: crypto.randomUUID(), fechaPago: fecha, partes: partesCobro.map((parte, indice) => ({
+        medioPago: parte.medioPago, cuentaFinancieraId: parte.cuentaId, importeAplicado: importes[indice].toFixed(2),
+        importeRecibido: parte.medioPago === "EFECTIVO" && parte.recibido.trim() ? Number(parte.recibido).toFixed(2) : undefined,
+      })) });
+      setCobranzaContadoRegistradaId(ingresoId);
+    } catch (problema) {
+      setErrorCobro(problema instanceof Error ? problema.message : "No se pudo registrar el cobro.");
+    }
+  }
+
   /** Valida, pide la impresora en el mismo clic, emite y luego imprime el ticket oficial. */
   function emitirEImprimir(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -142,6 +161,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
     if (errorMediosPago || mediosPagoDisponibles.length === 0) { venta.setError(errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta en Tesorería para registrar la venta."); return; }
     if (venta.tipoComprobante === "NOTA_VENTA" && !venta.clienteSeleccionado) { venta.setError("Selecciona al cliente que recibe los artículos para registrar la nota de venta."); return; }
     if (identificacionComprobantePendiente) { setIntentoIdentificacionComprobante(true); return; }
+    const problemaCobro = cobroEnFormulario ? validarCobro(partesCobro, venta.totales.total) : "";
+    if (problemaCobro) { venta.setError(problemaCobro); return; }
     setIntentoIdentificacionComprobante(false);
     venta.setError("");
     // El navegador exige el gesto del usuario para pedir la impresora: se prepara antes de cualquier await.
@@ -152,7 +173,11 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       catch (problema) { venta.setError(mensajeErrorImpresion(problema)); return; }
       const resultado = await venta.guardar(evento);
       if (!resultado) return;
-      if (resultado.tipoComprobante === "NOTA_VENTA" || resultado.nubefact?.estado === "EMITIDO") await imprimirAlEmitir.imprimir(documentoDeIngreso({ ingresoId: resultado.id }), preparada);
+      const emitido = resultado.tipoComprobante === "NOTA_VENTA" || resultado.nubefact?.estado === "EMITIDO";
+      await Promise.all([
+        emitido ? imprimirAlEmitir.imprimir(documentoDeIngreso({ ingresoId: resultado.id }), preparada) : Promise.resolve(),
+        cobroEnFormulario && resultado.tipoComprobante !== "NOTA_VENTA" && resultado.nubefact?.estado === "EMITIDO" ? registrarCobro(resultado.id, venta.fecha) : Promise.resolve(),
+      ]);
     })();
   }
 
@@ -163,6 +188,7 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       tipo={cpeEmitido || venta.exito.tipoComprobante === "NOTA_VENTA" ? "exito" : "advertencia"}
       mensaje={venta.exito.tipoComprobante === "NOTA_VENTA" ? `Nota de venta ${venta.exito.codigo} registrada.` : cpeEmitido ? `Comprobante ${venta.exito.nubefact?.codigo ?? venta.exito.codigo} emitido.` : `Venta ${venta.exito.codigo} registrada. NubeFact aún no confirma la emisión.`}
     />}
+    {errorCobro && <NotificacionFlotante titulo="El comprobante se emitió, pero no se registró el cobro" mensaje={errorCobro} onCerrar={() => setErrorCobro("")} />}
     {cobranzaContadoPendiente && venta.exito && <NotificacionFlotante tipo="advertencia" mensaje={`Registra en cobranza ${contadoEmitido ? "el pago completo al contado" : `la inicial de ${soles(Number(venta.exito.importePagoInicial))}`}.`} accion={{ etiqueta: "Completar pago", ejecutar: () => setMostrarCobranza(true) }} />}
     {(errorMediosPago || (!cargandoMediosPago && mediosPagoDisponibles.length === 0)) && <NotificacionFlotante mensaje={errorMediosPago || "No hay cuentas activas en soles. Configura una caja o cuenta bancaria en Tesorería."} />}
   </>;
@@ -204,7 +230,8 @@ export function NuevoIngresoPage({ tipoVenta = "REPUESTOS", permisos = [] }: { t
       onCancelar={venta.exito ? () => navegar(tipoVenta === "MOTOTAXIS" ? "/ingresos/ventas/mototaxis" : "/ingresos/ventas/repuestos") : cancelarVenta}
       resumen={<>
         {transferenciaOS && <div className="venta-saldo-os"><strong>Saldo a pagar {soles(saldoOrdenServicio)}</strong><small>Adelanto: {soles(Number(transferenciaOS.adelanto || 0))} · {Number(transferenciaOS.adelanto || 0) > 0 ? medioAdelantoOrden : "Sin adelanto"}</small></div>}
-        {!venta.exito && (transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} /> : <SelectorCuentaFinanciera value={cuentaPagoId} medioActual={venta.medioPago} etiqueta="Cuenta donde se recibe el pago" onChange={(id, medio) => { setCuentaPagoId(id); venta.setMedioPago(medio); }} />)}
+        {!venta.exito && (transferenciaOS ? <SelectorCuentaFinanciera value={cuentaSaldoOS} medioActual={medioSaldoOS} etiqueta="Cuenta para completar el pago" onChange={(id, medio) => { setCuentaSaldoOS(id); setMedioSaldoOS(medio); venta.setMedioPago(medio); }} required={saldoOrdenServicio > 0} />
+          : cobroEnFormulario ? <CobroVenta partes={partesCobro} total={venta.totales.total} onChange={(partes) => { setPartesCobro(partes); const principal = partes.find((parte) => parte.medioPago); if (principal) venta.setMedioPago(principal.medioPago); }} /> : null)}
         {ventaRegistrada}
       </>}
     />
