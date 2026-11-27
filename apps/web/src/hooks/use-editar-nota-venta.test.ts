@@ -77,7 +77,7 @@ describe("useEditarNotaVenta", () => {
     const { result, guardada } = await montar();
     let resolver!: (valor: ResultadoEdicionNotaVenta) => void;
     editar.mockImplementationOnce(() => new Promise((ok) => { resolver = ok; }));
-    let primero!: Promise<void>;
+    let primero!: Promise<boolean>;
     act(() => { primero = result.current.guardar(); void result.current.guardar(); });
     expect(result.current.guardando).toBe(true);
     await act(async () => { resolver(respuesta()); await primero; });

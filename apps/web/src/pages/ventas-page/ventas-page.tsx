@@ -17,7 +17,11 @@ import { DialogoInicioNota } from "./dialogo-inicio-nota";
 import { DialogoAnulacion } from "./dialogo-anulacion";
 import { ventasClasses } from "./ventas-classes";
 import { AplicarGarantiaVentaDialog } from "./aplicar-garantia-venta-dialog";
-import { DialogoEditarNotaVenta } from "./dialogo-editar-nota-venta";
+import { EditorNotaVenta } from "./editor-nota-venta";
+import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { documentoDeIngreso, type ImpresionPreparada } from "../../impresion/servicio-impresion";
+import { mensajeErrorImpresion } from "../../impresion/use-impresion";
+import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
 // Sin filtros de estado ni de medio de pago: el listado muestra todas las ventas.
@@ -27,6 +31,7 @@ const soloConSaldo = false;
 const encabezadoVentas = <tr><th>Fecha</th><th>Comprobante</th><th>Cliente</th><th>Pago</th><th>Total</th><th>Estado SUNAT</th><th>Acciones</th></tr>;
 export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false, puedeAplicarGarantia = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean; puedeAplicarGarantia?: boolean }) {
   const navegar = useNavigate();
+  const imprimirAlEmitir = useImprimirAlEmitir(useAlertas());
   const esMoto = tipoVenta === "MOTOTAXIS";
   const [ventas, setVentas] = useState<VentaListado[]>([]);
   const [total, setTotal] = useState(0);
@@ -185,28 +190,67 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     finally { setGuardandoAnulacion(false); }
   };
 
-  const emitirNota = async (evento: React.FormEvent<HTMLFormElement>) => {
+  const emitirNota = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     if (!puedeEmitirNotas || !ventaSeleccionada || !fuenteNota || cargandoFuente || guardandoNota) return;
     const lineas = Object.entries(ajustesNota).filter(([, monto]) => Number(monto) > 0).map(([detalleId, monto]) => ({ detalleId, monto }));
     if (!lineas.length) { setErrorNota("Ingresa el importe de al menos una línea para emitir la nota."); return; }
     if (!cuentaNotaId) { setErrorNota(tipoNota === "NOTA_CREDITO" ? "Selecciona la cuenta de donde saldrá la devolución." : "Selecciona la cuenta donde ingresará la diferencia."); return; }
+    const venta = ventaSeleccionada;
+    // El navegador exige el gesto del usuario para pedir la impresora: se prepara antes de cualquier await.
+    const preparacion = imprimirAlEmitir.preparar("TICKET");
     setGuardandoNota(true); setErrorNota(""); setNotaEmitida("");
-    try {
-      const resultado = await servicioIngresos.emitirNota(ventaSeleccionada.id, { tipo: tipoNota, lineas, cuentaFinancieraId: cuentaNotaId, medioPago: medioNota, observacion: observacionNota });
-      setNotaEmitida(resultado.codigoComprobante);
-      setAjustesNota({}); setObservacionNota("");
-    } catch (problema) { setErrorNota(problema instanceof Error ? problema.message : "No se pudo emitir la nota."); }
-    finally {
-      setFuenteNota(null);
-      setCargandoFuente(true);
-      setRevisionNotas((actual) => actual + 1);
-      setGuardandoNota(false);
-    }
+    void (async () => {
+      let preparada: ImpresionPreparada;
+      try { preparada = await preparacion; }
+      catch (problema) { setErrorNota(mensajeErrorImpresion(problema)); setGuardandoNota(false); return; }
+      try {
+        const resultado = await servicioIngresos.emitirNota(venta.id, { tipo: tipoNota, lineas, cuentaFinancieraId: cuentaNotaId, medioPago: medioNota, observacion: observacionNota });
+        setNotaEmitida(resultado.codigoComprobante);
+        setAjustesNota({}); setObservacionNota("");
+        if (resultado.estado === "EMITIDO") void imprimirAlEmitir.imprimir(documentoDeIngreso({ ingresoId: venta.id, notaId: resultado.id }), preparada);
+      } catch (problema) { setErrorNota(problema instanceof Error ? problema.message : "No se pudo emitir la nota."); }
+      finally {
+        setFuenteNota(null);
+        setCargandoFuente(true);
+        setRevisionNotas((actual) => actual + 1);
+        setGuardandoNota(false);
+      }
+    })();
   };
 
+  const dialogos = <>
+    {notaPorIniciar && puedeEmitirNotas && <DialogoInicioNota
+      venta={notaPorIniciar.venta} tipo={notaPorIniciar.tipo}
+      onCancelar={() => setNotaPorIniciar(null)}
+      onContinuar={() => {
+        abrirNota(notaPorIniciar.venta, notaPorIniciar.tipo);
+        setNotaPorIniciar(null);
+      }}
+    />}
+    {documentoAnulacion && <DialogoAnulacion
+      documento={documentoAnulacion} motivo={motivoAnulacion} confirmado={confirmoNoEntregado} error={errorAnulacion} guardando={guardandoAnulacion}
+      onClose={() => setDocumentoAnulacion(null)} onMotivo={setMotivoAnulacion} onConfirmar={setConfirmoNoEntregado} onSubmit={procesarAnulacion}
+    />}
+  </>;
+
+  // Los formularios de documentos se devuelven sin contenedor: así toman los márgenes y el scroll propio de `.os-editor`.
+  if (ventaSeleccionada && puedeEmitirNotas) return <>
+    <NotaAjusteFormulario
+      venta={ventaSeleccionada} fuente={fuenteNota} notas={notas} tipo={tipoNota} ajustes={ajustesNota}
+      totalAjuste={totalAjuste} cargando={cargandoFuente} error={errorNota} guardando={guardandoNota} observacion={observacionNota} cuentaFinancieraId={cuentaNotaId} medioPago={medioNota}
+      emitida={notaEmitida} onRecargar={() => { setErrorNota(""); setCargandoFuente(true); setRevisionNotas((actual) => actual + 1); }}
+      puedeAnular={puedeAnular} onCancelar={() => setVentaSeleccionada(null)} onCerrarError={() => setErrorNota("")}
+      onAmount={(id, monto) => setAjustesNota((actual) => ({ ...actual, [id]: monto }))}
+      onAccount={(cuentaId, medio) => { setCuentaNotaId(cuentaId); setMedioNota(medio); }}
+      onObservation={setObservacionNota} onSubmit={emitirNota} onAnular={abrirAnulacion}
+    />
+    {dialogos}
+  </>;
+  if (notaPorEditar && puedeCrear) return <EditorNotaVenta ingresoId={notaPorEditar.id} codigo={notaPorEditar.codigoComprobante} esMototaxi={esMoto} onCerrar={() => setNotaPorEditar(null)}
+    onGuardada={(mensaje) => { setNotaPorEditar(null); setMensajeEdicion(mensaje); setRevisionGarantias((n) => n + 1); }} />;
+
   return <section className={ventasClasses.page}>
-    {!ventaSeleccionada && <>
     {puedeCrear && <RegistrarAccionPrincipal etiqueta={esMoto ? "Crear venta de mototaxi" : "Crear venta de repuestos"} onClick={() => navegar(esMoto ? "/ingresos/nuevo/mototaxis" : "/ingresos/nuevo/repuestos")} />}
     {mensajeReintento && <NotificacionFlotante tipo={mensajeReintento.toLocaleLowerCase("es-PE").includes("pendiente") ? "advertencia" : "exito"} mensaje={mensajeReintento} onCerrar={() => setMensajeReintento("")} />}
     <div className={ventasClasses.toolbar}>
@@ -232,30 +276,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     {ventaRechazada && <DialogoRechazo venta={ventaRechazada} error={errorReintento} guardando={guardandoReintento} consultando={consultandoRechazo} puedeCrear={puedeCrear} onClose={() => setVentaRechazada(null)} onConsultar={() => void procesarConsultaRechazo()} onReintentar={() => void procesarReintento()} />}
     {mensajeGarantia && <NotificacionFlotante tipo="exito" mensaje={mensajeGarantia} onCerrar={() => setMensajeGarantia("")} />}
     {mensajeEdicion && <NotificacionFlotante tipo="exito" mensaje={mensajeEdicion} onCerrar={() => setMensajeEdicion("")} />}
-    {notaPorEditar && puedeCrear && <DialogoEditarNotaVenta ingresoId={notaPorEditar.id} codigo={notaPorEditar.codigoComprobante} esMototaxi={esMoto} onCerrar={() => setNotaPorEditar(null)}
-      onGuardada={(mensaje) => { setNotaPorEditar(null); setMensajeEdicion(mensaje); setRevisionGarantias((n) => n + 1); }} />}
     {ventaParaGarantia && <AplicarGarantiaVentaDialog venta={ventaParaGarantia} onClose={() => setVentaParaGarantia(null)} onApplied={() => { setMensajeGarantia(`Garantía aplicada a ${ventaParaGarantia.codigoComprobante}.`); setRevisionGarantias((n) => n + 1); }} />}
-    </>}
-    {notaPorIniciar && puedeEmitirNotas && <DialogoInicioNota
-      venta={notaPorIniciar.venta} tipo={notaPorIniciar.tipo}
-      onCancelar={() => setNotaPorIniciar(null)}
-      onContinuar={() => {
-        abrirNota(notaPorIniciar.venta, notaPorIniciar.tipo);
-        setNotaPorIniciar(null);
-      }}
-    />}
-    {ventaSeleccionada && puedeEmitirNotas && <NotaAjusteFormulario
-      venta={ventaSeleccionada} fuente={fuenteNota} notas={notas} tipo={tipoNota} ajustes={ajustesNota}
-      totalAjuste={totalAjuste} cargando={cargandoFuente} error={errorNota} guardando={guardandoNota} observacion={observacionNota} cuentaFinancieraId={cuentaNotaId} medioPago={medioNota}
-      emitida={notaEmitida} onRecargar={() => { setErrorNota(""); setCargandoFuente(true); setRevisionNotas((actual) => actual + 1); }}
-      puedeAnular={puedeAnular} onCancelar={() => setVentaSeleccionada(null)}
-      onAmount={(id, monto) => setAjustesNota((actual) => ({ ...actual, [id]: monto }))}
-      onAccount={(cuentaId, medio) => { setCuentaNotaId(cuentaId); setMedioNota(medio); }}
-      onObservation={setObservacionNota} onSubmit={emitirNota} onAnular={abrirAnulacion}
-    />}
-    {documentoAnulacion && <DialogoAnulacion
-      documento={documentoAnulacion} motivo={motivoAnulacion} confirmado={confirmoNoEntregado} error={errorAnulacion} guardando={guardandoAnulacion}
-      onClose={() => setDocumentoAnulacion(null)} onMotivo={setMotivoAnulacion} onConfirmar={setConfirmoNoEntregado} onSubmit={procesarAnulacion}
-    />}
+    {dialogos}
   </section>;
 }
