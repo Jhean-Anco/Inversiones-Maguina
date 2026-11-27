@@ -501,6 +501,14 @@ jobs:
           done
           [ "$verified" = true ] || exit 1
           echo "API y frontend verificados: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+        - name: Diagnosticar fallo de Dokploy antes del rollback
+          if: failure() && steps.promote.outputs.started == 'true'
+          continue-on-error: true
+          env:
+            DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+            DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+            DOKPLOY_COMPOSE_ID: ${{ secrets.DOKPLOY_COMPOSE_ID }}
+          run: node .github/scripts/diagnose-dokploy.mjs
       - name: Restaurar imágenes anteriores
         id: rollback
         if: failure() && steps.promote.outputs.started == 'true'
