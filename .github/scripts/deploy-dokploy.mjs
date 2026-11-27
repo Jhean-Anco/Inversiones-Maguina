@@ -37,20 +37,23 @@ export async function solicitarDespliegue({ base, apiKey, composeId, sha, compos
     // El Compose de producción usa las etiquetas mutables `production` que el workflow
     // actualiza a partir de imágenes ya validadas. No apuntar Dokploy a una rama temporal
     // que no existe en el remoto: mantener siempre la rama real del repositorio.
-    cambio = { composeId, [campoRama]: "main" };
+    if (compose[campoRama] !== "main") cambio = { composeId, [campoRama]: "main" };
   } else if (compose.sourceType === "raw") {
     const rutaArchivo = new URL("../../compose.prod.yaml", import.meta.url);
-    cambio = { composeId, composeFile: composeFile ?? await readFile(fileURLToPath(rutaArchivo), "utf8") };
+    const contenido = composeFile ?? await readFile(fileURLToPath(rutaArchivo), "utf8");
+    if (compose.composeFile !== contenido) cambio = { composeId, composeFile: contenido };
   } else {
     throw new Error(`Fuente Compose de Dokploy no compatible: ${compose.sourceType ?? "sin definir"}.`);
   }
 
-  await solicitar("/api/compose.update", { method: "POST", body: cambio });
-  const actualizado = await (await solicitar(rutaCompose)).json();
-  const revisionAplicada = campoRama
-    ? actualizado?.[campoRama] === "main"
-    : actualizado?.composeFile === cambio.composeFile;
-  if (!revisionAplicada) throw new Error("Dokploy no confirmó la referencia o el Compose de la revisión aprobada.");
+  if (cambio) {
+    await solicitar("/api/compose.update", { method: "POST", body: cambio });
+    const actualizado = await (await solicitar(rutaCompose)).json();
+    const revisionAplicada = campoRama
+      ? actualizado?.[campoRama] === "main"
+      : actualizado?.composeFile === cambio.composeFile;
+    if (!revisionAplicada) throw new Error("Dokploy no confirmó la referencia o el Compose de la revisión aprobada.");
+  }
 
   await solicitar("/api/compose.deploy", { method: "POST", body: { composeId } });
   return { sourceType: compose.sourceType, revisionField: campoRama ?? "composeFile", revision: campoRama ? "main" : sha };
