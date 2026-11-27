@@ -1,12 +1,10 @@
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
-import { cn } from "../../lib/utils";
 import { inventarioMototaxisClasses as c } from "./inventario-mototaxis-page-classes";
+import { ventasClasses as v } from "../ventas-page/ventas-classes";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, PackageSearch } from "lucide-react";
-import { AccionIcono } from "../../components/ui/accion-icono";
+import { BadgeDollarSign, ChevronDown, Eye, Pencil, ShieldCheck } from "lucide-react";
 import { BotonAccion } from "../../components/ui/boton-accion";
-import { Etiqueta } from "../../components/ui/etiqueta";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { ErrorApi } from "../../services/api-cliente";
@@ -16,6 +14,12 @@ import { FormularioModeloMototaxi } from "./formulario-modelo-mototaxi";
 import { FichaModelo } from "./ficha-modelo";
 import { PreciosModelo } from "./precios-modelo";
 import { FormularioGarantiaModelo } from "./formulario-garantia-modelo";
+
+// Colores fijos de estado (iguales en todos los submódulos).
+const tonosEstado = {
+  activo: { caja: "border-[#b3d8c4] bg-[#e4f3ec] text-[#1b5e40]", punto: "bg-[#1b5e40]" },
+  inactivo: { caja: "border-[#dbe3e9] bg-[#f3f6f9] text-[#52697d]", punto: "bg-[#52697d]" },
+};
 
 type DetalleModelo =
   | { tipo: "cargando"; modelo: ModeloMototaxi }
@@ -29,7 +33,7 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
   const [modelos, setModelos] = useState<ModeloMototaxi[]>([]);
   const [marcas, setMarcas] = useState<Array<{ id: string; nombre: string; activo: boolean }>>([]);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroEstado, setFiltroEstado] = useState<"TODOS" | "ACTIVOS" | "INACTIVOS">("ACTIVOS");
+  const [filtroEstado, setFiltroEstado] = useState<"ACTIVOS" | "INACTIVOS">("ACTIVOS");
   const [cargando, setCargando] = useState(true);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<ModeloMototaxi | null>(null);
@@ -73,44 +77,50 @@ export function InventarioMototaxisPage({ permisos }: { permisos: string[] }) {
   function abrirNuevo() { setEditando(null); setExito(""); setModal(true); }
   function abrirEdicion(modelo: ModeloMototaxi) { setEditando(modelo); setExito(""); setModal(true); }
   function abrirGarantias(modelo: ModeloMototaxi) { setGarantiaModelo(modelo); }
-  const modelosVisibles = modelos.filter((modelo) =>
-    (filtroEstado === "TODOS" || (filtroEstado === "ACTIVOS" ? modelo.activo : !modelo.activo))
-    && (!marcaFiltro || modelo.marcaId === marcaFiltro));
-  return <section className={cn("inventory-moto-page", c.page)}>
-    <div className={cn("inventory-moto-catalog-view", c.catalog)}>
-      {exito && <NotificacionFlotante tipo="exito" mensaje={exito} onCerrar={() => setExito("")} />}
-      <ListadoMaestro<ModeloMototaxi>
-        variante="tabla" titulo="Modelos de mototaxi"
-        registros={modelosVisibles} cargando={cargando} error={!modal ? error : undefined}
-        claseCabecera="inventario-listado-cabecera"
-        vacio="No hay modelos que coincidan con estos filtros."
-        controlesCabecera={<>
-          <label className="listado-maestro-busqueda">Buscar modelo<input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, marca o código" /></label>
-          <label className="listado-maestro-filtro">Marca<select value={marcaFiltro} onChange={(e) => setMarcaFiltro(e.target.value)}><option value="">Todas</option>{marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select></label>
-          <label className="listado-maestro-filtro">Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as typeof filtroEstado)}><option value="ACTIVOS">Activos</option><option value="INACTIVOS">Inactivos</option><option value="TODOS">Todos</option></select></label>
-          <Link className="inline-flex h-[42px] shrink-0 items-center rounded-md border border-[var(--erp-border)] px-3 text-xs font-semibold text-[var(--erp-ink)] no-underline hover:bg-[var(--erp-surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2" to="/mototaxis/garantias">Garantías</Link>
-          {puedeCrear && <RegistrarAccionPrincipal onClick={abrirNuevo} etiqueta="Nuevo modelo de mototaxi" />}
-        </>}
-        paginacion={{ modo: "local" }} resetKey={`${busqueda}|${filtroEstado}|${marcaFiltro}`}
-        encabezadoTabla={<tr><th>Modelo</th><th>Categoría</th><th>Existencias</th><th>Precio general</th><th>Estado</th><th>Acciones</th></tr>}
-        renderizarFila={(modelo) => {
-          const nombre = [modelo.marca, modelo.nombre, modelo.version].filter(Boolean).join(" ");
-          return <tr key={modelo.id}>
-            <td><strong className="block text-[var(--erp-ink)]">{nombre}</strong><small>{modelo.codigo}</small></td>
-            <td>{modelo.categoriaVehicular}</td>
-            <td className="tabular-nums">{modelo.stockDisponible} <small>disponibles</small></td>
-            <td>{modelo.precioVenta == null ? <Etiqueta compacta tono="neutral">Sin precio</Etiqueta> : <strong className="tabular-nums">{monedaInventario(modelo.precioVenta)}</strong>}</td>
-            <td><Etiqueta compacta tono={modelo.activo ? "positiva" : "neutral"}>{modelo.activo ? "Activo" : "Inactivo"}</Etiqueta></td>
-            <td><div className="flex flex-wrap gap-1.5">
-              <BotonAccion etiqueta={`Ver ficha de ${nombre}`} tono="informativa" icono={<Eye aria-hidden="true" />} onClick={() => void abrirDetalle(modelo, "ficha")} />
-              <BotonAccion etiqueta={`${puedeEditar ? "Configurar precios de" : "Ver precios de"} ${nombre}`} tono="positiva" icono={<span aria-hidden="true">S/</span>} onClick={() => void abrirDetalle(modelo, "precios")} />
-              <BotonAccion etiqueta={`Gestionar garantías de ${nombre}`} tono="informativa" icono={<PackageSearch aria-hidden="true" />} onClick={() => void abrirGarantias(modelo)} />
-              {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar datos de ${nombre}`} onClick={() => abrirEdicion(modelo)} />}
-            </div></td>
-          </tr>;
-        }}
-      />
+  const delaMarca = modelos.filter((modelo) => !marcaFiltro || modelo.marcaId === marcaFiltro);
+  const conteo = { ACTIVOS: delaMarca.filter((modelo) => modelo.activo).length, INACTIVOS: delaMarca.filter((modelo) => !modelo.activo).length };
+  const modelosVisibles = delaMarca.filter((modelo) => (filtroEstado === "ACTIVOS" ? modelo.activo : !modelo.activo));
+  return <section className={c.page}>
+    {puedeCrear && <RegistrarAccionPrincipal onClick={abrirNuevo} etiqueta="Nuevo modelo de mototaxi" />}
+    {exito && <NotificacionFlotante tipo="exito" mensaje={exito} onCerrar={() => setExito("")} />}
+    <div className={v.toolbar}>
+      <label className={`${v.search} listado-maestro-busqueda-icono`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+        <input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre, marca o código" aria-label="Buscar modelo" />
+      </label>
+      <label className={v.selectField}><select aria-label="Marca" value={marcaFiltro} onChange={(e) => setMarcaFiltro(e.target.value)}><option value="">Todas las marcas</option>{marcas.map((item) => <option key={item.id} value={item.id}>{item.nombre}</option>)}</select><ChevronDown aria-hidden="true" /></label>
+      <div className={v.filters} role="group" aria-label="Estado">
+        {(["ACTIVOS", "INACTIVOS"] as const).map((estado) => <button key={estado} type="button" className={v.chip} aria-pressed={filtroEstado === estado} onClick={() => setFiltroEstado(estado)}>
+          {estado === "ACTIVOS" ? "Activos" : "Inactivos"}<span className={v.chipCount}>{conteo[estado]}</span>
+        </button>)}
+      </div>
+      <Link className={`${v.chip} no-underline`} to="/mototaxis/garantias"><ShieldCheck className="size-4" aria-hidden="true" />Garantías</Link>
     </div>
+    <ListadoMaestro<ModeloMototaxi>
+      variante="tabla" titulo="Modelos de mototaxi"
+      registros={modelosVisibles} cargando={cargando} error={!modal ? error : undefined}
+      claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
+      vacio={<div className={v.empty}><strong>No hay modelos para mostrar</strong><span>{busqueda.trim() || marcaFiltro ? "Prueba con otra búsqueda o marca." : "Registra el primer modelo de mototaxi del catálogo."}</span></div>}
+      paginacion={{ modo: "local" }} resetKey={`${busqueda}|${filtroEstado}|${marcaFiltro}`}
+      encabezadoTabla={<tr><th>Modelo</th><th>Categoría</th><th>Existencias</th><th>Precio general</th><th>Estado</th><th>Acciones</th></tr>}
+      renderizarFila={(modelo) => {
+        const nombre = [modelo.marca, modelo.nombre, modelo.version].filter(Boolean).join(" ");
+        const tono = modelo.activo ? tonosEstado.activo : tonosEstado.inactivo;
+        return <tr key={modelo.id}>
+          <td><strong className={v.documentCode}>{nombre}</strong><small className={v.minorText}>{modelo.codigo}</small></td>
+          <td>{modelo.categoriaVehicular}</td>
+          <td className="[font-variant-numeric:tabular-nums]">{modelo.stockDisponible} <small className="text-[11px] text-[#6d8093]">{modelo.stockDisponible === 1 ? "disponible" : "disponibles"}</small></td>
+          <td>{modelo.precioVenta == null ? <span className="text-[11px] text-[#6d8093]">Sin precio</span> : <span className={v.total}>{monedaInventario(modelo.precioVenta)}</span>}</td>
+          <td><span className={`${v.status} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{modelo.activo ? "Activo" : "Inactivo"}</span></td>
+          <td><div className={v.rowActions}>
+            <BotonAccion etiqueta={`Ver ficha de ${nombre}`} tono="neutral" icono={<Eye aria-hidden="true" />} onClick={() => void abrirDetalle(modelo, "ficha")} />
+            <BotonAccion etiqueta={`${puedeEditar ? "Configurar precios de" : "Ver precios de"} ${nombre}`} tono="positiva" icono={<BadgeDollarSign aria-hidden="true" />} onClick={() => void abrirDetalle(modelo, "precios")} />
+            <BotonAccion etiqueta={`Gestionar garantías de ${nombre}`} tono="advertencia" icono={<ShieldCheck aria-hidden="true" />} onClick={() => abrirGarantias(modelo)} />
+            {puedeEditar && <BotonAccion etiqueta={`Editar datos de ${nombre}`} tono="informativa" icono={<Pencil aria-hidden="true" />} onClick={() => abrirEdicion(modelo)} />}
+          </div></td>
+        </tr>;
+      }}
+    />
     {detalle?.tipo === "cargando" && <DialogoCatalogo titulo="Modelo de mototaxi" articulo={detalle.modelo.nombre} codigo={detalle.modelo.codigo} alCerrar={cerrarDetalle}><p role="status">Cargando el modelo…</p></DialogoCatalogo>}
     {detalle?.tipo === "ficha" && <FichaModelo analisis={detalle.analisis} alCerrar={cerrarDetalle}
       alEditar={puedeEditar ? () => { cerrarDetalle(); abrirEdicion(detalle.analisis.modelo); } : undefined} />}
