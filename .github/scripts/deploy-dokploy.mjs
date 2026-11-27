@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
-const ramasPorFuente = {
+const camposRamaPorFuente = {
   github: "githubBranch",
   gitlab: "gitlabBranch",
   bitbucket: "bitbucketBranch",
@@ -31,11 +31,13 @@ export async function solicitarDespliegue({ base, apiKey, composeId, sha, compos
   const compose = await (await solicitar(rutaCompose)).json();
   if (compose?.composeId !== composeId) throw new Error("Dokploy devolvió un recurso Compose distinto al solicitado.");
 
-  const etiqueta = `ci-deploy-${sha}`;
-  const campoRama = ramasPorFuente[compose.sourceType];
+  const campoRama = camposRamaPorFuente[compose.sourceType];
   let cambio;
   if (campoRama) {
-    cambio = { composeId, [campoRama]: etiqueta };
+    // El Compose de producción usa las etiquetas mutables `production` que el workflow
+    // actualiza a partir de imágenes ya validadas. No apuntar Dokploy a una rama temporal
+    // que no existe en el remoto: mantener siempre la rama real del repositorio.
+    cambio = { composeId, [campoRama]: "main" };
   } else if (compose.sourceType === "raw") {
     const rutaArchivo = new URL("../../compose.prod.yaml", import.meta.url);
     cambio = { composeId, composeFile: composeFile ?? await readFile(fileURLToPath(rutaArchivo), "utf8") };
@@ -46,12 +48,12 @@ export async function solicitarDespliegue({ base, apiKey, composeId, sha, compos
   await solicitar("/api/compose.update", { method: "POST", body: cambio });
   const actualizado = await (await solicitar(rutaCompose)).json();
   const revisionAplicada = campoRama
-    ? actualizado?.[campoRama] === etiqueta
+    ? actualizado?.[campoRama] === "main"
     : actualizado?.composeFile === cambio.composeFile;
   if (!revisionAplicada) throw new Error("Dokploy no confirmó la referencia o el Compose de la revisión aprobada.");
 
   await solicitar("/api/compose.deploy", { method: "POST", body: { composeId } });
-  return { sourceType: compose.sourceType, revisionField: campoRama ?? "composeFile", revision: campoRama ? etiqueta : sha };
+  return { sourceType: compose.sourceType, revisionField: campoRama ?? "composeFile", revision: campoRama ? "main" : sha };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
