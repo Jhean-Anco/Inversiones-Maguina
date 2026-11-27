@@ -399,9 +399,9 @@ test("el rol de almacén abre el formulario integrado de compra", async ({ page 
     await expect(page.getByRole("heading", { name: "Compra de repuestos", exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Crear compra de repuestos" }).click();
-    const formularioNuevo = page.locator(".compra-documento");
-    await expect(formularioNuevo.getByRole("heading", { name: "Nueva compra de repuestos" })).toBeVisible();
-    await expect(formularioNuevo.getByLabel("Tipo de documento")).toBeVisible();
+    const formularioNuevo = page.locator(".compra-repuestos-editor");
+    await expect(formularioNuevo.getByRole("heading", { name: "Datos de la compra" })).toBeVisible();
+    await expect(formularioNuevo.getByLabel("Tipo de documento *")).toBeVisible();
     await expect(page.getByRole("searchbox", { name: "Buscar repuestos para comprar" })).toBeVisible();
     await formularioNuevo.getByRole("button", { name: "Cancelar" }).click();
     await expect(page.getByRole("heading", { name: "Compra de repuestos", exact: true })).toBeVisible();
