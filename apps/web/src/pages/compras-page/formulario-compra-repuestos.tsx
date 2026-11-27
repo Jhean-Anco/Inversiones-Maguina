@@ -21,7 +21,14 @@ const LIMITE_OBSERVACIONES = 2000;
 const soles = (valor: number) => `S/ ${valor.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const documentoImprimible = (id: string) => servicioEntradasStock.consultar(id).then(documentoDeCompra);
 
-type Props = { modulo: ReturnType<typeof useEntradasStock>; alCerrar: () => void };
+type Props = { modulo: ReturnType<typeof useEntradasStock>; alCerrar: () => void; compraEditada?: EntradaStock };
+
+/** Pagos vigentes de la compra como partes del pago: todas con su importe salvo la última, que toma el resto. */
+function partesIniciales(compra?: EntradaStock): ParteCobro[] {
+  const pagos = (compra?.pagos ?? []).filter((pago) => pago.cuentaFinancieraId);
+  if (!pagos.length) return [parteCobroVacia()];
+  return pagos.map((pago, indice) => ({ ...parteCobroVacia(), cuentaId: pago.cuentaFinancieraId ?? "", medioPago: pago.medioPago, monto: indice < pagos.length - 1 ? Number(pago.importePagado).toFixed(2) : "" }));
+}
 
 function Tarjeta({ paso, id, titulo, extra, children }: { paso: number; id: string; titulo: string; extra?: React.ReactNode; children: React.ReactNode }) {
   return <section className="os-tarjeta" aria-labelledby={id}>
@@ -31,13 +38,14 @@ function Tarjeta({ paso, id, titulo, extra, children }: { paso: number; id: stri
 }
 
 /** Compra de repuestos con la estructura `os-*` de Órdenes de servicio; el botón principal registra e imprime. */
-export function FormularioCompraRepuestos({ modulo, alCerrar }: Props) {
+export function FormularioCompraRepuestos({ modulo, alCerrar, compraEditada }: Props) {
   const { guardando, error, setError, fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento,
     proveedor, setProveedorTipoDocumento, observacion, setObservacion, detalles, totalBorrador, guardar } = modulo;
   const formulario = useRef<HTMLFormElement>(null);
   const alertas = useAlertas();
   const imprimirAlEmitir = useImprimirAlEmitir(alertas);
-  const [partes, setPartes] = useState<ParteCobro[]>(() => [parteCobroVacia()]);
+  const [partes, setPartes] = useState<ParteCobro[]>(() => partesIniciales(compraEditada));
+  const editando = Boolean(compraEditada);
   const [registrada, setRegistrada] = useState<EntradaStock | null>(null);
   const firma = JSON.stringify({ fecha, tipoDocumento, numeroDocumento, proveedor, observacion, detalles, partes });
   const cancelar = useConfirmarCancelacionFormulario(formulario, alCerrar, "la compra de repuestos", firma);
@@ -85,8 +93,8 @@ export function FormularioCompraRepuestos({ modulo, alCerrar }: Props) {
     {error && <NotificacionFlotante mensaje={error} onCerrar={() => setError("")} />}
     <form ref={formulario} className="os-formulario" onSubmit={registrar} aria-busy={guardando}>
       <div className="os-indicadores">
-        <span className="os-chip border-[#c8deed] bg-[#eef6fb] text-[#17628b]"><i className="bg-[#2a8bbd]" aria-hidden="true" />{registrada ? "Compra registrada" : "Ingresará al inventario"}</span>
-        <div className="os-numero" aria-live="polite"><span>N.° DE COMPRA</span><strong>{registrada?.codigo ?? "Se asigna al guardar"}</strong></div>
+        <span className="os-chip border-[#c8deed] bg-[#eef6fb] text-[#17628b]"><i className="bg-[#2a8bbd]" aria-hidden="true" />{registrada ? editando ? "Compra actualizada" : "Compra registrada" : editando ? "Editando compra" : "Ingresará al inventario"}</span>
+        <div className="os-numero" aria-live="polite"><span>N.° DE COMPRA</span><strong>{registrada?.codigo ?? compraEditada?.codigo ?? "Se asigna al guardar"}</strong></div>
       </div>
 
       <div className="os-disposicion">
@@ -142,12 +150,12 @@ export function FormularioCompraRepuestos({ modulo, alCerrar }: Props) {
           </dl>
           {!registrada && totalBorrador > 0 && <CobroVenta titulo="Pago" partes={partes} total={totalBorrador} onChange={setPartes} />}
           {registrada && <div className="compra-confirmacion" role="status">
-            <strong><CheckCircle2 aria-hidden="true" size={18} />Compra {registrada.codigo} registrada</strong>
-            <span>El stock se actualizó y se envió a la impresora.</span>
+            <strong><CheckCircle2 aria-hidden="true" size={18} />Compra {registrada.codigo} {editando ? "actualizada" : "registrada"}</strong>
+            <span>{editando ? "El stock y los pagos se ajustaron" : "El stock se actualizó"} y se envió a la impresora.</span>
             <button type="button" className="os-cancelar" onClick={() => imprimir(registrada)}><Printer aria-hidden="true" size={16} />Reimprimir</button>
           </div>}
           <div className="os-acciones">
-            {!registrada && <button className="os-guardar" type="submit" disabled={guardando || !detalles.length}><Printer aria-hidden="true" size={18} />{guardando ? "Registrando compra…" : "Imprimir compra"}</button>}
+            {!registrada && <button className="os-guardar" type="submit" disabled={guardando || !detalles.length}><Printer aria-hidden="true" size={18} />{guardando ? editando ? "Guardando cambios…" : "Registrando compra…" : "Imprimir compra"}</button>}
             <button className="os-cancelar" type="button" disabled={guardando} onClick={registrada ? alCerrar : cancelar.solicitarCancelacion}>{registrada ? "Volver al listado" : "Cancelar"}</button>
           </div>
         </aside>

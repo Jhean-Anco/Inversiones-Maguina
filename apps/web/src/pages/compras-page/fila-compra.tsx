@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Ban, Pencil } from "lucide-react";
 import { documentoDeCompra } from "../../components/inventario/entrada-stock-detalle/documento-compra";
 import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import { BotonAccion } from "../../components/ui/boton-accion";
@@ -19,7 +19,9 @@ const tonos = {
   Anulada: { caja: "border-[#dbe3e9] bg-[#f3f6f9] text-[#52697d]", punto: "bg-[#52697d]" },
 } as const;
 
-export function FilaCompra({ entrada, alAbrir }: { entrada: EntradaStock; alAbrir: (id: string) => void }) {
+type Props = { entrada: EntradaStock; alEditar?: (entrada: EntradaStock) => void; alAnular?: (entrada: EntradaStock) => void; editando?: boolean };
+
+export function FilaCompra({ entrada, alEditar, alAnular, editando = false }: Props) {
   const total = Number(entrada.totalDocumento ?? entrada.total);
   const pagado = entrada.montoPagado == null ? 0 : Number(entrada.montoPagado);
   const saldo = Math.max(0, total - pagado);
@@ -48,7 +50,8 @@ export function FilaCompra({ entrada, alAbrir }: { entrada: EntradaStock; alAbri
       <td>
         <div className={c.rowActions}>
           <MenuImpresion codigo={entrada.codigo} etiqueta={`Imprimir compra ${entrada.codigo}`} tono="neutral" obtener={() => servicioEntradasStock.consultar(entrada.id).then(documentoDeCompra)} />
-          <BotonAccion tono="informativa" etiqueta={`Ver detalle de ${entrada.codigo}`} onClick={() => alAbrir(entrada.id)} icono={<Eye aria-hidden="true" size={16} />} />
+          {alEditar && estado !== "Anulada" && <BotonAccion tono="informativa" etiqueta={editando ? `Abriendo ${entrada.codigo}…` : `Editar compra ${entrada.codigo}`} disabled={editando} onClick={() => alEditar(entrada)} icono={<Pencil aria-hidden="true" size={16} />} />}
+          {alAnular && estado !== "Anulada" && <BotonAccion tono="peligro" etiqueta={`Anular compra ${entrada.codigo}`} onClick={() => alAnular(entrada)} icono={<Ban aria-hidden="true" size={16} />} />}
         </div>
       </td>
     </tr>

@@ -76,12 +76,12 @@ export class ServicioMovimientosStock {
         .innerJoin(usuarios, eq(usuarios.id, movimientosStock.usuarioId))
         .innerJoin(productos, eq(movimientosStock.productoId, productos.id))
         .innerJoin(unidadesMedida, eq(productos.unidadBaseCodigo, unidadesMedida.codigo))
-        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
+        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA", "EDICION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
         .leftJoin(ingresos, and(inArray(movimientosStock.origenTipo, ["INGRESO", "ANULACION_INGRESO"]), eq(movimientosStock.origenId, ingresos.id)))
         .where(condicion).orderBy(desc(movimientosStock.creadoEn), desc(movimientosStock.id)).limit(porPagina).offset((pagina - 1) * porPagina),
       db.select({ total: count() }).from(movimientosStock)
         .innerJoin(productos, eq(movimientosStock.productoId, productos.id))
-        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
+        .leftJoin(entradasStock, and(inArray(movimientosStock.origenTipo, ["ENTRADA_STOCK", "ANULACION_ENTRADA", "EDICION_ENTRADA"]), eq(movimientosStock.origenId, entradasStock.id)))
         .leftJoin(ingresos, and(inArray(movimientosStock.origenTipo, ["INGRESO", "ANULACION_INGRESO"]), eq(movimientosStock.origenId, ingresos.id)))
         .where(condicion),
     ]);
