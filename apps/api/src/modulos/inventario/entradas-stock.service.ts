@@ -1,7 +1,7 @@
 import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, exists, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, ilike, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida, correlativosDocumentosInternos } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
@@ -11,6 +11,9 @@ type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleD
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
 type DatosEntrada = { claveIdempotencia?: unknown; fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; pagos?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
 const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO"] as const;
+type Transaccion = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DatosPreparados = Awaited<ReturnType<ServicioEntradasStock["prepararDatos"]>>;
+type ProductosValidados = Awaited<ReturnType<ServicioEntradasStock["validarProductos"]>>["productosValidados"];
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
 function texto(valor: unknown, etiqueta: string, maximo: number, opcional = false) {
@@ -122,7 +125,7 @@ export class ServicioEntradasStock {
       anuladoPor: sql<string | null>`(select u.nombre_usuario from usuarios u where u.id = entradas_stock.anulado_por_usuario_id)`,
       creadoEn: entradasStock.creadoEn }).from(entradasStock).where(eq(entradasStock.id, id)).limit(1);
     if (!entrada) throw new NotFoundException("No se encontró la entrada de stock.");
-    const [detalles, detallesDocumento] = await Promise.all([
+    const [detalles, detallesDocumento, pagos] = await Promise.all([
       db.select({ id: entradasStockDetalle.id, productoId: entradasStockDetalle.productoId,
         detalleDocumentoId: entradasStockDetalle.detalleDocumentoId, presentacionId: entradasStockDetalle.presentacionId,
         codigoProducto: entradasStockDetalle.codigoProducto, nombreProducto: entradasStockDetalle.nombreProducto,
@@ -136,11 +139,13 @@ export class ServicioEntradasStock {
         costoUnitario: entradasStockDocumentoDetalle.costoUnitario, descuento: entradasStockDocumentoDetalle.descuento,
         subtotal: entradasStockDocumentoDetalle.subtotal, total: entradasStockDocumentoDetalle.total })
         .from(entradasStockDocumentoDetalle).where(eq(entradasStockDocumentoDetalle.entradaId, id)).orderBy(asc(entradasStockDocumentoDetalle.orden)),
+      db.select({ cuentaFinancieraId: pagosEntradasStock.cuentaFinancieraId, medioPago: pagosEntradasStock.medioPago, importePagado: pagosEntradasStock.importePagado })
+        .from(pagosEntradasStock).where(and(eq(pagosEntradasStock.entradaId, id), isNull(pagosEntradasStock.anuladoEn))).orderBy(asc(pagosEntradasStock.creadoEn)),
     ]);
-    return { ...entrada, detalles, detallesDocumento };
+    return { ...entrada, detalles, detallesDocumento, pagos };
   }
-  async crear(entrada: unknown, usuarioIdEntrada: string) {
-    const usuarioId = uuid(usuarioIdEntrada, "El usuario");
+  /** Valida y normaliza los datos de una compra (alta o edición). No toca la base salvo para validar cuentas. */
+  private async prepararDatos(entrada: unknown) {
     if (typeof entrada !== "object" || entrada === null || Array.isArray(entrada)) throw new BadRequestException("Los datos de la entrada no son válidos.");
     const datos = entrada as DatosEntrada;
     const fecha = fechaValida(datos.fecha);
@@ -213,7 +218,111 @@ export class ServicioEntradasStock {
     });
     const pares = detalles.map((fila) => `${fila.productoId}:${fila.presentacionId}`);
     if (new Set(pares).size !== pares.length) throw new BadRequestException("Hay productos y presentaciones repetidos. Agrupa sus cantidades en una sola línea.");
+    return { fecha, claveIdempotencia, tipoDocumento, numeroDocumento, proveedor, proveedorTipoPersona, proveedorTipoDocumento, proveedorNumeroDocumento, proveedorDireccion, totalDocumento, detallesDocumento, pagos, cuentaFinancieraId, observacion, detalles };
+  }
 
+  /** Bloquea por comprobante y rechaza una factura o boleta ya registrada (en Compras o en un egreso), salvo la propia compra que se edita. */
+  private async verificarDuplicado(tx: Transaccion, d: DatosPreparados, excluirId?: string) {
+    if (!["FACTURA", "BOLETA"].includes(d.tipoDocumento) || d.proveedorTipoDocumento !== "RUC" || !d.proveedorNumeroDocumento || !d.numeroDocumento) return;
+    const claveDocumento = `COMPROBANTE_COMPRA:${d.proveedorNumeroDocumento}:${d.tipoDocumento}:${d.numeroDocumento}`;
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${claveDocumento}, 0))`);
+    const [duplicadoEgreso] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
+      .where(and(eq(egresosRegistros.estado, "REGISTRADO"), eq(egresosRegistros.documentoTipo, d.tipoDocumento), eq(egresosRegistros.proveedorRuc, d.proveedorNumeroDocumento), eq(egresosRegistros.documentoNumero, d.numeroDocumento))).limit(1);
+    const [duplicadoCompra] = await tx.select({ id: entradasStock.id }).from(entradasStock)
+      .where(and(eq(entradasStock.estado, "REGISTRADA"), eq(entradasStock.tipoDocumento, d.tipoDocumento), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, d.proveedorNumeroDocumento), eq(entradasStock.numeroDocumento, d.numeroDocumento), excluirId ? ne(entradasStock.id, excluirId) : undefined)).limit(1);
+    if (duplicadoEgreso || duplicadoCompra) throw new ConflictException("Esta factura ya está registrada en Compras o en un egreso; evita duplicarla.");
+  }
+
+  /** Comprueba productos y presentaciones vigentes, calcula subtotales y exige que los pagos cubran el total. */
+  private async validarProductos(tx: Transaccion, d: DatosPreparados) {
+    const productosValidados = [];
+    for (const detalle of d.detalles) {
+      const [producto] = await tx.select({
+        id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre,
+        presentacionId: productosPresentaciones.id, presentacion: productosPresentaciones.nombre,
+        unidadMedidaCodigo: productosPresentaciones.unidadMedidaCodigo,
+        factorAUnidadBase: productosPresentaciones.factorAUnidadBase,
+      }).from(productosPresentaciones).innerJoin(productos, eq(productosPresentaciones.productoId, productos.id))
+        .where(and(eq(productos.id, detalle.productoId), eq(productosPresentaciones.id, detalle.presentacionId), eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seCompra, true))).limit(1);
+      if (!producto) throw new BadRequestException("Un producto o presentación ya no está disponible para compra.");
+      const factor = Number(producto.factorAUnidadBase);
+      const cantidadBase = Number((detalle.cantidad * factor).toFixed(6));
+      const subtotal = detalle.importeTotal ?? Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+      const subtotalPorPrecioUnitario = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+      if (detalle.importeTotal !== null && Math.round(subtotalPorPrecioUnitario * 100) !== Math.round(subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
+      const costoUnitario = Number((subtotal / detalle.cantidad).toFixed(4));
+      if (!Number.isFinite(cantidadBase) || cantidadBase <= 0 || !Number.isFinite(subtotal)) throw new BadRequestException("La cantidad o el subtotal calculado no es válido.");
+      productosValidados.push({ ...detalle, costoUnitario, producto, factor, cantidadBase, subtotal, costoBase: Number((costoUnitario / factor).toFixed(6)) });
+    }
+    const total = productosValidados.reduce((suma, detalle) => suma + detalle.subtotal, 0);
+    const totalPagos = d.pagos.reduce((suma, pago) => suma + pago.importe, 0);
+    if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el monto pagado completo entre los medios de pago.");
+    for (const detalle of productosValidados) {
+      const calculado = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+      if (Math.round(calculado * 100) !== Math.round(detalle.subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
+    }
+    if (d.totalDocumento !== null && Math.round(d.totalDocumento * 100) < Math.round(total * 100)) throw new BadRequestException("El total del documento no puede ser menor que la suma de los productos recibidos.");
+    return { productosValidados, total, totalPagos };
+  }
+
+  /** Inserta pagos, líneas documentales y líneas de stock, sumando al saldo y dejando el movimiento ENTRADA de cada una. */
+  private async ingresarLineas(tx: Transaccion, entradaId: string, d: DatosPreparados, productosValidados: ProductosValidados, usuarioId: string) {
+    if (d.pagos.length) await tx.insert(pagosEntradasStock).values(d.pagos.map((pago) => ({
+      entradaId, fechaPago: d.fecha, importePagado: pago.importe.toFixed(2), medioPago: pago.medio,
+      cuentaFinancieraId: pago.cuentaId, usuarioId,
+    })));
+    const idsDocumento = new Map<string, string>();
+    for (const [orden, linea] of d.detallesDocumento.entries()) {
+      const [documentoDetalle] = await tx.insert(entradasStockDocumentoDetalle).values({
+        entradaId, orden: orden + 1, codigo: linea.codigo, descripcion: linea.descripcion,
+        unidad: linea.unidad, cantidad: linea.cantidad.toFixed(3), costoUnitario: linea.costoUnitario.toFixed(4),
+        descuento: linea.descuento.toFixed(2), subtotal: linea.subtotal.toFixed(2), total: linea.total.toFixed(2),
+      }).returning({ id: entradasStockDocumentoDetalle.id });
+      idsDocumento.set(linea.clave, documentoDetalle.id);
+    }
+    for (const detalle of productosValidados) {
+      const [linea] = await tx.insert(entradasStockDetalle).values({
+        entradaId, detalleDocumentoId: detalle.detalleDocumentoId ? idsDocumento.get(detalle.detalleDocumentoId) ?? null : null, productoId: detalle.productoId, presentacionId: detalle.presentacionId,
+        codigoProducto: detalle.producto.codigoInterno, nombreProducto: detalle.producto.nombre,
+        presentacion: detalle.producto.presentacion, unidadMedidaCodigo: detalle.producto.unidadMedidaCodigo,
+        cantidad: detalle.cantidad.toFixed(3), factorAUnidadBase: detalle.factor.toFixed(6),
+        cantidadBase: detalle.cantidadBase.toFixed(6), costoUnitario: detalle.costoUnitario.toFixed(4),
+        subtotal: detalle.subtotal.toFixed(2),
+      }).returning({ id: entradasStockDetalle.id });
+      await tx.insert(saldosStock).values({ productoId: detalle.productoId, cantidad: detalle.cantidadBase.toFixed(6) })
+        .onConflictDoUpdate({ target: saldosStock.productoId, set: { cantidad: sql`${saldosStock.cantidad} + ${detalle.cantidadBase}`, actualizadoEn: new Date() } });
+      await tx.insert(movimientosStock).values({
+        productoId: detalle.productoId, tipo: "ENTRADA", origenTipo: "ENTRADA_STOCK",
+        origenId: entradaId, origenDetalleId: linea.id, cantidadBase: detalle.cantidadBase.toFixed(6),
+        costoUnitarioBase: detalle.costoBase.toFixed(6), usuarioId,
+      });
+    }
+  }
+
+  /** Datos del proveedor tal como se guardan: una compra sin documento no lleva proveedor. */
+  private camposCabecera(d: DatosPreparados, numeroDocumento: string | null, total: number, totalPagos: number) {
+    const sinDocumento = d.tipoDocumento === "SIN_DOCUMENTO";
+    return {
+      fecha: d.fecha, tipoDocumento: d.tipoDocumento, numeroDocumento,
+      proveedor: sinDocumento ? null : d.proveedor, proveedorTipoPersona: sinDocumento ? null : d.proveedorTipoPersona, proveedorTipoDocumento: sinDocumento ? null : d.proveedorTipoDocumento,
+      proveedorNumeroDocumento: sinDocumento ? null : d.proveedorNumeroDocumento, proveedorDireccion: sinDocumento ? null : d.proveedorDireccion,
+      medioPago: d.pagos.length === 1 ? d.pagos[0].medio : null, cuentaFinancieraId: d.cuentaFinancieraId,
+      montoPagado: totalPagos.toFixed(2), observacion: d.observacion,
+      totalDocumento: d.totalDocumento === null ? null : d.totalDocumento.toFixed(2), total: total.toFixed(2),
+    };
+  }
+
+  private async siguienteNumeroSinDocumento(tx: Transaccion) {
+    const [correlativo] = await tx.insert(correlativosDocumentosInternos).values({ tipo: "COMPRA_REPUESTOS_SIN_DOCUMENTO", ultimoNumero: 1 })
+      .onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } })
+      .returning({ numero: correlativosDocumentosInternos.ultimoNumero });
+    return `CRI-${String(correlativo.numero).padStart(6, "0")}`;
+  }
+
+  async crear(entrada: unknown, usuarioIdEntrada: string) {
+    const usuarioId = uuid(usuarioIdEntrada, "El usuario");
+    const d = await this.prepararDatos(entrada);
+    const { fecha, claveIdempotencia, tipoDocumento, numeroDocumento, proveedorNumeroDocumento, pagos, detalles } = d;
     try {
       const huellaSolicitud = createHash("sha256").update(JSON.stringify({ usuarioId, fecha, tipoDocumento, numeroDocumento, proveedorNumeroDocumento, pagos, detalles })).digest("hex");
       const resultado = await db.transaction(async (tx) => {
@@ -226,93 +335,73 @@ export class ServicioEntradasStock {
             return { id: existente.id };
           }
         }
-        if (["FACTURA", "BOLETA"].includes(tipoDocumento) && proveedorTipoDocumento === "RUC" && proveedorNumeroDocumento && numeroDocumento) {
-          const claveDocumento = `COMPROBANTE_COMPRA:${proveedorNumeroDocumento}:${tipoDocumento}:${numeroDocumento}`;
-          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${claveDocumento}, 0))`);
-          const [duplicadoEgreso] = await tx.select({ id: egresosRegistros.id }).from(egresosRegistros)
-            .where(and(eq(egresosRegistros.estado, "REGISTRADO"), eq(egresosRegistros.documentoTipo, tipoDocumento), eq(egresosRegistros.proveedorRuc, proveedorNumeroDocumento), eq(egresosRegistros.documentoNumero, numeroDocumento))).limit(1);
-          const [duplicadoCompra] = await tx.select({ id: entradasStock.id }).from(entradasStock)
-            .where(and(eq(entradasStock.estado, "REGISTRADA"), eq(entradasStock.tipoDocumento, tipoDocumento), eq(entradasStock.proveedorTipoDocumento, "RUC"), eq(entradasStock.proveedorNumeroDocumento, proveedorNumeroDocumento), eq(entradasStock.numeroDocumento, numeroDocumento))).limit(1);
-          if (duplicadoEgreso || duplicadoCompra) throw new ConflictException("Esta factura ya está registrada en Compras o en un egreso; evita duplicarla.");
-        }
+        await this.verificarDuplicado(tx, d);
         const codigo = `ENT-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
-        const productosValidados = [];
-        for (const detalle of detalles) {
-          const [producto] = await tx.select({
-            id: productos.id, codigoInterno: productos.codigoInterno, nombre: productos.nombre,
-            presentacionId: productosPresentaciones.id, presentacion: productosPresentaciones.nombre,
-            unidadMedidaCodigo: productosPresentaciones.unidadMedidaCodigo,
-            factorAUnidadBase: productosPresentaciones.factorAUnidadBase,
-          }).from(productosPresentaciones).innerJoin(productos, eq(productosPresentaciones.productoId, productos.id))
-            .where(and(eq(productos.id, detalle.productoId), eq(productosPresentaciones.id, detalle.presentacionId), eq(productos.activo, true), eq(productosPresentaciones.activo, true), eq(productosPresentaciones.seCompra, true))).limit(1);
-          if (!producto) throw new BadRequestException("Un producto o presentación ya no está disponible para compra.");
-          const factor = Number(producto.factorAUnidadBase);
-          const cantidadBase = Number((detalle.cantidad * factor).toFixed(6));
-          const subtotal = detalle.importeTotal ?? Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
-          const subtotalPorPrecioUnitario = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
-          if (detalle.importeTotal !== null && Math.round(subtotalPorPrecioUnitario * 100) !== Math.round(subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
-          const costoUnitario = Number((subtotal / detalle.cantidad).toFixed(4));
-          if (!Number.isFinite(cantidadBase) || cantidadBase <= 0 || !Number.isFinite(subtotal)) throw new BadRequestException("La cantidad o el subtotal calculado no es válido.");
-          productosValidados.push({ ...detalle, costoUnitario, producto, factor, cantidadBase, subtotal, costoBase: Number((costoUnitario / factor).toFixed(6)) });
-        }
-        const total = productosValidados.reduce((suma, detalle) => suma + detalle.subtotal, 0);
-        const totalPagos = pagos.reduce((suma, pago) => suma + pago.importe, 0);
-        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el monto pagado completo entre los medios de pago.");
-        for (const detalle of productosValidados) {
-          const calculado = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
-          if (Math.round(calculado * 100) !== Math.round(detalle.subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
-        }
-        if (tipoDocumento === "SIN_DOCUMENTO") {
-          const [correlativo] = await tx.insert(correlativosDocumentosInternos).values({ tipo: "COMPRA_REPUESTOS_SIN_DOCUMENTO", ultimoNumero: 1 })
-            .onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } })
-            .returning({ numero: correlativosDocumentosInternos.ultimoNumero });
-          numeroDocumento = `CRI-${String(correlativo.numero).padStart(6, "0")}`;
-        }
-        if (totalDocumento !== null && Math.round(totalDocumento * 100) < Math.round(total * 100)) throw new BadRequestException("El total del documento no puede ser menor que la suma de los productos recibidos.");
+        const { productosValidados, total, totalPagos } = await this.validarProductos(tx, d);
+        const numero = tipoDocumento === "SIN_DOCUMENTO" ? await this.siguienteNumeroSinDocumento(tx) : numeroDocumento;
         const [nuevaEntrada] = await tx.insert(entradasStock).values({
-          codigo, fecha, tipoDocumento, numeroDocumento, proveedor: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedor, proveedorTipoPersona: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoPersona, proveedorTipoDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoDocumento,
-          proveedorNumeroDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorNumeroDocumento, proveedorDireccion: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorDireccion,
-          medioPago: pagos.length === 1 ? pagos[0].medio : null,
-          cuentaFinancieraId,
-          montoPagado: totalPagos.toFixed(2), observacion, claveIdempotencia, huellaSolicitud: claveIdempotencia ? huellaSolicitud : null,
-          totalDocumento: totalDocumento === null ? null : totalDocumento.toFixed(2), total: total.toFixed(2), usuarioId,
+          codigo, ...this.camposCabecera(d, numero, total, totalPagos),
+          claveIdempotencia, huellaSolicitud: claveIdempotencia ? huellaSolicitud : null, usuarioId,
         }).returning({ id: entradasStock.id });
-        if (pagos.length) await tx.insert(pagosEntradasStock).values(pagos.map((pago) => ({
-          entradaId: nuevaEntrada.id, fechaPago: fecha, importePagado: pago.importe.toFixed(2), medioPago: pago.medio,
-          cuentaFinancieraId: pago.cuentaId, usuarioId,
-        })));
-        const idsDocumento = new Map<string, string>();
-        for (const [orden, linea] of detallesDocumento.entries()) {
-          const [documentoDetalle] = await tx.insert(entradasStockDocumentoDetalle).values({
-            entradaId: nuevaEntrada.id, orden: orden + 1, codigo: linea.codigo, descripcion: linea.descripcion,
-            unidad: linea.unidad, cantidad: linea.cantidad.toFixed(3), costoUnitario: linea.costoUnitario.toFixed(4),
-            descuento: linea.descuento.toFixed(2), subtotal: linea.subtotal.toFixed(2), total: linea.total.toFixed(2),
-          }).returning({ id: entradasStockDocumentoDetalle.id });
-          idsDocumento.set(linea.clave, documentoDetalle.id);
-        }
-        for (const detalle of productosValidados) {
-          const [linea] = await tx.insert(entradasStockDetalle).values({
-            entradaId: nuevaEntrada.id, detalleDocumentoId: detalle.detalleDocumentoId ? idsDocumento.get(detalle.detalleDocumentoId) ?? null : null, productoId: detalle.productoId, presentacionId: detalle.presentacionId,
-            codigoProducto: detalle.producto.codigoInterno, nombreProducto: detalle.producto.nombre,
-            presentacion: detalle.producto.presentacion, unidadMedidaCodigo: detalle.producto.unidadMedidaCodigo,
-            cantidad: detalle.cantidad.toFixed(3), factorAUnidadBase: detalle.factor.toFixed(6),
-            cantidadBase: detalle.cantidadBase.toFixed(6), costoUnitario: detalle.costoUnitario.toFixed(4),
-            subtotal: detalle.subtotal.toFixed(2),
-          }).returning({ id: entradasStockDetalle.id });
-          await tx.insert(saldosStock).values({ productoId: detalle.productoId, cantidad: detalle.cantidadBase.toFixed(6) })
-            .onConflictDoUpdate({ target: saldosStock.productoId, set: { cantidad: sql`${saldosStock.cantidad} + ${detalle.cantidadBase}`, actualizadoEn: new Date() } });
-          await tx.insert(movimientosStock).values({
-            productoId: detalle.productoId, tipo: "ENTRADA", origenTipo: "ENTRADA_STOCK",
-            origenId: nuevaEntrada.id, origenDetalleId: linea.id, cantidadBase: detalle.cantidadBase.toFixed(6),
-            costoUnitarioBase: detalle.costoBase.toFixed(6), usuarioId,
-          });
-        }
+        await this.ingresarLineas(tx, nuevaEntrada.id, d, productosValidados, usuarioId);
         return { id: nuevaEntrada.id };
       });
       return this.consultar(resultado.id);
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
       if (esViolacionUnicidad(error)) throw new ConflictException("La entrada o un movimiento duplicado ya existe.");
+      throw error;
+    }
+  }
+
+  /**
+   * Edita una compra registrada de forma atómica y conserva su código: valida los datos nuevos, ingresa las líneas nuevas,
+   * retira el stock de las anteriores (SALIDA EDICION_ENTRADA por línea), anula sus pagos y registra los nuevos.
+   * Si parte del stock anterior ya se vendió o se ajustó y no alcanza, responde 409 sin tocar nada.
+   */
+  async actualizar(idEntrada: string, entrada: unknown, usuarioIdEntrada: string) {
+    const id = uuid(idEntrada, "La compra");
+    const usuarioId = uuid(usuarioIdEntrada, "El usuario");
+    const d = await this.prepararDatos(entrada);
+    try {
+      const resultado = await db.transaction(async (tx) => {
+        const [compra] = await tx.select({ id: entradasStock.id, estado: entradasStock.estado, tipoDocumento: entradasStock.tipoDocumento, numeroDocumento: entradasStock.numeroDocumento })
+          .from(entradasStock).where(eq(entradasStock.id, id)).for("update").limit(1);
+        if (!compra) throw new NotFoundException("No se encontró la compra de repuestos.");
+        if (compra.estado === "ANULADA") throw new ConflictException("La compra está anulada; no se puede editar.");
+        await this.verificarDuplicado(tx, d, id);
+        const { productosValidados, total, totalPagos } = await this.validarProductos(tx, d);
+        const numero = d.tipoDocumento !== "SIN_DOCUMENTO" ? d.numeroDocumento
+          : compra.tipoDocumento === "SIN_DOCUMENTO" && compra.numeroDocumento ? compra.numeroDocumento : await this.siguienteNumeroSinDocumento(tx);
+        const anteriores = await tx.select({ id: entradasStockDetalle.id, productoId: entradasStockDetalle.productoId, nombre: entradasStockDetalle.nombreProducto, cantidadBase: entradasStockDetalle.cantidadBase })
+          .from(entradasStockDetalle).where(eq(entradasStockDetalle.entradaId, id)).orderBy(asc(entradasStockDetalle.productoId), asc(entradasStockDetalle.id));
+        // Los pagos anteriores dejan de contar en cuentas y flujo; los nuevos se registran junto con las líneas.
+        await tx.update(pagosEntradasStock).set({ anuladoEn: new Date(), anuladoPorUsuarioId: usuarioId, motivoAnulacion: "Reemplazado al editar la compra" })
+          .where(and(eq(pagosEntradasStock.entradaId, id), isNull(pagosEntradasStock.anuladoEn)));
+        // Primero se ingresa lo nuevo: así solo se exige stock por la diferencia neta de cada producto.
+        await this.ingresarLineas(tx, id, d, productosValidados, usuarioId);
+        for (const linea of anteriores) {
+          const [original] = await tx.select({ costo: movimientosStock.costoUnitarioBase }).from(movimientosStock)
+            .where(and(eq(movimientosStock.origenTipo, "ENTRADA_STOCK"), eq(movimientosStock.origenDetalleId, linea.id))).limit(1);
+          const [actualizado] = await tx.update(saldosStock).set({ cantidad: sql`${saldosStock.cantidad} - ${linea.cantidadBase}::numeric`, actualizadoEn: new Date() })
+            .where(and(eq(saldosStock.productoId, linea.productoId), sql`${saldosStock.cantidad} >= ${linea.cantidadBase}::numeric`))
+            .returning({ cantidad: saldosStock.cantidad });
+          if (!actualizado) throw new ConflictException(`No se puede editar la compra: parte del stock de ${linea.nombre} ya se vendió o se ajustó.`);
+          await tx.insert(movimientosStock).values({
+            productoId: linea.productoId, tipo: "SALIDA", origenTipo: "EDICION_ENTRADA", origenId: id, origenDetalleId: linea.id,
+            cantidadBase: linea.cantidadBase, costoUnitarioBase: original?.costo ?? "0", sentido: "RETIRO", observacion: "Edición de la compra", usuarioId,
+            saldoAnterior: sql`(${actualizado.cantidad}::numeric + ${linea.cantidadBase}::numeric)`, saldoFinal: actualizado.cantidad,
+          });
+        }
+        if (anteriores.length) await tx.delete(entradasStockDetalle).where(inArray(entradasStockDetalle.id, anteriores.map((linea) => linea.id)));
+        await tx.delete(entradasStockDocumentoDetalle).where(and(eq(entradasStockDocumentoDetalle.entradaId, id),
+          sql`not exists (select 1 from entradas_stock_detalle d where d.detalle_documento_id = ${entradasStockDocumentoDetalle.id})`));
+        await tx.update(entradasStock).set(this.camposCabecera(d, numero, total, totalPagos)).where(eq(entradasStock.id, id));
+        return { id: compra.id };
+      });
+      return this.consultar(resultado.id);
+    } catch (error) {
+      if (esViolacionUnicidad(error)) throw new ConflictException("La compra o un movimiento duplicado ya existe.");
       throw error;
     }
   }

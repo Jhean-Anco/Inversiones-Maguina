@@ -3,11 +3,11 @@ import { Eye, Mail, Phone } from "lucide-react";
 import { AccionIcono } from "../../components/ui/accion-icono";
 import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
-import { clasesOpcionMenu } from "../../components/documentos/menu-accion-classes";
+import { BotonAccion } from "../../components/ui/boton-accion";
 import type { OrdenServicio } from "../../services/ingresos.service";
 import { ordenesListadoClasses as c } from "./ordenes-tabla-classes";
 import { tonosEstadoOrden } from "./estados-orden";
-import { AccionesWhatsAppOrden, MenuMasAccionesOrden } from "./orden-servicio-menu-acciones";
+import { AccionesWhatsAppOrden } from "./orden-servicio-menu-acciones";
 import { anchoMinimoColumnaRelacionClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
 
 type OrdenServicioRowProps = {
@@ -38,16 +38,14 @@ export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menu
       </td>
       <td><span className={`${c.status} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{estado}</span></td>
       <td className={`${c.number} ${c.total}`}><strong className="block">{total}</strong></td>
-      <td><div className={`${c.rowActions} ordenes-row-actions`}>
+      <td className="whitespace-nowrap"><div className={`${c.rowActions} ordenes-row-actions`}>
         {modificable && <AccionIcono accion="editar" etiqueta={`Editar orden ${orden.codigo}`} confirmacion={{ titulo: "¿Editar esta orden de servicio?", descripcion: `Vas a abrir ${orden.codigo} para revisar sus datos. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar orden" }} onClick={alEditar} />}
         <MenuImpresion codigo={orden.codigo} etiqueta={`Imprimir orden ${orden.codigo}`} tono="neutral" obtener={documentoImprimible} />
         {modificable && puedeCrear && menuDocumento}
-        {(orden.clienteTelefono || orden.clienteCorreo || orden.ingresoId) && <MenuMasAccionesOrden>
-          {orden.clienteTelefono && <a className={`${clasesOpcionMenu} flex items-center gap-2 text-[12px]`} href={`tel:${telefonoParaLlamar(orden.clienteTelefono)}`} role="menuitem"><Phone aria-hidden="true" size={16} />Llamar</a>}
-          {orden.clienteTelefono && <AccionesWhatsAppOrden orden={orden} formatearFecha={formatearFecha} />}
-          {orden.clienteCorreo && <a className={`${clasesOpcionMenu} flex items-center gap-2 text-[12px]`} href={`mailto:${orden.clienteCorreo}`} role="menuitem"><Mail aria-hidden="true" size={16} />Enviar correo</a>}
-          {orden.ingresoId && <button className={`${clasesOpcionMenu} flex items-center gap-2 text-[12px]`} type="button" role="menuitem" onClick={alEditar}><Eye aria-hidden="true" size={16} />Ver orden emitida</button>}
-        </MenuMasAccionesOrden>}
+        {orden.clienteTelefono && <BotonAccion etiqueta={`Llamar a ${orden.clienteNombre || "cliente"}`} tono="informativa" icono={<Phone aria-hidden="true" />} href={`tel:${telefonoParaLlamar(orden.clienteTelefono)}`} />}
+        {orden.clienteTelefono && <AccionesWhatsAppOrden orden={orden} formatearFecha={formatearFecha} />}
+        {orden.clienteCorreo && <BotonAccion etiqueta={`Enviar correo a ${orden.clienteCorreo}`} tono="informativa" icono={<Mail aria-hidden="true" />} href={`mailto:${orden.clienteCorreo}`} />}
+        {orden.ingresoId && <BotonAccion etiqueta="Ver orden emitida" tono="neutral" icono={<Eye aria-hidden="true" />} onClick={alEditar} />}
       </div></td>
     </tr>
   );

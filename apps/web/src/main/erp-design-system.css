@@ -1,221 +1,4 @@
 /* Shared visual layer for the ERP. Keep business state and route behavior in their modules. */
-/* Keep document entry screens aligned to the same workspace frame. */
-.erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-.erp-content:has(.guia-remision-editor) {
-  display: flex;
-  min-height: 0;
-  padding-top: 20px;
-  padding-bottom: 14px;
-  overflow: hidden;
-}
-.erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing)
-  .modulo-route-transition,
-.erp-content:has(.guia-remision-editor) .modulo-route-transition {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  overflow: hidden;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing {
-  display: flex;
-  width: calc(100% - 15px);
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor {
-  width: 100%;
-  max-width: none;
-  max-height: none;
-  min-height: 0;
-  flex: 1 1 auto;
-  gap: 0;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > .gestion-cotizacion-workspace {
-  min-height: 0;
-  grid-template-columns: minmax(300px, 0.58fr) minmax(0, 1.7fr);
-  align-items: stretch;
-  gap: 10px;
-  overflow: hidden;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-workspace
-  > .orden-catalog-panel {
-  position: static;
-  height: 100%;
-  min-height: 0;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-paper {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  flex-direction: column;
-  overflow: auto;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing .gestion-cotizacion-actions {
-  position: sticky;
-  z-index: 2;
-  bottom: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex: 0 0 auto;
-  margin: auto 0 0;
-  padding: 10px 14px 12px;
-  border-top: 1px solid var(--erp-border);
-  background: var(--erp-surface);
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-paper
-  > .orden-document-header {
-  position: sticky;
-  z-index: 3;
-  top: 0;
-  flex: 0 0 auto;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing > .gestion-editor > footer {
-  justify-content: flex-end;
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 0 0 2px;
-}
-.gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > footer
-  > .gestion-primary,
-.gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-actions
-  > .gestion-primary {
-  background: #103f72;
-  box-shadow: 0 5px 14px rgb(16 63 114 / 18%);
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="tablet-portrait"])
-  .erp-content:has(.guia-remision-editor) {
-  padding: 18px 16px 14px;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.guia-remision-editor) {
-  padding: 18px 16px 14px;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="mobile-portrait"])
-  .erp-content:has(.guia-remision-editor) {
-  padding: 18px 16px 14px;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > .gestion-cotizacion-workspace {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: auto;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-workspace
-  > .orden-catalog-panel {
-  height: auto;
-}
-:where(html[data-responsive-profile="tablet-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-paper {
-  height: auto;
-  overflow: visible;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > .gestion-cotizacion-workspace {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: auto;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-workspace
-  > .orden-catalog-panel {
-  height: auto;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-paper {
-  height: auto;
-  overflow: visible;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > .gestion-cotizacion-workspace {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: auto;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-workspace
-  > .orden-catalog-panel {
-  height: auto;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  .gestion-cotizacion-paper {
-  height: auto;
-  overflow: visible;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.guia-remision-editor) {
-  padding: 14px 0 12px;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > footer {
-  padding: 0 12px 4px;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="mobile-portrait"])
-  .erp-content:has(.guia-remision-editor) {
-  padding: 14px 0 12px;
-}
-:where(html[data-responsive-profile="mobile-portrait"])
-  .gestion-ingresos-page.is-cotizaciones.is-editing
-  > .gestion-editor
-  > footer {
-  padding: 0 12px 4px;
-}
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.gestion-ingresos-page.is-cotizaciones.is-editing),
-:where(html[data-responsive-profile="mobile-landscape"])
-  .erp-content:has(.guia-remision-editor) {
-  padding-top: 16px;
-}
-
 html,
 body {
   min-height: 100%;
@@ -319,19 +102,6 @@ input[type="reset"] {
   background: transparent;
 }
 
-.venta-form-paper.comprobante-boleta .venta-form-heading {
-  border-left-color: var(--erp-accent) !important;
-  background: linear-gradient(
-    112deg,
-    var(--erp-brand-deep),
-    var(--erp-brand) 64%,
-    #103f72
-  ) !important;
-}
-.venta-form-paper .venta-form-heading {
-  color: #fff;
-}
-
 .erp-content .inicio-panel {
   border-color: var(--erp-border);
   border-radius: var(--erp-radius-lg);
@@ -347,9 +117,7 @@ input[type="reset"] {
   height: 2px;
   background: var(--erp-accent);
 }
-.erp-content .inicio-panel-heading h2,
-.erp-content .inicio-recent-list strong,
-.erp-content .inicio-recent-list b {
+.erp-content .inicio-panel-heading h2 {
   color: var(--erp-ink);
   letter-spacing: var(--erp-tracking-heading);
 }
@@ -358,8 +126,7 @@ input[type="reset"] {
   font-weight: 700;
 }
 .erp-content .inicio-panel-heading p,
-.erp-content .inicio-panel-kicker,
-.erp-content .inicio-recent-list small {
+.erp-content .inicio-panel-kicker {
   color: var(--erp-ink-soft);
 }
 .erp-content .inicio-panel-heading p {
@@ -455,37 +222,200 @@ input[type="reset"] {
 }
 
 /* Distinguish each document type with a consistent header and series card palette. */
-.venta-form-paper.comprobante-nota-venta {
-  --doc-start: #702532;
-  --doc-end: #9f3040;
-  --doc-accent: #f08b96;
-  --doc-ink: #7d2938;
-  --doc-tint: #fff1f2;
-  --doc-border: #edc5ca;
+
+/* ==========================================================================
+ * Capa premium: primitivas que consumen los tokens de index.css.
+ * Las primitivas viven en @layer components para que las utilidades de
+ * Tailwind de cada vista sigan pudiendo ajustarlas; los alias de clases
+ * heredadas van sin capa para imponerse a main.css sin !important.
+ * ========================================================================== */
+
+/* Tipografía base: cifras tabulares y titulares con tracking ajustado. */
+.erp-layout {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: -0.003em;
 }
-.venta-form-paper.comprobante-boleta {
-  --doc-start: #0b376a;
-  --doc-end: #1764a4;
-  --doc-accent: #e63243;
-  --doc-ink: #164f82;
-  --doc-tint: #edf5fc;
-  --doc-border: #bfd4e7;
+:where(.erp-layout, [role="dialog"], [role="alertdialog"]) :where(h1, h2, h3) {
+  letter-spacing: var(--erp-tracking-tight);
 }
-.venta-form-paper.comprobante-factura {
-  --doc-start: #123e67;
-  --doc-end: #28658f;
-  --doc-accent: #f06470;
-  --doc-ink: #194b73;
-  --doc-tint: #edf4f9;
-  --doc-border: #bed0df;
+:where(.erp-layout, [role="dialog"], [role="alertdialog"]) :where(td, th, output, data, time, [class*="total"], [class*="monto"], [class*="importe"], [class*="precio"], [class*="saldo"], [class*="cantidad"], [class*="kpi"]) {
+  font-variant-numeric: tabular-nums;
 }
-.gestion-cotizacion-paper {
-  --doc-start: #193956;
-  --doc-end: #365f82;
-  --doc-accent: #e14b59;
-  --doc-ink: #244b6c;
-  --doc-tint: #f0f5f9;
-  --doc-border: #c7d6e2;
+::selection {
+  background: color-mix(in srgb, var(--erp-focus) 22%, transparent);
+}
+
+@layer components {
+  .erp-btn {
+    display: inline-flex;
+    min-height: var(--erp-control-h);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--erp-radius-md);
+    font: inherit;
+    font-size: var(--erp-text-base);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.006em;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .erp-btn--lg {
+    min-height: var(--erp-control-h-lg);
+    padding: 0 20px;
+    font-size: var(--erp-text-md);
+  }
+  .erp-btn--primary {
+    border-color: #b51d2f;
+    background: linear-gradient(180deg, #d42a3e, var(--erp-accent));
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(140 26 43 / 22%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  }
+  .erp-btn--primary:hover:not(:disabled) {
+    border-color: #9e1827;
+    background: linear-gradient(180deg, #c62539, var(--erp-accent-hover));
+    box-shadow: 0 4px 12px -3px rgb(140 26 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  }
+  .erp-btn--secondary {
+    border-color: var(--erp-border-strong);
+    background: var(--erp-surface);
+    color: var(--erp-ink);
+    box-shadow: var(--erp-shadow-xs);
+  }
+  .erp-btn--secondary:hover:not(:disabled) {
+    border-color: #b6c3d0;
+    background: var(--erp-surface-hover);
+  }
+  .erp-btn:disabled,
+  .erp-btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  /* Esqueleto de carga. */
+}
+@keyframes erp-skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* Alias de botones heredados: primario de diálogo y acción secundaria. */
+.catalog-submit,
+.clientes-primary-action {
+  display: inline-flex;
+  min-height: var(--erp-control-h-lg);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 1px solid #b51d2f;
+  border-radius: var(--erp-radius-md);
+  background: linear-gradient(180deg, #d42a3e, var(--erp-accent));
+  color: #fff;
+  font-size: var(--erp-text-md);
+  font-weight: 600;
+  letter-spacing: -0.006em;
+  box-shadow: 0 1px 2px rgb(140 26 43 / 22%), inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.catalog-submit:not(:disabled):hover,
+.clientes-primary-action:hover:not(:disabled) {
+  border-color: #9e1827;
+  background: linear-gradient(180deg, #c62539, var(--erp-accent-hover));
+  color: #fff;
+  box-shadow: 0 4px 12px -3px rgb(140 26 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.catalog-cancel,
+.clientes-secondary-action {
+  display: inline-flex;
+  min-height: var(--erp-control-h-lg);
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid var(--erp-border-strong);
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-surface);
+  color: var(--erp-ink);
+  font-size: var(--erp-text-md);
+  font-weight: 600;
+  box-shadow: var(--erp-shadow-xs);
+}
+.catalog-cancel:hover:not(:disabled),
+.clientes-secondary-action:hover:not(:disabled) {
+  border-color: #b6c3d0;
+  background: var(--erp-surface-hover);
+}
+:is([role="dialog"], [role="alertdialog"]) > footer :is(.catalog-submit, .catalog-cancel) {
+  margin-top: 0;
+}
+
+/* Campos sin estilo propio dentro de diálogos: base consistente (especificidad 0). */
+@layer components {
+  :where([role="dialog"], [role="alertdialog"]) :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea) {
+    box-sizing: border-box;
+    min-height: var(--erp-control-h);
+    border: 1px solid var(--erp-border-strong);
+    border-radius: var(--erp-radius-sm);
+    padding: 0 12px;
+    background-color: var(--erp-surface);
+    color: var(--erp-ink);
+    font: inherit;
+    font-size: var(--erp-text-md);
+    font-weight: 400;
+    transition: border-color var(--erp-duration) var(--erp-ease), box-shadow var(--erp-duration) var(--erp-ease);
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(textarea) {
+    padding: 10px 12px;
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(input, select, textarea):where(:focus) {
+    border-color: var(--erp-focus);
+    box-shadow: var(--erp-focus-ring);
+    outline: none;
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(input, select, textarea):where(:disabled) {
+    background-color: var(--erp-surface-sunken);
+    color: var(--erp-ink-soft);
+  }
+}
+
+/* Formulario de repuesto: etiquetas en bloque encima del campo. */
+.producto-form-scroll .producto-form-grid {
+  gap: 14px 16px;
+}
+.producto-form-scroll .producto-form-grid label,
+.producto-form-scroll .producto-brand-field > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: var(--erp-ink-muted);
+  font-size: var(--erp-text-sm);
+  font-weight: 600;
+}
+.producto-form-scroll .producto-form-grid :is(input, select),
+.producto-form-scroll .producto-row :is(input, select) {
+  width: 100%;
+  min-width: 0;
+}
+.producto-form-scroll .producto-form-section {
+  border-color: var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-surface);
+  box-shadow: var(--erp-shadow-xs);
+}
+.producto-form-scroll .producto-form-section legend {
+  color: var(--erp-ink);
+  font-size: var(--erp-text-md);
+  font-weight: 700;
+  letter-spacing: var(--erp-tracking-tight);
+}
+
+/* Códigos y placas: evitar cortes con Inter (más ancha que Arial). */
+.listado-maestro-tabla td:first-child > :is(strong, b, a),
+.ordenes-page .listado-maestro-tabla td:nth-child(2) > span {
+  white-space: nowrap;
 }
 
 /* ==========================================================================

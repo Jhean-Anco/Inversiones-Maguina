@@ -17,14 +17,15 @@ export async function documentoDeCompra(entrada: EntradaStock): Promise<Document
     direccion: entrada.proveedorDireccion,
     datosExtra: [
       { etiqueta: "Documento", valor: `${nombresDocumentos[entrada.tipoDocumento] ?? entrada.tipoDocumento}${entrada.numeroDocumento ? ` ${entrada.numeroDocumento}` : ""}` },
-      ...(pagado === null ? [] : [{ etiqueta: "Pagado", valor: `S/ ${pagado.toFixed(2)}` }]),
     ],
     lineas: (entrada.detalles ?? []).map((detalle) => ({
-      descripcion: `${detalle.nombreProducto} (${detalle.codigoProducto})`, cantidad: detalle.cantidad,
+      descripcion: detalle.nombreProducto, cantidad: detalle.cantidad,
       precioUnitario: Number(detalle.costoUnitario), total: Number(detalle.subtotal),
     })),
-    importes: { total }, medioPago: entrada.medioPago, observacion: entrada.observacion,
-    leyenda: "Constancia interna de compra de repuestos. Documento sin valor tributario.",
+    importes: { total },
+    adelanto: pagado !== null && pagado > 0 && pagado < total ? { monto: pagado, saldo: Math.max(0, total - pagado) } : null,
+    medioPago: entrada.medioPago, observacion: entrada.observacion,
+    leyenda: "",
     advertencias: entrada.estado === "ANULADA" ? ["COMPRA ANULADA"] : [],
     emisor: await emisorParaImpresion(),
   });

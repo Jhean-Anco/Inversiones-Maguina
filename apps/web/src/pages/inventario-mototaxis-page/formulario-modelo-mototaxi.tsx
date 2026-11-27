@@ -6,6 +6,8 @@ import { useErroresValidacion } from "../../hooks/use-errores-validacion";
 import { servicioMototaxis, type MarcaMototaxi, type ModeloMototaxi } from "../../services/mototaxis.service";
 import { datosDeModelo, nuevoModelo, type DatosModelo } from "./modelo-mototaxi-datos";
 import { SeccionesModeloMototaxi } from "./secciones-modelo-mototaxi";
+import { clasesBoton } from "./campos-modelo";
+import { Save } from "lucide-react";
 
 export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }: {
   modelo?: ModeloMototaxi;
@@ -33,30 +35,21 @@ export function FormularioModeloMototaxi({ modelo, marcas, alCerrar, alGuardar }
     } finally { setGuardando(false); }
   }
 
-  function alternarColor(color: string) {
-    setDatos((actual) => {
-      const yaSeleccionado = actual.coloresDisponibles.some((actualColor) => actualColor.toLocaleLowerCase("es-PE") === color.toLocaleLowerCase("es-PE"));
-      if (yaSeleccionado) return { ...actual, coloresDisponibles: actual.coloresDisponibles.filter((actualColor) => actualColor.toLocaleLowerCase("es-PE") !== color.toLocaleLowerCase("es-PE")) };
-      if (actual.coloresDisponibles.length >= 24) return actual;
-      return { ...actual, coloresDisponibles: [...actual.coloresDisponibles, color] };
-    });
-  }
-
   return (
     <>
       {dialogo}
       <Dialogo
         kicker="CATÁLOGO DE MOTOTAXIS"
         titulo={modelo ? "Editar modelo" : "Nueva mototaxi · modelo"}
-        subtitulo="Completa los datos generales, técnicos y de fabricación."
+        subtitulo="Completa los datos del modelo. Solo los marcados con * son obligatorios."
         ancho="lg"
         cerrable={!guardando}
         onCerrar={solicitarCancelacion}
-        pie={<><button type="button" className="erp-btn erp-btn--secondary erp-btn--lg max-sm:w-full" disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="modelo-form" className="erp-btn erp-btn--primary erp-btn--lg max-sm:w-full" disabled={guardando}>{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></>}
+        pie={<><button type="button" className={clasesBoton.secundario} disabled={guardando} onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="modelo-form" className={clasesBoton.principal} disabled={guardando}><Save className="size-4" aria-hidden="true" />{guardando ? "Guardando…" : modelo ? "Guardar cambios" : "Crear modelo"}</button></>}
       >
-        <form id="modelo-form" ref={modalRef} className="grid gap-4" aria-busy={guardando} onSubmit={(evento) => void guardar(evento)} {...propsFormulario}>
+        <form id="modelo-form" ref={modalRef} className="grid gap-4 text-[#142b42]" aria-busy={guardando} onSubmit={(evento) => void guardar(evento)} {...propsFormulario}>
           {error && <NotificacionFlotante mensaje={error} />}
-          <SeccionesModeloMototaxi datos={datos} marcas={marcas} errores={errores} alCambiar={cambiar} alAlternarColor={alternarColor} />
+          <SeccionesModeloMototaxi datos={datos} marcas={marcas} errores={errores} alCambiar={cambiar} />
         </form>
       </Dialogo>
     </>

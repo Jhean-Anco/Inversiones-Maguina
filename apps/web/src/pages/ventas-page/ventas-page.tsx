@@ -1,11 +1,12 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { ErrorApi } from "../../services/api-cliente";
-import { servicioIngresos, type EstadoFiltroVenta, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
+import { servicioIngresos, type FuenteNota, type NotaRelacionada, type VentaListado } from "../../services/ingresos.service";
 import { VentaRow } from "./venta-row";
 import { pendienteSunat } from "./ventas-formatters";
 import { useActualizacionPendientes } from "../../hooks/use-actualizacion-pendientes";
@@ -16,12 +17,21 @@ import { DialogoInicioNota } from "./dialogo-inicio-nota";
 import { DialogoAnulacion } from "./dialogo-anulacion";
 import { ventasClasses } from "./ventas-classes";
 import { AplicarGarantiaVentaDialog } from "./aplicar-garantia-venta-dialog";
-import { DialogoEditarNotaVenta } from "./dialogo-editar-nota-venta";
+import { EditorNotaVenta } from "./editor-nota-venta";
+import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { documentoDeIngreso, type ImpresionPreparada } from "../../impresion/servicio-impresion";
+import { mensajeErrorImpresion } from "../../impresion/use-impresion";
+import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
 
 type TipoVenta = "REPUESTOS" | "MOTOTAXIS";
-const encabezadoVentas = <tr><th>Fecha</th><th>Comprobante</th><th>Cliente</th><th>Pago</th><th className="!text-right">Total</th><th>Estado SUNAT</th><th className="!text-right">Acciones</th></tr>;
+// Sin filtros de estado ni de medio de pago: el listado muestra todas las ventas.
+const medioPago = "";
+const estadoFiltro = "TODAS" as const;
+const soloConSaldo = false;
+const encabezadoVentas = <tr><th>Fecha</th><th>Comprobante</th><th>Cliente</th><th>Pago</th><th>Total</th><th>Estado SUNAT</th><th>Acciones</th></tr>;
 export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, puedeAnular = false, puedeAplicarGarantia = false }: { tipoVenta: TipoVenta; puedeCrear: boolean; puedeEmitirNotas?: boolean; puedeAnular?: boolean; puedeAplicarGarantia?: boolean }) {
   const navegar = useNavigate();
+  const imprimirAlEmitir = useImprimirAlEmitir(useAlertas());
   const esMoto = tipoVenta === "MOTOTAXIS";
   const [ventas, setVentas] = useState<VentaListado[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,10 +40,6 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [tipoDocumento, setTipoDocumento] = useState("");
-  const [medioPago, setMedioPago] = useState("");
-  const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltroVenta>("TODAS");
-  const [soloConSaldo, setSoloConSaldo] = useState(false);
-  const [conteos, setConteos] = useState<{ todas: number; emitidas: number; pendientes: number; rechazadas: number; anuladas: number; conSaldo?: number } | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [ventaSeleccionada, setVentaSeleccionada] = useState<VentaListado | null>(null);
@@ -72,7 +78,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       setCargando(true);
       void servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo).then((resultado) => {
         if (!vigente) return;
-        setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setConteos(resultado.conteos ?? null); setError("");
+        setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError("");
       }).catch((problema: unknown) => {
         if (!vigente) return;
         if (problema instanceof ErrorApi && problema.estado === 401) { navegar("/login", { replace: true }); return; }
@@ -87,7 +93,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     activo: pendientes > 0 && !cargando,
     clave: JSON.stringify([tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo, revisionGarantias]),
     consultar: () => servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo),
-    aplicar: (resultado) => { setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setConteos(resultado.conteos ?? null); },
+    aplicar: (resultado) => { setVentas(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); },
   });
 
   useEffect(() => {
@@ -120,7 +126,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     try {
       const resultado = await servicioIngresos.consultarEstadoComprobante(ventaRechazada.id);
       const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo);
-      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas); setConteos(actualizado.conteos ?? null);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
       const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
       if (resultado.estadoProveedor === "ACEPTADO_SUNAT") {
         setVentaRechazada(null);
@@ -145,7 +151,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     try {
       const resultado = await servicioIngresos.reintentarEmision(ventaRechazada.id);
       const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo);
-      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas); setConteos(actualizado.conteos ?? null);
+      setVentas(actualizado.items); setTotal(actualizado.total); setTotalPaginas(actualizado.totalPaginas);
       const ventaActualizada = actualizado.items.find((item) => item.id === ventaRechazada.id);
       if (ventaActualizada?.estadoProveedor === "RECHAZADO_SUNAT") {
         setVentaRechazada(ventaActualizada);
@@ -174,7 +180,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
       setDocumentoAnulacion({ ...documentoAnulacion, pendiente: resultado.estado === "ANULACION_PENDIENTE" });
       setErrorAnulacion(resultado.estado === "ANULADO" ? documentoAnulacion.interna ? "La nota de venta fue anulada: se revirtieron sus cobros y el inventario." : "La baja fue aceptada por SUNAT." : resultado.estado === "ANULACION_PENDIENTE" ? resultado.mensaje || "La comunicación sigue pendiente de respuesta de SUNAT. Consulta nuevamente más tarde." : resultado.detalle || "NubeFact rechazó la comunicación de baja.");
       const actualizado = await servicioIngresos.listarVentas(tipoVenta, pagina, porPagina, busqueda, tipoDocumento, medioPago, estadoFiltro, soloConSaldo);
-      setVentas(actualizado.items); setConteos(actualizado.conteos ?? null);
+      setVentas(actualizado.items);
       if (documentoAnulacion.esNota) {
         setFuenteNota(null);
         setCargandoFuente(true);
@@ -184,63 +190,82 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     finally { setGuardandoAnulacion(false); }
   };
 
-  const emitirNota = async (evento: React.FormEvent<HTMLFormElement>) => {
+  const emitirNota = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.preventDefault();
     if (!puedeEmitirNotas || !ventaSeleccionada || !fuenteNota || cargandoFuente || guardandoNota) return;
     const lineas = Object.entries(ajustesNota).filter(([, monto]) => Number(monto) > 0).map(([detalleId, monto]) => ({ detalleId, monto }));
     if (!lineas.length) { setErrorNota("Ingresa el importe de al menos una línea para emitir la nota."); return; }
     if (!cuentaNotaId) { setErrorNota(tipoNota === "NOTA_CREDITO" ? "Selecciona la cuenta de donde saldrá la devolución." : "Selecciona la cuenta donde ingresará la diferencia."); return; }
+    const venta = ventaSeleccionada;
+    // El navegador exige el gesto del usuario para pedir la impresora: se prepara antes de cualquier await.
+    const preparacion = imprimirAlEmitir.preparar("TICKET");
     setGuardandoNota(true); setErrorNota(""); setNotaEmitida("");
-    try {
-      const resultado = await servicioIngresos.emitirNota(ventaSeleccionada.id, { tipo: tipoNota, lineas, cuentaFinancieraId: cuentaNotaId, medioPago: medioNota, observacion: observacionNota });
-      setNotaEmitida(resultado.codigoComprobante);
-      setAjustesNota({}); setObservacionNota("");
-    } catch (problema) { setErrorNota(problema instanceof Error ? problema.message : "No se pudo emitir la nota."); }
-    finally {
-      setFuenteNota(null);
-      setCargandoFuente(true);
-      setRevisionNotas((actual) => actual + 1);
-      setGuardandoNota(false);
-    }
+    void (async () => {
+      let preparada: ImpresionPreparada;
+      try { preparada = await preparacion; }
+      catch (problema) { setErrorNota(mensajeErrorImpresion(problema)); setGuardandoNota(false); return; }
+      try {
+        const resultado = await servicioIngresos.emitirNota(venta.id, { tipo: tipoNota, lineas, cuentaFinancieraId: cuentaNotaId, medioPago: medioNota, observacion: observacionNota });
+        setNotaEmitida(resultado.codigoComprobante);
+        setAjustesNota({}); setObservacionNota("");
+        if (resultado.estado === "EMITIDO") void imprimirAlEmitir.imprimir(documentoDeIngreso({ ingresoId: venta.id, notaId: resultado.id }), preparada);
+      } catch (problema) { setErrorNota(problema instanceof Error ? problema.message : "No se pudo emitir la nota."); }
+      finally {
+        setFuenteNota(null);
+        setCargandoFuente(true);
+        setRevisionNotas((actual) => actual + 1);
+        setGuardandoNota(false);
+      }
+    })();
   };
 
+  const dialogos = <>
+    {notaPorIniciar && puedeEmitirNotas && <DialogoInicioNota
+      venta={notaPorIniciar.venta} tipo={notaPorIniciar.tipo}
+      onCancelar={() => setNotaPorIniciar(null)}
+      onContinuar={() => {
+        abrirNota(notaPorIniciar.venta, notaPorIniciar.tipo);
+        setNotaPorIniciar(null);
+      }}
+    />}
+    {documentoAnulacion && <DialogoAnulacion
+      documento={documentoAnulacion} motivo={motivoAnulacion} confirmado={confirmoNoEntregado} error={errorAnulacion} guardando={guardandoAnulacion}
+      onClose={() => setDocumentoAnulacion(null)} onMotivo={setMotivoAnulacion} onConfirmar={setConfirmoNoEntregado} onSubmit={procesarAnulacion}
+    />}
+  </>;
+
+  // Los formularios de documentos se devuelven sin contenedor: así toman los márgenes y el scroll propio de `.os-editor`.
+  if (ventaSeleccionada && puedeEmitirNotas) return <>
+    <NotaAjusteFormulario
+      venta={ventaSeleccionada} fuente={fuenteNota} notas={notas} tipo={tipoNota} ajustes={ajustesNota}
+      totalAjuste={totalAjuste} cargando={cargandoFuente} error={errorNota} guardando={guardandoNota} observacion={observacionNota} cuentaFinancieraId={cuentaNotaId} medioPago={medioNota}
+      emitida={notaEmitida} onRecargar={() => { setErrorNota(""); setCargandoFuente(true); setRevisionNotas((actual) => actual + 1); }}
+      puedeAnular={puedeAnular} onCancelar={() => setVentaSeleccionada(null)} onCerrarError={() => setErrorNota("")}
+      onAmount={(id, monto) => setAjustesNota((actual) => ({ ...actual, [id]: monto }))}
+      onAccount={(cuentaId, medio) => { setCuentaNotaId(cuentaId); setMedioNota(medio); }}
+      onObservation={setObservacionNota} onSubmit={emitirNota} onAnular={abrirAnulacion}
+    />
+    {dialogos}
+  </>;
+  if (notaPorEditar && puedeCrear) return <EditorNotaVenta ingresoId={notaPorEditar.id} codigo={notaPorEditar.codigoComprobante} esMototaxi={esMoto} onCerrar={() => setNotaPorEditar(null)}
+    onGuardada={(mensaje) => { setNotaPorEditar(null); setMensajeEdicion(mensaje); setRevisionGarantias((n) => n + 1); }} />;
+
   return <section className={ventasClasses.page}>
-    {!ventaSeleccionada && <>
     {puedeCrear && <RegistrarAccionPrincipal etiqueta={esMoto ? "Crear venta de mototaxi" : "Crear venta de repuestos"} onClick={() => navegar(esMoto ? "/ingresos/nuevo/mototaxis" : "/ingresos/nuevo/repuestos")} />}
     {mensajeReintento && <NotificacionFlotante tipo={mensajeReintento.toLocaleLowerCase("es-PE").includes("pendiente") ? "advertencia" : "exito"} mensaje={mensajeReintento} onCerrar={() => setMensajeReintento("")} />}
+    <div className={ventasClasses.toolbar}>
+      <label className={`${ventasClasses.search} listado-maestro-busqueda-icono`}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg><input type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label>
+      <label className={ventasClasses.selectField}><select aria-label="Tipo de documento" value={tipoDocumento} onChange={(evento) => { setPagina(1); setTipoDocumento(evento.target.value); }}><option value="">Todos los documentos</option><option value="BOLETA">Boleta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select><ChevronDown aria-hidden="true" /></label>
+    </div>
     <ListadoMaestro
       variante="tabla"
       titulo={`Historial de ventas de ${esMoto ? "mototaxis" : "repuestos"}`}
       registros={ventas}
       cargando={cargando}
       error={error}
-      vacio={<div className={ventasClasses.empty}><strong>No hay ventas para mostrar</strong></div>}
+      vacio={<div className={ventasClasses.empty}><strong>No hay ventas para mostrar</strong><span>Prueba con otra búsqueda o con otro tipo de documento.</span></div>}
       claseCabecera={ventasClasses.header}
-      claseControlesCabecera={ventasClasses.controls}
-      controlesCabecera={<>
-        <label className={`${ventasClasses.search} listado-maestro-busqueda-icono`}><svg className={ventasClasses.searchIcon} viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg><input className={ventasClasses.searchInput} type="search" value={busqueda} placeholder="Buscar por código, cliente o artículo" aria-label="Buscar ventas" onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} /></label>
-        <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] font-bold uppercase tracking-[.06em] text-[#687e96]">Tipo de documento<select className="h-11 rounded-xl border border-[#d8e3ee] bg-white px-3 text-[13px] font-medium normal-case tracking-normal text-[#173554]" value={tipoDocumento} onChange={(evento) => { setPagina(1); setTipoDocumento(evento.target.value); }}><option value="">Todos los documentos</option><option value="BOLETA">Boleta</option><option value="FACTURA">Factura</option><option value="NOTA_VENTA">Nota de venta</option></select></label>
-        <label className="grid min-w-[150px] flex-1 gap-1 text-[10px] font-bold uppercase tracking-[.06em] text-[#687e96]">Medio de pago<select className="h-11 rounded-xl border border-[#d8e3ee] bg-white px-3 text-[13px] font-medium normal-case tracking-normal text-[#173554]" value={medioPago} onChange={(evento) => { setPagina(1); setMedioPago(evento.target.value); }}><option value="">Todos los medios</option><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="BILLETERA_DIGITAL">Billetera digital</option><option value="OTRO">Otro</option></select></label>
-        {conteos && <div className="hidden w-full grid-cols-5 gap-2 mobile-portrait:grid mobile-landscape:grid mobile-portrait:grid-cols-3 mobile-landscape:grid-cols-3" role="group" aria-label="Filtrar ventas móvil">
-          {([
-            ["TODAS", "Todas", conteos.todas], ["PENDIENTES", "Pendientes", conteos.pendientes], ["CON_SALDO", "Con saldo", conteos.conSaldo ?? 0],
-          ] as const).map(([estado, etiqueta, cantidad]) => {
-            const activo = estado === "CON_SALDO" ? soloConSaldo : !soloConSaldo && estadoFiltro === estado;
-            return <button key={estado} type="button" aria-pressed={activo}
-              className={`flex min-h-[52px] items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${activo ? "border-[#8eb0cf] bg-[#edf5fc] text-[#174f7c]" : "border-[#e1e8ef] bg-white text-[#52697d] hover:bg-[#f6f9fc]"}`}
-              onClick={() => { setPagina(1); if (estado === "CON_SALDO") { setSoloConSaldo(true); setEstadoFiltro("TODAS"); } else { setSoloConSaldo(false); setEstadoFiltro(estado); } }}>
-              <span className="text-xs font-semibold">{etiqueta}</span><strong className="text-lg tabular-nums">{cantidad.toLocaleString("es-PE")}</strong></button>;
-          })}
-        </div>}
-        {conteos && <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-5 mobile-portrait:hidden mobile-landscape:hidden" role="group" aria-label="Filtrar ventas por estado">
-          {([
-            ["TODAS", "Todas", conteos.todas], ["EMITIDAS", "Emitidas", conteos.emitidas], ["PENDIENTES", "Pendientes", conteos.pendientes],
-            ["RECHAZADAS", "Rechazadas", conteos.rechazadas], ["ANULADAS", "Anuladas", conteos.anuladas],
-          ] as const).map(([estado, etiqueta, cantidad]) => <button key={estado} type="button" aria-pressed={!soloConSaldo && estadoFiltro === estado}
-            className={`flex min-h-[52px] items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${!soloConSaldo && estadoFiltro === estado ? "border-[#8eb0cf] bg-[#edf5fc] text-[#174f7c]" : "border-[#e1e8ef] bg-white text-[#52697d] hover:bg-[#f6f9fc]"}`}
-            onClick={() => { setPagina(1); setSoloConSaldo(false); setEstadoFiltro(estado); }}><span className="text-xs font-semibold">{etiqueta}</span><strong className="text-lg tabular-nums">{cantidad.toLocaleString("es-PE")}</strong></button>)}
-        </div>}
-      </>}
+      centrarCeldas={false}
       paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
       encabezadoTabla={encabezadoVentas}
       renderizarFila={(venta) => <VentaRow key={venta.id} venta={venta} onEditarNota={puedeCrear ? setNotaPorEditar : undefined} puedeEmitirNotas={puedeEmitirNotas} puedeAnular={puedeAnular} onConsultarEstado={abrirEstadoComprobante} onEmitirNota={(venta, tipo) => setNotaPorIniciar({ venta, tipo })} onAnular={abrirAnulacion} onAplicarGarantia={esMoto && puedeAplicarGarantia ? setVentaParaGarantia : undefined} />}
@@ -251,30 +276,7 @@ export function VentasPage({ tipoVenta, puedeCrear, puedeEmitirNotas = false, pu
     {ventaRechazada && <DialogoRechazo venta={ventaRechazada} error={errorReintento} guardando={guardandoReintento} consultando={consultandoRechazo} puedeCrear={puedeCrear} onClose={() => setVentaRechazada(null)} onConsultar={() => void procesarConsultaRechazo()} onReintentar={() => void procesarReintento()} />}
     {mensajeGarantia && <NotificacionFlotante tipo="exito" mensaje={mensajeGarantia} onCerrar={() => setMensajeGarantia("")} />}
     {mensajeEdicion && <NotificacionFlotante tipo="exito" mensaje={mensajeEdicion} onCerrar={() => setMensajeEdicion("")} />}
-    {notaPorEditar && puedeCrear && <DialogoEditarNotaVenta ingresoId={notaPorEditar.id} codigo={notaPorEditar.codigoComprobante} esMototaxi={esMoto} onCerrar={() => setNotaPorEditar(null)}
-      onGuardada={(mensaje) => { setNotaPorEditar(null); setMensajeEdicion(mensaje); setRevisionGarantias((n) => n + 1); }} />}
     {ventaParaGarantia && <AplicarGarantiaVentaDialog venta={ventaParaGarantia} onClose={() => setVentaParaGarantia(null)} onApplied={() => { setMensajeGarantia(`Garantía aplicada a ${ventaParaGarantia.codigoComprobante}.`); setRevisionGarantias((n) => n + 1); }} />}
-    </>}
-    {notaPorIniciar && puedeEmitirNotas && <DialogoInicioNota
-      venta={notaPorIniciar.venta} tipo={notaPorIniciar.tipo}
-      onCancelar={() => setNotaPorIniciar(null)}
-      onContinuar={() => {
-        abrirNota(notaPorIniciar.venta, notaPorIniciar.tipo);
-        setNotaPorIniciar(null);
-      }}
-    />}
-    {ventaSeleccionada && puedeEmitirNotas && <NotaAjusteFormulario
-      venta={ventaSeleccionada} fuente={fuenteNota} notas={notas} tipo={tipoNota} ajustes={ajustesNota}
-      totalAjuste={totalAjuste} cargando={cargandoFuente} error={errorNota} guardando={guardandoNota} observacion={observacionNota} cuentaFinancieraId={cuentaNotaId} medioPago={medioNota}
-      emitida={notaEmitida} onRecargar={() => { setErrorNota(""); setCargandoFuente(true); setRevisionNotas((actual) => actual + 1); }}
-      puedeAnular={puedeAnular} onCancelar={() => setVentaSeleccionada(null)}
-      onAmount={(id, monto) => setAjustesNota((actual) => ({ ...actual, [id]: monto }))}
-      onAccount={(cuentaId, medio) => { setCuentaNotaId(cuentaId); setMedioNota(medio); }}
-      onObservation={setObservacionNota} onSubmit={emitirNota} onAnular={abrirAnulacion}
-    />}
-    {documentoAnulacion && <DialogoAnulacion
-      documento={documentoAnulacion} motivo={motivoAnulacion} confirmado={confirmoNoEntregado} error={errorAnulacion} guardando={guardandoAnulacion}
-      onClose={() => setDocumentoAnulacion(null)} onMotivo={setMotivoAnulacion} onConfirmar={setConfirmoNoEntregado} onSubmit={procesarAnulacion}
-    />}
+    {dialogos}
   </section>;
 }

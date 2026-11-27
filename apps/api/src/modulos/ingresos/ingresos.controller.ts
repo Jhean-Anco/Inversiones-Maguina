@@ -60,4 +60,5 @@ export class ControladorIngresos {
   @Post(":id/notas/:idNota/anulacion/consultar") @RequierePermiso("FACTURACION.ANULAR") consultarAnulacionNota(@Param("id") id: string, @Param("idNota") idNota: string) { return this.ingresos.consultarAnulacionNota(id, idNota); }
   @Get(":id/pagos") @RequierePermiso("INGRESOS.LEER") listarPagos(@Param("id") id: string) { return this.ingresos.listarPagos(id); }
   @Post(":id/pagos") @RequierePermiso("INGRESOS.CREAR") registrarPago(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.registrarPago(id, datos, solicitud.usuario.id); }
+  @Post(":id/cobros") @RequierePermiso("INGRESOS.CREAR") registrarCobroDividido(@Param("id") id: string, @Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.ingresos.registrarCobroDividido(id, datos, solicitud.usuario.id); }
 }

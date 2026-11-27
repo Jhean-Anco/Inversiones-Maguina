@@ -1,0 +1,1 @@
+ALTER TABLE "compras_mototaxis" ALTER COLUMN "proveedor_persona_id" DROP NOT NULL;

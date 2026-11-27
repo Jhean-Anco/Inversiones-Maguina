@@ -11,7 +11,6 @@ import { ServicioEgresos } from "./modulos/egresos/egresos.service";
 import { ServicioFinanzas } from "./modulos/finanzas/finanzas.service";
 import { ServicioConductores } from "./modulos/personas/conductores.service";
 import { ServicioTransportistas } from "./modulos/personas/transportistas.service";
-import { ServicioMetas } from "./modulos/reportes/metas.service";
 import { ServicioReportes } from "./modulos/reportes/reportes.service";
 
 let contexto: ContextoPostgres;
@@ -205,9 +204,8 @@ describe("almacenamiento", () => {
   });
 });
 
-describe("reportes y metas", () => {
+describe("reportes", () => {
   const reportes = new ServicioReportes();
-  const metas = new ServicioMetas();
 
   test("el reporte de ingresos suma ventas y notas por línea y documento", async () => {
     const fecha = "2025-03-10";
@@ -252,14 +250,6 @@ describe("reportes y metas", () => {
     assert.ok((resumen.inventarioMototaxis?.unidades ?? 0) >= 2);
   });
 
-  test("guarda, reemplaza y quita metas mensuales y predeterminadas", async () => {
-    await metas.guardar({ indicador: "MARGEN", periodo: null, valor: 30 }, usuarioId, "1998-02");
-    const conMes = await metas.guardar({ indicador: "MARGEN", periodo: "1998-02", valor: 35.555 }, usuarioId, "1998-02");
-    assert.deepEqual(conMes.metas.MARGEN, { valor: 35.56, origen: "MES" });
-    assert.deepEqual((await metas.guardar({ indicador: "MARGEN", periodo: "1998-02", valor: null }, usuarioId, "1998-02")).metas.MARGEN, { valor: 30, origen: "PREDETERMINADA" });
-    assert.equal((await metas.guardar({ indicador: "MARGEN", valor: null }, usuarioId, "1998-02")).metas.MARGEN, null);
-    await assert.rejects(metas.obtener("1998-13"), BadRequestException);
-  });
 });
 
 describe("configuración de entorno", () => {

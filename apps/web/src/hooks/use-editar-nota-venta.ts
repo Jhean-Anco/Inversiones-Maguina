@@ -44,20 +44,24 @@ export function useEditarNotaVenta(ingresoId: string, onGuardada: (mensaje: stri
     return { lineas: repetida ? actual.lineas.map((linea) => linea === repetida ? { ...linea, cantidad: String(Number(linea.cantidad) + 1) } : linea) : [...actual.lineas, nueva] };
   });
 
-  async function guardar(evento?: FormEvent) {
+  /** Guarda la nota; devuelve `true` si quedó guardada (para imprimirla después). */
+  async function guardar(evento?: FormEvent, alGuardar?: () => void): Promise<boolean> {
     evento?.preventDefault();
-    if (!nota || !formulario || !nota.editable || enviando.current) return;
+    if (!nota || !formulario || !nota.editable || enviando.current) return false;
     const invalido = validarEdicion(formulario, fechaHoy());
-    if (invalido) { setError(invalido); return; }
+    if (invalido) { setError(invalido); return false; }
     enviando.current = true; setGuardando(true); setError("");
     try {
       const resultado = await servicioIngresos.editarNotaVenta(ingresoId, datosDeEdicion(formulario, nota.versionDocumento, devolucionConfirmada));
+      alGuardar?.();
       onGuardada(resultado.sinCambios ? `La nota ${resultado.nota.codigo} no tenía cambios por guardar.` : `La nota ${resultado.nota.codigo} se actualizó.`);
     } catch (problema) {
       const mensaje = mensajeDe(problema, "No se pudo guardar la nota de venta.");
       if (problema instanceof ErrorApi && problema.estado === 409 && mensaje.includes("Confirma la devolución")) setRequiereDevolucion(true);
       setError(mensaje);
+      return false;
     } finally { enviando.current = false; setGuardando(false); }
+    return true;
   }
 
   return {

@@ -127,5 +127,7 @@ export const servicioIngresos = {
     return solicitarApi<IngresoCreado>("/ingresos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
   },
   listarPagos(ingresoId: string, fechaEvaluacion?: string) { const consulta = fechaEvaluacion ? `?fechaEvaluacion=${encodeURIComponent(fechaEvaluacion)}` : ""; return solicitarApi<TrazabilidadPagosIngreso>(`/ingresos/${encodeURIComponent(ingresoId)}/pagos${consulta}`); },
+  /** Cobro repartido en varias cuentas (sin repetir cuenta); el efectivo puede indicar lo recibido para el vuelto. */
+  registrarCobroDividido(ingresoId: string, datos: { idempotencyKey: string; fechaPago: string; partes: { medioPago: string; cuentaFinancieraId: string; importeAplicado: string; importeRecibido?: string }[] }) { return solicitarApi<PagoIngreso[]>(`/ingresos/${encodeURIComponent(ingresoId)}/cobros`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
   registrarPago(ingresoId: string, datos: DatosPagoIngreso) { return solicitarApi<PagoIngreso>(`/ingresos/${encodeURIComponent(ingresoId)}/pagos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }); },
 };

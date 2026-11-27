@@ -22,6 +22,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [fecha, setFecha] = useState(fechaHoy());
   const [tipoDocumento, setTipoDocumento] = useState("FACTURA");
   const [numeroDocumento, setNumeroDocumento] = useState("");
@@ -116,7 +117,25 @@ export function useEntradasStock(alGuardarse?: () => void) {
     setProductoElegido(""); setProductoBusqueda(""); setProductosEncontrados([]); setCantidadProducto("1"); setCostoProducto("");
   }
 
+  /** Carga una compra registrada en el formulario para editarla (líneas, proveedor y datos del documento). */
+  function abrirEdicion(entrada: EntradaStock) {
+    abrirNuevo();
+    setEditandoId(entrada.id);
+    setFecha(entrada.fecha.slice(0, 10)); setTipoDocumento(entrada.tipoDocumento);
+    setNumeroDocumento(entrada.tipoDocumento === "SIN_DOCUMENTO" ? "" : entrada.numeroDocumento ?? "");
+    setObservacion(entrada.observacion ?? "");
+    datosProveedor.setProveedor(entrada.proveedor ?? ""); datosProveedor.setProveedorTipoPersona(entrada.proveedorTipoPersona ?? "");
+    datosProveedor.setProveedorTipoDocumento(entrada.proveedorTipoDocumento ?? ""); datosProveedor.setProveedorNumeroDocumento(entrada.proveedorNumeroDocumento ?? "");
+    datosProveedor.setProveedorDireccion(entrada.proveedorDireccion ?? ""); datosProveedor.setDatosProveedorEditables(false);
+    setDetalles((entrada.detalles ?? []).map((detalle) => ({
+      clave: claveLocal(), productoId: detalle.productoId, presentacionId: detalle.presentacionId, codigo: detalle.codigoProducto,
+      nombre: detalle.nombreProducto, presentacion: detalle.presentacion, unidad: detalle.unidadMedidaCodigo,
+      cantidad: String(Number(detalle.cantidad)), costoUnitario: Number(detalle.costoUnitario).toFixed(4),
+      importeTotal: Number(detalle.subtotal).toFixed(2), factor: Number(detalle.factorAUnidadBase),
+    })));
+  }
   function abrirNuevo() {
+    setEditandoId(null);
     claveCompra.current = globalThis.crypto?.randomUUID?.();
     setError(""); setFecha(fechaHoy()); setTipoDocumento("FACTURA"); setNumeroDocumento(""); datosProveedor.limpiarProveedor(); setMedioPago(""); setCuentaFinancieraId(""); setObservacion(""); setPagosCompra([{ clave: claveLocal(), cuentaFinancieraId: "", medioPago: "", importe: "" }]);
     setProductoBusqueda(""); setProductosEncontrados([]); setProductoElegido(""); setCantidadProducto("1"); setCostoProducto(""); setDetalles([]); setModalAbierto(true);
@@ -135,21 +154,22 @@ export function useEntradasStock(alGuardarse?: () => void) {
     setCargandoDetalle(true); setError("");
     void servicioEntradasStock.consultar(id).then(setEntradaDetalle).catch((problema) => manejarError(problema, "No se pudo cargar el detalle de la entrada.")).finally(() => setCargandoDetalle(false));
   }
-  async function guardar(evento: FormEvent<HTMLFormElement>) {
+  async function guardar(evento: FormEvent<HTMLFormElement>, pagosDirectos?: DatosEntradaStock["pagos"]): Promise<EntradaStock | null> {
     evento.preventDefault(); setError("");
-    if (!detalles.length) { setError("Agrega al menos un producto comprado para registrar la compra."); return; }
-    if (detalles.some((detalle) => Number(detalle.importeTotal) <= 0 || Number(detalle.cantidad) <= 0)) { setError("Completa la cantidad y el precio total de cada repuesto."); return; }
-    const pagos = pagosCompra.map((pago) => ({ cuentaFinancieraId: pago.cuentaFinancieraId, medioPago: pago.medioPago, importePagado: pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "0") }));
-    if (pagosCompra.some((pago) => !pago.cuentaFinancieraId || !pago.medioPago || Number(pago.importe || (pagosCompra.length === 1 ? totalBorrador : 0)) <= 0) || Math.round(pagos.reduce((suma, pago) => suma + Number(pago.importePagado), 0) * 100) !== Math.round(totalBorrador * 100)) { setError("Completa los importes y las cuentas. La suma debe coincidir con el total de la compra."); return; }
+    if (!detalles.length) { setError("Agrega al menos un producto comprado para registrar la compra."); return null; }
+    if (detalles.some((detalle) => Number(detalle.importeTotal) <= 0 || Number(detalle.cantidad) <= 0)) { setError("Completa la cantidad y el precio total de cada repuesto."); return null; }
+    const pagos = pagosDirectos ?? pagosCompra.map((pago) => ({ cuentaFinancieraId: pago.cuentaFinancieraId, medioPago: pago.medioPago, importePagado: pago.importe || (pagosCompra.length === 1 ? totalBorrador.toFixed(2) : "0") }));
+    if (pagos.some((pago) => !pago.cuentaFinancieraId || !pago.medioPago || Number(pago.importePagado) <= 0) || Math.round(pagos.reduce((suma, pago) => suma + Number(pago.importePagado), 0) * 100) !== Math.round(totalBorrador * 100)) { setError("Completa los importes y las cuentas. La suma debe coincidir con el total de la compra."); return null; }
     const montoPagado = totalBorrador.toFixed(2);
     const sinDocumento = tipoDocumento === "SIN_DOCUMENTO";
     const datos: DatosEntradaStock = { claveIdempotencia: claveCompra.current, fecha, tipoDocumento, numeroDocumento: sinDocumento ? "" : numeroDocumento.trim(), proveedor: sinDocumento ? "" : datosProveedor.proveedor.trim(), proveedorTipoPersona: sinDocumento ? null : datosProveedor.proveedorTipoPersona, proveedorTipoDocumento: sinDocumento ? null : datosProveedor.proveedorTipoDocumento, proveedorNumeroDocumento: sinDocumento ? "" : datosProveedor.proveedorNumeroDocumento.trim(), proveedorDireccion: sinDocumento ? "" : datosProveedor.proveedorDireccion.trim(), medioPago: pagos.length === 1 ? pagos[0].medioPago : null, cuentaFinancieraId: pagos.length === 1 ? pagos[0].cuentaFinancieraId : null, montoPagado, pagos, observacion: observacion.trim(), detalles: detalles.map(({ productoId, presentacionId, cantidad, costoUnitario, importeTotal }) => ({ productoId, presentacionId, cantidad, costoUnitario, importeTotal })) };
     setGuardando(true);
     try {
-      await servicioEntradasStock.crear(datos);
+      const creada = editandoId ? await servicioEntradasStock.actualizar(editandoId, { ...datos, claveIdempotencia: undefined }) : await servicioEntradasStock.crear(datos);
       setModalAbierto(false); setPagina(1); await cargarPagina(1, porPagina, busqueda);
       alGuardarse?.();
-    } catch (problema) { manejarError(problema, "No se pudo registrar la compra."); }
+      return creada;
+    } catch (problema) { manejarError(problema, "No se pudo registrar la compra."); return null; }
     finally { setGuardando(false); }
   }
   async function anularCompra(id: string, motivo: string) {
@@ -164,7 +184,7 @@ export function useEntradasStock(alGuardarse?: () => void) {
     entradas: paginaDatos.items, total: paginaDatos.total, pagina, porPagina, totalPaginas: paginaDatos.totalPaginas, conteosPago: paginaDatos.conteosPago, filtroPago, setFiltroPago,
     desde: paginaDatos.total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, paginaDatos.total),
     cargando, error, setError, busqueda, setBusqueda, cambiarPagina: setPagina, cambiarPorPagina,
-    modalAbierto, abrirNuevo, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
+    modalAbierto, abrirNuevo, abrirEdicion, editandoId, cerrarModal: () => { if (!guardando) setModalAbierto(false); }, guardando,
     fecha, setFecha, tipoDocumento, setTipoDocumento, numeroDocumento, setNumeroDocumento, ...datosProveedor, medioPago, setMedioPago, cuentaFinancieraId, setCuentaFinancieraId, observacion, setObservacion,
     productoBusqueda, cambiarBusquedaProducto, productosEncontrados, buscandoProductos, productoElegido, productosRecientes: catalogoRecienteRepuestos.recientes, seleccionarProductoReciente,
     seleccionarProductoCompra, limpiarProductoElegido, cantidadProducto, setCantidadProducto, costoProducto, setCostoProducto,

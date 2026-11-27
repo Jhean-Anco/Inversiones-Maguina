@@ -62,6 +62,7 @@ export type EntradaStock = {
   anuladoPor?: string | null;
   motivoAnulacion?: string | null;
   detalles?: DetalleEntradaStock[];
+  pagos?: Array<{ cuentaFinancieraId: string | null; medioPago: string; importePagado: string }>;
   detallesDocumento?: Array<Omit<LineaDocumentoCompra, "codigo" | "unidad"> & { id: string; orden: number; codigo: string | null; unidad: string | null }>;
 };
 
@@ -96,6 +97,9 @@ export const servicioEntradasStock = {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ motivo }),
   }),
   buscarProductos: (busqueda: string) => solicitarApi<ProductoParaCompra[]>(`/inventario/entradas-stock/productos?busqueda=${encodeURIComponent(busqueda)}`),
+  actualizar: (id: string, datos: DatosEntradaStock) => solicitarApi<EntradaStock>(`/inventario/entradas-stock/${encodeURIComponent(id)}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos),
+  }),
   crear: (datos: DatosEntradaStock) => solicitarApi<EntradaStock>("/inventario/entradas-stock", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos),
   }),

@@ -4,6 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
 import { servicioPersonal, type PersonaPersonal } from "../../services/personal.service";
 import { documentoDeOrden } from "./documento-orden";
+import { useAltaRapidaRepuesto } from "../../components/productos/use-alta-rapida-repuesto";
+import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
+import { mensajeErrorImpresion } from "../../impresion/use-impresion";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import { useOrdenesServicioListado } from "./use-ordenes-servicio-listado";
 import { OrdenServicioEditor } from "./orden-servicio-editor";
@@ -43,6 +47,7 @@ type EstadoFormularioOrden = {
 };
 const claveEstadoFormulario = (datos: EstadoFormularioOrden) => JSON.stringify(datos);
 export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
+  const imprimirAlGuardar = useImprimirAlEmitir(useAlertas());
   const navegar = useNavigate();
   const listado = useOrdenesServicioListado();
   const { ordenes, busqueda, setBusqueda, cargando, error, setError, cargarOrdenes } = listado;
@@ -62,6 +67,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [productos, setProductos] = useState<ProductoParaIngreso[]>([]);
   const [buscandoProductos, setBuscandoProductos] = useState(false);
   const lineasForm = useOrdenServicioLineas({ setBusquedaProducto, setProductos });
+  const altaRepuesto = useAltaRapidaRepuesto({ busqueda: busquedaProducto, alCrear: (producto) => lineasForm.agregarProducto(producto), alError: (mensaje) => lineasForm.setErrorServicio(mensaje) });
   const { lineas, setLineas, errorServicio, setErrorServicio, agregarProducto, agregarProductoReciente, productosRecientes, agregarServicio, actualizarLinea } = lineasForm;
   const [vehiculo, setVehiculo] = useState({ placa: "", diagnostico: "" });
   const [motivo, setMotivo] = useState("");
@@ -225,15 +231,22 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
     if (!trabajadorResponsableId) { setError("Selecciona a la persona responsable de revisar el móvil."); return; }
     if (lineas.some(lineaServicioIncompleta)) { setErrorServicio("Completa la descripción, cantidad y precio del servicio antes de guardar."); return; }
     if (Number(adelanto) > 0 && !adelantoCuentaId) { setError("Selecciona la cuenta donde se recibió el adelanto."); return; }
+    // Imprimir es la acción principal: la impresora se pide en el clic (gesto del usuario) y la orden se guarda antes de imprimir.
+    let preparada;
+    try { preparada = await imprimirAlGuardar.preparar("TICKET"); }
+    catch (problema) { setError(mensajeErrorImpresion(problema)); return; }
     setGuardando(true); setError("");
     try {
+      let guardada: OrdenServicio;
       if (ordenActiva) {
-        await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { trabajadorResponsableId, condicionRecepcion, motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico, detalles: lineas, estado, fechaAcabado });
+        guardada = await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { trabajadorResponsableId, condicionRecepcion, motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico, detalles: lineas, estado, fechaAcabado });
       } else {
-        await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, trabajadorResponsableId, condicionRecepcion, vehiculoPlaca: vehiculo.placa.trim().toLocaleUpperCase("es-PE"), motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico.trim() || null, fechaRecepcion, fechaAcabado, detalles: lineas });
+        guardada = await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, trabajadorResponsableId, condicionRecepcion, vehiculoPlaca: vehiculo.placa.trim().toLocaleUpperCase("es-PE"), motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico.trim() || null, fechaRecepcion, fechaAcabado, detalles: lineas });
       }
       claveFormularioInicial.current = null;
-      setEnFormulario(false); setOrdenActiva(null); await cargarOrdenes();
+      const impresa = { ...guardada, clienteNombre: guardada.clienteNombre || ordenActiva?.clienteNombre || (cliente ? cliente.razonSocial || [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" ") : ""), responsableNombre: guardada.responsableNombre ?? (() => { const p = personal.find((persona) => persona.id === trabajadorResponsableId); return p ? [p.nombres, p.apellidoPaterno, p.apellidoMaterno].filter(Boolean).join(" ") : null; })() };
+      setEnFormulario(false); setOrdenActiva(null);
+      await Promise.all([cargarOrdenes(), imprimirAlGuardar.imprimir(() => documentoDeOrden(impresa), preparada)]);
     } catch (problema) { setError(problema instanceof Error ? problema.message : "No se pudo guardar la orden."); }
     finally { setGuardando(false); }
   }
@@ -294,7 +307,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
         onSeleccionar: clientesForm.seleccionarCliente,
         onAgregar: () => { setError(""); clientesForm.setMostrarFormularioCliente(true); },
       }}
-      detalle={{ lineas, error: errorServicio, recientes: productosRecientes, onAgregarReciente: (item) => void agregarProductoReciente(item), buscando: buscandoProductos, onAgregarServicio: agregarServicio, onAgregarProducto: agregarProducto, onActualizarLinea: actualizarLinea, onQuitarLinea: (indice) => { setLineas((actuales) => actuales.filter((_, i) => i !== indice)); setErrorServicio(""); } }}
+      detalle={{ lineas, error: errorServicio, recientes: productosRecientes, onAgregarReciente: (item) => void agregarProductoReciente(item), buscando: buscandoProductos, onAgregarServicio: agregarServicio, onAgregarProducto: agregarProducto, onActualizarLinea: actualizarLinea, onQuitarLinea: (indice) => { setLineas((actuales) => actuales.filter((_, i) => i !== indice)); setErrorServicio(""); }, onCrearRepuesto: () => void altaRepuesto.abrir() }}
       pago={{
         motivo,
         onMotivo: setMotivo,
@@ -306,13 +319,14 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
         onCuenta: (id, medio) => { setAdelantoCuentaId(id); setAdelantoMedioPago(medio); },
         guardando,
         guardarDeshabilitado: guardando || (!ordenActiva && (!codigoOrdenPrevisualizado || consultandoNumeroOrden || errorConsultaNumeroOrden)),
-        etiquetaGuardar: guardando ? "Guardando?" : ordenActiva ? "Guardar cambios" : "Guardar orden",
+        etiquetaGuardar: guardando ? "Imprimiendo…" : "Imprimir orden",
         onCancelar: cancelarFormulario,
       }}
       formatearSoles={soles}
       importes={importesOrden(lineas)}
     />
     {confirmarCancelacion && <ConfirmarDescartarOrden onSeguirEditando={() => setConfirmarCancelacion(false)} onDescartar={descartarFormulario} />}
+    {altaRepuesto.dialogo}
     {clientesForm.mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={clientesForm.registrarCliente} onCancelar={() => clientesForm.setMostrarFormularioCliente(false)} />, document.body)}
   </>;
 

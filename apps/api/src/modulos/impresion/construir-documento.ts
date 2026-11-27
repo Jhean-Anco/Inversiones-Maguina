@@ -17,7 +17,8 @@ export function horaPeru(fecha: Date | string | null | undefined) {
 }
 
 function advertenciasBase(emisor: EmisorImpresion | null) {
-  return emisor ? [] : ["Configura los datos de la empresa (RUC, razón social y dirección) para que aparezcan en el comprobante impreso."];
+  void emisor;
+  return [] as string[];
 }
 
 export type EntradaElectronico = {

@@ -11,6 +11,18 @@ test("acepta solo el contenido exacto de la migración destructiva autorizada y 
   }), true);
 });
 
+test("acepta la relajación de proveedor solo con el blob exacto y la etiqueta del PR", () => {
+  const base = {
+    findings: ["packages/database/migrations/0199_compra_mototaxi_sin_proveedor.sql:1: operación potencialmente destructiva"],
+    approvalLabel: "true",
+    migrationPaths: ["packages/database/migrations/0199_compra_mototaxi_sin_proveedor.sql"],
+    migrationBlob: "bcc1ad2da4e6a2d276457d027c601e26b8dd763c",
+  };
+  assert.equal(isApprovedDestructiveMigration(base), true);
+  assert.equal(isApprovedDestructiveMigration({ ...base, approvalLabel: "false" }), false);
+  assert.equal(isApprovedDestructiveMigration({ ...base, migrationBlob: "changed" }), false);
+});
+
 test("mantiene bloqueadas migraciones destructivas sin aprobación externa o con cambios al contenido aprobado", () => {
   const base = {
     findings: ["packages/database/migrations/0189_retirar_fotografias.sql:8: operación potencialmente destructiva"],

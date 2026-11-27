@@ -112,7 +112,7 @@ Restricciones e indices declarados:
 |---|---|---|---|---|---|
 | `id` | `uuid` | NULL | PK | yes | - |
 | `codigo` | `varchar` | NOT NULL | UNIQUE | - | - |
-| `proveedor_persona_id` | `uuid` | NOT NULL | FK | - | proveedores.personaId |
+| `proveedor_persona_id` | `uuid` | NULL | FK | - | proveedores.personaId |
 | `fecha` | `date` | NOT NULL | - | - | - |
 | `documento_tipo` | `varchar` | NOT NULL | - | - | - |
 | `documento_numero` | `varchar` | NULL | - | - | - |
@@ -945,7 +945,9 @@ Restricciones e indices declarados:
 | `id` | `uuid` | NULL | PK | yes | - |
 | `codigo` | `varchar` | NOT NULL | UNIQUE | - | - |
 | `cliente_id` | `uuid` | NULL | FK | - | clientes.personaId |
+| `trabajador_responsable_id` | `uuid` | NULL | FK | - | trabajadores.personaId |
 | `vehiculo_placa` | `varchar` | NOT NULL | - | - | - |
+| `condicion_recepcion` | `text` | NULL | - | - | - |
 | `motivo` | `text` | NOT NULL | - | - | - |
 | `adelanto` | `numeric` | NOT NULL | - | yes | - |
 | `adelanto_medio_pago` | `varchar` | NULL | - | - | - |

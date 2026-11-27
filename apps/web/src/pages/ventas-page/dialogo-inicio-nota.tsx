@@ -24,7 +24,7 @@ export function DialogoInicioNota({ venta, tipo, onCancelar, onContinuar }: Prop
       {esCredito
         ? <>Se usará para reducir el precio del comprobante y registrar la devolución desde la cuenta que elijas.</>
         : <>Se usará para aumentar el precio del comprobante y registrar el ingreso de la diferencia en la cuenta que elijas.</>}
-      <span className="mt-2 block text-[12px]">Al abrir el formulario todavía podrás revisar los importes. La nota se emitirá al completar el formulario y pulsar Continuar.</span>
+      <span className="mt-2 block text-[12px]">Al abrir el formulario todavía podrás revisar los importes. La nota se emitirá e imprimirá al pulsar «Imprimir nota de {nombreNota}».</span>
     </>}
     etiquetaCancelar="Cancelar"
     etiquetaConfirmar="Abrir formulario"

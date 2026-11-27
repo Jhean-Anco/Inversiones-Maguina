@@ -7,11 +7,13 @@ type Propiedades = {
   alGuardar: (datos: DatosProducto) => Promise<boolean>;
   alCrearMarca: (nombre: string) => Promise<{ id: string; nombre: string; advertencia?: string }>;
   alCrearCategoria: (nombre: string) => Promise<{ id: string; nombre: string; advertencia?: string }>;
+  /** Alta rápida: precarga el nombre o el código de barras buscado. */
+  valoresIniciales?: { nombre?: string; codigoBarras?: string };
 };
 
 const claveLocal = () => globalThis.crypto?.randomUUID?.() ?? `presentacion-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export function useProductoFormulario({ producto, alGuardar, alCrearMarca, alCrearCategoria }: Propiedades) {
+export function useProductoFormulario({ producto, valoresIniciales, alGuardar, alCrearMarca, alCrearCategoria }: Propiedades) {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
@@ -43,6 +45,9 @@ export function useProductoFormulario({ producto, alGuardar, alCrearMarca, alCre
     const adicionales = (producto?.presentaciones ?? []).filter((item) => !item.esBase).map((item) => ({ ...item, clave: item.clave ?? item.id ?? claveLocal() }));
     setPresentaciones(adicionales);
     setMarcaNueva(""); setErrorLocal(""); setCategoriaModalAbierto(false); setCategoriaNueva("");
+    if (!producto && valoresIniciales?.nombre) setNombre(valoresIniciales.nombre);
+    if (!producto && valoresIniciales?.codigoBarras) setCodigos([{ clave: claveLocal(), tipo: "BARRAS", codigo: valoresIniciales.codigoBarras }]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- los valores iniciales solo se aplican al abrir
   }, [producto]);
 
   async function crearMarca() {

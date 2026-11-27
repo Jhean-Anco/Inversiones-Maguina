@@ -1,23 +1,22 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import type { KeyboardEvent, ReactNode, SelectHTMLAttributes } from "react";
 
-export const claseCampoGuia = "grid min-w-0 content-start gap-1.5 text-[13px] font-semibold text-foreground";
-export const claseControlGuia = "min-h-10 w-full min-w-0 rounded-md border border-input bg-surface px-3 py-2 text-sm font-normal text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-60";
-export const claseOpcionGuia = "flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 border-b border-border px-3 py-2.5 text-left last:border-b-0 hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-60";
-export const claseResultadosGuia = "max-h-44 overflow-y-auto rounded-md border border-border bg-surface";
+/** Campos con la base `os-*` de Órdenes de servicio (46px, radio 10px, foco azul). */
+export const claseCampoGuia = "os-campo";
 
-export function SeccionGuia({ titulo, icono, children }: { titulo: string; icono: ReactNode; children: ReactNode }) {
+export function SeccionGuia({ paso, titulo, id, extra, children }: { paso: number; titulo: string; id: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <fieldset className="m-0 min-w-0 border-0 px-0 max-md:pb-0">
-      <legend className="mb-3 w-full px-0">
-        <span className="flex items-center gap-2.5">
-          <span className="grid size-8 shrink-0 place-items-center rounded-md bg-[#eaf2f9] text-primary [&>svg]:size-[17px]" aria-hidden="true">{icono}</span>
-          <span className="text-base font-bold tracking-[-.015em] text-foreground">{titulo}</span>
-          <span aria-hidden="true" className="min-w-3 flex-1 border-t border-dashed border-input" />
-        </span>
-      </legend>
+    <section className="os-tarjeta" aria-labelledby={id}>
+      <div className="os-tarjeta-cabecera">
+        <div className="os-titulo"><span className="os-paso" aria-hidden="true">{paso}</span><h3 id={id}>{titulo}</h3>{extra}</div>
+      </div>
       {children}
-    </fieldset>
+    </section>
   );
+}
+
+export function SelectGuia({ children, ...propiedades }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <span className="os-select"><select {...propiedades}>{children}</select><ChevronDown aria-hidden="true" size={16} /></span>;
 }
 
 export function evitarEnvioBusqueda(evento: KeyboardEvent<HTMLInputElement>) {

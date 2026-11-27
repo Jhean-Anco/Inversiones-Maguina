@@ -2,16 +2,13 @@ import { useMemo, useState } from "react";
 import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import type { Cotizacion } from "../../services/ingresos.service";
 import { CotizacionesListado } from "./cotizaciones-listado";
-import { cotizacionClases } from "./cotizacion-clases";
+import { cotizacionesListadoClasses as c } from "./cotizaciones-tabla-classes";
+import { grupoEstado, type GrupoEstadoCotizacion } from "./estados-cotizacion";
 import type { EstadoVisibleCotizacion } from "./use-gestion-listado";
 
-type FiltroCotizacion = "TODAS" | EstadoVisibleCotizacion;
-
-const filtros: { valor: FiltroCotizacion; etiqueta: string }[] = [
-  { valor: "TODAS", etiqueta: "Todas" },
-  { valor: "ACTIVA", etiqueta: "Activas" },
-  { valor: "EMITIDA", etiqueta: "Emitidas" },
-  { valor: "INACTIVA", etiqueta: "Inactivas" },
+const filtros: { valor: GrupoEstadoCotizacion; etiqueta: string }[] = [
+  { valor: "ABIERTA", etiqueta: "Abiertas" },
+  { valor: "CERRADA", etiqueta: "Cerradas" },
 ];
 
 type Props = {
@@ -33,63 +30,41 @@ type Props = {
 };
 
 export function GestionListadoVista(props: Props) {
-  const {
-    busqueda, setBusqueda, desde, setDesde, hasta, setHasta,
-    cotizaciones, cargando, estadoVisible, documentoCompletado, mensajeWhatsApp,
-    documentoImprimible, prepararDocumento, puedeCrear, editar,
-  } = props;
-  const [filtro, setFiltro] = useState<FiltroCotizacion>("TODAS");
+  const { busqueda, setBusqueda, desde, setDesde, hasta, setHasta, cotizaciones, estadoVisible, ...resto } = props;
+  const [filtro, setFiltro] = useState<GrupoEstadoCotizacion>("ABIERTA");
   const conteos = useMemo(() => {
-    const porEstado = new Map<FiltroCotizacion, number>([["TODAS", cotizaciones.length]]);
+    const porGrupo = new Map<GrupoEstadoCotizacion, number>();
     for (const cotizacion of cotizaciones) {
-      const estado = estadoVisible(cotizacion);
-      porEstado.set(estado, (porEstado.get(estado) ?? 0) + 1);
+      const grupo = grupoEstado(estadoVisible(cotizacion));
+      porGrupo.set(grupo, (porGrupo.get(grupo) ?? 0) + 1);
     }
-    return porEstado;
+    return porGrupo;
   }, [cotizaciones, estadoVisible]);
   const visibles = useMemo(
-    () => filtro === "TODAS" ? cotizaciones : cotizaciones.filter((cotizacion) => estadoVisible(cotizacion) === filtro),
+    () => cotizaciones.filter((cotizacion) => grupoEstado(estadoVisible(cotizacion)) === filtro),
     [cotizaciones, estadoVisible, filtro],
   );
 
-  const controles = (
-    <div className="flex w-full min-w-0 flex-col gap-3">
-      <div className={`gestion-ingresos-heading cotizaciones-list-filters ${cotizacionClases.listFilters} ${cotizacionClases.filtersMobile}`}>
-        <label className={`${cotizacionClases.searchField} listado-maestro-busqueda-icono`}>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-          <input
-            type="search"
-            aria-label="Buscar cotizaciones"
-            placeholder="Buscar por código o cliente"
-            value={busqueda}
-            onChange={(evento) => setBusqueda(evento.target.value)}
-          />
-        </label>
-        <label className={cotizacionClases.filterLabel}>Vigencia desde<input className={cotizacionClases.filterControl} type="date" value={desde} onChange={(evento) => setDesde(evento.target.value)} /></label>
-        <label className={cotizacionClases.filterLabel}>Vigencia hasta<input className={cotizacionClases.filterControl} type="date" value={hasta} onChange={(evento) => setHasta(evento.target.value)} /></label>
-      </div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
-        {filtros.filter(({ valor }) => valor === "TODAS" || (conteos.get(valor) ?? 0) > 0 || valor === filtro).map(({ valor, etiqueta }) => (
-          <button key={valor} className={cotizacionClases.filterChip} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>
-            {etiqueta}<span className={cotizacionClases.filterChipCount}>{conteos.get(valor) ?? 0}</span>
-          </button>
-        ))}
+  return <section className={c.page}>
+    <div className={c.toolbar}>
+      <label className={`${c.search} listado-maestro-busqueda-icono`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+        <input type="search" aria-label="Buscar cotizaciones" placeholder="Buscar por código o cliente" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} />
+      </label>
+      <label className={c.dateField}>Vigencia desde<input type="date" value={desde} onChange={(evento) => setDesde(evento.target.value)} /></label>
+      <label className={c.dateField}>Hasta<input type="date" aria-label="Vigencia hasta" value={hasta} onChange={(evento) => setHasta(evento.target.value)} /></label>
+      <div className={c.filters} role="group" aria-label="Filtrar por estado">
+        {filtros.map(({ valor, etiqueta }) => <button key={valor} className={c.chip} type="button" aria-pressed={filtro === valor} onClick={() => setFiltro(valor)}>
+          {etiqueta}<span className={c.chipCount}>{conteos.get(valor) ?? 0}</span>
+        </button>)}
       </div>
     </div>
-  );
-
-  return <CotizacionesListado
-    controlesCabecera={controles}
-    cotizaciones={visibles}
-    cargando={cargando}
-    filtroEstadoActivo={filtro !== "TODAS"}
-    resetKey={filtro}
-    estadoVisible={estadoVisible}
-    documentoCompletado={documentoCompletado}
-    mensajeWhatsApp={mensajeWhatsApp}
-    documentoImprimible={documentoImprimible}
-    prepararDocumento={prepararDocumento}
-    puedeCrear={puedeCrear}
-    editar={editar}
-  />;
+    <CotizacionesListado
+      {...resto}
+      cotizaciones={visibles}
+      hayFiltros={Boolean(busqueda || desde || hasta) || cotizaciones.length > 0}
+      resetKey={`${busqueda}|${desde}|${hasta}|${filtro}`}
+      estadoVisible={estadoVisible}
+    />
+  </section>;
 }

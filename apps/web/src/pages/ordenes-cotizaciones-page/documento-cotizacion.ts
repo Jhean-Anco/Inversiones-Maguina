@@ -8,18 +8,18 @@ import { calcularTotalesCotizacion, importeLineaCotizacion } from "./gestion-uti
  * `clienteNombre` permite imprimir con el cliente recién elegido antes de que el listado se actualice.
  */
 export async function documentoDeCotizacion(cotizacion: Cotizacion, clienteNombre?: string | null): Promise<DocumentoImprimible> {
-  const { subtotal, igv, total, tasaIgv } = calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv);
+  const { total } = calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv);
   return documentoInterno({
     tipo: "COTIZACION", titulo: "COTIZACIÓN", codigo: cotizacion.codigo, fecha: cotizacion.fecha, vencimiento: cotizacion.vigenteHasta,
-    contraparte: clienteNombre ?? cotizacion.clienteNombre ?? "Sin cliente",
-    datosExtra: [{ etiqueta: "Estado", valor: cotizacion.estado }],
+    contraparte: clienteNombre?.trim() || cotizacion.clienteNombre?.trim() || "Clientes varios",
     lineas: cotizacion.detalles.map((linea) => {
       const cantidad = Number(linea.cantidad ?? 1);
       return { descripcion: String(linea.nombreVisible ?? linea.descripcion ?? "Repuesto"), cantidad, precioUnitario: Number(linea.precioUnitario ?? 0), descuento: Number(linea.descuento ?? 0), total: importeLineaCotizacion(linea) };
     }),
-    importes: { total, subtotal: subtotal ?? undefined, igv: igv ?? undefined, tasaIgv },
+    // Sin desglose de IGV: la cotización solo muestra el total.
+    importes: { total },
     observacion: cotizacion.observacion,
-    leyenda: "Cotización sujeta a vigencia y disponibilidad de stock. Documento sin valor tributario.",
+    leyenda: "",
     emisor: await emisorParaImpresion(),
   });
 }

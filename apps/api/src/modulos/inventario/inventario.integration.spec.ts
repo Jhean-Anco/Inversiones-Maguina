@@ -141,6 +141,29 @@ describe("entradas de stock", () => {
     assert.equal((await productos.historial(productoId)).compra?.importe, "10.0000");
   });
 
+  test("edita una compra conservando el código: ajusta stock y pagos, y protege el stock ya usado", async () => {
+    const { productoId, presentacionId } = await contexto.crearProducto({ categoriaId, marcaId });
+    const original = await entradas.crear(compra(productoId, presentacionId), usuarioId);
+    const saldoEs = (cantidad: number) => assert.rejects(movimientos.crearAjuste({ productoId, cantidadContada: cantidad, motivo: "OTRO" }, usuarioId), esBadRequest(/coincide/));
+    await saldoEs(3);
+    const editada = await entradas.actualizar(original.id, compra(productoId, presentacionId, {
+      observacion: "Corregida", pagos: [{ cuentaFinancieraId: cuentaId, medioPago: "EFECTIVO", importePagado: 50 }],
+      detalles: [{ productoId, presentacionId, cantidad: 5, costoUnitario: 10, importeTotal: 50 }],
+    }), usuarioId);
+    assert.deepEqual([editada.codigo, editada.numeroDocumento, editada.total, editada.detalles.length, Number(editada.detalles[0].cantidad), editada.observacion],
+      [original.codigo, original.numeroDocumento, "50.00", 1, 5, "Corregida"]);
+    assert.deepEqual(editada.pagos.map((pago) => pago.importePagado), ["50.00"]);
+    await saldoEs(5);
+    await movimientos.crearAjuste({ productoId, sentido: "RETIRO", cantidad: 4, motivo: "MERMA" }, usuarioId);
+    await assert.rejects(entradas.actualizar(original.id, compra(productoId, presentacionId, {
+      pagos: [{ cuentaFinancieraId: cuentaId, medioPago: "EFECTIVO", importePagado: 20 }],
+      detalles: [{ productoId, presentacionId, cantidad: 2, costoUnitario: 10, importeTotal: 20 }],
+    }), usuarioId), ConflictException);
+    await saldoEs(1);
+    await assert.rejects(entradas.actualizar(randomUUID(), compra(productoId, presentacionId), usuarioId), NotFoundException);
+    await assert.rejects(entradas.actualizar(original.id, { ...compra(productoId, presentacionId), detalles: [] }, usuarioId), esBadRequest(/Agrega lineas/));
+  });
+
 });
 
 describe("movimientos y ajustes de stock", () => {

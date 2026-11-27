@@ -75,7 +75,7 @@ test("factura a crédito sin emisor configurado: arma QR SUNAT con RUC de respal
   assert.equal(documento.cadenaQr, "20111111111|01|F001|000007|18.00|118.00|2026-11-25|6|20999999991|HASH1|");
   assert.equal(documento.enlacePdf, "https://www.nubefact.com/cpe/1.pdf");
   assert.equal(documento.observacion, null);
-  assert.equal(documento.advertencias.length, 1);
+  assert.equal(documento.advertencias.length, 0);
   assert.match(documento.leyenda, /FACTURA ELECTRÓNICA\.$/);
 });
 
@@ -96,7 +96,7 @@ test("cliente varios, sin hash, sin RUC ni numeración: degrada con advertencias
   assert.equal(sinRuc.cadenaQr, null);
   assert.equal(sinRuc.serieNumero, "SIN NUMERAR");
   assert.equal(sinRuc.medioPago, "Otro");
-  assert.equal(sinRuc.advertencias.length, 2);
+  assert.equal(sinRuc.advertencias.length, 1);
   const sinClienteConNumero = documentoDesdeTrama({ tipo: "NOTA_DEBITO", emisor, rucRespaldo: null, creadoEn: null, condicionPago: "CONTADO", medioPago: null, tasaIgv: 18,
     datosNubefact: { solicitud: { serie: "BD01", numero: 3, fecha_de_emision: "01-12-2026", cliente_tipo_de_documento: "-", cliente_numero_de_documento: "-", total: 5, total_igv: 0.76 } } });
   assert.equal(sinClienteConNumero.cadenaQr, "20123456789|08|BD01|000003|0.76|5.00|2026-12-01|-|-||");

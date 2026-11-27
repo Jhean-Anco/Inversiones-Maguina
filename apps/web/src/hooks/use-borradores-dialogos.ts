@@ -58,7 +58,7 @@ export function useBorradoresDialogos(ruta: string, usuarioId: string | null) {
     };
     const enlazar = () => {
       document.querySelectorAll<HTMLFormElement>("form").forEach((formulario) => {
-          const dialogo = formulario.closest<HTMLElement>('[role="dialog"], [class*="backdrop"], .catalog-modal, .moto-modal');
+          const dialogo = formulario.closest<HTMLElement>('[role="dialog"], [class*="backdrop"], .catalog-modal');
           if (!dialogo || formularios.has(formulario)) return;
           const clave = claveDe(dialogo, formulario);
           const borrador = leerBorrador(clave);

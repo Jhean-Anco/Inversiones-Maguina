@@ -7,10 +7,13 @@ import { useDialogoFlotante } from "../../hooks/use-dialogo-flotante";
 import { useConfirmarCancelacionFormulario } from "../../hooks/use-confirmar-cancelacion-formulario";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
-import { nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
-import { Button } from "../../components/ui/button";
+import { BotonAccion } from "../../components/ui/boton-accion";
+import { AccionesContacto, BuscadorDirectorio, Opcional, precargaBusqueda, SelectDirectorio, VacioDirectorio } from "../../components/ui/directorio/directorio";
+import { Pencil, Save } from "lucide-react";
+import { dialogosModeloClasses as d } from "../inventario-mototaxis-page/dialogos-modelo-classes";
+import { ventasClasses as v } from "../ventas-page/ventas-classes";
 import { BotonEditarConfirmacion } from "../../components/ui/confirmar-edicion";
-import { clasesCamposPrecio, DialogoCatalogo } from "../../components/inventario/dialogo-catalogo";
+import { DialogoCatalogo } from "../../components/inventario/dialogo-catalogo";
 import { tamanioListadoSegunPantalla } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioConductores, type Conductor, type DatosConductor } from "../../services/conductores.service";
@@ -59,38 +62,46 @@ export function ConductoresPage({ puedeCrear = false, puedeEditar = false }: { p
     } finally { setGuardandoEdicion(false); }
   }
 
-  return <section className="min-w-0">
+  return <section className={v.page}>
+    {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear conductor" onClick={() => { setError(""); setAbierto(true); }} />}
+    <div className={v.toolbar}>
+      <BuscadorDirectorio valor={busqueda} alCambiar={(valor) => { setBusqueda(valor); setPagina(1); }} placeholder="Buscar por nombre, documento o licencia" etiqueta="Buscar conductor" />
+    </div>
     <ListadoMaestro<Conductor>
-      variante="tabla" titulo="Directorio de conductores" descripcion="Licencias disponibles para las guías de remisión."
+      variante="tabla" titulo="Directorio de conductores"
+      claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
       registros={conductores} cargando={cargando} error={error || undefined} resetKey={busqueda}
       paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
-      controlesCabecera={<>
-        <label className="listado-maestro-busqueda">Buscar conductor<input type="search" value={busqueda} onChange={(evento) => { setBusqueda(evento.target.value); setPagina(1); }} placeholder="Nombre, documento o licencia" /></label>
-        {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear conductor" onClick={() => { setError(""); setAbierto(true); }} />}
-      </>}
-      vacio="No hay conductores para mostrar."
-      encabezadoTabla={<tr><th>Conductor</th><th>Documento</th><th>Licencia</th><th>Teléfono</th>{puedeEditar && <th>Acciones</th>}</tr>}
-      renderizarFila={(conductor) => <tr key={conductor.id}>
-        <td><strong className={nombreRelacionListadoClasses}>{nombreDe(conductor)}</strong></td>
-        <td>{tipoVisible(conductor.tipoDocumento)} · {conductor.numeroDocumento}</td>
-        <td>{conductor.numeroLicencia}</td><td>{conductor.telefono ?? "—"}</td>
-        {puedeEditar && <td><BotonEditarConfirmacion titulo="¿Editar los datos del conductor?" descripcion={`Vas a editar la licencia y el teléfono de ${nombreDe(conductor)}. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`} etiquetaCancelar="Volver al listado" etiquetaConfirmar="Sí, editar conductor" onConfirmar={() => { setErrorEdicion(""); setEditando(conductor); }}><Button size="sm" variant="outline">Editar licencia</Button></BotonEditarConfirmacion></td>}
-      </tr>}
+      vacio={<VacioDirectorio busqueda={busqueda} entidad="conductor" ayuda="Revisa el nombre, documento o licencia, o regístralo ahora." alCrear={puedeCrear ? () => { setError(""); setAbierto(true); } : undefined} sinRegistros={<><strong>Aún no hay conductores registrados</strong><span>Los conductores registrados aquí estarán disponibles en las guías de remisión.</span></>} />}
+      encabezadoTabla={<tr><th>Conductor</th><th>Documento</th><th>Licencia</th><th>Teléfono</th><th>Acciones</th></tr>}
+      renderizarFila={(conductor) => {
+        const nombre = nombreDe(conductor);
+        return <tr key={conductor.id}>
+          <td><strong className={v.clientName}>{nombre}</strong></td>
+          <td><strong className={`${v.documentCode} [font-variant-numeric:tabular-nums]`}>{conductor.numeroDocumento}</strong><small className={v.minorText}>{tipoVisible(conductor.tipoDocumento)}</small></td>
+          <td><span className={`${v.documentCode} [font-variant-numeric:tabular-nums]`}>{conductor.numeroLicencia}</span></td>
+          <td><span className="text-[13px] text-[#142b42] [font-variant-numeric:tabular-nums]">{conductor.telefono || "Sin teléfono"}</span></td>
+          <td><div className={v.rowActions}>
+            <AccionesContacto nombre={nombre} telefono={conductor.telefono} />
+            {puedeEditar && <BotonEditarConfirmacion titulo="¿Editar los datos del conductor?" descripcion={`Vas a editar la licencia y el teléfono de ${nombre}. Los cambios solo se aplicarán cuando pulses «Guardar cambios».`} etiquetaCancelar="Volver al listado" etiquetaConfirmar="Sí, editar conductor" onConfirmar={() => { setErrorEdicion(""); setEditando(conductor); }}><BotonAccion etiqueta={`Editar licencia de ${nombre}`} tono="informativa" icono={<Pencil aria-hidden="true" />} onClick={() => undefined} /></BotonEditarConfirmacion>}
+          </div></td>
+        </tr>;
+      }}
     />
-    {editando && <DialogoCatalogo titulo="Editar datos del conductor" articulo={nombreDe(editando)} codigo={editando.numeroDocumento} alCerrar={() => setEditando(null)} guardando={guardandoEdicion} acciones={<Button type="submit" form="editar-conductor" disabled={guardandoEdicion}>Guardar cambios</Button>}>
+    {editando && <DialogoCatalogo titulo="Editar datos del conductor" articulo={nombreDe(editando)} codigo={editando.numeroDocumento} alCerrar={() => setEditando(null)} guardando={guardandoEdicion} acciones={<><button type="button" className={d.botonSecundario} onClick={() => setEditando(null)} disabled={guardandoEdicion}>Cancelar</button><button type="submit" form="editar-conductor" className={d.botonPrincipal} disabled={guardandoEdicion}><Save aria-hidden="true" size={16} />{guardandoEdicion ? "Guardando…" : "Guardar cambios"}</button></>}>
       <form id="editar-conductor" onSubmit={(evento) => void editar(evento)}>
-        <div className={clasesCamposPrecio}>
-          <label>Número de licencia<input name="numeroLicencia" defaultValue={editando.numeroLicencia} required maxLength={10} /></label>
-          <label>Teléfono<input name="telefono" type="tel" defaultValue={editando.telefono ?? ""} maxLength={30} /></label>
+        <div className="directorio-form-grid">
+          <label>Número de licencia *<input name="numeroLicencia" defaultValue={editando.numeroLicencia} required maxLength={10} /></label>
+          <label>Teléfono <Opcional /><input name="telefono" type="tel" defaultValue={editando.telefono ?? ""} maxLength={30} /></label>
         </div>
-        {errorEdicion && <p role="alert">{errorEdicion}</p>}
+        {errorEdicion && <NotificacionFlotante mensaje={errorEdicion} onCerrar={() => setErrorEdicion("")} />}
       </form>
     </DialogoCatalogo>}
-    {abierto && createPortal(<FormularioConductor onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
+    {abierto && createPortal(<FormularioConductor inicial={precargaBusqueda(busqueda)} onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
   </section>;
 }
 
-function FormularioConductor({ onGuardar, onCerrar }: { onGuardar: (datos: DatosConductor) => Promise<string | null>; onCerrar: () => void }) {
+function FormularioConductor({ onGuardar, onCerrar, inicial }: { onGuardar: (datos: DatosConductor) => Promise<string | null>; onCerrar: () => void; inicial?: { documento: string; nombre: string } }) {
   const referencia = useRef<HTMLFormElement>(null);
   const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(referencia, onCerrar, "el conductor");
   useDialogoFlotante(referencia, true, solicitarCancelacion);
@@ -111,10 +122,19 @@ function FormularioConductor({ onGuardar, onCerrar }: { onGuardar: (datos: Datos
       pantallaCompletaMovil
       cerrable={!guardando}
       onCerrar={solicitarCancelacion}
-      pie={<><button className="cursor-pointer rounded-[9px] border border-[#d5e0ea] bg-white px-[14px] text-[#49627b] font-bold" type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="conductor-form" className="min-h-10 cursor-pointer rounded-[10px] border border-[var(--action-primary-border)] bg-[var(--action-primary-surface)] px-[14px] text-xs font-bold text-[var(--action-primary)] disabled:cursor-wait disabled:opacity-[.65]" disabled={guardando}>{guardando ? "Guardando…" : "Crear conductor"}</button></>}
+      pie={<><button className="clientes-secondary-action" type="button" onClick={solicitarCancelacion}>Cancelar</button><button type="submit" form="conductor-form" className="clientes-primary-action" disabled={guardando}>{guardando ? "Guardando…" : "Crear conductor"}</button></>}
     >
     <form id="conductor-form" ref={referencia} className="grid gap-4" onSubmit={(evento) => void submit(evento)}>
-    <div className="conductores-fields grid grid-cols-2 gap-[14px] [html[data-responsive-profile=mobile-portrait]_&]:grid-cols-1 [&_label]:grid [&_label]:gap-1.5 [&_label]:text-xs [&_label]:font-bold [&_label]:text-[#526981]"><label>Tipo de documento<select className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" value={tipoDocumento} onChange={(evento) => setTipoDocumento(evento.target.value as DatosConductor["tipoDocumento"])}><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></select></label><label>Número de documento<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="numeroDocumento" required maxLength={maxDocumento} inputMode={tipoDocumento === "DNI" ? "numeric" : "text"} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : tipoDocumento === "CE" ? "[A-Za-z0-9-]{6,15}" : "[A-Za-z0-9-]{5,15}"} /></label><label>Nombres<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="nombres" required maxLength={120} /></label><label>Apellido paterno<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="apellidoPaterno" required maxLength={120} /></label><label>Apellido materno<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="apellidoMaterno" maxLength={120} /></label><label>Número de licencia<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="numeroLicencia" required maxLength={10} /></label><label className="col-span-2 [html[data-responsive-profile=mobile-portrait]_&]:col-span-1">Teléfono (opcional)<input className="min-h-[42px] w-full rounded-[9px] border border-[#d5e0ea] bg-white px-3 text-[13px] text-[#1c3652]" name="telefono" maxLength={30} /></label></div>
+    <div className="directorio-form-grid">
+      <label>Tipo de documento *<SelectDirectorio value={tipoDocumento} onChange={(evento) => setTipoDocumento(evento.target.value as DatosConductor["tipoDocumento"])}><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option></SelectDirectorio></label>
+      <label>Número de documento *<input name="numeroDocumento" defaultValue={inicial?.documento.length === 8 ? inicial.documento : ""} required maxLength={maxDocumento} inputMode={tipoDocumento === "DNI" ? "numeric" : "text"} pattern={tipoDocumento === "DNI" ? "[0-9]{8}" : tipoDocumento === "CE" ? "[A-Za-z0-9-]{6,15}" : "[A-Za-z0-9-]{5,15}"} /></label>
+      <label>Nombres *<input name="nombres" defaultValue={inicial?.nombre} required maxLength={120} /></label>
+      <label>Apellido paterno *<input name="apellidoPaterno" required maxLength={120} /></label>
+      <label>Apellido materno <Opcional /><input name="apellidoMaterno" maxLength={120} /></label>
+      <label>Número de licencia *<input name="numeroLicencia" required maxLength={10} placeholder="Ej.: Q12345678" /></label>
+      <label className="directorio-form-wide">Teléfono <Opcional /><input name="telefono" type="tel" maxLength={30} placeholder="Ej.: 987 654 321" /></label>
+
+    </div>
     </form>
     {error && <NotificacionFlotante mensaje={error} />}
     </Dialogo></>;

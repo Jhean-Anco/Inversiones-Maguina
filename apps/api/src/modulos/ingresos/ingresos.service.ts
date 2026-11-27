@@ -133,7 +133,7 @@ export class ServicioIngresos {
     if (fechaAcabado < fechaRecepcion) throw new BadRequestException("La fecha estimada de acabado no puede ser anterior a la fecha de recepción.");
     const trabajadorResponsableId = uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
     if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
-    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true);
+    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000);
     const id = randomUUID();
     const serieOrden = await this.serieActiva("ORDEN_SERVICIO");
     const [correlativoOrden] = await db.insert(correlativosDocumentosInternos).values({ tipo: "ORDEN_SERVICIO", ultimoNumero: 1 }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } }).returning({ numero: correlativosDocumentosInternos.ultimoNumero });
@@ -167,7 +167,7 @@ export class ServicioIngresos {
     const adelantoCuentaFinancieraId = adelanto > 0 ? await validarCuentaFinanciera(datos.adelantoCuentaFinancieraId ?? actual.adelantoCuentaFinancieraId, adelantoMedioPago!, true) : null;
     const [orden] = await db.update(ordenesServicio).set({ estado: estado as string,
       diagnostico: datos.diagnostico === undefined ? actual.diagnostico : texto(datos.diagnostico, "El diagnóstico", 5000),
-      motivo, trabajadorResponsableId, condicionRecepcion: datos.condicionRecepcion === undefined ? actual.condicionRecepcion : texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true), adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
+      motivo, trabajadorResponsableId, condicionRecepcion: datos.condicionRecepcion === undefined ? actual.condicionRecepcion : texto(datos.condicionRecepcion, "El comentario de recepción", 2000), adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
       fechaAcabado, detalles, notasTrabajo: typeof datos.notaAvance === "string" && datos.notaAvance.trim() ? [...actual.notasTrabajo, { fecha: new Date().toISOString(), texto: texto(datos.notaAvance, "La nota de avance", 2000, true)!, usuarioId }] : actual.notasTrabajo, actualizadoEn: new Date() })
       .where(and(eq(ordenesServicio.id, id), inArray(ordenesServicio.estado, ["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"]))).returning();
     if (!orden) throw new ConflictException("La orden cambió mientras la actualizabas. Recarga e inténtalo otra vez.");
@@ -1380,6 +1380,68 @@ export class ServicioIngresos {
         referenciaPago: ingresosPagos.referenciaPago, observacion: ingresosPagos.observacion,
         usuarioId: ingresosPagos.usuarioId, creadoEn: ingresosPagos.creadoEn });
       return pago;
+    });
+  }
+
+  /**
+   * Cobro de una venta repartido en varias cuentas (p. ej., parte en caja y parte por transferencia), en una sola transacción.
+   * Cada cuenta aparece una sola vez; solo el efectivo puede recibir más de lo aplicado (la diferencia es el vuelto).
+   */
+  async registrarCobroDividido(ingresoIdEntrada: string, valor: unknown, usuarioId: string) {
+    if (!uuidValido(ingresoIdEntrada)) throw new BadRequestException("El comprobante no es válido.");
+    if (typeof valor !== "object" || valor === null || Array.isArray(valor)) throw new BadRequestException("Los datos del cobro no son válidos.");
+    const datos = valor as Record<string, unknown>;
+    const claveIdempotencia = texto(datos.idempotencyKey, "La clave del cobro", 36, true)!;
+    if (!uuidValido(claveIdempotencia)) throw new BadRequestException("La clave del cobro no es válida.");
+    const fechaPago = texto(datos.fechaPago, "La fecha del cobro", 10, true)!;
+    validarFecha(fechaPago, "La fecha del cobro");
+    if (!Array.isArray(datos.partes) || datos.partes.length < 1 || datos.partes.length > 8) throw new BadRequestException("Indica entre una y ocho cuentas para el cobro.");
+    const partes: { medioPago: string; cuentaFinancieraId: string; importeAplicado: number; importeRecibido: number; claveIdempotencia: string }[] = [];
+    for (const [indice, entrada] of datos.partes.entries()) {
+      if (typeof entrada !== "object" || entrada === null || Array.isArray(entrada)) throw new BadRequestException("Los datos del cobro no son válidos.");
+      const parte = entrada as Record<string, unknown>;
+      const medioPago = texto(parte.medioPago, "El medio de pago", 30, true)!;
+      if (!(mediosPago as readonly string[]).includes(medioPago)) throw new BadRequestException("Selecciona un medio de pago válido.");
+      const cuentaFinancieraId = (await validarCuentaFinanciera(parte.cuentaFinancieraId, medioPago, true))!;
+      const importeAplicado = numero(parte.importeAplicado, "El importe aplicado", 2, 0.01);
+      const importeRecibido = parte.importeRecibido === undefined || parte.importeRecibido === null || parte.importeRecibido === "" ? importeAplicado : numero(parte.importeRecibido, "El importe recibido", 2, 0);
+      if (importeRecibido < importeAplicado) throw new BadRequestException("El importe recibido no puede ser menor que el aplicado.");
+      if (importeRecibido > importeAplicado && medioPago !== "EFECTIVO") throw new BadRequestException("Solo el efectivo puede recibir más del importe para dar vuelto.");
+      if (partes.some((otra) => otra.cuentaFinancieraId === cuentaFinancieraId)) throw new BadRequestException("No repitas la misma cuenta en el cobro.");
+      const clave = createHash("sha1").update(`${claveIdempotencia}:${indice}`).digest("hex").replace(/^(........)(....)(...)(...)(............).*$/, "$1-$2-5$3-a$4-$5");
+      partes.push({ medioPago, cuentaFinancieraId, importeAplicado, importeRecibido, claveIdempotencia: clave });
+    }
+    const totalCobro = redondear(partes.reduce((suma, parte) => suma + parte.importeAplicado, 0));
+    const columnas = { id: ingresosPagos.id, ingresoId: ingresosPagos.ingresoId, fechaPago: ingresosPagos.fechaPago, importeAplicado: ingresosPagos.importeAplicado,
+      importeRecibido: ingresosPagos.importeRecibido, medioPago: ingresosPagos.medioPago, cuentaFinancieraId: ingresosPagos.cuentaFinancieraId, creadoEn: ingresosPagos.creadoEn };
+    return db.transaction(async (tx) => {
+      const previos = await tx.select(columnas).from(ingresosPagos).where(inArray(ingresosPagos.claveIdempotencia, partes.map((parte) => parte.claveIdempotencia)));
+      if (previos.length) {
+        if (previos.some((previo) => previo.ingresoId !== ingresoIdEntrada)) throw new ConflictException("La clave del cobro ya fue usada para otro comprobante.");
+        return previos;
+      }
+      const [ingreso] = await tx.select().from(ingresos).where(eq(ingresos.id, ingresoIdEntrada)).for("update").limit(1);
+      if (!ingreso) throw new NotFoundException("No se encontró el comprobante.");
+      if (!(ingreso.tipoComprobante === "BOLETA" || ingreso.tipoComprobante === "FACTURA") || ingreso.estado !== "EMITIDO") throw new BadRequestException("Registra cobros únicamente para comprobantes emitidos.");
+      if (bajaPendiente(ingreso.datosNubefact)) throw new ConflictException("La baja de este comprobante está pendiente de respuesta de SUNAT. Consulta su resultado antes de registrar cobros.");
+      const [notaDudosa] = await tx.select({ id: comprobantesRelacionados.id }).from(comprobantesRelacionados)
+        .where(and(eq(comprobantesRelacionados.ingresoOrigenId, ingreso.id), eq(comprobantesRelacionados.tipoComprobante, "NOTA_CREDITO"), notaSinResultado)).limit(1);
+      if (notaDudosa) throw new ConflictException("Hay una nota de crédito sin resultado confirmado. Consulta su estado antes de registrar cobros.");
+      const [creditoVenta] = await tx.select({ credito: creditoAplicadoASaldo(ingreso.id) }).from(ingresos).where(eq(ingresos.id, ingreso.id)).limit(1);
+      const [ultimoPago] = await tx.select({ fecha: sql<string>`max(${ingresosPagos.fechaPago})` }).from(ingresosPagos).where(eq(ingresosPagos.ingresoId, ingresoIdEntrada));
+      if (ultimoPago?.fecha && fechaPago < ultimoPago.fecha) throw new BadRequestException("Registra los pagos en orden cronológico. Ya existe un pago hasta " + ultimoPago.fecha + ".");
+      const [sumaPagos] = await tx.select({ total: sql<string>`coalesce(sum(${ingresosPagos.importeAplicado}), 0)::numeric(14,2)` }).from(ingresosPagos).where(eq(ingresosPagos.ingresoId, ingresoIdEntrada));
+      const importeAplicadoPrevio = Number(sumaPagos?.total ?? 0);
+      const inicialPendiente = Math.max(0, redondear(Number(ingreso.importePagoInicial) - importeAplicadoPrevio));
+      if (inicialPendiente > 0) throw new ConflictException("Registra la inicial declarada de la venta a crédito en un solo cobro.");
+      const saldo = Math.max(0, redondear(Number(ingreso.total) - Number(creditoVenta?.credito ?? 0) - importeAplicadoPrevio));
+      if (totalCobro > saldo) throw new BadRequestException("El cobro supera el saldo pendiente de " + saldo.toFixed(2) + ".");
+      if (ingreso.condicionPago === "CONTADO" && Math.round(totalCobro * 100) !== Math.round(saldo * 100)) throw new BadRequestException(`La venta al contado debe cobrarse completa: S/ ${saldo.toFixed(2)}.`);
+      return tx.insert(ingresosPagos).values(partes.map((parte) => ({
+        ingresoId: ingresoIdEntrada, fechaPago, importeAplicado: parte.importeAplicado.toFixed(2), importeRecibido: parte.importeRecibido.toFixed(2),
+        medioPago: parte.medioPago, cuentaFinancieraId: parte.cuentaFinancieraId, usuarioId, claveIdempotencia: parte.claveIdempotencia,
+        observacion: partes.length > 1 ? "Cobro dividido en varias cuentas" : null,
+      }))).returning(columnas);
     });
   }
 

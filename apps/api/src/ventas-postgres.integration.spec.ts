@@ -703,7 +703,7 @@ test("una compra repetida por modelo se recibe una sola vez y la anulación devu
   ]);
   comprasMototaxisPrueba.push(primera.id);
   assert.equal(primera.id, segunda.id);
-  assert.equal((await servicioMototaxis.listarGarantias()).find((item) => item.codigo === primera.codigo)?.cantidad, 3);
+  assert.equal((await servicioMototaxis.listarGarantias()).some((item) => item.codigo === primera.codigo), false);
   assert.equal((await servicioMototaxis.obtenerReconteoModelo(modelo.id)).cantidadSistema, 3);
 
   const payload = {
@@ -731,8 +731,8 @@ test("una compra repetida por modelo se recibe una sola vez y la anulación devu
       servicio.consultarAnulacionIngreso(venta.id, usuarioId),
     ]);
     assert.ok(resultados.every((item) => item.estado === "ANULADO"));
+    assert.equal((await servicioMototaxis.obtenerReconteoModelo(modelo.id)).cantidadSistema, 3);
     const ficha = await servicioMototaxis.obtenerAnalisisModelo(modelo.id);
-    assert.equal(ficha.existencias.disponibles, 3);
     assert.equal(ficha.movimientos.filter((item) => item.tipo === "ANULACION_VENTA").length, 1);
     assert.equal(ficha.ventas.unidades, 0);
   } finally { globalThis.fetch = originalFetch; }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  calcularMargen, construirAvanceMetas, construirCascadaCaja, construirMapaCalor, construirMapaVentas, construirPareto, ingresosEgresosPorMes,
-  mesAnteriorCompleto, porcentajeCobrado, saldoNetoDeCaja, serieDiariaIngresos, variacionPorcentual, ventasMensualesPorConcepto,
+  calcularMargen, construirCascadaCaja, construirMapaCalor, construirMapaVentas, construirPareto, ingresosEgresosPorMes,
+  saldoNetoDeCaja, serieDiariaIngresos, variacionPorcentual, ventasMensualesPorConcepto,
 } from "./dashboard-calculos";
 import type { FlujoIngresosDashboard } from "../../services/reportes.service";
 import type { FlujoFinanciero } from "../../services/finanzas.service";
@@ -148,47 +148,6 @@ describe("construirCascadaCaja", () => {
 
   it("sin movimientos solo muestra el inicio y el saldo en cero", () => {
     expect(construirCascadaCaja([], "PEN").pasos.map((paso) => paso.clave)).toEqual(["COBRADO", "SALDO"]);
-  });
-});
-
-describe("mesAnteriorCompleto", () => {
-  it("devuelve el primer y último día del mes anterior", () => {
-    expect(mesAnteriorCompleto("2026-03-15")).toEqual({ desde: "2026-02-01", hasta: "2026-02-28" });
-    expect(mesAnteriorCompleto("2024-03-31")).toEqual({ desde: "2024-02-01", hasta: "2024-02-29" });
-    expect(mesAnteriorCompleto("2026-01-10")).toEqual({ desde: "2025-12-01", hasta: "2025-12-31" });
-  });
-});
-
-describe("porcentajeCobrado", () => {
-  it("calcula lo cobrado sobre lo facturado con tope de 100 %", () => {
-    expect(porcentajeCobrado({ facturado: "200", cobrado: "50" })).toBe(25);
-    expect(porcentajeCobrado({ facturado: "100", cobrado: "150" })).toBe(100);
-  });
-
-  it("devuelve null sin datos o sin facturación", () => {
-    expect(porcentajeCobrado(null)).toBeNull();
-    expect(porcentajeCobrado({ facturado: "0", cobrado: "10" })).toBeNull();
-  });
-});
-
-describe("construirAvanceMetas", () => {
-  it("mide los ingresos contra el ritmo esperado a la fecha", () => {
-    const [ventas, cobranza, margen] = construirAvanceMetas({
-      hoy: "2026-04-15", metas: { VENTAS_MES: 3000, COBRANZA: 80, MARGEN: 30 },
-      ingresos: { actual: 1500, anterior: 2800 }, cobranza: { actual: 75, anterior: 70 }, margen: { actual: 20, anterior: 25 },
-    });
-    expect(ventas).toEqual({ clave: "VENTAS_MES", titulo: "Ingresos del mes", unidad: "soles", actual: 1500, anterior: 2800, meta: 3000, esperado: 1500, avance: 50, estado: "adelante" });
-    expect(cobranza).toMatchObject({ clave: "COBRANZA", unidad: "porcentaje", esperado: null, avance: 93.75, estado: "en-ritmo" });
-    expect(margen).toMatchObject({ clave: "MARGEN", titulo: "Margen bruto", avance: (20 / 30) * 100, estado: "atrasado" });
-  });
-
-  it("deja sin avance ni estado los indicadores sin meta o sin dato", () => {
-    const filas = construirAvanceMetas({ hoy: "2026-02-10", metas: { COBRANZA: 0 }, ingresos: null, cobranza: { actual: 50, anterior: null }, margen: { actual: null, anterior: null } });
-    expect(filas.map(({ avance, estado, esperado, meta }) => ({ avance, estado, esperado, meta }))).toEqual([
-      { avance: null, estado: null, esperado: null, meta: null },
-      { avance: Infinity, estado: null, esperado: null, meta: 0 },
-      { avance: null, estado: null, esperado: null, meta: null },
-    ]);
   });
 });
 

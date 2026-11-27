@@ -291,7 +291,7 @@ describe("compras de mototaxis", () => {
     const modelo = await crearModelo();
     const clave = randomUUID();
     const datos = datosCompra(proveedor.id, modelo.id, {
-      fecha: "2026-01-31", documentoTipo: "SIN_DOCUMENTO", documentoNumero: "ignorado", moneda: "PEN", observacion: "Compra QA", claveIdempotencia: clave,
+      fecha: "2026-01-31", documentoTipo: "FACTURA", documentoNumero: `F001-${randomUUID().slice(0, 6)}`, moneda: "PEN", observacion: "Compra QA", claveIdempotencia: clave,
       importePagoInicial: 9000, pagosIniciales: [
         { importePagado: 5000, medioPago: "EFECTIVO", cuentaFinancieraId: cuentaEfectivoId },
         { importePagado: 4000, medioPago: "TRANSFERENCIA", cuentaFinancieraId: cuentaBancoId },
@@ -327,10 +327,22 @@ describe("compras de mototaxis", () => {
 
     const analisis = await servicio.obtenerAnalisisModelo(modelo.id);
     assert.deepEqual([analisis.compras.unidades, analisis.compras.operaciones, analisis.compras.promedioPonderado], [2, 1, "4500.00"]);
-    assert.equal(analisis.compras.ultima?.documentoTipo, "SIN_DOCUMENTO");
+    assert.equal(analisis.compras.ultima?.documentoTipo, "FACTURA");
     assert.deepEqual(analisis.compras.historialMensual, [{ mes: "2026-01", promedio: "4500.00", cantidad: "2" }]);
     assert.equal(analisis.movimientos[0].tipo, "COMPRA");
     assert.equal(analisis.existencias.disponibles, 2);
+  });
+
+  test("sin documento registra la compra sin proveedor ni garantía; con documento exige proveedor y número", async () => {
+    const modelo = await crearModelo();
+    const compra = await servicio.crearCompra(datosCompra(undefined as never, modelo.id, { documentoTipo: "SIN_DOCUMENTO", documentoNumero: "ignorado" }), usuarioId);
+    const [listado] = await servicio.listarCompras(compra.codigo);
+    assert.equal(listado.documentoNumero, null);
+    assert.ok(!listado.proveedor?.trim());
+    assert.equal((await servicio.listarGarantias()).some((item) => item.codigo === compra.codigo), false);
+    const proveedor = await crearProveedorRuc();
+    await assert.rejects(servicio.crearCompra(datosCompra(undefined as never, modelo.id), usuarioId), esBadRequest(/proveedor/));
+    await assert.rejects(servicio.crearCompra(datosCompra(proveedor.id, modelo.id, { documentoNumero: "" }), usuarioId), esBadRequest(/número del documento/));
   });
 
   test("aplica pagos de saldo completo con clave idempotente", async () => {

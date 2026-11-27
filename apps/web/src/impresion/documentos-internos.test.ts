@@ -26,7 +26,7 @@ describe("documentoInterno", () => {
     expect(documentoInterno(base).totales).toBeNull();
     const d = documentoInterno({ ...base, emisor: null, importes: { total: 10 } });
     expect(d.totales).toMatchObject({ gravada: "10.00", igv: "0.00" });
-    expect(d.advertencias[0]).toMatch(/EMPRESA_RUC/);
+    expect(d.advertencias).toEqual([]);
   });
 
   it("consulta el emisor tolerando fallos y lo recuerda", async () => {

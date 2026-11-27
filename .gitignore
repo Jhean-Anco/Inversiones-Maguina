@@ -12,3 +12,25 @@ apps/api/storage/
 storage/
 .playwright-mcp/
 graphify-out/
+
+# Herramientas de IA y agentes (configuración local, no forma parte del producto)
+.claude/
+.codex/
+.agents/
+.cursor/
+CLAUDE.md
+AGENTS.md
+.playwright-mcp/
+
+# Resultados y capturas de pruebas
+test-results/
+playwright-report/
+apps/api/test-results/
+*-snapshot.yaml
+finance-prototype-map.yaml
+
+# Editor y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

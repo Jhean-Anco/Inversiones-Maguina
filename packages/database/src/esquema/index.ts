@@ -376,7 +376,7 @@ export const cuentasFinancieras = pgTable("cuentas_financieras", {
 export const comprasMototaxis = pgTable("compras_mototaxis", {
   id: uuid("id").defaultRandom().primaryKey(),
   codigo: varchar("codigo", { length: 40 }).notNull().unique(),
-  proveedorPersonaId: uuid("proveedor_persona_id").notNull().references(() => proveedores.personaId, { onDelete: "restrict" }),
+  proveedorPersonaId: uuid("proveedor_persona_id").references(() => proveedores.personaId, { onDelete: "restrict" }),
   fecha: date("fecha").notNull(),
   documentoTipo: varchar("documento_tipo", { length: 20 }).notNull(),
   documentoNumero: varchar("documento_numero", { length: 80 }),
@@ -395,7 +395,7 @@ export const comprasMototaxis = pgTable("compras_mototaxis", {
   index("compras_mototaxis_proveedor_fecha_idx").on(tabla.proveedorPersonaId, tabla.fecha),
   index("compras_mototaxis_fecha_idx").on(tabla.fecha),
   uniqueIndex("compras_mototaxis_idempotencia_unica").on(tabla.claveIdempotencia).where(sql`${tabla.claveIdempotencia} IS NOT NULL`),
-  check("compras_mototaxis_documento_tipo_ck", sql`${tabla.documentoTipo} IN ('FACTURA', 'BOLETA', 'NOTA', 'OTRO', 'SIN_DOCUMENTO')`),
+  check("compras_mototaxis_documento_tipo_ck", sql`${tabla.documentoTipo} IN ('FACTURA', 'BOLETA', 'NOTA', 'SIN_DOCUMENTO')`),
   check("compras_mototaxis_moneda_ck", sql`${tabla.moneda} IN ('PEN', 'USD', 'EUR')`),
   check("compras_mototaxis_total_ck", sql`${tabla.total} > 0`),
   check("compras_mototaxis_estado_ck", sql`${tabla.estado} IN ('REGISTRADA', 'ANULADA')`),

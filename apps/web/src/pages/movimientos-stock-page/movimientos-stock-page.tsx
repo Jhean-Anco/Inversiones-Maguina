@@ -1,90 +1,82 @@
-import { useEffect } from "react";
-import { CatalogoListado } from "../../components/catalogo/catalogo-listado/catalogo-listado";
-import { AjusteStockFormulario } from "../../components/inventario/ajuste-stock-formulario/ajuste-stock-formulario";
+import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
-import { useMovimientosStock } from "../../hooks/use-movimientos-stock";
+import { motivoVisible, useMovimientosStock } from "../../hooks/use-movimientos-stock";
 import type { MovimientoStock } from "../../services/inventario/movimientos-stock.service";
-import {
-  movimientoCantidadClasses,
-  movimientoCodigoClasses,
-  movimientoDetalleClasses,
-  movimientoFechaClasses,
-  movimientoNombreProductoClasses,
-  movimientoProductoClasses,
-  movimientoTableClasses,
-  movimientoTableRowClasses,
-  movimientoTableScrollClasses,
-  movimientoHeaderClasses,
-  movimientoControlClasses,
-  movimientoPaginacionClasses,
-} from "./movimientos-stock-classes";
+import { ventasClasses as c } from "../ventas-page/ventas-classes";
+import { FormularioAjusteRepuestos } from "./formulario-ajuste-repuestos";
 
 const numero = new Intl.NumberFormat("es-PE", { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 const fechaHora = new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima" });
-const motivoVisible = (codigo: string | null) => ({ INVENTARIO_FISICO: "Conteo de inventario", MERMA: "Merma", DANIO: "Repuesto dañado", PERDIDA: "Pérdida", DEVOLUCION: "Devolución", CORRECCION: "Corrección de registro", OTRO: "Otro motivo" }[codigo ?? ""] ?? codigo ?? "—");
+const saldo = (valor: string | null) => valor == null ? "—" : numero.format(Number(valor));
 
-const encabezadoMovimientos = <tr><th>Fecha y hora</th><th>Repuesto</th><th>Anterior</th><th>Variación</th><th>Final</th><th>Motivo</th><th>Responsable</th><th>Observación</th></tr>;
-function filaMovimiento(movimiento: MovimientoStock) {
-  const aumento = movimiento.sentido === "INGRESO";
-  return <tr className={movimientoTableRowClasses} key={movimiento.id}>
-          <td><time className={movimientoFechaClasses} dateTime={movimiento.creadoEn}>{fechaHora.format(new Date(movimiento.creadoEn))}</time></td>
-          <td><span className={movimientoProductoClasses}><small className={movimientoCodigoClasses}>{movimiento.codigo}</small><strong className={movimientoNombreProductoClasses}>{movimiento.producto}</strong></span></td>
-          <td>{movimiento.saldoAnterior == null ? "—" : numero.format(Number(movimiento.saldoAnterior))}</td>
-          <td><strong className={movimientoCantidadClasses(aumento)}>{aumento ? "+" : "−"}{numero.format(Number(movimiento.cantidadBase))} {movimiento.unidad}</strong></td>
-          <td>{movimiento.saldoFinal == null ? "—" : numero.format(Number(movimiento.saldoFinal))}</td>
-          <td className={movimientoDetalleClasses}>{motivoVisible(movimiento.motivo)}</td>
-          <td>{movimiento.usuario}</td>
-          <td className={movimientoDetalleClasses}>{movimiento.observacion || "—"}</td>
-        </tr>;
+// Ajustes ya registrados: sin chips de estado; la píldora indica si el stock subió o bajó.
+const tonos = {
+  INGRESO: { etiqueta: "Aumento", caja: "border-[#b3d8c4] bg-[#e4f3ec] text-[#1b5e40]", punto: "bg-[#1b5e40]" },
+  RETIRO: { etiqueta: "Disminución", caja: "border-[#efcfcd] bg-[#fff4f3] text-[#9b2c2c]", punto: "bg-[#9b2c2c]" },
+} as const;
+
+const encabezado = <tr><th>Fecha y hora</th><th>Repuesto</th><th>Anterior</th><th>Variación</th><th>Final</th><th>Motivo</th><th>Responsable</th></tr>;
+
+function FilaAjuste({ movimiento }: { movimiento: MovimientoStock }) {
+  const tono = tonos[movimiento.sentido === "INGRESO" ? "INGRESO" : "RETIRO"];
+  const signo = movimiento.sentido === "INGRESO" ? "+" : "−";
+  return <tr>
+    <td className="whitespace-nowrap [font-variant-numeric:tabular-nums] text-[#142b42]"><time dateTime={movimiento.creadoEn}>{fechaHora.format(new Date(movimiento.creadoEn))}</time></td>
+    <td>
+      <strong className={c.clientName}>{movimiento.producto}</strong>
+      <small className={c.minorText}>{movimiento.codigo}</small>
+    </td>
+    <td className="[font-variant-numeric:tabular-nums]">{saldo(movimiento.saldoAnterior)}</td>
+    <td>
+      <span className={`${c.status} ${tono.caja}`} title={tono.etiqueta}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{signo}{numero.format(Number(movimiento.cantidadBase))} {movimiento.unidad}</span>
+    </td>
+    <td><span className={c.total}>{saldo(movimiento.saldoFinal)}</span></td>
+    <td>
+      <span className="block">{motivoVisible(movimiento.motivo)}</span>
+      {movimiento.observacion && <small className={c.itemDetail} title={movimiento.observacion}>{movimiento.observacion}</small>}
+    </td>
+    <td>{movimiento.usuario}</td>
+  </tr>;
 }
 
 export function MovimientosStockPage({ puedeAjustar }: { puedeAjustar: boolean }) {
   const modulo = useMovimientosStock();
-  useEffect(() => {
-    if (!modulo.modalAbierto) return;
-    const anterior = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const escape = (evento: KeyboardEvent) => { if (evento.key === "Escape") modulo.cerrarModal(); };
-    window.addEventListener("keydown", escape);
-    return () => { document.body.style.overflow = anterior; window.removeEventListener("keydown", escape); };
-  }, [modulo.modalAbierto, modulo.guardando]);
+  const notificacion = modulo.mensaje && <NotificacionFlotante tipo="exito" mensaje={modulo.mensaje} onCerrar={() => modulo.setMensaje("")} />;
 
-  return <>
-    {modulo.mensaje && <NotificacionFlotante tipo="exito" mensaje={modulo.mensaje} onCerrar={() => modulo.setMensaje("")} />}
-    <CatalogoListado
-      titulo="Ajustes de inventario de repuestos"
-      descripcion="Consulta las variaciones de stock y registra correcciones con motivo y trazabilidad."
-      etiquetaCrear="Nuevo ajuste de repuestos"
-      tituloListado="Historial de ajustes"
-      registros={modulo.movimientos}
-      totalRegistros={modulo.total}
-      cargando={modulo.cargando}
-      mensajeCarga="Cargando movimientos…"
-      error={modulo.modalAbierto ? "" : modulo.error}
-      iconoVacio="↕"
-      tituloVacio="Aún no hay ajustes"
-      descripcionVacio="Los ajustes manuales que registres aparecerán aquí."
-      pagina={modulo.pagina}
-      porPagina={modulo.porPagina}
-      totalPaginas={modulo.totalPaginas}
-      desde={modulo.desde}
-      hasta={modulo.hasta}
-      busqueda={modulo.busqueda}
-      busquedaPlaceholder="Buscar repuesto, código o motivo"
-      busquedaAriaLabel="Buscar movimientos de stock"
-      alBuscar={(valor) => { modulo.setBusqueda(valor); modulo.cambiarPagina(1); }}
-      alCrear={puedeAjustar ? modulo.abrirNuevo : undefined}
-      alCambiarPagina={modulo.cambiarPagina}
-      alCambiarTamanioPagina={modulo.cambiarPorPagina}
-      variante="tabla"
-      encabezadoTabla={encabezadoMovimientos}
-      renderizarFila={filaMovimiento}
-      claseTabla={movimientoTableClasses}
-      claseContenedorTabla={movimientoTableScrollClasses}
-      claseCabecera={movimientoHeaderClasses}
-      claseControlesCabecera={movimientoControlClasses}
-      clasePaginacion={movimientoPaginacionClasses}
-    />
-    {modulo.modalAbierto && <AjusteStockFormulario {...modulo} />}
-  </>;
+  // El formulario se devuelve sin contenedor: así toma los márgenes y el scroll propio de `.os-editor`.
+  if (modulo.modalAbierto) return <FormularioAjusteRepuestos modulo={modulo} />;
+
+  return (
+    <section className={c.page}>
+      {puedeAjustar && <RegistrarAccionPrincipal etiqueta="Nuevo ajuste de repuestos" onClick={modulo.abrirNuevo} />}
+      {notificacion}
+      {modulo.error && !modulo.cargando && <NotificacionFlotante mensaje={modulo.error} onCerrar={() => modulo.setError("")} />}
+      <div className={c.toolbar}>
+        <label className={`${c.search} listado-maestro-busqueda-icono`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+          <input type="search" value={modulo.busqueda} placeholder="Buscar repuesto, código o motivo" aria-label="Buscar ajustes de inventario"
+            onChange={(evento) => { modulo.setBusqueda(evento.target.value); modulo.cambiarPagina(1); }} />
+        </label>
+      </div>
+      <ListadoMaestro<MovimientoStock>
+        variante="tabla"
+        titulo="Ajustes de inventario de repuestos"
+        registros={modulo.movimientos}
+        cargando={modulo.cargando}
+        claseCabecera={c.header}
+        claseTabla={c.table}
+        claseContenedor={c.tableScroll}
+        paginacion={{
+          modo: "remota", pagina: modulo.pagina, tamanio: modulo.porPagina, total: modulo.total, totalPaginas: modulo.totalPaginas,
+          desde: modulo.desde, hasta: modulo.hasta,
+          alCambiarPagina: modulo.cambiarPagina,
+          alCambiarTamanio: modulo.cambiarPorPagina,
+        }}
+        vacio={<div className={c.empty}><strong>No hay ajustes para mostrar</strong><span>{modulo.busqueda.trim() ? "Prueba con otra búsqueda." : "Los ajustes manuales que registres aparecerán aquí."}</span></div>}
+        encabezadoTabla={encabezado}
+        renderizarFila={(movimiento) => <FilaAjuste key={movimiento.id} movimiento={movimiento} />}
+      />
+    </section>
+  );
 }

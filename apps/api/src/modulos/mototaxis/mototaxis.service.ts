@@ -197,7 +197,7 @@ export class ServicioMototaxis {
       db.select({ unidades: sql<string>`coalesce(sum(${comprasMototaxisDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${comprasMototaxisDetalle.cantidad}) > 0 then round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
         .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).where(and(eq(comprasMototaxisDetalle.modeloId, id), eq(comprasMototaxis.estado, "REGISTRADA"))),
       db.select({ precio: sql<string>`round(sum(${comprasMototaxisDetalle.costoUnitario} * ${comprasMototaxisDetalle.cantidad}) / sum(${comprasMototaxisDetalle.cantidad}), 2)`, cantidad: sql<number>`sum(${comprasMototaxisDetalle.cantidad})::int`, fecha: comprasMototaxis.fecha, codigo: comprasMototaxis.codigo, documentoTipo: comprasMototaxis.documentoTipo, documentoNumero: comprasMototaxis.documentoNumero, proveedor: sql<string>`coalesce(${personas.razonSocial}, concat_ws(' ', ${personas.nombres}, ${personas.apellidoPaterno}, ${personas.apellidoMaterno}))` })
-        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).innerJoin(personas, eq(comprasMototaxis.proveedorPersonaId, personas.id))
+        .from(comprasMototaxisDetalle).innerJoin(comprasMototaxis, eq(comprasMototaxisDetalle.compraId, comprasMototaxis.id)).leftJoin(personas, eq(comprasMototaxis.proveedorPersonaId, personas.id))
         .where(and(eq(comprasMototaxisDetalle.modeloId, id), eq(comprasMototaxis.estado, "REGISTRADA"))).groupBy(comprasMototaxis.id, personas.id)
         .orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn), desc(comprasMototaxis.id)).limit(1),
       db.select({ unidades: sql<string>`coalesce(sum(${ingresosDetalle.cantidad}), 0)`, promedioPonderado: sql<string | null>`case when sum(${ingresosDetalle.cantidad}) > 0 then round(sum(${ingresosDetalle.precioUnitario} * ${ingresosDetalle.cantidad}) / sum(${ingresosDetalle.cantidad}), 2)::text else null end`, operaciones: count() })
@@ -383,15 +383,17 @@ export class ServicioMototaxis {
   async crearCompra(valor: unknown, usuarioId: string) {
     if (!valor || typeof valor !== "object" || Array.isArray(valor)) throw new BadRequestException("Los datos de compra no son válidos.");
     const d = valor as Record<string, unknown>;
-    if (!uuidValido(d.proveedorPersonaId)) throw new BadRequestException("Selecciona un proveedor del directorio.");
     const fecha = fechaValida(d.fecha, "La fecha de compra");
     if (fecha > fechaActualPeru()) throw new BadRequestException("La fecha de compra no puede ser posterior a hoy.");
     const documentoTipo = texto(d.documentoTipo, "El tipo de documento", 20, true)!;
-    if (!["FACTURA", "BOLETA", "NOTA", "OTRO", "SIN_DOCUMENTO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
+    if (!["FACTURA", "BOLETA", "NOTA", "SIN_DOCUMENTO"].includes(documentoTipo)) throw new BadRequestException("Selecciona el tipo de documento de compra.");
+    // Sin documento no hay proveedor (ni garantía que reclamarle); con documento, proveedor y número son obligatorios.
+    const sinDocumento = documentoTipo === "SIN_DOCUMENTO";
+    if (!sinDocumento && !uuidValido(d.proveedorPersonaId)) throw new BadRequestException("Selecciona un proveedor del directorio.");
     if (!Array.isArray(d.detalles) || d.detalles.length < 1 || d.detalles.length > 30) throw new BadRequestException("Registra entre 1 y 30 líneas por compra.");
     const claveIdempotencia = d.claveIdempotencia;
     if (claveIdempotencia !== undefined && !uuidValido(claveIdempotencia)) throw new BadRequestException("La referencia de la compra no es válida.");
-    const documentoNumero = documentoTipo === "SIN_DOCUMENTO" ? null : texto(d.documentoNumero, "El número del documento", 80);
+    const documentoNumero = sinDocumento ? null : texto(d.documentoNumero, "El número del documento", 80, true);
     const observacion = texto(d.observacion, "La observación", 2000);
     const moneda = texto(d.moneda ?? "PEN", "La moneda", 3, true)!;
     if (!["PEN", "USD", "EUR"].includes(moneda)) throw new BadRequestException("Selecciona una moneda válida.");
@@ -424,7 +426,7 @@ export class ServicioMototaxis {
     const sumaPagos = pagosIniciales.reduce((suma, pago) => suma + pago.importePagado, 0);
     if (Math.round(sumaPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
     const codigo = `CM-${fecha.replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const proveedorId = d.proveedorPersonaId;
+    const proveedorId = sinDocumento ? null : d.proveedorPersonaId as string;
     const unidades = detalles.reduce((suma, detalle) => suma + detalle.cantidad, 0);
     const huellaSolicitud = createHash("sha256").update(JSON.stringify({ usuarioId, proveedorId, fecha, documentoTipo, documentoNumero, moneda, detalles, pagosIniciales, observacion })).digest("hex");
     return db.transaction(async (tx) => {
@@ -437,9 +439,9 @@ export class ServicioMototaxis {
           return { id: existente.id, codigo: existente.codigo, fecha: existente.fecha, total: existente.total, unidades, importePagado: existente.total, saldoPendiente: "0.00" };
         }
       }
-      const [proveedor] = await tx.select({ id: proveedores.personaId, numeroDocumento: personas.numeroDocumento, tipoDocumento: tiposDocumento.codigo }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
-      if (!proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
-      if (documentoNumero && ["FACTURA", "BOLETA"].includes(documentoTipo)) {
+      const [proveedor] = !proveedorId ? [null] : await tx.select({ id: proveedores.personaId, numeroDocumento: personas.numeroDocumento, tipoDocumento: tiposDocumento.codigo }).from(proveedores).innerJoin(personas, eq(proveedores.personaId, personas.id)).innerJoin(tiposDocumento, eq(personas.tipoDocumentoId, tiposDocumento.id)).where(and(eq(proveedores.personaId, proveedorId), eq(proveedores.activo, true))).limit(1);
+      if (proveedorId && !proveedor) throw new NotFoundException("El proveedor no existe o está inactivo.");
+      if (proveedorId && documentoNumero && ["FACTURA", "BOLETA"].includes(documentoTipo)) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`compra-mototaxis-documento:${proveedorId}:${documentoTipo}:${documentoNumero.toUpperCase()}`}, 0))`);
         const [repetida] = await tx.select({ codigo: comprasMototaxis.codigo }).from(comprasMototaxis)
           .where(and(eq(comprasMototaxis.estado, "REGISTRADA"), eq(comprasMototaxis.proveedorPersonaId, proveedorId), eq(comprasMototaxis.documentoTipo, documentoTipo), sql`upper(${comprasMototaxis.documentoNumero}) = ${documentoNumero.toUpperCase()}`)).limit(1);
@@ -454,7 +456,7 @@ export class ServicioMototaxis {
           compraId: compra.id, modeloId: linea.modeloId, orden: indice + 1, cantidad: linea.cantidad, costoUnitario: linea.costoUnitario.toFixed(2),
         }).returning({ id: comprasMototaxisDetalle.id });
         await moverSaldoModelo(tx, { modeloId: linea.modeloId, tipo: "COMPRA", origenId: detalle.id, diferencia: linea.cantidad, usuarioId });
-        await tx.insert(garantiasMototaxis).values({
+        if (proveedorId) await tx.insert(garantiasMototaxis).values({
           compraDetalleId: detalle.id, proveedorPersonaId: proveedorId, porcentajeProveedor: String(linea.porcentajeGarantia),
           mesesVigencia: linea.mesesGarantia, iniciaEn: fecha, terminaEn: sumarMeses(fecha, linea.mesesGarantia),
         });
@@ -522,7 +524,7 @@ export class ServicioMototaxis {
       unidades: sql<number>`coalesce((select sum(d.cantidad)::int from compras_mototaxis_detalle d where d.compra_id = compras_mototaxis.id),0)`,
       pagado: sql<string>`coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = compras_mototaxis.id and p.anulado_en is null),0)::numeric(14,2)`,
       saldo: sql<string>`(case when ${comprasMototaxis.estado} = 'ANULADA' then 0 else greatest(${comprasMototaxis.total} - coalesce((select sum(p.importe_pagado) from pagos_compras_mototaxis p where p.compra_id = compras_mototaxis.id and p.anulado_en is null),0),0) end)::numeric(14,2)` })
-      .from(comprasMototaxis).innerJoin(proveedores, eq(comprasMototaxis.proveedorPersonaId, proveedores.personaId)).innerJoin(personas, eq(proveedores.personaId, personas.id))
+      .from(comprasMototaxis).leftJoin(proveedores, eq(comprasMototaxis.proveedorPersonaId, proveedores.personaId)).leftJoin(personas, eq(proveedores.personaId, personas.id))
       .where(patron ? or(ilike(comprasMototaxis.codigo, patron), ilike(comprasMototaxis.documentoNumero, patron), ilike(personas.razonSocial, patron), ilike(personas.nombres, patron), ilike(personas.numeroDocumento, patron)) : undefined)
       .orderBy(desc(comprasMototaxis.fecha), desc(comprasMototaxis.creadoEn)).limit(100);
   }

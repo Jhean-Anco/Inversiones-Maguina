@@ -25,8 +25,6 @@ export type HorariosVentas = {
 };
 /** Artículos más vendidos de un rango y el total de ventas (con IGV) de ese mismo rango. */
 export type ArticulosMasVendidos = { rango: FiltroReporte; totalVentas: string; articulos: Array<{ descripcion: string; tipo: string; cantidad: string; total: string }> };
-export type IndicadorMeta = "VENTAS_MES" | "COBRANZA" | "MARGEN";
-export type MetasDashboard = { periodo: string; metas: Record<IndicadorMeta, { valor: number; origen: "MES" | "PREDETERMINADA" } | null> };
 /** Lo vendido en un rango (con IGV) y lo que ya se cobró de esas ventas. */
 export type CobranzaPeriodo = { rango: FiltroReporte; facturado: string; cobrado: string };
 export type ResumenIngresosDashboard = { porMedioPago: Array<{ medioPago: string; ventas: number; total: string }> };
@@ -58,10 +56,6 @@ export const servicioReportes = {
   articulos: (rango: FiltroReporte) => solicitarApi<ArticulosMasVendidos>("/reportes/ingresos/articulos?" + parametros(rango)),
   horarios: (rango: FiltroReporte) => solicitarApi<HorariosVentas>("/reportes/ingresos/horarios?" + parametros(rango)),
   cobranza: (rango: FiltroReporte) => solicitarApi<CobranzaPeriodo>("/reportes/ingresos/cobranza?" + parametros(rango)),
-  metas: (periodo: string) => solicitarApi<MetasDashboard>(`/reportes/metas?periodo=${encodeURIComponent(periodo)}`),
-  /** `valor: null` quita la meta; `periodoMeta: null` la define para todos los meses. Devuelve las metas vigentes de `periodoVista`. */
-  guardarMeta: (datos: { indicador: IndicadorMeta; periodo: string | null; valor: number | null }, periodoVista: string) =>
-    solicitarApi<MetasDashboard>(`/reportes/metas?periodo=${encodeURIComponent(periodoVista)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) }),
   inventario: (filtro: FiltroReporte) => solicitarApi<ReporteInventario>("/reportes/inventario?" + parametros(filtro)),
   reporteIngresos: (filtro: FiltroReporte & { linea: "TODAS" | "PRODUCTO" | "MOTOTAXI" | "SERVICIO" }) => {
     const query = new URLSearchParams({ desde: filtro.desde, hasta: filtro.hasta });
