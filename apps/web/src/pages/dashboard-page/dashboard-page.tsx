@@ -5,15 +5,13 @@ import { useDashboardDatos } from "./use-dashboard-datos";
 import { IndicadoresClave } from "./dashboard-indicadores";
 import { ParetoArticulosChart, RitmoChart, VariacionPorTipoChart } from "./dashboard-comparativas";
 import { etiquetaComparacion, textosPeriodo } from "./dashboard-periodos";
-import { SelectorPeriodo } from "./dashboard-selector";
 import { CascadaCajaChart, IngresosEgresosChart, MapaVentasChart, MediosPagoChart, MezclaVentasChart } from "./dashboard-composicion";
-import { AvanceMetasPanel } from "./dashboard-metas";
 import { MapaCalorHorarios } from "./dashboard-horarios";
 
 const soles = (valor: string | number) => new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN", maximumFractionDigits: 2 }).format(Number(valor) || 0);
 
 // Las clases deben escribirse completas para que Tailwind las detecte.
-const columnas = { 4: "col-span-4", 5: "col-span-5", 6: "col-span-6", 7: "col-span-7", 8: "col-span-8" } as const;
+const columnas = { 4: "col-span-4", 5: "col-span-5", 6: "col-span-6", 7: "col-span-7", 8: "col-span-8", 12: "col-span-full" } as const;
 
 function Panel({ rotulo, titulo, descripcion, columnas: ancho, children }: { rotulo: string; titulo: string; descripcion: string; columnas: keyof typeof columnas; children: ReactNode }) {
   return (
@@ -29,7 +27,7 @@ function Panel({ rotulo, titulo, descripcion, columnas: ancho, children }: { rot
 
 export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nombre: string; rol: string; puedeVerIngresos?: boolean; permisos?: string[] }) {
   const datos = useDashboardDatos(puedeVerIngresos, permisos);
-  const { resumen, cargando, error, reporte, indicadores, ritmo, metas, cascada, ingresosEgresos, horarios, periodo, comparar } = datos;
+  const { resumen, cargando, error, reporte, indicadores, ritmo, cascada, ingresosEgresos, horarios, periodo, comparar } = datos;
   const tp = textosPeriodo(periodo);
   const comparacion = etiquetaComparacion(periodo, comparar);
   const hayVentas = puedeVerIngresos && reporte.listo;
@@ -40,20 +38,14 @@ export function DashboardPage({ puedeVerIngresos = true, permisos = [] }: { nomb
     {!reporte.error && datos.hayFallos && <NotificacionFlotante mensaje="Algunos gráficos no se pudieron cargar. Puedes intentarlo de nuevo." titulo="Resumen incompleto" accion={{ etiqueta: "Actualizar resumen", ejecutar: datos.reintentar }} />}
     {cargando ? <div className={`${estilosDashboard.loading} inicio-loading`} role="status"><i /><span>Preparando el panel del negocio...</span></div> : resumen && (
       <div className={`${estilosDashboard.grid} inicio-chart-grid`}>
-        <SelectorPeriodo periodo={periodo} comparar={comparar} actualizando={datos.actualizando} onPeriodo={datos.setPeriodo} onComparar={datos.setComparar} onActualizar={datos.reintentar} />
         <div className="col-span-full">
           <IndicadoresClave soles={soles} ingresos={indicadores.ingresos} textos={{ periodo: tp.del, comparacion }} ticket={indicadores.ticket} saldo={indicadores.saldo} margen={indicadores.margen} mostrarMargen={indicadores.mostrarMargen} mostrarIngresos={puedeVerIngresos && !reporte.error} mostrarFinanzas={indicadores.mostrarSaldo} />
         </div>
         {!puedeVerIngresos && <div className={`${estilosDashboard.chartEmpty} inicio-chart-empty col-span-full`}>Tu usuario no tiene permiso para consultar los reportes de ventas.</div>}
         {puedeVerIngresos && reporte.cargando && <div className={`${estilosDashboard.loading} inicio-loading col-span-full`} role="status"><i /><span>Cargando actividad de ventas...</span></div>}
         {ritmo && (
-          <Panel rotulo="RITMO" titulo="Ingresos acumulados" descripcion={`Frente a ${tp.conArticulo} y al año pasado.`} columnas={8}>
+          <Panel rotulo="RITMO" titulo="Ingresos acumulados" descripcion={`Frente a ${tp.conArticulo} y al año pasado.`} columnas={12}>
             <RitmoChart ritmo={ritmo} soles={soles} textos={{ este: tp.este, anterior: tp.anterior }} />
-          </Panel>
-        )}
-        {metas.mostrar && (
-          <Panel rotulo="METAS" titulo="Avance del mes" descripcion="Frente a tu objetivo." columnas={ritmo ? 4 : 6}>
-            <AvanceMetasPanel avances={metas.avances} soles={soles} metas={metas.valores} puedeConfigurar={permisos.includes("FINANZAS.ADMINISTRAR")} onGuardar={metas.guardar} />
           </Panel>
         )}
         {cascada && (

@@ -1,10 +1,9 @@
-import { BadRequestException, Body, Controller, Get, Put, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { GuardiaSesion } from "../autenticacion/guardia-sesion";
 import { GuardiaPermiso } from "../autenticacion/guardia-permiso";
 import { RequierePermiso } from "../autenticacion/permisos";
 import { UsuarioActual, type UsuarioAutenticado } from "../autenticacion/usuario-actual";
 import { ServicioReportes } from "./reportes.service";
-import { ServicioMetas } from "./metas.service";
 import { diasEntreFechas } from "./reportes.util";
 import { validarRangoFechas as validarRango } from "../../utilidades/validar-rango-fechas";
 
@@ -13,7 +12,7 @@ const MAXIMO_DIAS_COMPARATIVO = 800;
 @Controller("reportes")
 @UseGuards(GuardiaSesion, GuardiaPermiso)
 export class ControladorReportes {
-  constructor(private readonly reportes: ServicioReportes, private readonly metas: ServicioMetas) {}
+  constructor(private readonly reportes: ServicioReportes) {}
   @Get("ingresos/dashboard") @RequierePermiso("INGRESOS.LEER") ingresosDashboard(@Query("desde") desde?: string, @Query("hasta") hasta?: string, @Query("mesDesde") mesDesde?: string) {
     const anual = validarRango(desde, hasta);
     return this.reportes.ingresosDashboard(validarRango(mesDesde, anual.hasta), anual);
@@ -37,8 +36,6 @@ export class ControladorReportes {
     if (diasEntreFechas(rango.desde, rango.hasta) > MAXIMO_DIAS_COMPARATIVO) throw new BadRequestException(`El rango no puede superar ${MAXIMO_DIAS_COMPARATIVO} días.`);
     return this.reportes.horarios(rango);
   }
-  @Get("metas") @RequierePermiso("INGRESOS.LEER") metasDelPeriodo(@Query("periodo") periodo?: string) { return this.metas.obtener(periodo); }
-  @Put("metas") @RequierePermiso("FINANZAS.ADMINISTRAR") guardarMeta(@UsuarioActual() usuario: UsuarioAutenticado, @Body() datos: unknown, @Query("periodo") periodo?: string) { return this.metas.guardar(datos, usuario.id, periodo); }
   @Get("inventario") @RequierePermiso("INVENTARIO.LEER") inventario(@UsuarioActual() usuario: UsuarioAutenticado, @Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.reportes.inventario(validarRango(desde, hasta), usuario.permisos ?? []); }
   @Get("resumen") resumen(@UsuarioActual() usuario: UsuarioAutenticado) { return this.reportes.resumenGerencial(usuario.permisos ?? []); }
 }

@@ -13,8 +13,6 @@ describe("servicioReportes", () => {
     { nombre: "articulos", llamar: () => servicioReportes.articulos(rango), url: `/reportes/ingresos/articulos?${query}` },
     { nombre: "horarios", llamar: () => servicioReportes.horarios(rango), url: `/reportes/ingresos/horarios?${query}` },
     { nombre: "cobranza", llamar: () => servicioReportes.cobranza(rango), url: `/reportes/ingresos/cobranza?${query}` },
-    { nombre: "metas", llamar: () => servicioReportes.metas("2026-01"), url: "/reportes/metas?periodo=2026-01" },
-    { nombre: "guardarMeta", llamar: () => servicioReportes.guardarMeta({ indicador: "MARGEN", periodo: null, valor: 25 }, "2026-01"), url: "/reportes/metas?periodo=2026-01", metodo: "PUT", cuerpo: { indicador: "MARGEN", periodo: null, valor: 25 } },
     { nombre: "inventario", llamar: () => servicioReportes.inventario(rango), url: `/reportes/inventario?${query}` },
     { nombre: "reporteIngresos de todas las líneas omite el filtro", llamar: () => servicioReportes.reporteIngresos({ ...rango, linea: "TODAS" }), url: `/reportes/ingresos/reporte?${query}` },
     { nombre: "reporteIngresos de una línea", llamar: () => servicioReportes.reporteIngresos({ ...rango, linea: "MOTOTAXI" }), url: `/reportes/ingresos/reporte?${query}&linea=MOTOTAXI` },

@@ -42,7 +42,6 @@ import { ServicioConductores } from "./modulos/personas/conductores.service";
 import { ControladorTransportistas } from "./modulos/personas/transportistas.controller";
 import { ServicioTransportistas } from "./modulos/personas/transportistas.service";
 import { ControladorReportes } from "./modulos/reportes/reportes.controller";
-import { ServicioMetas } from "./modulos/reportes/metas.service";
 import { ServicioReportes } from "./modulos/reportes/reportes.service";
 
 /**
@@ -58,7 +57,7 @@ const dependencias: Array<[object, unknown[]]> = [
   [ControladorEntradasStock, [ServicioEntradasStock]], [ControladorMovimientosStock, [ServicioMovimientosStock]],
   [ControladorMototaxis, [ServicioMototaxis]], [ControladorDirectorioProveedores, [ServicioMototaxis]],
   [ControladorConductores, [ServicioConductores]], [ControladorTransportistas, [ServicioTransportistas]],
-  [ControladorReportes, [ServicioReportes, ServicioMetas]],
+  [ControladorReportes, [ServicioReportes]],
 ];
 for (const [clase, tipos] of dependencias) Reflect.defineMetadata("design:paramtypes", tipos, clase);
 
@@ -376,7 +375,7 @@ describe("rutas protegidas con un usuario administrador", () => {
     assert.equal((await enviar("PATCH", `/mototaxis/reclamos/${idAleatorio()}/estado`, { estado: "ENVIADO", estadoAnterior: "ABIERTO" })).statusCode, 409);
   });
 
-  test("reportes: rangos, límites, metas y resumen gerencial", async () => {
+  test("reportes: rangos, límites y resumen gerencial", async () => {
     const rango = `desde=${inicioAnio}&hasta=${hoy}`;
     assert.equal((await get(`/reportes/ingresos/dashboard?${rango}&mesDesde=${hoy.slice(0, 8)}01`)).json().anual.rango.desde, inicioAnio);
     assert.equal((await get(`/reportes/ingresos/reporte?${rango}&linea=MOTOTAXI`)).json().linea, "MOTOTAXI");
@@ -391,10 +390,6 @@ describe("rutas protegidas con un usuario administrador", () => {
     assert.equal((await get(`/reportes/ingresos/articulos?${rango}`)).statusCode, 200);
     assert.equal((await get("/reportes/ingresos/cobranza?desde=2026-01-01")).statusCode, 400);
     assert.equal((await get(`/reportes/inventario?desde=${sumarDias(hoy, -7)}&hasta=${hoy}`)).json().mototaxis !== undefined, true);
-    const meta = await enviar("PUT", "/reportes/metas?periodo=1999-01", { indicador: "COBRANZA", periodo: "1999-01", valor: 75 });
-    assert.equal(meta.statusCode, 200);
-    assert.deepEqual(meta.json().metas.COBRANZA, { valor: 75, origen: "MES" });
-    assert.deepEqual((await get("/reportes/metas?periodo=1999-01")).json().metas.COBRANZA, { valor: 75, origen: "MES" });
     const resumen = (await get("/reportes/resumen")).json();
     assert.ok(["ventasHoy", "clientesActivos", "inventario", "inventarioMototaxis"].every((clave) => clave in resumen));
   });

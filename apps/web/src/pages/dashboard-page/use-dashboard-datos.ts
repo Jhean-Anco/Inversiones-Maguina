@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioDashboard, type ResumenGerencial } from "../../services/dashboard.service";
-import { servicioReportes, type ArticulosMasVendidos, type CobranzaPeriodo, type FlujoIngresosDashboard, type HorariosVentas, type MetasDashboard, type Rentabilidad, type ResumenIngresosDashboard } from "../../services/reportes.service";
+import { servicioReportes, type ArticulosMasVendidos, type FlujoIngresosDashboard, type HorariosVentas, type Rentabilidad, type ResumenIngresosDashboard } from "../../services/reportes.service";
 import { servicioFinanzas, type ComposicionCaja, type FlujoFinanciero } from "../../services/finanzas.service";
 import {
-  calcularMargen, construirAvanceMetas, construirCascadaCaja, construirMapaVentas, construirPareto, ingresosEgresosPorMes, mesAnteriorCompleto,
-  porcentajeCobrado, saldoNetoDeCaja, serieDiariaIngresos, ventasMensualesPorConcepto,
+  calcularMargen, construirCascadaCaja, construirMapaVentas, construirPareto, ingresosEgresosPorMes,
+  saldoNetoDeCaja, serieDiariaIngresos, ventasMensualesPorConcepto,
 } from "./dashboard-calculos";
 import { compararAcumulado, compararTicketPromedio, construirRitmo, rangosDelPeriodo, tramoComparado, variacionPorConcepto, type Comparacion, type Periodo } from "./dashboard-periodos";
 import { isoLocal } from "./dashboard-fechas";
-import type { CambioMeta } from "./dashboard-metas";
 
 const nombreMedioPago = (valor: string) => valor.toLocaleLowerCase("es-PE").replaceAll("_", " ").replace(/\b\p{L}/gu, (letra) => letra.toLocaleUpperCase("es-PE"));
 const mensajeError = (problema: unknown, respaldo: string) => problema instanceof ErrorApi && problema.estado === 401 ? "La sesión venció. Inicia sesión nuevamente." : problema instanceof Error ? problema.message : respaldo;
@@ -34,10 +33,9 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
   const [resumen, setResumen] = useState<ResumenGerencial | null>(() => datosInicio?.resumen ?? null);
   const [cargando, setCargando] = useState(() => !datosInicioValidos);
   const [error, setError] = useState(() => datosInicio?.errorResumen ?? "");
-  const [periodo, setPeriodo] = useState<Periodo>("MES");
-  const [comparar, setComparar] = useState<Comparacion>("ANTERIOR");
+  const periodo: Periodo = "MES";
+  const comparar: Comparacion = "ANTERIOR";
   const hoy = isoLocal(new Date());
-  const periodoActual = hoy.slice(0, 7);
   const rangos = rangosDelPeriodo(periodo, hoy);
   const comparado = tramoComparado(rangos, comparar);
   const puedeVerFinanzas = permisos.includes("FINANZAS.LEER");
@@ -52,8 +50,6 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
   const [rentabilidad, setRentabilidad] = useState<{ actual: Rentabilidad; comparada: Rentabilidad } | null>(null);
   const [articulos, setArticulos] = useState<ArticulosMasVendidos | null>(null);
   const [horarios, setHorarios] = useState<HorariosVentas | null>(null);
-  const [metasDashboard, setMetasDashboard] = useState<MetasDashboard | null>(null);
-  const [cobranza, setCobranza] = useState<{ actual: CobranzaPeriodo; anterior: CobranzaPeriodo } | null>(null);
   const [flujoAnual, setFlujoAnual] = useState<FlujoFinanciero | null>(null);
   const [composicion, setComposicion] = useState<{ actual: ComposicionCaja; comparada: ComposicionCaja } | null>(null);
   const [fallos, setFallos] = useState<Record<string, boolean>>({});
@@ -115,17 +111,6 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
     return () => { vigente = false; };
   }, [puedeVerIngresos, hoy, solicitudReporte]);
 
-  // Las metas son mensuales: solo se cargan cuando se mira el mes.
-  useEffect(() => {
-    if (!puedeVerIngresos || periodo !== "MES") return;
-    let vigente = true;
-    marcarFallo("metas", false);
-    void Promise.all([servicioReportes.metas(periodoActual), servicioReportes.cobranza({ desde: `${hoy.slice(0, 8)}01`, hasta: hoy }), servicioReportes.cobranza(mesAnteriorCompleto(hoy))])
-      .then(([metas, actual, anterior]) => { if (vigente) { setMetasDashboard(metas); setCobranza({ actual, anterior }); } })
-      .catch(() => { if (vigente) marcarFallo("metas", true); });
-    return () => { vigente = false; };
-  }, [puedeVerIngresos, periodo, hoy, periodoActual, solicitudReporte]);
-
   // Fijo: cobros y pagos de cada mes del año en curso.
   useEffect(() => {
     if (!puedeVerFinanzas) return;
@@ -147,16 +132,6 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
     return () => { vigente = false; };
   }, [puedeVerFinanzas, rangos.actual.desde, comparado.desde, comparado.hasta, hoy, solicitudFinanzas]);
 
-  const guardarMetas = async (cambios: CambioMeta[], alcance: "MES" | "TODOS") => {
-    let vigentes: MetasDashboard | null = null;
-    try {
-      for (const cambio of cambios) vigentes = await servicioReportes.guardarMeta({ indicador: cambio.indicador, periodo: alcance === "MES" ? periodoActual : null, valor: cambio.valor }, periodoActual);
-    } finally {
-      // Si un guardado intermedio falla, los anteriores ya quedaron en el servidor: la pantalla debe reflejarlos.
-      if (vigentes) setMetasDashboard(vigentes);
-    }
-  };
-
   // Derivados
   const dias = serieDiariaIngresos(reporteDiario, ventanaDiaria(hoy));
   const ingresos = reporteDiario ? compararAcumulado(dias, rangos, comparar) : null;
@@ -164,24 +139,16 @@ export function useDashboardDatos(puedeVerIngresos: boolean, permisos: string[])
   const monedaCaja = composicion ? monedaPrincipal([...composicion.actual.monedas, ...composicion.comparada.monedas]) : "PEN";
   const saldo = composicion ? { actual: saldoNetoDeCaja(composicion.actual.items, monedaCaja), anterior: saldoNetoDeCaja(composicion.comparada.items, monedaCaja), moneda: monedaCaja } : null;
   const margen = rentabilidad ? { actual: calcularMargen(rentabilidad.actual.filas), anterior: calcularMargen(rentabilidad.comparada.filas) } : null;
-  const avancesMetas = construirAvanceMetas({
-    hoy,
-    metas: { VENTAS_MES: metasDashboard?.metas.VENTAS_MES?.valor ?? null, COBRANZA: metasDashboard?.metas.COBRANZA?.valor ?? null, MARGEN: metasDashboard?.metas.MARGEN?.valor ?? null },
-    ingresos: ingresos ? { actual: ingresos.actual, anterior: ingresos.anterior } : null,
-    cobranza: { actual: porcentajeCobrado(cobranza?.actual ?? null), anterior: porcentajeCobrado(cobranza?.anterior ?? null) },
-    margen: { actual: margen?.actual?.porcentaje ?? null, anterior: margen?.anterior?.porcentaje ?? null },
-  });
   const mediosPago = (reporte?.porMedioPago ?? []).map((pago) => ({ nombre: nombreMedioPago(pago.medioPago), importe: Number(pago.total) })).filter((pago) => pago.importe > 0);
 
   return {
-    resumen, cargando, error, hoy, puedeVerFinanzas, puedeVerCostos, actualizando: cargandoReporte,
-    periodo, setPeriodo, comparar, setComparar, rangos,
+    resumen, cargando, error, hoy, puedeVerFinanzas, puedeVerCostos,
+    periodo, comparar, rangos,
     reporte: { cargando: cargandoReporte && reporteDiario === null, error: errorReporte, listo: reporteDiario !== null, mediosListos: reporte !== null },
     hayFallos: Object.values(fallos).some(Boolean),
     reintentar: () => { setSolicitudReporte((actual) => actual + 1); setSolicitudFinanzas((actual) => actual + 1); },
     indicadores: { ingresos, ticket, saldo, margen, mostrarMargen: puedeVerIngresos && puedeVerCostos && !fallos.rentabilidad, mostrarSaldo: puedeVerFinanzas && !fallos.composicion },
     ritmo: reporteDiario ? construirRitmo(dias, rangos) : null,
-    metas: { avances: avancesMetas, valores: metasDashboard?.metas ?? null, mostrar: periodo === "MES" && puedeVerIngresos && !fallos.metas && metasDashboard !== null && cobranza !== null && ingresos !== null, guardar: guardarMetas },
     variacionConceptos: reporteDiario ? variacionPorConcepto(dias, rangos, comparar) : [],
     mezclaVentas: reporteDiario ? ventasMensualesPorConcepto(dias, hoy) : [],
     mediosPago,

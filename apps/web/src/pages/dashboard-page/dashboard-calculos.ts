@@ -15,7 +15,6 @@ export type Comparativo = {
 };
 
 const aIso = (fecha: Date) => fecha.toISOString().slice(0, 10);
-const diasDelMes = (anio: number, mes: number) => new Date(Date.UTC(anio, mes, 0)).getUTCDate();
 
 export function variacionPorcentual(actual: number, anterior: number): number | null {
   if (anterior === 0) return actual === 0 ? 0 : null;
@@ -108,65 +107,6 @@ export function construirCascadaCaja(items: ReadonlyArray<{ moneda: string; conc
   }
   pasos.push({ clave: "SALDO", nombre: "Saldo neto", tipo: "final", valor: acumulado, rango: [Math.min(0, acumulado), Math.max(0, acumulado)] });
   return { pasos, cobrado, saldoNeto: acumulado };
-}
-
-export type EstadoMeta = "adelante" | "en-ritmo" | "atrasado";
-export type AvanceMeta = {
-  clave: "VENTAS_MES" | "COBRANZA" | "MARGEN";
-  titulo: string;
-  unidad: "soles" | "porcentaje";
-  actual: number | null;
-  meta: number | null;
-  anterior: number | null;
-  /** Lo que se debería llevar hoy si el ritmo fuera parejo hasta la meta; solo para ingresos. */
-  esperado: number | null;
-  /** Avance sobre la meta, en porcentaje; null si no hay meta o dato. */
-  avance: number | null;
-  estado: EstadoMeta | null;
-};
-
-/** Último día del mes anterior al de `hoy`, para medir el mes anterior completo. */
-export function mesAnteriorCompleto(hoy: string) {
-  const [anio, mes] = hoy.split("-").map(Number);
-  return { desde: aIso(new Date(Date.UTC(anio, mes - 2, 1))), hasta: aIso(new Date(Date.UTC(anio, mes - 1, 0))) };
-}
-
-export const porcentajeCobrado = (cobranza: { facturado: string; cobrado: string } | null) => {
-  if (!cobranza) return null;
-  const facturado = Number(cobranza.facturado);
-  return facturado > 0 ? Math.min(100, (Number(cobranza.cobrado) / facturado) * 100) : null;
-};
-
-function estadoContraReferencia(actual: number, referencia: number): EstadoMeta {
-  if (actual >= referencia) return "adelante";
-  return actual >= referencia * 0.9 ? "en-ritmo" : "atrasado";
-}
-
-/** Arma las tres barras de avance. Los ingresos se miden contra el ritmo esperado a hoy; la cobranza y el margen, contra la meta. */
-export function construirAvanceMetas(entrada: {
-  hoy: string;
-  metas: Partial<Record<"VENTAS_MES" | "COBRANZA" | "MARGEN", number | null>>;
-  ingresos: { actual: number; anterior: number } | null;
-  cobranza: { actual: number | null; anterior: number | null };
-  margen: { actual: number | null; anterior: number | null };
-}): AvanceMeta[] {
-  const [anio, mes, dia] = entrada.hoy.split("-").map(Number);
-  const diasMes = diasDelMes(anio, mes);
-  const metaVentas = entrada.metas.VENTAS_MES ?? null;
-  const esperado = metaVentas !== null ? (metaVentas * dia) / diasMes : null;
-  const filas = [
-    { clave: "VENTAS_MES" as const, titulo: "Ingresos del mes", unidad: "soles" as const, actual: entrada.ingresos?.actual ?? null, anterior: entrada.ingresos?.anterior ?? null, meta: metaVentas, esperado },
-    { clave: "COBRANZA" as const, titulo: "Cobranza", unidad: "porcentaje" as const, actual: entrada.cobranza.actual, anterior: entrada.cobranza.anterior, meta: entrada.metas.COBRANZA ?? null, esperado: null },
-    { clave: "MARGEN" as const, titulo: "Margen bruto", unidad: "porcentaje" as const, actual: entrada.margen.actual, anterior: entrada.margen.anterior, meta: entrada.metas.MARGEN ?? null, esperado: null },
-  ];
-  return filas.map((fila) => {
-    const referencia = fila.esperado ?? fila.meta;
-    return {
-      ...fila,
-      avance: fila.actual !== null && fila.meta !== null ? (fila.actual / fila.meta) * 100 : null,
-      estado: fila.actual !== null && referencia !== null && referencia > 0 ? estadoContraReferencia(fila.actual, referencia) : null,
-    };
-  });
 }
 
 export type MetricaCalor = "importe" | "operaciones";
