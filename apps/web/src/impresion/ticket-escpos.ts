@@ -73,6 +73,8 @@ export function ticketEscPos(documento: DocumentoImprimible, logo: LogoTicket | 
     p.negrita(true).tamano(1, 2);
     par("TOTAL", montoSoles(t.total));
     p.tamano(1, 1).negrita(false);
+    if (documento.adelanto) par("ADELANTO", montoSoles(documento.adelanto.monto));
+    if (documento.adelanto) { p.negrita(true); par("FALTA PAGAR", montoSoles(documento.adelanto.saldo)); p.negrita(false); }
     if (documento.montoEnLetras) { p.negrita(true).linea("IMPORTE EN LETRAS:").negrita(false); parrafo(documento.montoEnLetras); }
   }
   if (documento.condicionPago === "CREDITO") {
@@ -84,7 +86,7 @@ export function ticketEscPos(documento: DocumentoImprimible, logo: LogoTicket | 
 
   p.alinear("centro");
   if (documento.cadenaQr) p.saltos(1).qr(documento.cadenaQr, 6).saltos(1);
-  parrafo(documento.leyenda);
+  if (documento.leyenda) parrafo(documento.leyenda);
   if (documento.electronico && emisor?.urlConsultaComprobantes) parrafo(`Consulta en ${emisor.urlConsultaComprobantes}`);
   if (documento.hash) parrafo(`Resumen: ${documento.hash}`);
   if (emisor?.mensajePie) { p.saltos(1); parrafo(emisor.mensajePie); }

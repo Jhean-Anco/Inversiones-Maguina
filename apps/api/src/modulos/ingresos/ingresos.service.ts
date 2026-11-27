@@ -133,7 +133,7 @@ export class ServicioIngresos {
     if (fechaAcabado < fechaRecepcion) throw new BadRequestException("La fecha estimada de acabado no puede ser anterior a la fecha de recepción.");
     const trabajadorResponsableId = uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
     if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
-    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true);
+    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000);
     const id = randomUUID();
     const serieOrden = await this.serieActiva("ORDEN_SERVICIO");
     const [correlativoOrden] = await db.insert(correlativosDocumentosInternos).values({ tipo: "ORDEN_SERVICIO", ultimoNumero: 1 }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } }).returning({ numero: correlativosDocumentosInternos.ultimoNumero });
@@ -167,7 +167,7 @@ export class ServicioIngresos {
     const adelantoCuentaFinancieraId = adelanto > 0 ? await validarCuentaFinanciera(datos.adelantoCuentaFinancieraId ?? actual.adelantoCuentaFinancieraId, adelantoMedioPago!, true) : null;
     const [orden] = await db.update(ordenesServicio).set({ estado: estado as string,
       diagnostico: datos.diagnostico === undefined ? actual.diagnostico : texto(datos.diagnostico, "El diagnóstico", 5000),
-      motivo, trabajadorResponsableId, condicionRecepcion: datos.condicionRecepcion === undefined ? actual.condicionRecepcion : texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true), adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
+      motivo, trabajadorResponsableId, condicionRecepcion: datos.condicionRecepcion === undefined ? actual.condicionRecepcion : texto(datos.condicionRecepcion, "El comentario de recepción", 2000), adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
       fechaAcabado, detalles, notasTrabajo: typeof datos.notaAvance === "string" && datos.notaAvance.trim() ? [...actual.notasTrabajo, { fecha: new Date().toISOString(), texto: texto(datos.notaAvance, "La nota de avance", 2000, true)!, usuarioId }] : actual.notasTrabajo, actualizadoEn: new Date() })
       .where(and(eq(ordenesServicio.id, id), inArray(ordenesServicio.estado, ["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"]))).returning();
     if (!orden) throw new ConflictException("La orden cambió mientras la actualizabas. Recarga e inténtalo otra vez.");

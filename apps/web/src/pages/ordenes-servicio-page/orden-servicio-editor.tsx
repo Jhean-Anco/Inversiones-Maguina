@@ -1,5 +1,5 @@
 import "./orden-servicio-editor.css";
-import { Lock, Search, UserPlus, X } from "lucide-react";
+import { ChevronDown, ClipboardList, Lock, Printer, Search, UserPlus, X } from "lucide-react";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import type { FormEventHandler, KeyboardEventHandler } from "react";
 import { SelectorCuentaFinanciera } from "../../components/finanzas/selector-cuenta-financiera/selector-cuenta-financiera";
@@ -122,15 +122,24 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
               <label className="os-campo">{edicion ? "Placa o identificador" : "Placa o identificador *"}
                 <input className="os-placa" value={vehiculo.datos.placa} disabled={edicion} onChange={(evento) => vehiculo.onChange({ ...vehiculo.datos, placa: evento.target.value.toLocaleUpperCase("es-PE") })} placeholder="Ej. ABC-123" required />
               </label>
+              <label className="os-campo">
+                Encargado de revisar el móvil *
+                <span className="os-select">
+                  <select value={recepcion.trabajadorId} onChange={(evento) => recepcion.onTrabajador(evento.target.value)} required>
+                    <option value="">Selecciona personal</option>
+                    {recepcion.personal.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                  <ChevronDown aria-hidden="true" size={16} />
+                </span>
+              </label>
             </div>
 
-            <div className="os-cliente">
-              <div className="os-campos">
-              <label className="os-campo">Encargado de revisar el móvil
-                  <select value={recepcion.trabajadorId} onChange={(evento) => recepcion.onTrabajador(evento.target.value)} required><option value="">Selecciona personal</option>{recepcion.personal.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
-                </label>
-              </div>
-              <label className="os-campo">Comentario de cómo llega el móvil<textarea value={recepcion.condicion} maxLength={2000} rows={3} required onChange={(evento) => recepcion.onCondicion(evento.target.value)} placeholder="Describe el estado en que se recibe el móvil" /></label>
+            <div className="os-revision">
+              <label className="os-campo os-revision-condicion">
+                <span className="os-revision-titulo"><ClipboardList aria-hidden="true" size={16} />Comentario de cómo llega el móvil <em className="os-opcional">Opcional</em></span>
+                <textarea value={recepcion.condicion} maxLength={2000} rows={4} onChange={(evento) => recepcion.onCondicion(evento.target.value)} placeholder="Ej. Rayón en guardafango izquierdo, faro trasero roto, llega con poco combustible…" />
+                <small className="os-ayuda os-contador">{recepcion.condicion.length}/2000</small>
+              </label>
             </div>
             <div className="os-cliente">
               <label className="os-etiqueta" htmlFor="orden-cliente-busqueda">{edicion ? "Cliente" : "Cliente *"}</label>
@@ -195,8 +204,6 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
         <aside className="os-resumen" aria-label="Resumen de la orden">
           <h3>Resumen de la orden</h3>
           <dl className="os-importes" aria-label="Desglose de importes de la orden">
-            <div><dt>Subtotal sin IGV</dt><dd>{formatearSoles(importes.subtotal)}</dd></div>
-            <div><dt>IGV (18%)</dt><dd>{formatearSoles(importes.igv)}</dd></div>
             <div className="es-total"><dt>Total de la orden</dt><dd>{formatearSoles(importes.total)}</dd></div>
           </dl>
           <div className="os-adelanto">
@@ -207,7 +214,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
             <div className="os-saldo"><span>Saldo por cobrar</span><strong>{formatearSoles(saldo)}</strong></div>
           </div>
           <div className="os-acciones">
-            <button className="os-guardar" type="submit" disabled={pago.guardarDeshabilitado}>{pago.etiquetaGuardar}<span aria-hidden="true">→</span></button>
+            <button className="os-guardar" type="submit" disabled={pago.guardarDeshabilitado}><Printer aria-hidden="true" size={18} />{pago.etiquetaGuardar}</button>
             <button className="os-cancelar" type="button" disabled={pago.guardando} onClick={pago.onCancelar}>Cancelar</button>
           </div>
         </aside>

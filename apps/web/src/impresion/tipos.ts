@@ -28,6 +28,8 @@ export type DocumentoImprimible = {
   items: { codigo: string | null; descripcion: string; unidad: string | null; cantidad: string; precioUnitario: string | null; descuento: string | null; total: string | null }[];
   /** Null en documentos sin importes (guías de remisión). */
   totales: { gravada: string; exonerada: string; inafecta: string; descuento: string; igv: string; tasaIgv: string; total: string } | null;
+  /** Pago parcial (órdenes de servicio): se imprime ADELANTO antes del total y FALTA PAGAR después. */
+  adelanto?: { monto: string; saldo: string } | null;
   montoEnLetras: string;
   condicionPago: "CONTADO" | "CREDITO";
   medioPago: string | null;

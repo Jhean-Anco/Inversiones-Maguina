@@ -19,6 +19,7 @@ export type DatosDocumentoInterno = {
   lineas: { descripcion: string; cantidad: number | string; precioUnitario?: number | null; descuento?: number | null; total?: number | null }[];
   /** Importes del documento; sin ellos (guías de remisión) no se imprime ningún total. */
   importes?: { total: number; subtotal?: number; igv?: number; tasaIgv?: number } | null;
+  adelanto?: { monto: number; saldo: number } | null;
   medioPago?: string | null;
   observacion?: string | null;
   leyenda?: string;
@@ -46,6 +47,7 @@ export function documentoInterno(d: DatosDocumentoInterno): DocumentoImprimible 
       total: linea.total == null ? null : dinero(linea.total),
     })),
     totales: importes ? { gravada: dinero(gravada), exonerada: "0.00", inafecta: "0.00", descuento: "0.00", igv: dinero(importes.igv ?? 0), tasaIgv: dinero(importes.tasaIgv ?? 0), total: dinero(importes.total) } : null,
+    adelanto: d.adelanto ? { monto: dinero(d.adelanto.monto), saldo: dinero(d.adelanto.saldo) } : null,
     montoEnLetras: "", condicionPago: "CONTADO", medioPago: d.medioPago ?? null, cuotas: [], documentoModificado: null, observacion: d.observacion || null,
     hash: null, cadenaQr: null, leyenda: d.leyenda ?? "Documento interno sin valor tributario.", enlacePdf: d.enlacePdf ?? null,
     advertencias: [...(d.advertencias ?? []), ...(d.emisor ? [] : ["Configura los datos de la empresa (EMPRESA_RUC, EMPRESA_RAZON_SOCIAL y EMPRESA_DIRECCION) para que aparezcan en el documento."])],

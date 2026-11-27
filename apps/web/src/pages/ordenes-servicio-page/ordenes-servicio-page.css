@@ -274,7 +274,7 @@
 }
 .ordenes-page .ordenes-row-actions {
   gap: 2px;
-  justify-content: flex-end;
+  justify-content: center;
 }
 .ordenes-page .ordenes-row-actions > .erp-icon-action,
 .ordenes-page .ordenes-row-actions > .document-print-menu .erp-icon-action {

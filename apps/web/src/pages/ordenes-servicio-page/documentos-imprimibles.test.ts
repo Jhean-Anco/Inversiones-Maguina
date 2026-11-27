@@ -17,8 +17,9 @@ describe("documentos imprimibles de cada listado", () => {
 
   it("orden de servicio", async () => {
     const d = await documentoDeOrden({ codigo: "OS-1", fechaRecepcion: "2026-11-25", fechaAcabado: "2026-11-27", clienteNombre: "Ana", vehiculoPlaca: "ABC", motivo: "Ruido", adelanto: "20", estado: "ABIERTA", detalles: [linea] } as never);
-    expect(d).toMatchObject({ tipo: "ORDEN_SERVICIO", serieNumero: "OS-1", totales: { total: "118.00", igv: "18.00" } });
-    expect(d.datosExtra?.map((x) => x.etiqueta)).toEqual(["Vehículo", "Estado", "Entrega estimada", "Motivo", "Adelanto recibido"]);
+    expect(d).toMatchObject({ tipo: "ORDEN_SERVICIO", serieNumero: "OS-1", totales: { total: "118.00", igv: "0.00", tasaIgv: "0.00" } });
+    expect(d.datosExtra?.map((x) => x.etiqueta)).toEqual(["Vehículo", "Entrega estimada", "Motivo"]);
+    expect(d.adelanto).toEqual({ monto: "20.00", saldo: "98.00" });
   });
 
   it("cotización, con el cliente recién elegido", async () => {

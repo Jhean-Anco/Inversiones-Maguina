@@ -26,17 +26,19 @@ type OrdenesServicioListadoProps = {
   etiquetaEstado: (orden: OrdenServicio) => string;
 };
 
-type FiltroEstado = "TODAS" | OrdenServicio["estado"];
+type FiltroEstado = "ABIERTA" | "COMPLETADA";
 
 const filtrosEstado: { valor: FiltroEstado; etiqueta: string }[] = [
-  { valor: "TODAS", etiqueta: "Todas" },
   { valor: "ABIERTA", etiqueta: "Abiertas" },
-  { valor: "EN_PROCESO", etiqueta: "En proceso" },
-  { valor: "ESPERANDO_REPUESTOS", etiqueta: "Esperando repuestos" },
-  { valor: "COMPLETADA", etiqueta: "Completadas" },
-  { valor: "FACTURADA", etiqueta: "Facturadas" },
-  { valor: "ANULADA", etiqueta: "Anuladas" },
+  { valor: "COMPLETADA", etiqueta: "Cerradas" },
 ];
+
+// Solo se distinguen dos grupos: órdenes en curso (abiertas) y órdenes con documento emitido (cerradas).
+const grupoEstado = (estado: OrdenServicio["estado"]): FiltroEstado | null => {
+  if (estado === "ABIERTA" || estado === "EN_PROCESO" || estado === "ESPERANDO_REPUESTOS" || estado === "COMPLETADA") return "ABIERTA";
+  if (estado === "EMITIENDO" || estado === "FACTURADA") return "COMPLETADA";
+  return null;
+};
 
 export function OrdenesServicioListado({
   ordenes,
@@ -54,7 +56,7 @@ export function OrdenesServicioListado({
   formatearTotal,
   etiquetaEstado,
 }: OrdenesServicioListadoProps) {
-  const [filtro, setFiltro] = useState<FiltroEstado>("TODAS");
+  const [filtro, setFiltro] = useState<FiltroEstado>("ABIERTA");
   const ordenesOrdenadas = useMemo(() => {
     const ordenadas = [...ordenes].sort((a, b) => {
       const fechaA = Date.parse(a.fechaRecepcion);
@@ -70,17 +72,19 @@ export function OrdenesServicioListado({
     return ordenadas;
   }, [ordenes]);
   const conteos = useMemo(() => {
-    const porEstado = new Map<FiltroEstado, number>([["TODAS", ordenes.length]]);
-    for (const orden of ordenes) porEstado.set(orden.estado, (porEstado.get(orden.estado) ?? 0) + 1);
+    const porEstado = new Map<FiltroEstado, number>();
+    for (const orden of ordenes) {
+      const grupo = grupoEstado(orden.estado);
+      if (grupo) porEstado.set(grupo, (porEstado.get(grupo) ?? 0) + 1);
+    }
     return porEstado;
   }, [ordenes]);
-  // Un filtro sin órdenes se oculta, salvo "Todas" y el que está seleccionado.
-  const filtrosVisibles = filtrosEstado.filter(({ valor }) => valor === "TODAS" || valor === filtro || (conteos.get(valor) ?? 0) > 0);
+  const filtrosVisibles = filtrosEstado;
   const ordenesVisibles = useMemo(
-    () => filtro === "TODAS" ? ordenesOrdenadas : ordenesOrdenadas.filter((orden) => orden.estado === filtro),
+    () => ordenesOrdenadas.filter((orden) => grupoEstado(orden.estado) === filtro),
     [filtro, ordenesOrdenadas],
   );
-  const hayFiltros = Boolean(busqueda) || filtro !== "TODAS";
+  const hayFiltros = Boolean(busqueda) || ordenes.length > 0;
 
   return <section className={`${c.page} ordenes-page`}>
     {error && <NotificacionFlotante mensaje={error} />}
@@ -111,7 +115,7 @@ export function OrdenesServicioListado({
       claseTabla={`${c.table} ordenes-table`}
       claseContenedor={c.tableScroll}
       centrarCeldas={false}
-      encabezadoTabla={<tr><th>Orden</th><th>Móvil / encargado</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th className="!text-right">Acciones</th></tr>}
+      encabezadoTabla={<tr><th>Orden</th><th>Móvil / encargado</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th>Acciones</th></tr>}
       renderizarFila={(orden) => <OrdenServicioRow
         key={orden.id}
         orden={orden}

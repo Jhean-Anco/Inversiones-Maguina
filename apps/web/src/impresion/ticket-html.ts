@@ -26,7 +26,7 @@ function totalesHtml(d: DocumentoImprimible) {
     Number(t.descuento) > 0 ? fila("DESCUENTOS", montoSoles(t.descuento)) : "",
     fila(`IGV (${Number(t.tasaIgv)}%)`, montoSoles(t.igv)),
   ] : [];
-  return `${filas.join("")}${fila("TOTAL", montoSoles(t.total), "total")}${d.montoEnLetras ? `<p class="letras"><b>IMPORTE EN LETRAS:</b><br>${e(d.montoEnLetras)}</p>` : ""}`;
+  return `${filas.join("")}${fila("TOTAL", montoSoles(t.total), "total")}${d.adelanto ? fila("ADELANTO", montoSoles(d.adelanto.monto)) : ""}${d.adelanto ? fila("FALTA PAGAR", montoSoles(d.adelanto.saldo), "total") : ""}${d.montoEnLetras ? `<p class="letras"><b>IMPORTE EN LETRAS:</b><br>${e(d.montoEnLetras)}</p>` : ""}`;
 }
 
 function pagoHtml(d: DocumentoImprimible) {
@@ -72,7 +72,7 @@ export function cuerpoComprobanteHtml(d: DocumentoImprimible, logo: LogoTicket |
 ${itemsHtml(d)}
 <section class="totales">${totalesHtml(d)}${pagoHtml(d)}${d.observacion ? `<p><b>Obs.:</b> ${e(d.observacion)}</p>` : ""}</section>
 ${d.advertencias.map((a) => `<p class="aviso">${e(a)}</p>`).join("")}
-<footer>${d.cadenaQr ? `<div class="qr">${qrSvg(d.cadenaQr)}</div>` : ""}<p>${e(d.leyenda)}</p>${d.electronico && em?.urlConsultaComprobantes ? `<p>Consulta en ${e(em.urlConsultaComprobantes)}</p>` : ""}${d.hash ? `<p class="hash"><b>Resumen:</b> ${e(d.hash)}</p>` : ""}${em?.mensajePie ? `<p class="pie">${e(em.mensajePie)}</p>` : ""}</footer>`;
+<footer>${d.cadenaQr ? `<div class="qr">${qrSvg(d.cadenaQr)}</div>` : ""}${d.leyenda ? `<p>${e(d.leyenda)}</p>` : ""}${d.electronico && em?.urlConsultaComprobantes ? `<p>Consulta en ${e(em.urlConsultaComprobantes)}</p>` : ""}${d.hash ? `<p class="hash"><b>Resumen:</b> ${e(d.hash)}</p>` : ""}${em?.mensajePie ? `<p class="pie">${e(em.mensajePie)}</p>` : ""}</footer>`;
 }
 
 const ESTILO_BASE = `*{box-sizing:border-box;margin:0;padding:0}html,body{background:#fff;color:#000}body{font:600 11px/1.35 "Arial Narrow",Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}

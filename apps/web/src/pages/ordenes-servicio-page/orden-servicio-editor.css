@@ -900,3 +900,76 @@
     scroll-behavior: auto;
   }
 }
+
+/* Revisión: encargado + estado de llegada del móvil */
+.os-revision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--os-borde);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.os-revision-titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #27445f;
+  font-weight: 700;
+}
+.os-revision-titulo svg { color: #2878b9; flex: 0 0 auto; }
+.os-select { position: relative; display: block; }
+.os-select select {
+  height: 46px;
+  width: 100%;
+  padding: 0 40px 0 14px;
+  border: 1px solid var(--os-borde-fuerte);
+  border-radius: 10px;
+  background: #fff;
+  color: #142b42;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  appearance: none;
+  cursor: pointer;
+}
+.os-select svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  color: #52697d;
+  pointer-events: none;
+}
+.os-revision textarea {
+  min-height: 96px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border: 1px solid var(--os-borde-fuerte);
+  border-radius: 10px;
+  background: #fff;
+  color: #142b42;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  resize: vertical;
+}
+.os-select select:focus,
+.os-revision textarea:focus {
+  outline: none;
+  border-color: #2878b9;
+  box-shadow: 0 0 0 3px #2878b933;
+}
+.os-ayuda { color: #6d8093; font-size: 11px; font-weight: 500; }
+.os-contador { align-self: flex-end; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .os-revision { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+}
+.os-campos:has(.os-select) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .os-campos:has(.os-select) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .os-campos:has(.os-select) { grid-template-columns: minmax(0, 1fr); } }
+.os-opcional { margin-left: 4px; padding: 1px 7px; border-radius: 9px; background: #eef2f6; color: #52697d; font-size: 10px; font-style: normal; font-weight: 600; }
