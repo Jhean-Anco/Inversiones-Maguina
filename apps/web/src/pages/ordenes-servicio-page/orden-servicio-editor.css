@@ -201,6 +201,7 @@
   font: inherit;
 }
 .os-campo > input,
+.os-campo > select,
 .os-cliente-fila input,
 .os-cliente-fila select,
 .os-resumen .selector-cuenta-financiera select {
@@ -213,6 +214,21 @@
   background: #fff;
   color: var(--os-tinta);
   font-size: 14px;
+}
+.os-campo > textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: 12px 14px;
+  border: 1px solid var(--os-borde-fuerte);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--os-tinta);
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.os-campo > textarea::placeholder {
+  color: #91a0af;
 }
 .os-campo > input:disabled {
   border-color: var(--os-borde);

@@ -10,18 +10,25 @@ const riskyStatements = [
   /\bSET\s+NOT\s+NULL\b/gi,
 ];
 
-const approvedMigration = {
-  path: "packages/database/migrations/0189_retirar_fotografias.sql",
-  blob: "80d56760b1a015715a05b090dd77e42e48e36b69",
-};
+const approvedMigrations = [
+  {
+    path: "packages/database/migrations/0189_retirar_fotografias.sql",
+    blob: "80d56760b1a015715a05b090dd77e42e48e36b69",
+  },
+  {
+    path: "packages/database/migrations/0199_compra_mototaxi_sin_proveedor.sql",
+    blob: "bcc1ad2da4e6a2d276457d027c601e26b8dd763c",
+  },
+];
 
 export function isApprovedDestructiveMigration({ findings, approvalLabel, migrationPaths, migrationBlob }) {
+  const migration = approvedMigrations.find(({ path, blob }) =>
+    migrationPaths.length === 1 && migrationPaths[0] === path && migrationBlob === blob,
+  );
   return approvalLabel === "true"
-    && migrationPaths.length === 1
-    && migrationPaths[0] === approvedMigration.path
-    && migrationBlob === approvedMigration.blob
+    && migration !== undefined
     && findings.length > 0
-    && findings.every((finding) => finding.startsWith(`${approvedMigration.path}:`) && finding.includes("operación potencialmente destructiva"));
+    && findings.every((finding) => finding.startsWith(`${migration.path}:`) && finding.includes("operación potencialmente destructiva"));
 }
 
 export function inspectMigrationChanges(nameStatus, addedLines) {
@@ -115,14 +122,14 @@ export function auditMigrations(baseRef = process.env.MIGRATION_BASE_REF ?? "ori
   const findings = inspectMigrationChanges(entries, addedLines);
   if (findings.length) {
     const migrationPaths = [...new Set(findings.map((finding) => finding.split(":")[0]))];
-    const migrationBlob = migrationPaths.length === 1 ? runGit(["hash-object", approvedMigration.path]).trim() : "";
+    const migrationBlob = migrationPaths.length === 1 ? runGit(["hash-object", migrationPaths[0]]).trim() : "";
     if (isApprovedDestructiveMigration({
       findings,
       approvalLabel: process.env.MIGRATION_DESTRUCTIVE_APPROVED,
       migrationPaths,
       migrationBlob,
     })) {
-      console.log(`Migración destructiva autorizada mediante etiqueta del PR: ${approvedMigration.path} (${approvedMigration.blob}).`);
+      console.log(`Migración destructiva autorizada mediante etiqueta del PR: ${migrationPaths[0]} (${migrationBlob}).`);
       return [];
     }
     console.error("La auditoría de migraciones encontró operaciones que requieren revisión:");

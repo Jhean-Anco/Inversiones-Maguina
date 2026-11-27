@@ -16,7 +16,6 @@
 .moto-modal footer button{
   min-height: 40px; padding: 0 14px; border: 1px solid #d5e0ec; border-radius: 8px; background: var(--moto-surface); color: var(--moto-primary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
-.moto-panel { min-width: 0; padding: 22px; border: 1px solid var(--moto-border); border-radius: 14px; background: var(--moto-surface); box-shadow: 0 4px 16px #122e4d08; }
 .moto-quiet-button { border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .moto-primary { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 1px solid var(--action-primary-border); border-radius: 10px; background: var(--action-primary-surface); color: var(--action-primary); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
 .moto-primary:hover:not(:disabled) { border-color: var(--action-primary-border); background: var(--action-primary-hover-surface); color: var(--action-primary-hover); }
@@ -25,14 +24,7 @@
 .moto-modal { gap: 18px; width: min(820px,100%); max-height: min(90dvh,900px); overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 24px; border: 1px solid var(--moto-border); border-radius: 14px; background: var(--moto-surface); box-shadow: 0 24px 80px #10284244; }
 .moto-modal :is(button,input,select,textarea):focus-visible { outline: 3px solid #3784bd66; outline-offset: 2px; }
 .moto-modal footer { display: flex; justify-content: flex-end; gap: 9px; padding-top: 14px; border-top: 1px solid var(--moto-border); }.moto-modal footer .moto-primary { padding: 0 18px; }
-.moto-stocktake-page { display: grid; gap: 18px; }
-.moto-stocktake-hint { margin: -8px 0 0; color: var(--moto-muted); font-size: 12px; }
-.moto-stocktake-counter { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
-.moto-stocktake-counter>div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--moto-border); border-radius: 9px; background: var(--moto-soft); }
-.moto-stocktake-counter span { color: var(--moto-muted); font-size: 11px; }
-.moto-stocktake-counter strong { color: var(--moto-ink); font-size: 20px; }
-.moto-stocktake-counter .is-surplus strong { color: #16814f; }.moto-stocktake-counter .is-shortage strong { color: #b43f45; }.moto-stocktake-counter .is-even strong { color: #52718f; }
-.moto-stocktake-loading { color: var(--moto-muted); font-size: 12px; } :where(html[data-responsive-profile="mobile-portrait"]) .mototaxis-page { padding: 0 0 20px; }:where(html[data-responsive-profile="mobile-portrait"]) .moto-quiet-button { justify-self: end; }:where(html[data-responsive-profile="mobile-portrait"]) .moto-panel { padding: 17px; }:where(html[data-responsive-profile="mobile-portrait"]) .moto-stocktake-counter { grid-template-columns: 1fr; }
 
 .moto-unit-table-cost { text-align: right; }
 .moto-unit-table-warranty button { padding: 0; border: 0; background: transparent; color: var(--moto-primary); font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+:where(html[data-responsive-profile="mobile-portrait"]) .mototaxis-page { padding: 0 0 20px; }:where(html[data-responsive-profile="mobile-portrait"]) .moto-quiet-button { justify-self: end; }

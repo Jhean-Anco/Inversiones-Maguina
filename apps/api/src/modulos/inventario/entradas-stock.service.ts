@@ -364,7 +364,7 @@ export class ServicioEntradasStock {
     const usuarioId = uuid(usuarioIdEntrada, "El usuario");
     const d = await this.prepararDatos(entrada);
     try {
-      await db.transaction(async (tx) => {
+      const resultado = await db.transaction(async (tx) => {
         const [compra] = await tx.select({ id: entradasStock.id, estado: entradasStock.estado, tipoDocumento: entradasStock.tipoDocumento, numeroDocumento: entradasStock.numeroDocumento })
           .from(entradasStock).where(eq(entradasStock.id, id)).for("update").limit(1);
         if (!compra) throw new NotFoundException("No se encontró la compra de repuestos.");
@@ -397,8 +397,9 @@ export class ServicioEntradasStock {
         await tx.delete(entradasStockDocumentoDetalle).where(and(eq(entradasStockDocumentoDetalle.entradaId, id),
           sql`not exists (select 1 from entradas_stock_detalle d where d.detalle_documento_id = ${entradasStockDocumentoDetalle.id})`));
         await tx.update(entradasStock).set(this.camposCabecera(d, numero, total, totalPagos)).where(eq(entradasStock.id, id));
+        return { id: compra.id };
       });
-      return this.consultar(id);
+      return this.consultar(resultado.id);
     } catch (error) {
       if (esViolacionUnicidad(error)) throw new ConflictException("La compra o un movimiento duplicado ya existe.");
       throw error;

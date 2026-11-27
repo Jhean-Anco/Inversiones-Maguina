@@ -417,3 +417,234 @@ input[type="reset"] {
 .ordenes-page .listado-maestro-tabla td:nth-child(2) > span {
   white-space: nowrap;
 }
+
+/* ==========================================================================
+ * Capa premium: primitivas que consumen los tokens de index.css.
+ * Las primitivas viven en @layer components para que las utilidades de
+ * Tailwind de cada vista sigan pudiendo ajustarlas; los alias de clases
+ * heredadas van sin capa para imponerse a main.css sin !important.
+ * ========================================================================== */
+
+/* Tipografía base: cifras tabulares y titulares con tracking ajustado. */
+.erp-layout {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: -0.003em;
+}
+:where(.erp-layout, [role="dialog"], [role="alertdialog"]) :where(h1, h2, h3) {
+  letter-spacing: var(--erp-tracking-tight);
+}
+:where(.erp-layout, [role="dialog"], [role="alertdialog"]) :where(td, th, output, data, time, [class*="total"], [class*="monto"], [class*="importe"], [class*="precio"], [class*="saldo"], [class*="cantidad"], [class*="kpi"]) {
+  font-variant-numeric: tabular-nums;
+}
+::selection {
+  background: color-mix(in srgb, var(--erp-focus) 22%, transparent);
+}
+
+@layer components {
+  .erp-btn {
+    display: inline-flex;
+    min-height: var(--erp-control-h);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--erp-radius-md);
+    font: inherit;
+    font-size: var(--erp-text-base);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.006em;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .erp-btn--lg {
+    min-height: var(--erp-control-h-lg);
+    padding: 0 20px;
+    font-size: var(--erp-text-md);
+  }
+  .erp-btn--sm {
+    min-height: var(--erp-control-h-sm);
+    padding: 0 12px;
+    font-size: var(--erp-text-sm);
+  }
+  .erp-btn--primary {
+    border-color: #b51d2f;
+    background: linear-gradient(180deg, #d42a3e, var(--erp-accent));
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(140 26 43 / 22%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  }
+  .erp-btn--primary:hover:not(:disabled) {
+    border-color: #9e1827;
+    background: linear-gradient(180deg, #c62539, var(--erp-accent-hover));
+    box-shadow: 0 4px 12px -3px rgb(140 26 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
+  }
+  .erp-btn--brand {
+    border-color: var(--erp-brand-deep);
+    background: linear-gradient(180deg, var(--erp-brand-strong), var(--erp-brand));
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(7 30 60 / 24%), inset 0 1px 0 rgb(255 255 255 / 12%);
+  }
+  .erp-btn--brand:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--erp-brand), var(--erp-brand-deep));
+  }
+  .erp-btn--secondary {
+    border-color: var(--erp-border-strong);
+    background: var(--erp-surface);
+    color: var(--erp-ink);
+    box-shadow: var(--erp-shadow-xs);
+  }
+  .erp-btn--secondary:hover:not(:disabled) {
+    border-color: #b6c3d0;
+    background: var(--erp-surface-hover);
+  }
+  .erp-btn--ghost {
+    background: transparent;
+    color: var(--erp-ink-muted);
+  }
+  .erp-btn--ghost:hover:not(:disabled) {
+    background: var(--erp-surface-sunken);
+    color: var(--erp-ink);
+  }
+  .erp-btn--danger {
+    border-color: var(--erp-danger-border);
+    background: var(--erp-danger-bg);
+    color: var(--erp-danger);
+  }
+  .erp-btn--danger:hover:not(:disabled) {
+    border-color: #e5a5ae;
+    background: #fbe2e6;
+  }
+  .erp-btn:disabled,
+  .erp-btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+  }
+
+  /* Esqueleto de carga. */
+  .erp-skeleton {
+    border-radius: var(--erp-radius-sm);
+    background: linear-gradient(90deg, var(--erp-surface-sunken) 0%, #e9eef4 45%, var(--erp-surface-sunken) 90%) 0 0 / 220% 100%;
+    animation: erp-skeleton 1.4s ease-in-out infinite;
+  }
+}
+@keyframes erp-skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* Alias de botones heredados: primario de diálogo y acción secundaria. */
+.catalog-submit,
+.clientes-primary-action {
+  display: inline-flex;
+  min-height: var(--erp-control-h-lg);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 1px solid #b51d2f;
+  border-radius: var(--erp-radius-md);
+  background: linear-gradient(180deg, #d42a3e, var(--erp-accent));
+  color: #fff;
+  font-size: var(--erp-text-md);
+  font-weight: 600;
+  letter-spacing: -0.006em;
+  box-shadow: 0 1px 2px rgb(140 26 43 / 22%), inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.catalog-submit:not(:disabled):hover,
+.clientes-primary-action:hover:not(:disabled) {
+  border-color: #9e1827;
+  background: linear-gradient(180deg, #c62539, var(--erp-accent-hover));
+  color: #fff;
+  box-shadow: 0 4px 12px -3px rgb(140 26 43 / 40%), inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.catalog-cancel,
+.clientes-secondary-action {
+  display: inline-flex;
+  min-height: var(--erp-control-h-lg);
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid var(--erp-border-strong);
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-surface);
+  color: var(--erp-ink);
+  font-size: var(--erp-text-md);
+  font-weight: 600;
+  box-shadow: var(--erp-shadow-xs);
+}
+.catalog-cancel:hover:not(:disabled),
+.clientes-secondary-action:hover:not(:disabled) {
+  border-color: #b6c3d0;
+  background: var(--erp-surface-hover);
+}
+:is([role="dialog"], [role="alertdialog"]) > footer :is(.catalog-submit, .catalog-cancel) {
+  margin-top: 0;
+}
+
+/* Campos sin estilo propio dentro de diálogos: base consistente (especificidad 0). */
+@layer components {
+  :where([role="dialog"], [role="alertdialog"]) :where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="color"], [type="hidden"]), select, textarea) {
+    box-sizing: border-box;
+    min-height: var(--erp-control-h);
+    border: 1px solid var(--erp-border-strong);
+    border-radius: var(--erp-radius-sm);
+    padding: 0 12px;
+    background-color: var(--erp-surface);
+    color: var(--erp-ink);
+    font: inherit;
+    font-size: var(--erp-text-md);
+    font-weight: 400;
+    transition: border-color var(--erp-duration) var(--erp-ease), box-shadow var(--erp-duration) var(--erp-ease);
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(textarea) {
+    padding: 10px 12px;
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(input, select, textarea):where(:focus) {
+    border-color: var(--erp-focus);
+    box-shadow: var(--erp-focus-ring);
+    outline: none;
+  }
+  :where([role="dialog"], [role="alertdialog"]) :where(input, select, textarea):where(:disabled) {
+    background-color: var(--erp-surface-sunken);
+    color: var(--erp-ink-soft);
+  }
+}
+
+/* Formulario de repuesto: etiquetas en bloque encima del campo. */
+.producto-form-scroll .producto-form-grid {
+  gap: 14px 16px;
+}
+.producto-form-scroll .producto-form-grid label,
+.producto-form-scroll .producto-brand-field > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: var(--erp-ink-muted);
+  font-size: var(--erp-text-sm);
+  font-weight: 600;
+}
+.producto-form-scroll .producto-form-grid :is(input, select),
+.producto-form-scroll .producto-row :is(input, select) {
+  width: 100%;
+  min-width: 0;
+}
+.producto-form-scroll .producto-form-section {
+  border-color: var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-surface);
+  box-shadow: var(--erp-shadow-xs);
+}
+.producto-form-scroll .producto-form-section legend {
+  color: var(--erp-ink);
+  font-size: var(--erp-text-md);
+  font-weight: 700;
+  letter-spacing: var(--erp-tracking-tight);
+}
+
+/* Códigos y placas: evitar cortes con Inter (más ancha que Arial). */
+.listado-maestro-tabla td:first-child > :is(strong, b, a),
+.ordenes-page .listado-maestro-tabla td:nth-child(2) > span {
+  white-space: nowrap;
+}

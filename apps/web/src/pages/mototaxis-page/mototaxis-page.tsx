@@ -56,9 +56,9 @@ export function MototaxisPage({ seccion = "compras", puedeAjustarInventario = fa
       busqueda={busquedaCompras} alBuscar={setBusquedaCompras}
       alCrear={() => navegar("/mototaxis/compras/nueva")} alPagar={(compra) => void abrirPago(compra)} alAnular={puedeAnularCompra ? setCompraPorAnular : undefined} />}
     {compraPorAnular && <ConfirmarAnulacion titulo={`¿Anular la compra ${compraPorAnular.codigo}?`} descripcion="Se descontarán sus unidades del inventario, quedarán sin efecto sus garantías con el proveedor y su pago dejará de contar en las cuentas. No se puede deshacer." etiquetaConfirmar="Anular compra" onCancelar={() => setCompraPorAnular(null)} onConfirmar={anularCompra} />}
-    {seccion !== "compras" && <section className={`mototaxis-page ${mototaxisClasses.page}`}>
+    {seccion === "movimientos" && <AjusteInventarioMototaxis puedeAjustar={puedeAjustarInventario} />}
+    {seccion === "garantias" && <section className={`mototaxis-page ${mototaxisClasses.page}`}>
       {seccion === "garantias" && <GarantiasMototaxis garantias={garantias} reclamos={reclamos} cargando={cargando} puedeCrear={puedeCrearReclamo} puedeEditar={puedeAjustarInventario} alActualizar={cargar} />}
-      {seccion === "movimientos" && <AjusteInventarioMototaxis puedeAjustar={puedeAjustarInventario} />}
     </section>}
     {compraPago && (
       <Dialogo
