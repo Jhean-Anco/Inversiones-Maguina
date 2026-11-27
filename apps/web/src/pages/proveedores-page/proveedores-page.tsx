@@ -13,8 +13,10 @@ import { servicioProveedores, type DatosProveedorNuevo, type FichaProveedor, typ
 import { tamanioListadoSegunPantalla } from "../../components/ui/listado-maestro/paginacion-responsive";
 import { BotonAccion } from "../../components/ui/boton-accion";
 import { Eye } from "lucide-react";
-import { BuscadorDirectorio, directorioClasses, Opcional, SelectDirectorio } from "../../components/ui/directorio/directorio";
+import { BuscadorDirectorio, directorioClasses, Opcional, precargaBusqueda, SelectDirectorio, VacioDirectorio } from "../../components/ui/directorio/directorio";
 import { ventasClasses as v } from "../ventas-page/ventas-classes";
+import { DialogoCatalogo } from "../../components/inventario/dialogo-catalogo";
+import { dialogosModeloClasses as d, tonosPill } from "../inventario-mototaxis-page/dialogos-modelo-classes";
 
 const nombreDe = (proveedor: ProveedorRegistrado) => proveedor.nombre || proveedor.razonSocial || [proveedor.nombres, proveedor.apellidoPaterno, proveedor.apellidoMaterno].filter(Boolean).join(" ");
 
@@ -55,7 +57,7 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
       claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
       registros={proveedores} cargando={cargando} error={error || undefined} resetKey={busqueda}
       paginacion={{ modo: "remota", pagina, tamanio: porPagina, total, totalPaginas, desde: total ? (pagina - 1) * porPagina + 1 : 0, hasta: Math.min(pagina * porPagina, total), alCambiarPagina: setPagina, alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); } }}
-      vacio={<div className={v.empty}><strong>{busqueda ? "No hay coincidencias" : "Aún no hay proveedores registrados"}</strong><span>{busqueda ? "Revisa el nombre o documento." : "Los proveedores registrados aquí también estarán disponibles al registrar compras."}</span></div>}
+      vacio={<VacioDirectorio busqueda={busqueda} entidad="proveedor" ayuda="Revisa el nombre o documento, o regístralo ahora." alCrear={puedeCrear ? () => { setError(""); setAbierto(true); } : undefined} sinRegistros={<><strong>Aún no hay proveedores registrados</strong><span>Los proveedores registrados aquí también estarán disponibles al registrar compras.</span></>} />}
       encabezadoTabla={<tr><th>Proveedor</th><th>Documento</th><th>Tipo</th><th>Acciones</th></tr>}
       renderizarFila={(proveedor) => {
         const nombre = nombreDe(proveedor);
@@ -67,7 +69,7 @@ export function ProveedoresPage({ puedeCrear }: { puedeCrear: boolean }) {
           <td><div className={v.rowActions}><BotonAccion etiqueta={`Ver ficha de ${nombre}`} tono="neutral" icono={<Eye aria-hidden="true" />} onClick={() => setProveedorEnDetalle(proveedor)} /></div></td>
         </tr>;
       }} />
-    {abierto && createPortal(<FormularioProveedor onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
+    {abierto && createPortal(<FormularioProveedor inicial={precargaBusqueda(busqueda)} onGuardar={guardar} onCerrar={() => setAbierto(false)} />, document.body)}
     {proveedorEnDetalle && createPortal(<ProveedorFichaDialog proveedor={proveedorEnDetalle} onCerrar={() => setProveedorEnDetalle(null)} />, document.body)}
   </section>;
 }
@@ -94,50 +96,48 @@ function ProveedorFichaDialog({ proveedor, onCerrar }: { proveedor: ProveedorReg
   const datosProveedor = ficha?.proveedor ?? proveedor;
   const esEmpresa = datosProveedor.tipoDocumento === "RUC" && datosProveedor.numeroDocumento.startsWith("20");
   const nombre = nombreDe(datosProveedor);
-  const iniciales = nombre.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((parte) => parte[0]?.toLocaleUpperCase("es-PE")).join("") || "PR";
   const resumen = ficha?.resumenCompras ?? [];
   const formatMoney = (importe: string, moneda: string) => new Intl.NumberFormat("es-PE", { style: "currency", currency: moneda, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(importe));
   const totalCompras = resumen.reduce((acumulado, item) => acumulado + item.compras, 0);
 
-  return <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-[#071a2d80] p-4" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) onCerrar(); }}>
-    <section className="grid w-full max-w-[760px] gap-4 overflow-auto rounded-2xl border border-[#dce5ee] bg-white p-5 shadow-[0_22px_70px_#061a2d40] [max-height:calc(100dvh-24px)] [scrollbar-gutter:stable] mobile-portrait:rounded-[16px_16px_10px_10px] mobile-portrait:p-4" role="dialog" aria-modal="true" aria-labelledby="proveedor-ficha-titulo">
-      <header className="flex items-start justify-between gap-4 border-b border-[#e8eef4] pb-4">
-        <div className="grid min-w-0 gap-1"><small className="text-[10px] font-extrabold tracking-[.13em] text-[#647d97]">FICHA DEL PROVEEDOR</small><h2 id="proveedor-ficha-titulo" className="m-0 break-words text-xl font-extrabold text-[#153653]">{nombre}</h2></div>
-        <button className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[9px] border border-[#dce5ee] bg-white text-xl text-[#58708a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#83acd0]" type="button" aria-label="Cerrar ficha del proveedor" onClick={onCerrar}>×</button>
-      </header>
-      <div className="flex min-w-0 items-center gap-3 py-1">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#0b376a] text-sm font-extrabold text-white" aria-hidden="true">{iniciales}</span>
-        <div className="grid min-w-0 gap-1.5"><strong className="break-words text-sm font-bold text-[#153653]">{datosProveedor.nombreComercial || nombre}</strong><div className="flex flex-wrap gap-1.5"><span className="rounded-md border border-[#dce6ef] bg-[#f2f6f9] px-2 py-1 text-[10px] font-bold text-[#35536f]">{esEmpresa ? "Empresa / organización" : "Persona"}</span><span className="rounded-md border border-[#dce6ef] bg-[#f2f6f9] px-2 py-1 text-[10px] font-bold text-[#35536f]">{datosProveedor.tipoDocumento} {datosProveedor.numeroDocumento}</span></div></div>
-      </div>
-      <div className="grid min-w-0 grid-cols-2 gap-3 mobile-portrait:grid-cols-1">
-        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">DOCUMENTO</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.tipoDocumento} {datosProveedor.numeroDocumento}</strong></div>
-        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">TIPO DE PERSONA</small><strong className="break-words text-xs font-semibold text-[#24435f]">{esEmpresa ? "Empresa / organización" : "Persona"}</strong></div>
-        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">RAZÓN SOCIAL / NOMBRE</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.razonSocial || [datosProveedor.nombres, datosProveedor.apellidoPaterno, datosProveedor.apellidoMaterno].filter(Boolean).join(" ") || "—"}</strong></div>
-        <div className="grid min-w-0 gap-1.5 rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] p-3"><small className="text-[10px] font-bold text-[#7f8fa0]">NOMBRE COMERCIAL</small><strong className="break-words text-xs font-semibold text-[#24435f]">{datosProveedor.nombreComercial || "Sin nombre comercial"}</strong></div>
-      </div>
-      {cargandoFicha ? <div className="rounded-[11px] border border-[#e9eef3] bg-[#f7f9fb] px-4 py-6 text-center text-xs text-[#60758a]" role="status">Cargando historial de compras…</div> : errorFicha ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-[11px] border border-[#f0d4d2] bg-[#fff7f6] px-4 py-3 text-xs text-[#8f3533]" role="alert"><span>{errorFicha}</span><button type="button" className="rounded-md border border-[#dca9a6] bg-white px-3 py-2 font-bold" onClick={() => setRevisionFicha((actual) => actual + 1)}>Reintentar</button></div> : ficha && (!ficha.permisosCompras.repuestos && !ficha.permisosCompras.mototaxis) ? <p className="m-0 rounded-[10px] bg-[#f7f9fb] px-3 py-3 text-xs text-[#667c91]">Tu usuario no tiene permisos para consultar el historial de compras.</p> : ficha && <>
-        <section className="grid grid-cols-3 gap-3 mobile-portrait:grid-cols-1" aria-label="Resumen de compras del proveedor">
-          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">COMPRAS</small><strong className="text-lg font-extrabold text-[#153653]">{totalCompras}</strong></div>
-          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">TOTAL COMPRADO</small>{resumen.length ? resumen.map((item) => <strong className="text-sm font-extrabold text-[#153653]" key={`total-${item.moneda}`}>{formatMoney(item.totalComprado, item.moneda)}</strong>) : <strong className="text-sm font-extrabold text-[#153653]">—</strong>}</div>
-          <div className="grid gap-1 rounded-[11px] border border-[#e2e9ef] bg-white p-3.5"><small className="text-[10px] font-extrabold tracking-[.08em] text-[#71849a]">SALDO PENDIENTE</small>{resumen.length ? resumen.map((item) => <strong className="text-sm font-extrabold text-[#153653]" key={`saldo-${item.moneda}`}>{formatMoney(item.saldoPendiente, item.moneda)}</strong>) : <strong className="text-sm font-extrabold text-[#153653]">—</strong>}</div>
-        </section>
-        <section className="grid min-w-0 gap-2" aria-label="Historial de compras">
-          <h3 className="m-0 text-xs font-extrabold tracking-[.09em] text-[#60758a]">COMPRAS RECIENTES</h3>
-          <div className="min-w-0 overflow-x-auto rounded-[11px] border border-[#e1e8ef]"><table className="w-full min-w-[520px] border-collapse text-left text-xs"><thead className="bg-[#f4f7fa] text-[10px] font-extrabold tracking-[.07em] text-[#647b92]"><tr><th className="px-3 py-3">COMPRA</th><th className="px-3 py-3">FECHA</th><th className="px-3 py-3 text-right">TOTAL</th><th className="px-3 py-3">PAGO</th></tr></thead><tbody>{ficha.compras.map((compra) => <tr key={`${compra.origen}-${compra.id}`} className="border-t border-[#e8eef3] text-[#294863]"><td className="px-3 py-3 font-mono font-semibold">{compra.codigo}</td><td className="px-3 py-3">{new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeZone: "UTC" }).format(new Date(`${compra.fecha.slice(0, 10)}T00:00:00Z`))}</td><td className="px-3 py-3 text-right font-bold tabular-nums">{formatMoney(compra.total, compra.moneda)}</td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${compra.estadoPago === "PAGADA" ? "bg-[#eaf6ef] text-[#237047]" : compra.estadoPago === "SIN_PAGO" ? "bg-[#f2f4f6] text-[#53677a]" : "bg-[#fff4df] text-[#895910]"}`}>{compra.estadoPago === "PAGADA" ? "Pagada" : compra.estadoPago === "SIN_PAGO" ? "Sin pago" : "Saldo"}</span></td></tr>)}</tbody></table></div>
-          {!ficha.compras.length && <p className="m-0 rounded-[10px] bg-[#f7f9fb] px-3 py-4 text-center text-xs text-[#667c91]">No hay compras vinculadas a este proveedor con los permisos disponibles.</p>}
-        </section>
-      </>}
-      <footer className="flex justify-end border-t border-[#e8eef4] pt-3"><button className="min-h-10 cursor-pointer rounded-[9px] border border-[#d5e0ea] bg-white px-[14px] text-xs font-bold text-[#49627b] hover:bg-[#f7f9fb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#83acd0]" type="button" onClick={onCerrar}>Cerrar</button></footer>
-    </section>
-  </div>;
+  const fecha = (valor: string) => new Intl.DateTimeFormat("es-PE", { dateStyle: "short", timeZone: "UTC" }).format(new Date(`${valor.slice(0, 10)}T00:00:00Z`));
+  const tonoPago = (estado: string) => estado === "PAGADA" ? { ...tonosPill.verde, texto: "Pagada" } : estado === "SIN_PAGO" ? { ...tonosPill.gris, texto: "Sin pago" } : { ...tonosPill.azul, texto: "Con saldo" };
+  return <DialogoCatalogo titulo="Ficha del proveedor" articulo={nombre} codigo={`${datosProveedor.tipoDocumento} ${datosProveedor.numeroDocumento}`} alCerrar={onCerrar} pantallaCompletaMovil
+    acciones={<button type="button" className={d.botonSecundario} onClick={onCerrar}>Cerrar</button>}>
+    <div className={d.contenido}>
+      <dl className={d.bloqueDatos}>
+        <div><dt>Documento</dt><dd>{datosProveedor.tipoDocumento} {datosProveedor.numeroDocumento}</dd></div>
+        <div><dt>Tipo</dt><dd>{esEmpresa ? "Empresa / organización" : "Persona"}</dd></div>
+        <div><dt>Razón social / nombre</dt><dd>{datosProveedor.razonSocial || [datosProveedor.nombres, datosProveedor.apellidoPaterno, datosProveedor.apellidoMaterno].filter(Boolean).join(" ") || "—"}</dd></div>
+        <div><dt>Nombre comercial</dt><dd>{datosProveedor.nombreComercial || "Sin nombre comercial"}</dd></div>
+      </dl>
+      {cargandoFicha ? <p className={d.vacio} role="status">Cargando historial de compras…</p>
+        : errorFicha ? <div className={`${d.vacio} gap-3`} role="alert"><span>{errorFicha}</span><button type="button" className={d.botonSecundario} onClick={() => setRevisionFicha((actual) => actual + 1)}>Reintentar</button></div>
+        : ficha && !ficha.permisosCompras.repuestos && !ficha.permisosCompras.mototaxis ? <p className={d.vacio}>Tu usuario no tiene permisos para consultar el historial de compras.</p>
+        : ficha && <>
+          <dl className={`${d.bloqueDatos} ${d.bloqueTres}`} aria-label="Resumen de compras del proveedor">
+            <div><dt>Compras</dt><dd>{totalCompras}</dd></div>
+            <div><dt>Total comprado</dt><dd>{resumen.length ? resumen.map((item) => <span className="block" key={`total-${item.moneda}`}>{formatMoney(item.totalComprado, item.moneda)}</span>) : "—"}</dd></div>
+            <div><dt>Saldo pendiente</dt><dd>{resumen.length ? resumen.map((item) => <span className="block" key={`saldo-${item.moneda}`}>{formatMoney(item.saldoPendiente, item.moneda)}</span>) : "—"}</dd></div>
+          </dl>
+          <section className="grid min-w-0 gap-2" aria-label="Historial de compras">
+            <h3 className={d.titulo}>Compras recientes</h3>
+            {ficha.compras.length ? <div className={d.tablaScroll}><table className={d.tabla}><thead><tr><th>Compra</th><th>Fecha</th><th>Total</th><th>Pago</th></tr></thead><tbody>{ficha.compras.map((compra) => {
+              const tono = tonoPago(compra.estadoPago);
+              return <tr key={`${compra.origen}-${compra.id}`}><td className="font-semibold text-[#0b2545]">{compra.codigo}</td><td>{fecha(compra.fecha)}</td><td className="font-bold text-[#0b2545] [font-variant-numeric:tabular-nums]">{formatMoney(compra.total, compra.moneda)}</td><td><span className={`${d.pill} ${tono.caja}`}><i className={`${d.punto} ${tono.punto}`} aria-hidden="true" />{tono.texto}</span></td></tr>;
+            })}</tbody></table></div> : <p className={d.vacio}>No hay compras vinculadas a este proveedor.</p>}
+          </section>
+        </>}
+    </div>
+  </DialogoCatalogo>;
 }
 
-function FormularioProveedor({ onGuardar, onCerrar }: { onGuardar: (datos: DatosProveedorNuevo) => Promise<string | null>; onCerrar: () => void }) {
+function FormularioProveedor({ onGuardar, onCerrar, inicial }: { onGuardar: (datos: DatosProveedorNuevo) => Promise<string | null>; onCerrar: () => void; inicial?: { documento: string; nombre: string } }) {
   const dialogoRef = useRef<HTMLFormElement>(null);
   const { solicitarCancelacion, dialogo } = useConfirmarCancelacionFormulario(dialogoRef, onCerrar, "el proveedor");
   useDialogoFlotante(dialogoRef, true, solicitarCancelacion);
-  const [tipoDocumento, setTipoDocumento] = useState<"DNI" | "RUC">("RUC");
-  const [numeroDocumento, setNumeroDocumento] = useState(""); const [razonSocial, setRazonSocial] = useState(""); const [nombres, setNombres] = useState(""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [nombreComercial, setNombreComercial] = useState("");
+  const [tipoDocumento, setTipoDocumento] = useState<"DNI" | "RUC">(inicial?.documento.length === 8 ? "DNI" : "RUC");
+  const [numeroDocumento, setNumeroDocumento] = useState(inicial?.documento.length === 8 || inicial?.documento.length === 11 ? inicial.documento : ""); const [razonSocial, setRazonSocial] = useState(""); const [nombres, setNombres] = useState(inicial?.nombre ?? ""); const [apellidoPaterno, setApellidoPaterno] = useState(""); const [apellidoMaterno, setApellidoMaterno] = useState(""); const [nombreComercial, setNombreComercial] = useState("");
   const [buscando, setBuscando] = useState(false); const [guardando, setGuardando] = useState(false); const [error, setError] = useState("");
   const esJuridica = tipoDocumento === "RUC" && numeroDocumento.startsWith("20");
   async function buscarIdentidad() {

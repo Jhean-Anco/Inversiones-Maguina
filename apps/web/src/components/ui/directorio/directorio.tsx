@@ -31,3 +31,20 @@ export const Opcional = () => <span className="directorio-opcional">Opcional</sp
 export const directorioClasses = {
   boton: "min-h-[46px] cursor-pointer rounded-[10px] border border-[#0b2545] bg-[#0b2545] px-4 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-[.55]",
 };
+
+/** Lo buscado sin resultados se precarga como documento (solo dígitos) o como nombre. */
+export function precargaBusqueda(busqueda: string): { documento: string; nombre: string } {
+  const texto = busqueda.trim();
+  return /^\d{6,15}$/.test(texto) ? { documento: texto, nombre: "" } : { documento: "", nombre: texto };
+}
+
+/** Estado vacío de un directorio: si hubo búsqueda, ofrece registrar con lo escrito. */
+export function VacioDirectorio({ busqueda, entidad, ayuda, sinRegistros, alCrear }: { busqueda: string; entidad: string; ayuda: string; sinRegistros: ReactNode; alCrear?: () => void }) {
+  const texto = busqueda.trim();
+  return <div className={v.empty}>
+    {texto ? <>
+      <strong>No encontramos «{texto}»</strong><span>{ayuda}</span>
+      {alCrear && <button type="button" className={`${directorioClasses.boton} mt-2 h-[38px] min-h-[38px] text-[13px]`} onClick={alCrear}>Registrar {entidad} «{texto}»</button>}
+    </> : sinRegistros}
+  </div>;
+}

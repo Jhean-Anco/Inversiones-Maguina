@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
 import { BotonAccion } from "../../components/ui/boton-accion";
 import { Dialogo } from "../../components/ui/dialogo/dialogo";
-import { BuscadorDirectorio, Opcional } from "../../components/ui/directorio/directorio";
+import { BuscadorDirectorio, Opcional, precargaBusqueda, VacioDirectorio } from "../../components/ui/directorio/directorio";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { solicitarApi } from "../../services/api-cliente";
@@ -45,7 +45,7 @@ export function PersonalPage({ puedeCrear, puedeEditar }: { puedeCrear: boolean;
     <ListadoMaestro<Trabajador> variante="tabla" titulo="Personal"
       claseCabecera={v.header} centrarCeldas={false} claseTabla={v.table} claseContenedor={v.tableScroll}
       registros={items} cargando={cargando} error={abierto ? undefined : error || undefined} resetKey={busqueda} paginacion={{ modo: "local" }}
-      vacio={<div className={v.empty}><strong>{busqueda ? "No hay coincidencias" : "No hay personal activo registrado"}</strong><span>{busqueda ? "Revisa el nombre, DNI o código." : "Agrega a las personas que forman parte del equipo."}</span></div>}
+      vacio={<VacioDirectorio busqueda={busqueda} entidad="a" ayuda="Revisa el nombre, DNI o código, o regístralo ahora." alCrear={puedeCrear ? () => { setError(""); setAbierto(true); } : undefined} sinRegistros={<><strong>No hay personal activo registrado</strong><span>Agrega a las personas que forman parte del equipo.</span></>} />}
       encabezadoTabla={<tr><th>Nombre</th><th>DNI</th><th>Código</th><th>Cargo</th><th>Ingreso</th>{puedeEditar && <th>Acciones</th>}</tr>}
       renderizarFila={(p) => <tr key={p.id}>
         <td><strong className={v.clientName}>{nombreDe(p)}</strong></td>
@@ -56,13 +56,13 @@ export function PersonalPage({ puedeCrear, puedeEditar }: { puedeCrear: boolean;
         {puedeEditar && <td><div className={v.rowActions}><BotonAccion etiqueta={`Dar de baja a ${nombreDe(p)}`} tono="peligro" icono={<Power aria-hidden="true" />} onClick={() => void darDeBaja(p)} /></div></td>}
       </tr>}
     />
-    {abierto && createPortal(<FormularioPersonal onCerrar={() => setAbierto(false)} onGuardado={() => { setAbierto(false); setExito("Persona registrada en el personal."); void cargar(); }} />, document.body)}
+    {abierto && createPortal(<FormularioPersonal inicial={precargaBusqueda(busqueda)} onCerrar={() => setAbierto(false)} onGuardado={() => { setAbierto(false); setExito("Persona registrada en el personal."); void cargar(); }} />, document.body)}
     {exito && <NotificacionFlotante tipo="exito" mensaje={exito} onCerrar={() => setExito("")} />}
   </section>;
 }
 
-function FormularioPersonal({ onCerrar, onGuardado }: { onCerrar: () => void; onGuardado: () => void }) {
-  const [form, setForm] = useState(nuevo);
+function FormularioPersonal({ onCerrar, onGuardado, inicial }: { onCerrar: () => void; onGuardado: () => void; inicial?: { documento: string; nombre: string } }) {
+  const [form, setForm] = useState(() => ({ ...nuevo(), numeroDocumento: inicial?.documento.length === 8 ? inicial.documento : "", nombres: inicial?.nombre ?? "" }));
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState("");
   async function guardar(evento: FormEvent) {
