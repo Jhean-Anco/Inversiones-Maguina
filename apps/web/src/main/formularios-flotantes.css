@@ -94,7 +94,7 @@
 :is(.clientes-modal, .proveedores-form, .conductores-form, .finanzas-form, .pago-dialog) > footer {
   flex: 0 0 auto;
 }
-:is(.catalog-modal:has(> form), .catalog-manager-dialog) > form > :is(.stock-entry-form-scroll, .egreso-form-scroll, .producto-form-scroll, .catalog-form-body) {
+:is(.catalog-modal:has(> form), .catalog-manager-dialog) > form > :is(.egreso-form-scroll, .producto-form-scroll, .catalog-form-body) {
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
@@ -144,10 +144,8 @@
 .moto-modal[role="dialog"]::before { display: none !important; }
   :where(html[data-responsive-profile="mobile-landscape"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
   :where(html[data-responsive-profile="mobile-portrait"]) .moto-modal[role="dialog"] > footer { padding: 12px 14px !important; }
-.catalog-modal > form:has(.stock-adjustment-scroll) > .stock-adjustment-scroll { flex: 1 1 auto; }
-.catalog-modal .stock-adjustment-scroll,
 .catalog-modal .producto-form-scroll { padding-right: 24px; padding-left: 24px; }
-  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .stock-adjustment-scroll, :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .producto-form-scroll { padding-right: 14px; padding-left: 14px; }
+  :where(html[data-responsive-profile="mobile-portrait"]) .catalog-modal .producto-form-scroll { padding-right: 14px; padding-left: 14px; }
 
 /* Cabeceras compactas y scroll interno para equipos de pocos recursos y pantallas bajas. */
 :is(.catalog-modal, .catalog-manager-dialog) > form > header {
