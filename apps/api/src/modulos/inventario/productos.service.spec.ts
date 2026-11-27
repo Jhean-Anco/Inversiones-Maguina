@@ -69,7 +69,7 @@ test("el catálogo conserva únicamente los datos maestros del repuesto", () => 
 });
 
 test("rechaza códigos externos con un tipo no permitido", () => {
-  assert.throws(() => validar({ codigos: [{ tipo: "DESCONOCIDO", codigo: "X-1" }] }), /tipo de código/i);
+  assert.throws(() => validar({ codigos: [{ tipo: "DESCONOCIDO", codigo: "X-1" }] }), /solo se identifican con código de barras/i);
 });
 
 test("rechaza presentaciones duplicadas y presentaciones sin uso", () => {

@@ -52,6 +52,14 @@ export class EscPos {
     this.datos.push(GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30);
     return this;
   }
+  /** Imagen raster de 1 bit (`GS v 0`): `bytes` trae `ceil(ancho / 8)` bytes por fila, 1 = punto negro. */
+  imagen(ancho: number, alto: number, bytes: Uint8Array) {
+    const anchoBytes = Math.ceil(ancho / 8);
+    if (bytes.length !== anchoBytes * alto) throw new RangeError("El bitmap no coincide con sus dimensiones.");
+    this.datos.push(GS, 0x76, 0x30, 0x00, anchoBytes & 0xff, anchoBytes >> 8, alto & 0xff, alto >> 8);
+    for (const byte of bytes) this.datos.push(byte);
+    return this;
+  }
   /** Avanza papel y hace corte parcial. */
   cortar() { this.datos.push(GS, 0x56, 0x42, 0x03); return this; }
   /** Pulso al cajón de dinero conectado a la impresora (pin 2). */
