@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useProductos } from "./use-productos";
 import { ErrorApi } from "../services/api-cliente";
@@ -30,7 +30,7 @@ beforeEach(() => {
 describe("useProductos", () => {
   it("carga catálogos y la primera página", async () => {
     const { result } = await montar();
-    expect(s.listar).toHaveBeenCalledWith(1, 10, "", { estado: "TODOS", marca: "", precio: "TODOS", existencia: "TODOS" });
+    expect(s.listar).toHaveBeenCalledWith(1, 10, "", { estado: "ACTIVOS", marca: "", precio: "TODOS", existencia: "TODOS" });
     expect(result.current).toMatchObject({ total: 25, totalPaginas: 3, desde: 1, hasta: 10, catalogos });
     expect(result.current.productos).toEqual([{ id: "p1" }]);
   });

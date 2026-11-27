@@ -22,23 +22,6 @@ export function estadoPrecio(precio: { vigenteDesde?: string | null; vigenteHast
 export const clasesCamposPrecio = "grid gap-3 sm:grid-cols-2 [&_label]:grid [&_label]:gap-1.5 [&_label]:text-sm [&_label]:font-medium [&_input]:min-w-0 [&_select]:min-w-0 [&_input]:w-full [&_select]:w-full [&_input]:rounded-md [&_select]:rounded-md [&_input]:border [&_select]:border [&_input]:border-[var(--erp-border)] [&_select]:border-[var(--erp-border)] [&_input]:bg-[var(--erp-surface)] [&_select]:bg-[var(--erp-surface)] [&_input]:p-2 [&_select]:p-2";
 export const clasesTablaDialogo = "w-full border-collapse text-sm [&_td]:text-center [&_th]:text-center [&_td]:border-t [&_th]:border-t [&_td]:border-[var(--erp-border)] [&_th]:border-[var(--erp-border)] [&_td]:px-3 [&_th]:px-3 [&_td]:py-2 [&_th]:py-2 [&_th]:text-xs [&_th]:font-medium";
 
-export function ReferenciasPrecio({ vigente, promedio, ultimo, fecha, base }: {
-  vigente?: string | null;
-  promedio?: string | null;
-  ultimo?: string | null;
-  fecha?: string | null;
-  base: string;
-}) {
-  return <section className="mb-5 overflow-hidden rounded-xl border border-[var(--erp-border)] bg-[var(--erp-surface-muted)]" aria-label="Referencia de compra y venta">
-    <dl className="m-0 grid grid-cols-2 gap-px bg-[var(--erp-border)] sm:grid-cols-3">
-      <div className="bg-[var(--erp-surface-muted)] px-4 py-3"><dt className="text-sm">Último costo de compra</dt><dd className="m-0 font-semibold tabular-nums">{ultimo == null ? "Sin compras" : monedaInventario(ultimo)}</dd>{fecha && <dd className="m-0 text-xs">{fechaInventario(fecha)}</dd>}</div>
-      <div className="bg-[var(--erp-surface-muted)] px-4 py-3"><dt className="text-sm">Costo promedio de compra</dt><dd className="m-0 font-semibold tabular-nums">{promedio == null ? "Sin compras" : monedaInventario(promedio)}</dd><dd className="m-0 text-xs">Ponderado por cantidad</dd></div>
-      <div className="col-span-2 bg-[var(--erp-surface)] px-4 py-3 sm:col-span-1"><dt className="text-sm">Precio general vigente</dt><dd className="m-0 font-semibold tabular-nums">{vigente == null ? "Sin precio" : monedaInventario(vigente)}</dd></div>
-    </dl>
-    <p className="m-0 border-t border-[var(--erp-border)] px-4 py-2 text-xs">Importes por {base}.</p>
-  </section>;
-}
-
 type Props = {
   titulo: string;
   articulo: string;

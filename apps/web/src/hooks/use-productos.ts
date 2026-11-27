@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ErrorApi } from "../services/api-cliente";
 import { tamanioTablaInicial } from "../components/ui/listado-maestro/paginacion-responsive";
@@ -11,7 +11,7 @@ export function useProductos() {
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
   const [busqueda, setBusqueda] = useState("");
-  const [estado, setEstado] = useState("TODOS");
+  const [estado, setEstado] = useState("ACTIVOS");
   const [marca, setMarca] = useState("");
   const [precio, setPrecio] = useState("TODOS");
   const [existencia, setExistencia] = useState("TODOS");
