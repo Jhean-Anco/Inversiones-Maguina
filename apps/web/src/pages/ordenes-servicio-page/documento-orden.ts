@@ -11,7 +11,7 @@ export async function documentoDeOrden(orden: OrdenServicio): Promise<DocumentoI
   const importes = importesOrden(detalles);
   const adelanto = Number(orden.adelanto);
   return documentoInterno({
-    tipo: "ORDEN_SERVICIO", titulo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: orden.fechaRecepcion, contraparte: orden.clienteNombre,
+    tipo: "ORDEN_SERVICIO", titulo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: orden.fechaRecepcion, contraparte: orden.clienteNombre?.trim() || "Clientes varios",
     datosExtra: [
       { etiqueta: "Vehículo", valor: orden.vehiculoPlaca },
       ...(orden.condicionRecepcion ? [{ etiqueta: "Condición de recepción", valor: orden.condicionRecepcion }] : []),

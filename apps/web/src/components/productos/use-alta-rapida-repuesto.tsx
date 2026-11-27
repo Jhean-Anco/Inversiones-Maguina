@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ProductoFormulario } from "../../components/productos/producto-formulario/producto-formulario";
-import { Dialogo } from "../../components/ui/dialogo/dialogo";
+import { ProductoFormulario } from "./producto-formulario/producto-formulario";
+import { Dialogo } from "../ui/dialogo/dialogo";
 import { servicioIngresos, type ProductoParaIngreso } from "../../services/ingresos.service";
 import { servicioProductos, type CatalogosProducto, type DatosProducto } from "../../services/inventario/productos.service";
 
@@ -13,7 +13,7 @@ type Props = {
 
 const pareceCodigoBarras = (texto: string) => /^\d{6,14}$/.test(texto);
 
-/** Registro rápido de un repuesto desde la búsqueda de la orden: lo crea y lo agrega al detalle. */
+/** Registro rápido de un repuesto desde la búsqueda de un documento (orden, cotización): lo crea y lo agrega al detalle. */
 export function useAltaRapidaRepuesto({ busqueda, alCrear, alError }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [catalogos, setCatalogos] = useState<CatalogosProducto | null>(null);

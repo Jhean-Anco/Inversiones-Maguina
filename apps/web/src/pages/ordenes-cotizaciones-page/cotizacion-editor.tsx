@@ -1,10 +1,11 @@
-import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import "../ordenes-servicio-page/orden-servicio-editor.css";
+import { CalendarClock, MessageSquareText, Plus, Printer, Search, UserPlus, X } from "lucide-react";
 import type { KeyboardEvent } from "react";
-import { formularioDocumentoClases } from "../../components/documentos/formulario-documento-clases";
-import { DesgloseImportes } from "../../components/ingresos/desglose-importes";
+import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import type { ClienteRegistrado, ProductoParaIngreso } from "../../services/ingresos.service";
 import { importeLineaCotizacion, type calcularTotalesCotizacion } from "./gestion-utils";
 import { MAX_RESULTADOS_CATALOGO, MIN_CARACTERES_BUSQUEDA_CATALOGO, type CatalogoReciente } from "../../components/catalogo/use-catalogo-recientes";
+import { tonosEstadoCotizacion } from "./estados-cotizacion";
 
 type LineaCotizacion = Record<string, unknown> & {
   tipo: "PRODUCTO" | "SERVICIO";
@@ -23,6 +24,7 @@ type CotizacionEditorProps = {
   busquedaProducto: string;
   onBusquedaProductoChange: (valor: string) => void;
   onAgregarProducto: (producto: ProductoParaIngreso) => void;
+  onCrearRepuesto?: () => void;
   dinero: (valor: number) => string;
   fechaEmision: string;
   consultandoSerie: boolean;
@@ -60,146 +62,162 @@ type CotizacionEditorProps = {
 };
 
 const LIMITE_OBSERVACION = 2000;
-const formatoFechaLarga = (fecha: string) => new Date(`${fecha}T00:00:00`).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
 const diasEntre = (desde: string, hasta: string) => Math.round((new Date(`${hasta}T00:00:00`).getTime() - new Date(`${desde}T00:00:00`).getTime()) / 86_400_000);
+const iniciales = (nombre: string | null | undefined) => (nombre ?? "").trim().split(/\s+/).slice(0, 2).map((parte) => parte[0] ?? "").join("").toLocaleUpperCase("es-PE") || "?";
+const nombreDocumento = (tipo: string) => tipo === "RUC" ? "RUC" : tipo === "DNI" ? "DNI" : tipo;
 
-const { tarjeta, resumen, paso, titulo, campo, etiquetaCampo, botonSecundario, botonPrincipal } = formularioDocumentoClases;
-const cuadriculaDetalle = "grid grid-cols-[minmax(0,1fr)_84px_124px_112px_120px_36px] items-center gap-3";
-
-export function CotizacionEditor({ productos, buscandoProductos, productosRecientes, onAgregarProductoReciente, busquedaProducto, onBusquedaProductoChange, onAgregarProducto, dinero, fechaEmision, consultandoSerie, errorConsultaSerie, codigoPrevisualizado, cliente, clienteInicialId = null, clienteInicialNombre = null, nombreCliente, tipoDocumentoBusqueda, onTipoDocumentoBusquedaChange, clienteBusqueda, onClienteBusquedaChange, clienteBusquedaConsultada, onBuscarCliente, onKeyDownBusquedaCliente, buscandoClientes, clientes, onSeleccionarCliente, onLimpiarCliente, onAgregarCliente, vigenteHasta, onVigenteHastaChange, lineas, onAgregarServicio, onActualizarLinea, onEliminarLinea, observacion, onObservacionChange, totales, onCerrar, onGuardar, guardando, editando }: CotizacionEditorProps) {
-  const busquedaValida = busquedaProducto.trim().length >= MIN_CARACTERES_BUSQUEDA_CATALOGO;
-  const clienteElegido = Boolean(cliente || clienteInicialId);
+export function CotizacionEditor({ productos, buscandoProductos, productosRecientes, onAgregarProductoReciente, busquedaProducto, onBusquedaProductoChange, onAgregarProducto, onCrearRepuesto, dinero, fechaEmision, consultandoSerie, errorConsultaSerie, codigoPrevisualizado, cliente, clienteInicialId = null, clienteInicialNombre = null, nombreCliente, tipoDocumentoBusqueda, onTipoDocumentoBusquedaChange, clienteBusqueda, onClienteBusquedaChange, clienteBusquedaConsultada, onBuscarCliente, onKeyDownBusquedaCliente, buscandoClientes, clientes, onSeleccionarCliente, onLimpiarCliente, onAgregarCliente, vigenteHasta, onVigenteHastaChange, lineas, onAgregarServicio, onActualizarLinea, onEliminarLinea, observacion, onObservacionChange, totales, onCerrar, onGuardar, guardando, editando }: CotizacionEditorProps) {
+  const consulta = busquedaProducto.trim();
+  const consultaCliente = clienteBusqueda.trim();
   const nombreElegido = cliente ? nombreCliente(cliente) : clienteInicialNombre;
   const dias = vigenteHasta ? diasEntre(fechaEmision, vigenteHasta) : null;
   const sinSerie = !codigoPrevisualizado || consultandoSerie || errorConsultaSerie;
-  const gruposLineas = (["PRODUCTO", "SERVICIO"] as const)
-    .map((tipo) => ({ tipo, items: lineas.map((linea, indice) => ({ linea, indice })).filter(({ linea }) => linea.tipo === tipo) }))
+  const tonoAbierta = tonosEstadoCotizacion.ABIERTA;
+  const lineasIndexadas = lineas.map((linea, indice) => ({ linea, indice }));
+  const grupos = (["PRODUCTO", "SERVICIO"] as const)
+    .map((tipo) => ({ tipo, items: lineasIndexadas.filter(({ linea }) => linea.tipo === tipo) }))
     .filter((grupo) => grupo.items.length > 0);
 
-  return <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto pb-12 pr-1 text-[#142b42]">
-    <div className="flex flex-wrap items-center gap-3">
-      <span className="inline-flex h-7 items-center gap-[7px] rounded-[14px] border border-[#c9e3d4] bg-[#edf7f1] px-3 text-xs font-semibold text-[#24734e]"><i className="h-[7px] w-[7px] rounded-full bg-[#2e9467]" aria-hidden="true" />{editando ? "Editando cotización" : "Se creará como Activa"}</span>
-      <div className="flex flex-col gap-0.5 rounded-xl border border-[#dbe3e9] bg-white px-4 py-2">
-        <span className="text-[10px] font-bold tracking-[.08em] text-[#52697d]">N.° DE COTIZACIÓN</span>
-        <strong className="text-base font-extrabold tracking-[.02em] text-[#0b2545]">{consultandoSerie ? "Consultando serie…" : errorConsultaSerie ? "Error de serie" : codigoPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong>
+  const renderizarLinea = ({ linea, indice }: { linea: LineaCotizacion; indice: number }) => {
+    const esServicio = linea.tipo === "SERVICIO";
+    const nombre = String(linea.nombreVisible ?? linea.descripcion ?? "");
+    const etiqueta = nombre || (esServicio ? "servicio" : "repuesto");
+    const precio = Number(linea.precioUnitario) || 0;
+    const cantidad = Number(linea.cantidad) || 0;
+    return <div className={`os-linea ${esServicio ? "es-servicio" : "es-producto"}`} key={`${linea.tipo}-${indice}`}>
+      <div className="os-linea-descripcion">
+        {esServicio
+          ? <input id={`cotizacion-servicio-descripcion-${indice}`} aria-label="Descripción del servicio" placeholder="Descripción del servicio" maxLength={240} value={String(linea.descripcion ?? linea.nombreVisible ?? "").toLocaleUpperCase("es-PE")} onChange={(evento) => { const valor = evento.target.value.toLocaleUpperCase("es-PE"); onActualizarLinea(indice, { descripcion: valor, nombreVisible: valor }); }} />
+          : <input aria-label="Descripción del repuesto" value={nombre} readOnly />}
       </div>
-    </div>
+      <label className="os-linea-campo os-linea-cantidad"><span>Cant.</span>
+        <input aria-label={`Cantidad de ${etiqueta}`} type="number" min="1" step="1" inputMode="numeric" value={String(linea.cantidad)} onChange={(evento) => onActualizarLinea(indice, { cantidad: evento.target.value === "" ? "" : String(Math.max(1, Math.floor(Number(evento.target.value) || 1))) })} />
+      </label>
+      <label className="os-linea-campo os-linea-precio"><span>Precio</span>
+        {esServicio
+          ? <input aria-label="Precio unitario del servicio" type="number" min="0" step="0.01" placeholder="0.00" value={linea.precioUnitario} onChange={(evento) => onActualizarLinea(indice, { precioUnitario: evento.target.value })} />
+          : <input aria-label="Precio unitario del repuesto (precio de catálogo)" type="text" value={dinero(precio)} readOnly />}
+      </label>
+      <label className="os-linea-campo os-linea-descuento"><span>Descuento</span>
+        <input aria-label={`Descuento de ${etiqueta}`} title="Descuento en soles" type="number" min="0" max={(cantidad * precio).toFixed(2)} step="0.01" value={String(linea.descuento)} onChange={(evento) => onActualizarLinea(indice, { descuento: evento.target.value })} />
+      </label>
+      <div className="os-linea-total"><span>Total</span><strong>{dinero(importeLineaCotizacion(linea))}</strong></div>
+      <button className="os-linea-quitar" type="button" aria-label={`Quitar ${etiqueta}`} onClick={() => onEliminarLinea(indice)}><X aria-hidden="true" size={16} /></button>
+    </div>;
+  };
 
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-      <div className="flex min-w-0 flex-col gap-5">
-        <section className={tarjeta} aria-labelledby="cotizacion-titulo-datos">
-          <div className="flex items-center gap-3"><span className={paso} aria-hidden="true">1</span><h3 id="cotizacion-titulo-datos" className={titulo}>Datos de la cotización</h3></div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className={etiquetaCampo}>Fecha de emisión<input className={`${campo} bg-[#f3f6f9] text-[#52697d]`} type="date" value={fechaEmision} readOnly aria-readonly="true" /></label>
-            <label className={etiquetaCampo}>Válida hasta *<input className={campo} type="date" min={fechaEmision} value={vigenteHasta} onChange={(evento) => onVigenteHastaChange(evento.target.value)} required /></label>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="cotizacion-cliente-busqueda" className={etiquetaCampo}>Cliente *</label>
-            {clienteElegido ? <div className="flex items-center justify-between gap-3 rounded-[10px] border border-[#c9e3d4] bg-[#f4faf6] px-4 py-3">
-              <strong className="text-sm font-semibold text-[#0b2545]">{nombreElegido}</strong>
-              <button type="button" className={botonSecundario} aria-label="Cambiar cliente" title="Cambiar cliente" onClick={onLimpiarCliente}>Cambiar</button>
-            </div> : <>
-              <div className="flex flex-wrap gap-2.5">
-                <select aria-label="Tipo de documento para buscar" className={`${campo} !w-[116px] flex-none`} value={tipoDocumentoBusqueda} onChange={(evento) => onTipoDocumentoBusquedaChange(evento.target.value as TipoDocumentoBusqueda)}>
-                  <option value="NOMBRE">Nombre</option><option value="DNI">DNI</option><option value="RUC">RUC</option>
-                </select>
-                <input id="cotizacion-cliente-busqueda" className={`${campo} !w-auto min-w-[200px] flex-[1_1_220px]`} autoComplete="off" inputMode={tipoDocumentoBusqueda === "NOMBRE" ? "text" : "numeric"} maxLength={tipoDocumentoBusqueda === "DNI" ? 8 : tipoDocumentoBusqueda === "RUC" ? 11 : 120} value={clienteBusqueda} onChange={(evento) => onClienteBusquedaChange(evento.target.value)} onKeyDown={onKeyDownBusquedaCliente} placeholder={tipoDocumentoBusqueda === "NOMBRE" ? "Buscar por nombre" : `Ingresa ${tipoDocumentoBusqueda}`} aria-label={tipoDocumentoBusqueda === "NOMBRE" ? "Nombre del cliente" : `Número de ${tipoDocumentoBusqueda}`} required />
-                <button type="button" className="inline-flex h-[46px] items-center gap-2 rounded-[10px] bg-[#0b2545] px-[18px] text-sm font-semibold text-white disabled:opacity-60" onClick={onBuscarCliente} disabled={buscandoClientes}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>{buscandoClientes ? "Buscando…" : "Buscar cliente"}
-                </button>
-                <button type="button" className="grid h-[46px] w-[46px] place-items-center rounded-[10px] border border-[#c5d1db] bg-white text-[#174b78] hover:bg-[#f5f9fd]" aria-label="Agregar cliente" title="Agregar cliente" onClick={onAgregarCliente}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M15.5 20v-1.4a4.1 4.1 0 0 0-4.1-4.1H6.6a4.1 4.1 0 0 0-4.1 4.1V20M9 10.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2ZM19 8v7m-3.5-3.5h7" /></svg>
-                </button>
-              </div>
-              {clientes.length > 0 && <ul aria-label="Resultados de clientes" className="m-0 flex list-none flex-col gap-0.5 rounded-xl border border-[#dbe3e9] bg-white p-1.5 shadow-[0_10px_26px_rgba(15,42,66,.1)]">
-                {clientes.map((item) => <li key={item.id}><button type="button" className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-[#eef4fa]" onClick={() => onSeleccionarCliente(item)}><strong className="text-sm font-semibold text-[#0b2545]">{nombreCliente(item)}</strong></button></li>)}
-              </ul>}
-              {clienteBusquedaConsultada === clienteBusqueda.trim() && clienteBusquedaConsultada.length >= 2 && clientes.length === 0 && <NotificacionFlotante tipo="informacion" mensaje="No encontramos coincidencias. Puedes agregar el cliente con el botón de persona +." />}
-            </>}
-          </div>
-        </section>
+  return <div className="os-editor" aria-label="Formulario de cotización">
+    <div className="os-formulario">
+      <div className="os-indicadores">
+        <span className={`os-chip ${tonoAbierta.caja}`}><i className={tonoAbierta.punto} aria-hidden="true" />{editando ? "Editando cotización" : "Se creará como Abierta"}</span>
+        <div className="os-numero"><span>N.° DE COTIZACIÓN</span><strong>{consultandoSerie ? "Consultando serie…" : errorConsultaSerie ? "Error de serie" : codigoPrevisualizado ?? "FALTA CONFIGURAR SERIE"}</strong></div>
+      </div>
 
-        <section className={tarjeta} aria-labelledby="cotizacion-titulo-detalle">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className={paso} aria-hidden="true">2</span>
-              <h3 id="cotizacion-titulo-detalle" className={titulo}>Detalle de la cotización</h3>
-              <span className="rounded-xl bg-[#eef2f6] px-2.5 py-[3px] text-xs font-semibold text-[#3d566e]">{lineas.length} {lineas.length === 1 ? "línea" : "líneas"}</span>
+      <div className="os-disposicion">
+        <div className="os-columna">
+          <section className="os-tarjeta" aria-labelledby="cotizacion-titulo-datos">
+            <div className="os-tarjeta-cabecera">
+              <div className="os-titulo"><span className="os-paso" aria-hidden="true">1</span><h3 id="cotizacion-titulo-datos">Datos de la cotización</h3></div>
             </div>
-            <button type="button" className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#edbbc1] bg-[#fff4f5] px-4 text-[13px] font-bold text-[#a91b2b]" onClick={onAgregarServicio}>+ Agregar servicio</button>
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            <label className="flex h-[46px] items-center gap-2.5 rounded-[10px] border border-[#c5d1db] bg-[#f7f9fb] px-3.5 text-[#52697d] focus-within:border-[#2878b9]">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-              <input className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#142b42] outline-none" aria-label="Buscar repuestos para la cotización" placeholder="Buscar repuesto por nombre o código…" autoComplete="off" value={busquedaProducto} onChange={(evento) => onBusquedaProductoChange(evento.target.value)} />
-            </label>
-            {productosRecientes.length > 0 && <div className="flex flex-wrap items-center gap-2" aria-label="Últimos repuestos seleccionados">
-              <span className="text-xs font-semibold text-[#52697d]">Últimos repuestos seleccionados</span>
-              {productosRecientes.map((reciente) => <button key={reciente.id} type="button" aria-label={`Volver a agregar ${reciente.nombre}`} className="inline-flex h-8 items-center rounded-2xl border border-[#c5d1db] bg-white px-3 text-xs font-semibold text-[#27445f] hover:bg-[#f5f9fd]" onClick={() => onAgregarProductoReciente(reciente)}>{reciente.nombre}</button>)}
-            </div>}
-            {busquedaValida && <div className="flex flex-col gap-2" aria-live="polite">
-              {buscandoProductos ? <p className="m-0 text-xs text-[#52697d]">Buscando en inventario…</p> : productos.length ? productos.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <article key={producto.presentacionId} className="flex items-center justify-between gap-3 rounded-[10px] border border-[#e5ecf3] bg-[#f8fcff] px-3 py-2.5">
-                <div className="min-w-0"><strong className="block truncate text-sm font-semibold text-[#0b2545]">{producto.nombre}</strong><span className="text-xs text-[#5b7083]">{producto.codigo} · {producto.presentacion}</span></div>
-                <div className="flex flex-none items-center gap-3"><strong className="text-sm text-[#174b80]">{dinero(Number(producto.precio))}</strong><button type="button" className="h-8 rounded-lg border border-[#d5e3ef] bg-[#f1f7fc] px-3 text-xs font-bold text-[#174b80] hover:bg-[#e6f0f9]" onClick={() => onAgregarProducto(producto)}>Agregar</button></div>
-              </article>) : <p className="m-0 rounded-[10px] border border-dashed border-[#c5d1db] px-4 py-3 text-center text-xs text-[#617c96]">No encontramos repuestos con ese nombre o código.</p>}
-            </div>}
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-[#dbe3e9]">
-            <div className="min-w-[760px]">
-              <div className={`${cuadriculaDetalle} border-b border-[#dbe3e9] bg-[#f7f9fb] px-4 py-[11px] text-[11px] font-bold tracking-[.06em] text-[#52697d]`}>
-                <span>DESCRIPCIÓN</span><span>CANT.</span><span>PRECIO</span><span>DESCUENTO</span><span className="text-right">TOTAL</span><span aria-hidden="true" />
-              </div>
-              {lineas.length === 0 && <div className="grid place-items-center gap-1.5 px-4 py-10 text-center">
-                <strong className="text-sm text-[#294d6c]">Agrega el primer repuesto o servicio</strong>
-                <p className="m-0 max-w-[420px] text-xs text-[#7a8da1]">Busca repuestos arriba o pulsa Agregar servicio para incluir mano de obra.</p>
+            <div className="os-campos grid-cols-2! max-[760px]:grid-cols-1!">
+              <label className="os-campo">Fecha de emisión<input type="date" value={fechaEmision} disabled aria-readonly="true" /></label>
+              <label className="os-campo">Válida hasta *<input type="date" min={fechaEmision} value={vigenteHasta} onChange={(evento) => onVigenteHastaChange(evento.target.value)} required /></label>
+            </div>
+            <div className="os-cliente">
+              <label className="os-etiqueta" htmlFor="cotizacion-cliente-busqueda">Cliente *</label>
+              {cliente ? <div className="os-cliente-fijo es-editable">
+                <span className="os-avatar" aria-hidden="true">{iniciales(nombreElegido)}</span>
+                <div className="os-cliente-datos">
+                  <strong>{nombreElegido}</strong>
+                  {(cliente.documentos?.length ? cliente.documentos : [{ tipoDocumento: cliente.tipoDocumento, numeroDocumento: cliente.numeroDocumento }]).map((documento) => <span key={`${documento.tipoDocumento}-${documento.numeroDocumento}`}>{nombreDocumento(documento.tipoDocumento)} {documento.numeroDocumento}</span>)}
+                  {cliente.direccion?.trim() && <span>{cliente.direccion}</span>}
+                </div>
+                <button className="os-cliente-cambiar" type="button" aria-label="Cambiar cliente" title="Cambiar cliente" onClick={onLimpiarCliente}><X aria-hidden="true" size={18} /></button>
+              </div> : clienteInicialId ? <div className="os-cliente-fijo es-editable">
+                <span className="os-avatar" aria-hidden="true">{iniciales(nombreElegido)}</span>
+                <div className="os-cliente-datos"><strong>{nombreElegido}</strong></div>
+                <button className="os-cliente-cambiar" type="button" aria-label="Cambiar cliente" title="Cambiar cliente" onClick={onLimpiarCliente}><X aria-hidden="true" size={18} /></button>
+              </div> : <div className="os-cliente-buscador">
+                <div className="os-cliente-fila">
+                  <select aria-label="Tipo de documento para buscar" value={tipoDocumentoBusqueda} onChange={(evento) => onTipoDocumentoBusquedaChange(evento.target.value as TipoDocumentoBusqueda)}><option value="DNI">DNI</option><option value="RUC">RUC</option><option value="NOMBRE">Nombre</option></select>
+                  <input id="cotizacion-cliente-busqueda" autoComplete="off" inputMode={tipoDocumentoBusqueda === "NOMBRE" ? "text" : "numeric"} maxLength={tipoDocumentoBusqueda === "DNI" ? 8 : tipoDocumentoBusqueda === "RUC" ? 11 : 120} value={clienteBusqueda} onChange={(evento) => onClienteBusquedaChange(evento.target.value)} onKeyDown={onKeyDownBusquedaCliente} placeholder={tipoDocumentoBusqueda === "NOMBRE" ? "Buscar por nombre" : `Ingresa ${tipoDocumentoBusqueda}`} aria-label={tipoDocumentoBusqueda === "NOMBRE" ? "Nombre del cliente" : `Número de ${tipoDocumentoBusqueda}`} required />
+                  <button className="os-boton-oscuro" type="button" onClick={onBuscarCliente} disabled={buscandoClientes}><Search aria-hidden="true" size={16} strokeWidth={2} />{buscandoClientes ? "Buscando…" : "Buscar cliente"}</button>
+                  <button className="os-boton-icono" type="button" aria-label="Agregar cliente" title="Agregar cliente" onClick={onAgregarCliente}><UserPlus aria-hidden="true" size={20} strokeWidth={1.9} /></button>
+                </div>
+                {clientes.length > 0 && <ul className="os-cliente-resultados" aria-label="Resultados de clientes">
+                  {clientes.map((item) => <li key={item.id}><button type="button" onClick={() => onSeleccionarCliente(item)}><strong>{nombreCliente(item)}</strong><small>{nombreDocumento(item.tipoDocumento)} · {item.numeroDocumento}</small></button></li>)}
+                </ul>}
+                {clienteBusquedaConsultada === consultaCliente && consultaCliente.length >= 2 && clientes.length === 0 && <NotificacionFlotante tipo="informacion" mensaje="No encontramos coincidencias. Puedes agregar el cliente con el botón de persona +." />}
               </div>}
-              {gruposLineas.map((grupo) => <div key={grupo.tipo} role="group" aria-label={grupo.tipo === "PRODUCTO" ? "Repuestos de la cotización" : "Servicios de la cotización"}>
-                <div className="border-b border-[#edf1f5] bg-[#fbfcfd] px-4 py-2 text-[11px] font-bold tracking-[.08em] text-[#174b78]">{grupo.tipo === "PRODUCTO" ? "REPUESTOS" : "SERVICIOS"}</div>
-                {grupo.items.map(({ linea, indice }) => {
-                  const nombre = String(linea.nombreVisible ?? linea.descripcion ?? "");
-                  const etiquetaLinea = nombre || (linea.tipo === "SERVICIO" ? "servicio" : "repuesto");
-                  return <div key={`${String(linea.presentacionId ?? linea.descripcion)}-${indice}`} className={`${cuadriculaDetalle} border-b border-[#edf1f5] px-4 py-2.5`}>
-                    <div className="min-w-0">
-                      {linea.tipo === "SERVICIO"
-                        ? <input id={`cotizacion-servicio-descripcion-${indice}`} className={`${campo} h-10 uppercase`} aria-label="Descripción del servicio" placeholder="Descripción del servicio" maxLength={240} value={String(linea.descripcion ?? linea.nombreVisible ?? "").toLocaleUpperCase("es-PE")} onChange={(evento) => onActualizarLinea(indice, { descripcion: evento.target.value.toLocaleUpperCase("es-PE"), nombreVisible: evento.target.value.toLocaleUpperCase("es-PE") })} />
-                        : <strong className="block truncate text-sm font-semibold text-[#142b42]">{nombre}</strong>}
-                    </div>
-                    <input className="box-border h-10 w-full rounded-lg border border-[#c5d1db] px-2.5 text-center text-sm text-[#142b42]" aria-label={`Cantidad de ${etiquetaLinea}`} type="number" min="1" step="1" inputMode="numeric" value={String(linea.cantidad)} onChange={(evento) => onActualizarLinea(indice, { cantidad: evento.target.value === "" ? "" : String(Math.max(1, Math.floor(Number(evento.target.value) || 1))) })} />
-                    {linea.tipo === "SERVICIO"
-                      ? <input className="box-border h-10 w-full rounded-lg border border-[#c5d1db] px-2.5 text-right text-sm text-[#142b42]" aria-label="Precio unitario del servicio" type="number" min="0" step="0.01" value={linea.precioUnitario} placeholder="0.00" onChange={(evento) => onActualizarLinea(indice, { precioUnitario: evento.target.value })} />
-                      : <span className="text-right text-sm tabular-nums text-[#142b42]">{dinero(Number(linea.precioUnitario) || 0)}</span>}
-                    <input className="box-border h-10 w-full rounded-lg border border-[#c5d1db] px-2.5 text-right text-sm text-[#142b42]" aria-label={`Descuento de ${etiquetaLinea}`} title="Descuento en soles" type="number" min="0" step="0.01" value={String(linea.descuento)} onChange={(evento) => onActualizarLinea(indice, { descuento: evento.target.value })} />
-                    <strong className="text-right text-sm font-bold tabular-nums text-[#0b2545]">{dinero(importeLineaCotizacion(linea))}</strong>
-                    <button type="button" className="grid h-8 w-8 place-items-center justify-self-end rounded-lg text-[#7a8da0] hover:bg-[#fff1f2] hover:text-[#b42335]" aria-label={`Quitar ${etiquetaLinea}`} onClick={() => onEliminarLinea(indice)}>×</button>
-                  </div>;
-                })}
-              </div>)}
             </div>
+          </section>
+
+          <section className="os-tarjeta" aria-labelledby="cotizacion-titulo-detalle">
+            <div className="os-tarjeta-cabecera is-dividida">
+              <div className="os-titulo">
+                <span className="os-paso" aria-hidden="true">2</span>
+                <h3 id="cotizacion-titulo-detalle">Detalle de la cotización</h3>
+                <span className="os-contador">{lineas.length} {lineas.length === 1 ? "línea" : "líneas"}</span>
+              </div>
+              <button className="os-boton-servicio" type="button" onClick={onAgregarServicio}><Plus aria-hidden="true" size={16} strokeWidth={2.4} />Agregar servicio</button>
+            </div>
+            <div className="os-buscador">
+              <label className="os-buscador-campo">
+                <Search aria-hidden="true" size={18} strokeWidth={2} />
+                <input value={busquedaProducto} onChange={(evento) => onBusquedaProductoChange(evento.target.value)} placeholder="Buscar repuesto por nombre o código…" aria-label="Buscar repuestos para la cotización" autoComplete="off" />
+              </label>
+              {consulta ? <div className="os-resultados" aria-live="polite">
+                {consulta.length < MIN_CARACTERES_BUSQUEDA_CATALOGO ? <p className="os-resultados-estado">Escribe al menos cuatro caracteres para buscar en inventario.</p>
+                  : buscandoProductos ? <p className="os-resultados-estado">Buscando en inventario…</p>
+                  : productos.length ? productos.slice(0, MAX_RESULTADOS_CATALOGO).map((producto) => <button className="os-resultado" key={producto.presentacionId} type="button" onClick={() => onAgregarProducto(producto)}>
+                    <span className="os-resultado-datos"><strong>{producto.nombre}</strong><small>{producto.codigo} · {producto.presentacion}</small></span>
+                    <strong className="os-resultado-precio">{dinero(Number(producto.precio))}</strong>
+                  </button>) : <div className="os-resultados-estado"><strong>No hay repuestos para mostrar</strong><span>No encontramos «{consulta}» en inventario.</span>{onCrearRepuesto && <button className="os-crear-repuesto" type="button" onClick={onCrearRepuesto}><Plus aria-hidden="true" size={16} strokeWidth={2.4} />Crear repuesto «{consulta}»</button>}</div>}
+              </div> : <div className="os-recientes" aria-live="polite">
+                <span className="os-recientes-titulo">Últimos repuestos seleccionados</span>
+                {productosRecientes.length ? productosRecientes.map((item) => <button className="os-reciente" key={item.id} type="button" aria-label={`Volver a agregar ${item.nombre}`} title={[item.codigo, item.detalle].filter(Boolean).join(" · ")} onClick={() => onAgregarProductoReciente(item)}>
+                  <Plus aria-hidden="true" size={13} strokeWidth={2.4} />{item.nombre}
+                </button>) : <span className="os-recientes-vacio">Aún no has seleccionado artículos.</span>}
+              </div>}
+            </div>
+            {lineas.length === 0 ? <div className="os-vacio">
+              <strong>Agrega el primer repuesto o servicio</strong>
+              <span>Busca repuestos en el inventario o pulsa Agregar servicio para incluir mano de obra.</span>
+            </div> : <div className="os-lineas">
+              <div className="os-lineas-cabecera" aria-hidden="true"><span>DESCRIPCIÓN</span><span>CANT.</span><span>PRECIO</span><span>DESCUENTO</span><span>TOTAL</span><span /></div>
+              {grupos.map((grupo) => <div key={grupo.tipo} role="group" aria-label={grupo.tipo === "PRODUCTO" ? "Repuestos de la cotización" : "Servicios de la cotización"}>
+                <div className="os-lineas-grupo">{grupo.tipo === "PRODUCTO" ? "REPUESTOS" : "SERVICIOS"}</div>
+                {grupo.items.map(renderizarLinea)}
+              </div>)}
+            </div>}
+          </section>
+
+          <section className="os-tarjeta" aria-labelledby="cotizacion-titulo-observaciones">
+            <div className="os-tarjeta-cabecera">
+              <div className="os-titulo"><span className="os-paso" aria-hidden="true">3</span><h3 id="cotizacion-titulo-observaciones">Observaciones</h3></div>
+            </div>
+            <div className="os-revision">
+              <label className="os-campo os-revision-condicion">
+                <span className="os-revision-titulo"><MessageSquareText aria-hidden="true" size={16} />Nota para el cliente <em className="os-opcional">Opcional</em></span>
+                <textarea value={observacion} maxLength={LIMITE_OBSERVACION} rows={4} onChange={(evento) => onObservacionChange(evento.target.value)} placeholder="Ej. Precios válidos sujetos a stock; el servicio incluye mano de obra y revisión de frenos…" />
+                <small className="os-ayuda os-contador">{observacion.length}/{LIMITE_OBSERVACION}</small>
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <aside className="os-resumen" aria-label="Resumen de la cotización">
+          <h3>Resumen de la cotización</h3>
+          <dl className="os-importes" aria-label="Importe total de la cotización">
+            <div className="es-total"><dt>Total de la cotización</dt><dd>{dinero(totales.total)}</dd></div>
+          </dl>
+          {dias !== null && dias >= 0 && <div className="os-saldo"><span><CalendarClock aria-hidden="true" size={14} className="mr-1 inline align-[-2px]" />Vigencia</span><strong>{dias} {dias === 1 ? "día" : "días"}</strong></div>}
+          <div className="os-acciones">
+            <button className="os-guardar" type="button" disabled={guardando || sinSerie} onClick={onGuardar}><Printer aria-hidden="true" size={18} />{guardando ? "Guardando…" : "Imprimir cotización"}</button>
+            <button className="os-cancelar" type="button" disabled={guardando} onClick={onCerrar}>Cancelar</button>
           </div>
-        </section>
-
-        <section className={tarjeta} aria-labelledby="cotizacion-titulo-observaciones">
-          <div className="flex items-center gap-3"><span className={paso} aria-hidden="true">3</span><h3 id="cotizacion-titulo-observaciones" className={titulo}>Observaciones <span className="text-[13px] font-medium text-[#52697d]">(opcional)</span></h3></div>
-          <textarea className="box-border w-full resize-y rounded-[10px] border border-[#c5d1db] bg-white px-3.5 py-3 text-sm leading-normal text-[#142b42] outline-none focus:border-[#2878b9]" aria-label="Observaciones (opcional)" rows={3} maxLength={LIMITE_OBSERVACION} placeholder="Añade una nota para el cliente" value={observacion} onChange={(evento) => onObservacionChange(evento.target.value)} />
-          <span className="self-end text-xs text-[#5b7083]">{observacion.length} / {LIMITE_OBSERVACION}</span>
-        </section>
+        </aside>
       </div>
-
-      <aside className={resumen} aria-label="Resumen de la cotización">
-        <h3 className={titulo}>Resumen de la cotización</h3>
-        <DesgloseImportes {...totales} destacado />
-        <div className="flex flex-col gap-2.5 rounded-xl border border-[#edf1f5] bg-[#f7f9fb] p-4 text-[13px]">
-          <div className="flex justify-between gap-3"><span className="text-[#52697d]">Emisión</span><strong className="tabular-nums text-[#0b2545]">{formatoFechaLarga(fechaEmision)}</strong></div>
-          <div className="flex justify-between gap-3"><span className="text-[#52697d]">Válida hasta</span><strong className="tabular-nums text-[#0b2545]">{vigenteHasta ? formatoFechaLarga(vigenteHasta) : "Sin fecha"}</strong></div>
-          {dias !== null && dias >= 0 && <div className="flex justify-between gap-3"><span className="text-[#52697d]">Vigencia</span><strong className="text-[#24734e]">{dias} {dias === 1 ? "día" : "días"}</strong></div>}
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <button type="button" className={botonPrincipal} disabled={guardando || sinSerie} onClick={onGuardar}>{guardando ? "Guardando…" : "Guardar e imprimir cotización"}<span aria-hidden="true">→</span></button>
-          <button type="button" className={`${botonSecundario} w-full`} disabled={guardando} onClick={onCerrar}>Cancelar</button>
-        </div>
-      </aside>
     </div>
   </div>;
 }

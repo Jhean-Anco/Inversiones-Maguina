@@ -36,7 +36,7 @@ export function mensajeWhatsAppCotizacion(cotizacion: Cotizacion, dinero: (valor
   const { total, subtotal, igv, tasaIgv } = calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv);
   return [
     `Cotización ${cotizacion.codigo}`,
-    `Cliente: ${cotizacion.clienteNombre ?? "Sin cliente"}`,
+    `Cliente: ${cotizacion.clienteNombre || "Clientes varios"}`,
     `Vigente hasta: ${cotizacion.vigenteHasta ?? "sin fecha"}`,
     ...cotizacion.detalles.map((linea) =>
       `${String(linea.nombreVisible ?? linea.descripcion ?? "Artículo")} · Cant. ${Number(linea.cantidad ?? 1)} · ${dinero(importeLineaCotizacion(linea))}`

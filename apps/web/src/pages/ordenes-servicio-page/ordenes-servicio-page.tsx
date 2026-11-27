@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
 import { servicioPersonal, type PersonaPersonal } from "../../services/personal.service";
 import { documentoDeOrden } from "./documento-orden";
-import { useAltaRapidaRepuesto } from "./use-alta-rapida-repuesto";
+import { useAltaRapidaRepuesto } from "../../components/productos/use-alta-rapida-repuesto";
 import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
 import { mensajeErrorImpresion } from "../../impresion/use-impresion";

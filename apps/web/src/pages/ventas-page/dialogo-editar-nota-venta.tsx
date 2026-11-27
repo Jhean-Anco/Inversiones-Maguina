@@ -37,7 +37,7 @@ export function DialogoEditarNotaVenta({ ingresoId, codigo, esMototaxi, onCerrar
       {bloqueada && <p className="m-0 rounded-xl border border-[#f0d9a6] bg-[#fff8e8] p-3 text-sm text-[#6b4a00]" role="alert">{nota!.motivoNoEditable}</p>}
       {formulario && !edicion.cargando && <form id={ID_FORMULARIO} noValidate onSubmit={(evento) => void edicion.guardar(evento)}>
         <fieldset className="m-0 grid min-w-0 gap-[18px] border-0 p-0" disabled={edicion.guardando || bloqueada}>
-          <p className="m-0 text-sm text-[#27445f]">Cliente: <strong>{formulario.clienteNombre || "Sin cliente"}</strong></p>
+          <p className="m-0 text-sm text-[#27445f]">Cliente: <strong>{formulario.clienteNombre || "Clientes varios"}</strong></p>
           <BuscadorEdicionNota etiqueta="Cambiar cliente" buscar={(texto) => servicioIngresos.buscarClientes(texto)}
             describir={(cliente) => ({ id: cliente.id, titulo: nombreCliente(cliente), detalle: cliente.numeroDocumento })}
             onElegir={(cliente) => edicion.cambiar({ clienteId: cliente.id, clienteNombre: nombreCliente(cliente) })} />

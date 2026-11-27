@@ -1,17 +1,17 @@
 import { FileOutput, FilePlus2, FileText, ReceiptText } from "lucide-react";
 import { useId } from "react";
 import { AccionIcono } from "../../components/ui/accion-icono";
-import { Etiqueta } from "../../components/ui/etiqueta";
-import { clasesBotonAccion } from "../../components/ui/boton-accion";
+import { BotonAccion } from "../../components/ui/boton-accion";
 import { IconoWhatsApp } from "../../components/ui/icono-whatsapp";
 import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import type { ObtenerDocumento } from "../../impresion/servicio-impresion";
 import { useMenuAccionExclusivo } from "../../components/documentos/menu-accion-exclusivo";
 import type { Cotizacion } from "../../services/ingresos.service";
-import { cotizacionClases } from "./cotizacion-clases";
 import { calcularTotalesCotizacion } from "./gestion-utils";
-import { nombreRelacionListadoClasses } from "../../components/ui/listado-maestro/nombre-relacion-clases";
-import { clasesOpcionMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "../../components/documentos/menu-accion-classes";
+import { cotizacionesListadoClasses as c } from "./cotizaciones-tabla-classes";
+import { etiquetasEstadoCotizacion, grupoEstado, tonosEstadoCotizacion } from "./estados-cotizacion";
+import type { EstadoVisibleCotizacion } from "./use-gestion-listado";
+import { clasesOpcionMenu, clasesOpcionesMenu, claseRetardoOpcionDos, claseRetardoOpcionUno } from "../../components/documentos/menu-accion-classes";
 
 const formatoSoles = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
 const formatoFecha = new Intl.DateTimeFormat("es-PE", { day: "2-digit", month: "short", timeZone: "UTC" });
@@ -20,14 +20,8 @@ function fechaBreve(valor: string) {
   return Number.isNaN(fecha.getTime()) ? valor : formatoFecha.format(fecha).replace(/\.$/, "");
 }
 
-type EstadoVisibleCotizacion = "EMITIDA" | "INACTIVA" | "ACTIVA";
-
-/** Cada estado tiene texto y punto propios; el texto distingue el estado aunque no se perciba el color. */
-const tonosEstadoCotizacion: Record<EstadoVisibleCotizacion, { etiqueta: string; caja: string; punto: string }> = {
-  ACTIVA: { etiqueta: "Activa", caja: "border-[#c9e3d4] bg-[#edf7f1] text-[#24734e]", punto: "bg-[#2e9467]" },
-  EMITIDA: { etiqueta: "Emitida", caja: "border-[#c7d9ea] bg-[#edf4fa] text-[#174b78]", punto: "bg-[#174b78]" },
-  INACTIVA: { etiqueta: "Inactiva", caja: "border-[#d5dde5] bg-[#f1f4f7] text-[#52697d]", punto: "bg-[#8497a8]" },
-};
+/** Detalle mostrado al pasar el cursor sobre la píldora de estado. */
+const detalleEstado: Record<EstadoVisibleCotizacion, string> = { ACTIVA: "Vigente", EMITIDA: "Documento emitido", INACTIVA: "Vencida o anulada" };
 
 type CotizacionRowProps = {
   cotizacion: Cotizacion;
@@ -44,36 +38,36 @@ type CotizacionRowProps = {
 function SelectorDocumentoCotizacion({ cotizacion, inactiva, alPreparar }: { cotizacion: Cotizacion; inactiva: boolean; alPreparar: (tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => void }) {
   const menu = useMenuAccionExclusivo(`documento-cotizacion-${useId()}`);
   const elegir = (tipo: "BOLETA" | "FACTURA" | "NOTA_VENTA") => { menu.cerrar(); alPreparar(tipo); };
-  const opcion = `${clasesOpcionMenu} flex min-h-[34px] items-center gap-2 !m-0 !rounded-none !border-0 !bg-transparent !px-[10px] !text-xs !font-normal !text-[#244562] hover:!bg-[#eef4f9] hover:!text-[#174b80] disabled:!cursor-not-allowed disabled:!opacity-50`;
-  return <span ref={menu.raizRef} className="relative inline-flex flex-[0_0_36px]">
-    <button type="button" className={clasesBotonAccion("positiva")} title={`Preparar documento de ${cotizacion.codigo}`} aria-label={`Preparar documento de ${cotizacion.codigo}`} aria-haspopup="menu" aria-expanded={menu.abierto} onClick={menu.alternar}><FileOutput aria-hidden="true" size={17}/></button>
-    {menu.presente && <div className={`${cotizacionClases.documentOptions} ${menu.fase === "cerrando" ? "pointer-events-none" : ""}`} data-menu-state={menu.fase} role="menu" aria-hidden={!menu.abierto} aria-label={`Tipo de documento para ${cotizacion.codigo}`}>
-      <button className={`${opcion} ${claseRetardoOpcionUno}`} type="button" role="menuitem" disabled={inactiva || !menu.abierto} onClick={() => elegir("FACTURA")}><FileText aria-hidden="true" size={16}/>Factura</button>
-      <button className={`${opcion} ${claseRetardoOpcionDos}`} type="button" role="menuitem" disabled={inactiva || !menu.abierto} onClick={() => elegir("BOLETA")}><ReceiptText aria-hidden="true" size={16}/>Boleta de venta</button>
-      <button className={opcion} type="button" role="menuitem" disabled={inactiva || !menu.abierto} onClick={() => elegir("NOTA_VENTA")}><FilePlus2 aria-hidden="true" size={16}/>Nota de venta</button>
-    </div>}
+  const opcion = `${clasesOpcionMenu} flex items-center gap-2`;
+  return <span ref={menu.raizRef} className="relative inline-flex items-center">
+    <BotonAccion etiqueta={inactiva ? "La cotización está vencida o anulada" : `Emitir documento de ${cotizacion.codigo}`} tono="positiva" icono={<FileOutput aria-hidden="true" />} disabled={inactiva} aria-haspopup="menu" aria-expanded={menu.abierto} onClick={menu.alternar} />
+    {menu.presente && <span className={clasesOpcionesMenu} data-menu-state={menu.fase} role="menu" aria-hidden={!menu.abierto} aria-label={`Tipo de documento para ${cotizacion.codigo}`}>
+      <button className={`${opcion} ${claseRetardoOpcionUno}`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("BOLETA")}><ReceiptText aria-hidden="true" size={16}/>Boleta de venta</button>
+      <button className={`${opcion} ${claseRetardoOpcionDos}`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("FACTURA")}><FileText aria-hidden="true" size={16}/>Factura</button>
+      <button className={`${opcion} data-[menu-state=abriendo]:[animation-delay:70ms] data-[menu-state=cerrando]:[animation-delay:0ms]`} data-menu-state={menu.fase} type="button" role="menuitem" disabled={!menu.abierto} onClick={() => elegir("NOTA_VENTA")}><FilePlus2 aria-hidden="true" size={16}/>Nota de venta</button>
+    </span>}
   </span>;
 }
 
 export function CotizacionRow({ cotizacion, estado, mensajeWhatsApp, mostrarMenuDocumento, documentoPendiente, documentoImprimible, onPrepararDocumento, puedeEditar, onEditar }: CotizacionRowProps) {
-  const tono = tonosEstadoCotizacion[estado];
-  return <tr className={cotizacionClases.tableRow}>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.code}`}>
-      <strong className={cotizacionClases.documentCode}>{cotizacion.codigo}</strong>
-      <span className={cotizacionClases.minorText}>Cotización</span>
+  const grupo = grupoEstado(estado);
+  const tono = tonosEstadoCotizacion[grupo];
+  return <tr>
+    <td><strong className={`block ${c.documentCode}`}>{cotizacion.codigo}</strong><small className={`block ${c.minorText}`}>Cotización</small></td>
+    <td className="w-[30%]"><strong className={`block ${c.clientName}`}>{cotizacion.clienteNombre || "Clientes varios"}</strong></td>
+    <td className="whitespace-nowrap [font-variant-numeric:tabular-nums]">
+      <span className="block text-[#142b42]">{fechaBreve(cotizacion.fecha)}</span>
+      <small className={`block ${c.minorText}`}>{cotizacion.vigenteHasta ? `Vigente hasta ${fechaBreve(cotizacion.vigenteHasta)}` : "Sin fecha de vigencia"}</small>
     </td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.client}`}><strong className={`${nombreRelacionListadoClasses} max-w-[280px]`}>{cotizacion.clienteNombre || "Sin cliente"}</strong></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnDates}`} title={`${cotizacion.fecha} → ${cotizacion.vigenteHasta ?? "Sin fecha"}`}><span className="whitespace-nowrap [font-variant-numeric:tabular-nums]">{fechaBreve(cotizacion.fecha)} → {cotizacion.vigenteHasta ? fechaBreve(cotizacion.vigenteHasta) : "Sin fecha"}</span></td>
-    <td className={cotizacionClases.tableCell}><span className={`${cotizacionClases.statusPill} ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{tono.etiqueta}</span></td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.columnTotal} text-right`}>
-      <strong className="cotizacion-total">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong>
+    <td>
+      <span className={`${c.status} ${tono.caja}`} title={detalleEstado[estado]}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{etiquetasEstadoCotizacion[grupo]}</span>
+      {documentoPendiente && <small className={`block ${c.pending}`}>Documento pendiente</small>}
     </td>
-    <td className={`${cotizacionClases.tableCell} ${cotizacionClases.actionHeader}`}><div className={cotizacionClases.actions}>
+    <td className={`${c.number} ${c.total}`}><strong className="block">{formatoSoles.format(calcularTotalesCotizacion(cotizacion.detalles, cotizacion.aplicaIgv).total)}</strong></td>
+    <td className="whitespace-nowrap"><div className={c.rowActions}>
       {puedeEditar && <AccionIcono accion="editar" etiqueta={`Editar cotización ${cotizacion.codigo}`} confirmacion={{ titulo: "¿Editar esta cotización?", descripcion: `Vas a abrir ${cotizacion.codigo} para revisar sus datos. Los cambios se aplicarán al guardarlos.`, etiquetaCancelar: "Volver al listado", etiquetaConfirmar: "Sí, editar cotización" }} onClick={onEditar} />}
       <MenuImpresion codigo={cotizacion.codigo} etiqueta={`Imprimir cotización ${cotizacion.codigo}`} tono="neutral" obtener={documentoImprimible} />
-      <a className={clasesBotonAccion("positiva")} href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`} target="_blank" rel="noreferrer" title={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} aria-label={`Enviar cotización ${cotizacion.codigo} por WhatsApp`}><IconoWhatsApp size={17}/></a>
-      {mostrarMenuDocumento && <SelectorDocumentoCotizacion cotizacion={cotizacion} inactiva={estado === "INACTIVA"} alPreparar={onPrepararDocumento}/>}
-      {documentoPendiente && <Etiqueta compacta tono="advertencia">Documento pendiente de confirmación</Etiqueta>}
-    </div></td>
+      <BotonAccion etiqueta={`Enviar cotización ${cotizacion.codigo} por WhatsApp`} tono="positiva" icono={<IconoWhatsApp size={16} />} href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsApp)}`} target="_blank" rel="noreferrer" />
+      {mostrarMenuDocumento && <SelectorDocumentoCotizacion cotizacion={cotizacion} inactiva={estado === "INACTIVA"} alPreparar={onPrepararDocumento}/>}    </div></td>
   </tr>;
 }

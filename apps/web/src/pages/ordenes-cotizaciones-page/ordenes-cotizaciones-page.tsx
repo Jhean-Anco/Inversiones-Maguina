@@ -6,11 +6,13 @@ import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/a
 import { ConfirmarDescarteFormulario } from "../../components/ui/confirmar-descarte-formulario";
 import { servicioIngresos, type ClienteRegistrado, type Cotizacion } from "../../services/ingresos.service";
 import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
+import { mensajeErrorImpresion } from "../../impresion/use-impresion";
 import { documentoDeCotizacion } from "./documento-cotizacion";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import "../nuevo-ingreso-page/nuevo-ingreso-page.css";
 import "../ordenes-servicio-page/ordenes-servicio-page.css";
 import { CotizacionEditor } from "./cotizacion-editor";
+import { useAltaRapidaRepuesto } from "../../components/productos/use-alta-rapida-repuesto";
 import { useGestionListado } from "./use-gestion-listado";
 import { useGestionCliente } from "./use-gestion-cliente";
 import { useLineasGestion } from "./use-lineas-gestion";
@@ -35,6 +37,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
   const lineasGestion = useLineasGestion({ setError });
   const { cliente, setCliente, clienteBusqueda, setClienteBusqueda, clienteBusquedaConsultada, setClienteBusquedaConsultada, tipoDocumentoBusqueda, setTipoDocumentoBusqueda, cambiarTipoDocumentoBusqueda, cambiarBusquedaClienteCotizacion, buscandoClientes, clientes, setClientes, mostrarFormularioCliente, setMostrarFormularioCliente, ejecutarBusquedaCliente, registrarYSeleccionarCliente, seleccionarClienteCotizacion, limpiarClienteCotizacion, manejarEnterBusquedaCliente } = clientesGestion;
   const { busquedaProducto, setBusquedaProducto, productos, setProductos, buscandoProductos, productosRecientes, agregarProductoReciente, lineas, setLineas, agregarProducto, agregarServicioCotizacion, actualizarLineaCotizacion, eliminarLineaCotizacion } = lineasGestion;
+  const altaRepuesto = useAltaRapidaRepuesto({ busqueda: busquedaProducto, alCrear: (producto) => agregarProducto(producto), alError: setError });
   const [guardando, setGuardando] = useState(false);
   const [codigoCotizacionPrevisualizado, setCodigoCotizacionPrevisualizado] = useState<string | null>(null);
   const [aplicaIgvNuevaCotizacion, setAplicaIgvNuevaCotizacion] = useState<boolean>();
@@ -112,7 +115,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
     limpiarClienteCotizacion();
     setClienteInicialEdicionId(null); setClienteInicialEdicionNombre(null);
   }
-  const { guardarGestion } = useAccionesPersistencia({ datos: { cliente, clienteInicialId: clienteInicialEdicionId, lineas, vigenteHasta, fechaEmision: fechaEmisionCotizacion, codigoCotizacion: codigoCotizacionPrevisualizado, cotizacionId: cotizacionActivaEdicion?.id ?? null, errorConsultaSerie: errorConsultaSerieCotizacion, observacion }, acciones: { setError, setGuardando, setConfirmarDescarte: setConfirmarDescarteCotizacion, setMostrarFormulario, cargar, limpiarBorradorCotizacion } });
+  const { validarGestion, guardarGestion } = useAccionesPersistencia({ datos: { cliente, clienteInicialId: clienteInicialEdicionId, lineas, vigenteHasta, fechaEmision: fechaEmisionCotizacion, codigoCotizacion: codigoCotizacionPrevisualizado, cotizacionId: cotizacionActivaEdicion?.id ?? null, errorConsultaSerie: errorConsultaSerieCotizacion, observacion }, acciones: { setError, setGuardando, setConfirmarDescarte: setConfirmarDescarteCotizacion, setMostrarFormulario, cargar, limpiarBorradorCotizacion } });
 
   function abrirVentaCotizacion(cotizacion: Cotizacion, tipoComprobante: "BOLETA" | "FACTURA" | "NOTA_VENTA") {
     navegar("/ingresos/nuevo/repuestos", { state: { cotizacion: { id: cotizacion.id, codigo: cotizacion.codigo, clienteId: cotizacion.clienteId, clienteNombre: cotizacion.clienteNombre, detalles: cotizacion.detalles, observacion: cotizacion.observacion, tipoComprobante } } });
@@ -140,7 +143,11 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
   }
 
   async function guardarEImprimirCotizacion() {
-    const preparada = await imprimirAlGuardar.preparar();
+    // Primero se validan los datos; luego se pide la impresora en el mismo clic (gesto del usuario). Si falla, no se guarda.
+    if (!validarGestion()) return;
+    let preparada;
+    try { preparada = await imprimirAlGuardar.preparar("TICKET"); }
+    catch (problema) { setError(mensajeErrorImpresion(problema)); return; }
     const clienteNombreImpresion = cliente ? nombreCliente(cliente) : clienteInicialEdicionNombre;
     const guardada = await guardarGestion();
     if (guardada) await imprimirAlGuardar.imprimir(() => documentoDeCotizacion(guardada, clienteNombreImpresion), preparada);
@@ -148,11 +155,15 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
 
   const listadoVistaProps = { busqueda, setBusqueda, desde: filtroVigenciaDesde, setDesde: setFiltroVigenciaDesde, hasta: filtroVigenciaHasta, setHasta: setFiltroVigenciaHasta, cotizaciones: cotizacionesFiltradas, cargando, estadoVisible: estadoVisibleCotizacion, documentoCompletado: documentoCotizacionCompletado, mensajeWhatsApp: (cotizacion: Cotizacion) => crearMensajeWhatsApp(cotizacion, dinero), documentoImprimible: (cotizacion: Cotizacion) => () => documentoDeCotizacion(cotizacion), prepararDocumento: abrirVentaCotizacion, puedeCrear, editar: editarCotizacion };
 
-  return <section className={`gestion-ingresos-page ${cotizacionClases.pageShared} is-cotizaciones ${cotizacionClases.page}${mostrarFormulario ? " is-editing" : ""}`}>
+  const modales = <>
+    {altaRepuesto.dialogo}
+    {confirmarDescarteCotizacion && <ConfirmarDescarteFormulario elemento={cotizacionActivaEdicion ? "los cambios de la cotización" : "la cotización"} detalle={cotizacionActivaEdicion ? "Si sales ahora, se perderán los cambios que ingresaste. La cotización original seguirá disponible. ¿Quieres descartarlos?" : undefined} accion={cotizacionActivaEdicion ? "Descartar cambios" : "Descartar cotización"} onSeguirEditando={() => setConfirmarDescarteCotizacion(false)} onDescartar={descartarCotizacion} />}
+    {mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={registrarYSeleccionarCliente} onCancelar={() => setMostrarFormularioCliente(false)} />, document.body)}
+  </>;
+
+  // En edición el formulario es hijo directo del contenido, igual que en Órdenes de servicio, para compartir su maquetación.
+  if (mostrarFormulario) return <>
     {error && <NotificacionFlotante mensaje={error} />}
-    {!mostrarFormulario && <GestionListadoVista {...listadoVistaProps} />}
-    {puedeCrear && !mostrarFormulario && <RegistrarAccionPrincipal etiqueta="Crear cotización" onClick={nuevaGestion} />}
-    {mostrarFormulario && <section className={`gestion-editor ${cotizacionClases.editor} ${cotizacionClases.editorFooter}`} aria-label="Formulario de cotización">
       <CotizacionEditor
           productos={productos}
           buscandoProductos={buscandoProductos}
@@ -161,6 +172,7 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
           busquedaProducto={busquedaProducto}
           onBusquedaProductoChange={setBusquedaProducto}
           onAgregarProducto={agregarProducto}
+          onCrearRepuesto={() => void altaRepuesto.abrir()}
           dinero={dinero}
           fechaEmision={fechaEmisionCotizacion}
           consultandoSerie={consultandoSerieCotizacion}
@@ -196,8 +208,13 @@ export function OrdenesCotizacionesPage({ puedeCrear }: { modo: "COTIZACIONES"; 
           guardando={guardando}
           editando={Boolean(cotizacionActivaEdicion)}
         />
-    </section>}
-    {confirmarDescarteCotizacion && <ConfirmarDescarteFormulario elemento={cotizacionActivaEdicion ? "los cambios de la cotización" : "la cotización"} detalle={cotizacionActivaEdicion ? "Si sales ahora, se perderán los cambios que ingresaste. La cotización original seguirá disponible. ¿Quieres descartarlos?" : undefined} accion={cotizacionActivaEdicion ? "Descartar cambios" : "Descartar cotización"} onSeguirEditando={() => setConfirmarDescarteCotizacion(false)} onDescartar={descartarCotizacion} />}
-    {mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={registrarYSeleccionarCliente} onCancelar={() => setMostrarFormularioCliente(false)} />, document.body)}
+    {modales}
+  </>;
+
+  return <section className={`gestion-ingresos-page ${cotizacionClases.pageShared} is-cotizaciones ${cotizacionClases.page}`}>
+    {error && <NotificacionFlotante mensaje={error} />}
+    <GestionListadoVista {...listadoVistaProps} />
+    {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear cotización" onClick={nuevaGestion} />}
+    {modales}
   </section>;
 }

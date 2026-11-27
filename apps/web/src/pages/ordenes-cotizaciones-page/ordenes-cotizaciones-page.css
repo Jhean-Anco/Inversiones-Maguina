@@ -56,11 +56,8 @@
   .gestion-cotizacion-page .cotizacion-editor{grid-template-columns:minmax(245px,.32fr) minmax(0,1fr);gap:12px}
   .gestion-cotizacion-page .cotizacion-client-picker{grid-template-columns:76px minmax(0,1fr) 42px 42px;gap:6px}
 }
-@media(min-width:781px){.gestion-ingresos-page.is-editing>.gestion-editor{margin-top:-10px}}
 @media(max-width:780px){
   .gestion-cotizacion-page{height:auto;min-height:100%;overflow:visible}
-  #root .gestion-ingresos-page.is-cotizaciones.is-editing{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto}
-  .gestion-ingresos-page.is-editing>.gestion-editor{height:auto;min-height:0;flex:0 0 auto}
   .gestion-cotizacion-page>.cotizacion-layout{height:auto;max-height:none;overflow:visible}
   .gestion-cotizacion-page .cotizacion-editor{height:auto;min-height:0;grid-template-columns:minmax(0,1fr);overflow:visible}
   .gestion-cotizacion-page .venta-catalog-sidebar{position:static;height:max(320px,calc(100dvh - 140px));max-height:none}

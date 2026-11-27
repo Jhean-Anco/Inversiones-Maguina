@@ -25,7 +25,17 @@ describe("documentos imprimibles de cada listado", () => {
   it("cotización, con el cliente recién elegido", async () => {
     const cotizacion = { codigo: "C-1", fecha: "2026-11-25", vigenteHasta: "2026-12-10", clienteNombre: null, estado: "BORRADOR", aplicaIgv: true, observacion: null, detalles: [linea] } as never;
     expect(await documentoDeCotizacion(cotizacion, "Luis")).toMatchObject({ tipo: "COTIZACION", cliente: { nombre: "Luis" }, totales: { total: "118.00" } });
-    expect((await documentoDeCotizacion(cotizacion)).cliente.nombre).toBe("Sin cliente");
+    const sinCliente = await documentoDeCotizacion(cotizacion);
+    expect(sinCliente.cliente.nombre).toBe("Clientes varios");
+    // Documento interno: sin leyenda, sin estado y sin desglose de IGV.
+    expect(sinCliente.leyenda).toBe("");
+    expect(sinCliente.datosExtra ?? []).toEqual([]);
+    expect(sinCliente.totales).toMatchObject({ igv: "0.00", tasaIgv: "0.00" });
+  });
+
+  it("orden sin cliente se imprime como Clientes varios", async () => {
+    const orden = { codigo: "OS-2", fechaRecepcion: "2026-11-25", clienteNombre: "", vehiculoPlaca: "ABC", motivo: "", adelanto: "0", detalles: [linea] } as never;
+    expect((await documentoDeOrden(orden)).cliente.nombre).toBe("Clientes varios");
   });
 
   it("guía con bienes del comprobante de origen, y sin ellos si la consulta falla", async () => {
