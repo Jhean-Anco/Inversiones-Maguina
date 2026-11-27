@@ -121,9 +121,6 @@ export class ServicioIngresos {
     const [cliente] = await db.select({ id: clientes.personaId }).from(clientes).where(and(eq(clientes.personaId, datos.clienteId as string), eq(clientes.activo, true))).limit(1);
     if (!cliente) throw new NotFoundException("El cliente no está activo.");
     const placa = texto(datos.vehiculoPlaca, "La placa o identificador del vehículo", 20, true)!;
-    const trabajadorResponsableId = uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
-    if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
-    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true);
     const detalles = validarDetallesGestion(datos.detalles, true);
     const fechaRecepcion = texto(datos.fechaRecepcion, "La fecha de recepción", 10, true)!;
     const fechaAcabado = texto(datos.fechaAcabado, "La fecha estimada de acabado", 10, true)!;
@@ -134,6 +131,9 @@ export class ServicioIngresos {
     validarFecha(fechaRecepcion, "La fecha de recepción");
     validarFecha(fechaAcabado, "La fecha estimada de acabado");
     if (fechaAcabado < fechaRecepcion) throw new BadRequestException("La fecha estimada de acabado no puede ser anterior a la fecha de recepción.");
+    const trabajadorResponsableId = uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
+    if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
+    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true);
     const id = randomUUID();
     const serieOrden = await this.serieActiva("ORDEN_SERVICIO");
     const [correlativoOrden] = await db.insert(correlativosDocumentosInternos).values({ tipo: "ORDEN_SERVICIO", ultimoNumero: 1 }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } }).returning({ numero: correlativosDocumentosInternos.ultimoNumero });

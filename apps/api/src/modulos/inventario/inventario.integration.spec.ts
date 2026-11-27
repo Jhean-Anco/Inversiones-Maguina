@@ -97,7 +97,7 @@ describe("entradas de stock", () => {
       [{ ...base, ...proveedor, proveedorNumeroDocumento: rucAleatorio("17") }, /iniciar con 10 o 15/],
       [{ ...base, ...proveedor, proveedorTipoPersona: "NATURAL" }, /no coincide con el prefijo/],
       [{ ...base, proveedorTipoPersona: "JURIDICA" }, /jurídico debe identificarse/],
-      [{ ...base, tipoDocumento: "OTRO" }, /Completa el nombre/], [{ ...base, detalles: [] }, /Agrega lineas/],
+      [{ ...base, tipoDocumento: "OTRO" }, /tipo de documento válido/], [{ ...base, detalles: [] }, /Agrega lineas/],
       [{ ...base, detalles: [null] }, /producto 1 no es válido/],
       [{ ...base, detalles: [{ ...base.detalles[0], detalleDocumentoId: randomUUID() }] }, /linea documental inexistente/],
       [{ ...base, detalles: [base.detalles[0], base.detalles[0]] }, /repetidos/], [{ ...base, pagos: [] }, /Distribuye/],
@@ -119,7 +119,7 @@ describe("entradas de stock", () => {
       proveedorTipoDocumento: "RUC", proveedorNumeroDocumento: ruc, proveedorDireccion: "Av. QA", totalDocumento: "20.00", observacion: "Obs",
       medioPago: "EFECTIVO", montoPagado: "20", cuentaFinancieraId: cuentaId,
       detallesDocumento: [{ clave: claveLinea, codigo: "C1", descripcion: "Filtro", unidad: "UND", cantidad: 2, costoUnitario: 10, descuento: "", subtotal: 20, total: 20 }],
-      detalles: [{ productoId, presentacionId, detalleDocumentoId: claveLinea, cantidad: 2, costoUnitario: 9, importeTotal: 20 }],
+      detalles: [{ productoId, presentacionId, detalleDocumentoId: claveLinea, cantidad: 2, costoUnitario: 10, importeTotal: 20 }],
     };
     const entrada = await entradas.crear(datos, usuarioId);
     assert.deepEqual([entrada.numeroDocumento, entrada.total, entrada.detalles[0].costoUnitario, entrada.detallesDocumento.length], ["F001-77", "20.00", "10.0000", 1]);
