@@ -39,7 +39,7 @@ export function useProductoFormulario({ producto, alGuardar, alCrearMarca, alCre
     setUnidadBaseCodigo(producto?.unidadBaseCodigo ?? "NIU"); setStockMinimo(producto?.stockMinimo ?? "0"); setAfectacionIgv(producto?.afectacionIgv ?? (producto?.afectoIgv === false ? "INAFECTO" : "GRAVADO"));
     setActivo(producto?.activo ?? true);
     setFicha(Object.entries(producto?.fichaTecnica ?? {}).map(([clave, valor]) => ({ id: claveLocal(), clave, valor: String(valor ?? "") })));
-    setCodigos((producto?.codigos ?? []).map((item) => ({ ...item, clave: item.id ?? claveLocal() })));
+    setCodigos((producto?.codigos ?? []).filter((item) => item.tipo !== "FABRICANTE").map((item) => ({ ...item, tipo: "BARRAS" as const, clave: item.id ?? claveLocal() })));
     const adicionales = (producto?.presentaciones ?? []).filter((item) => !item.esBase).map((item) => ({ ...item, clave: item.clave ?? item.id ?? claveLocal() }));
     setPresentaciones(adicionales);
     setMarcaNueva(""); setErrorLocal(""); setCategoriaModalAbierto(false); setCategoriaNueva("");
@@ -82,7 +82,7 @@ export function useProductoFormulario({ producto, alGuardar, alCrearMarca, alCre
       nombre, descripcion: descripcion.trim() || null, categoriaId, marcaId, unidadBaseCodigo, stockMinimo,
       afectacionIgv, afectoIgv: afectacionIgv === "GRAVADO",
       fichaTecnica, activo,
-      codigos: codigos.filter((item) => item.codigo.trim()).map(({ tipo, codigo }) => ({ tipo, codigo: codigo.trim() })),
+      codigos: codigos.filter((item) => item.codigo.trim()).map(({ codigo }) => ({ tipo: "BARRAS" as const, codigo: codigo.trim() })),
       presentaciones: presentaciones.map(({ clave, unidadMedidaCodigo: codigoUnidad, nombre: nombrePresentacion, factorAUnidadBase, seCompra, seVende }) => ({ clave, unidadMedidaCodigo: codigoUnidad, nombre: nombrePresentacion, factorAUnidadBase, seCompra, seVende })),
     };
     setGuardando(true);
