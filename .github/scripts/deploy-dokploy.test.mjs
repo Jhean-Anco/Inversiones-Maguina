@@ -21,12 +21,9 @@ test("fija la revision segun la fuente de Dokploy y despliega sin escribir varia
     "https://dokploy.example/api/compose.one?composeId=service-id",
     "https://dokploy.example/api/compose.deploy",
   ]);
-  assert.deepEqual(JSON.parse(calls[1].body), {
-    composeId: "service-id",
-    githubBranch: `ci-deploy-${sha}`,
-  });
+  assert.deepEqual(JSON.parse(calls[1].body), { composeId: "service-id", githubBranch: "main" });
   assert.deepEqual(JSON.parse(calls[3].body), { composeId: "service-id" });
-  assert.deepEqual(resultado, { sourceType: "github", revisionField: "githubBranch", revision: `ci-deploy-${sha}` });
+  assert.deepEqual(resultado, { sourceType: "github", revisionField: "githubBranch", revision: "main" });
 });
 
 test("rechaza datos invalidos y detiene el flujo ante errores", async () => {
