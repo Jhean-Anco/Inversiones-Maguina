@@ -94,13 +94,6 @@ describe("finanzas", () => {
     await assert.rejects(servicio.flujoPorPeriodo("ANIO"), BadRequestException);
     const composicion = await servicio.composicionDeCaja({ desde: hoy, hasta: hoy });
     assert.ok(composicion.items.some((fila) => fila.concepto === "COBRANZA"));
-    const dia = await servicio.movimientosPorPeriodo("DIA", hoy, cuenta, "1", "5");
-    assert.deepEqual([dia.totalMovimientos, dia.movimientos[0]?.importe, dia.totalesPorMoneda.PEN !== undefined], [1, "30.00", true]);
-    assert.equal((await servicio.movimientosPorPeriodo("MES", hoy.slice(0, 7))).hasta.slice(0, 7), hoy.slice(0, 7));
-    assert.equal((await servicio.movimientosPorPeriodo("ANIO", hoy.slice(0, 4))).desde, `${hoy.slice(0, 4)}-01-01`);
-    for (const [periodo, fecha, cuentaFiltro] of [["MES", "2026-13"], ["ANIO", "1800"], ["SEMANA", hoy], ["DIA", hoy, "x"]] as const) {
-      await assert.rejects(servicio.movimientosPorPeriodo(periodo, fecha, cuentaFiltro), BadRequestException);
-    }
   });
 });
 

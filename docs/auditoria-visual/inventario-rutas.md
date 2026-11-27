@@ -18,7 +18,6 @@
 | `/inicio` | Vista compartida | Inicio | Captura móvil anonimizada; revisar estados/acciones del panel |
 | `/configuracion/series` | Vista compartida | Configuración de series | Captura móvil anonimizada; no se guardó configuración |
 | `/finanzas/cuentas` | Vista compartida | Finanzas / cuentas | Captura móvil anonimizada; acciones persistentes no activadas |
-| `/finanzas/movimientos` | Vista compartida | Finanzas / movimientos | Captura móvil anonimizada; gráficos/controles pendientes |
 | `/ingresos/nuevo` | Redirección | `/ingresos/nuevo/repuestos` | Redirect estable tras 1,5 s y 2 s; sin loader ni `aria-busy` en el estado final |
 | `/ingresos/nuevo/repuestos` | Vista compartida | Nuevo ingreso / repuestos | Formulario vacío abierto a 1440×900; no se emitió ni guardó |
 | `/ingresos/nuevo/mototaxis` | Vista compartida | Nuevo ingreso / mototaxis | Formulario abierto desde venta de mototaxis; no se envió |

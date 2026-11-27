@@ -36,13 +36,6 @@ export class ControladorFinanzas {
   @RequierePermiso("FINANZAS.LEER")
   composicion(@Query("desde") desde?: string, @Query("hasta") hasta?: string) { return this.finanzas.composicionDeCaja(validarRangoFechas(desde, hasta)); }
 
-  @Get("movimientos")
-  @RequierePermiso("FINANZAS.LEER")
-  movimientos(@Query("periodo") periodo?: string, @Query("fecha") fecha?: string, @Query("cuentaId") cuentaId?: string, @Query("pagina") pagina?: string, @Query("porPagina") porPagina?: string) {
-    if (!periodo || !fecha) throw new BadRequestException("Indica el periodo y la fecha que quieres consultar.");
-    return this.finanzas.movimientosPorPeriodo(periodo, fecha, cuentaId, pagina, porPagina);
-  }
-
   @Post()
   @RequierePermiso("FINANZAS.ADMINISTRAR")
   crear(@Body() datos: unknown, @Req() solicitud: SolicitudAutenticada) { return this.finanzas.crear(datos, solicitud.usuario.id); }

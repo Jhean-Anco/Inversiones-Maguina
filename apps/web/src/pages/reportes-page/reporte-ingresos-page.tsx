@@ -1,8 +1,12 @@
+import { ChevronDown } from "lucide-react";
+import { BotonDescargarPdf } from "./boton-descargar-pdf";
 import { useEffect, useMemo, useState } from "react";
 import { ErrorApi } from "../../services/api-cliente";
 import { servicioReportes, type ReporteIngresos } from "../../services/reportes.service";
 import { hoy, numero, primerDiaMes, soles } from "./reportes-formatters";
 import "./reporte-ingresos-page.css";
+import { ventasClasses as v } from "../ventas-page/ventas-classes";
+import { reportesClasses as r } from "./reportes-classes";
 import { useViewportProfile } from "../../utilidades/use-viewport-profile";
 
 type Linea = "TODAS" | "PRODUCTO" | "MOTOTAXI" | "SERVICIO";
@@ -60,19 +64,19 @@ export function ReporteIngresosPage() {
     { etiqueta: "Ticket promedio", valor: soles(datos.resumen.ticketPromedio), detalle: "Por comprobante neto" },
   ] : [], [datos]);
 
-  return <section className="reporte-ingresos-page">
-    <div className="reporte-ingresos-toolbar">
-      <label>Desde<input aria-label="Desde" type="date" value={desde} max={hasta} onChange={(evento) => setDesde(evento.target.value)} /></label>
-      <label>Hasta<input aria-label="Hasta" type="date" value={hasta} min={desde} onChange={(evento) => setHasta(evento.target.value)} /></label>
-      <label>Línea<select aria-label="Línea" value={linea} onChange={(evento) => setLinea(evento.target.value as Linea)}>
-        <option value="TODAS">Todas</option><option value="PRODUCTO">Repuestos</option><option value="MOTOTAXI">Mototaxis</option><option value="SERVICIO">Servicios</option>
-      </select></label>
-      <button type="button" className="reporte-ingresos-export" onClick={() => window.print()} disabled={!datos || cargando}>Exportar PDF</button>
+  return <section className={`${v.page} reporte-ingresos-page`}>
+    <div className={`${v.toolbar} reporte-ingresos-toolbar`}>
+      <label className={`${v.selectField} reporte-ingresos-fecha`}><span>Desde</span><input aria-label="Desde" type="date" value={desde} max={hasta} onChange={(evento) => setDesde(evento.target.value)} /></label>
+      <label className={`${v.selectField} reporte-ingresos-fecha`}><span>Hasta</span><input aria-label="Hasta" type="date" value={hasta} min={desde} onChange={(evento) => setHasta(evento.target.value)} /></label>
+      <label className={v.selectField}><select aria-label="Línea" value={linea} onChange={(evento) => setLinea(evento.target.value as Linea)}>
+        <option value="TODAS">Todas las líneas</option><option value="PRODUCTO">Repuestos</option><option value="MOTOTAXI">Mototaxis</option><option value="SERVICIO">Servicios</option>
+      </select><ChevronDown aria-hidden="true" /></label>
+      <BotonDescargarPdf onClick={() => window.print()} disabled={!datos || cargando} />
     </div>
-    {cargando && <p className="reporte-ingresos-message" role="status">Cargando reporte…</p>}
-    {!cargando && error && <p className="reporte-ingresos-message is-error" role="alert">{error}</p>}
+    {cargando && <p className={r.mensaje} role="status">Cargando reporte…</p>}
+    {!cargando && error && <p className={`${r.mensaje} ${r.mensajeError}`} role="alert">{error}</p>}
     {!cargando && datos && <div className="reporte-ingresos-content">
-      <dl className="reporte-ingresos-kpis">{indicadores.map((item) => <div key={item.etiqueta}><dt>{item.etiqueta}</dt><dd>{item.valor}</dd><small>{item.detalle}</small></div>)}</dl>
+      <dl className={`${r.kpis} reporte-ingresos-kpis`}>{indicadores.map((item) => <div key={item.etiqueta}><dt>{item.etiqueta}</dt><dd>{item.valor}</dd><small>{item.detalle}</small></div>)}</dl>
       <GraficoIngresos filas={datos.porMes} />
       <section className="reporte-ingresos-panel reporte-ingresos-documentos" aria-label="Tipo de documento">
         <div className="reporte-ingresos-panel-heading reporte-ingresos-documentos-heading"><h2 id="reporte-ingresos-doc-title">Tipo de documento</h2><span>Importes en soles</span></div>
@@ -80,8 +84,8 @@ export function ReporteIngresosPage() {
           ? <div className="reporte-ingresos-doc-cards">{datos.porDocumento.map((fila) => <article className="reporte-ingresos-doc-card" key={fila.tipo}>
             <h3>{fila.etiqueta}</h3><div><span>Cantidad</span><strong>{numero(fila.documentos)}</strong></div><div><span>Importe</span><strong className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</strong></div>
           </article>)}</div>
-          : <div className="reporte-ingresos-table-wrap"><table className="reporte-ingresos-table"><thead><tr><th>Tipo de documento</th><th>Cantidad</th><th>Importe</th></tr></thead>
-            <tbody>{datos.porDocumento.map((fila) => <tr key={fila.tipo}><th scope="row">{fila.etiqueta}</th><td>{numero(fila.documentos)}</td><td className={fila.documentos < 0 ? "is-credit" : ""}>{soles(fila.total)}</td></tr>)}</tbody>
+          : <div className={v.tableScroll}><table className={`${v.table} reporte-ingresos-table`}><thead><tr><th>Tipo de documento</th><th>Cantidad</th><th>Importe</th></tr></thead>
+            <tbody>{datos.porDocumento.map((fila) => <tr key={fila.tipo}><th scope="row">{fila.etiqueta}</th><td>{numero(fila.documentos)}</td><td className={fila.documentos < 0 ? "is-credit" : v.total}>{soles(fila.total)}</td></tr>)}</tbody>
           </table></div>}
       </section>
     </div>}

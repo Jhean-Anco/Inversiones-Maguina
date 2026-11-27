@@ -119,12 +119,3 @@ test("rechaza tipos, monedas, campos obligatorios e importes de entrada no estru
     );
   }
 });
-
-test("rechaza fechas calendario imposibles antes de consultar PostgreSQL", async () => {
-  const servicio = new ServicioFinanzas();
-
-  await assert.rejects(
-    () => servicio.movimientosPorPeriodo("DIA", "2026-02-30"),
-    (error) => error instanceof BadRequestException,
-  );
-});

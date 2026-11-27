@@ -75,7 +75,6 @@ export const elementosAside: ModuloAside[] = [
       { nombre: "Personal", ruta: "/personas/personal", permiso: "PERSONAS.LEER" },
     ],
   },
-  { nombre: "Finanzas", icono: "finanzas", hijos: [{ nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" }, { nombre: "Movimientos por cuenta", ruta: "/finanzas/movimientos", permiso: "FINANZAS.LEER" }] },
   {
     nombre: "Reportes",
     icono: "reportes",
@@ -84,7 +83,15 @@ export const elementosAside: ModuloAside[] = [
       { nombre: "Inventario", ruta: "/reportes/inventario", permiso: "INVENTARIO.LEER" },
     ],
   },
-  { nombre: "Configuración", etiqueta: "Ajustes", icono: "administracion", hijos: [{ nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" }] },
+  {
+    nombre: "Configuración",
+    etiqueta: "Configuración",
+    icono: "configuracion",
+    hijos: [
+      { nombre: "Series de documentos", ruta: "/configuracion/series", permiso: "FINANZAS.ADMINISTRAR" },
+      { nombre: "Cuentas y medios de pago", ruta: "/finanzas/cuentas", permiso: "FINANZAS.LEER" },
+    ],
+  },
 ];
 
 function rutaCoincide(rutaActual: string, elemento: SubmoduloAside) {
