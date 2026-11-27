@@ -68,7 +68,8 @@ export async function imprimirPdf(url: string, esPropio: boolean): Promise<"impr
   const respuesta = await fetch(url, { credentials: "include" });
   if (!respuesta.ok) throw new Error(`No se pudo descargar el PDF (${respuesta.status}).`);
   const blob = await respuesta.blob();
-  const enlace = URL.createObjectURL(blob.type === "application/pdf" ? blob : new Blob([blob], { type: "application/pdf" }));
+  const pdf = blob.type === "application/pdf" ? blob : new Blob([await blob.arrayBuffer()], { type: "application/pdf" });
+  const enlace = URL.createObjectURL(pdf);
   const { marco, limpiar } = crearMarco();
   const limpiarTodo = () => { limpiar(); URL.revokeObjectURL(enlace); };
   return new Promise((resolver) => {
