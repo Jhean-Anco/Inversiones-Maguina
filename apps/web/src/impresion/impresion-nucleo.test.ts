@@ -3,6 +3,7 @@ import { documentoEjemplo, emisorEjemplo as emisor } from "../test/documento-eje
 import { codificarTexto, columnas, EscPos, envolver, trocear } from "./escpos";
 import { escaparHtml, fechaCorta, montoSoles } from "./formato";
 import { guardarDirecto, guardarFormato, leerDirecto, leerFormato } from "./memoria-impresion";
+import { logoDesdePixeles } from "./logo-ticket";
 import { matrizQr, qrSvg } from "./qr";
 import { a4Html, altoPaginaMm, ticketHtml } from "./ticket-html";
 import { ticketEscPos } from "./ticket-escpos";
@@ -90,17 +91,17 @@ describe("ESC/POS", () => {
     const ticket = texto(ticketEscPos(electronico));
     expect(ticket).toContain("FACTURA ELECTR");
     expect(ticket).toContain("Cuota 1");
-    expect(ticket).toContain("Doc. modificado: F001-000001");
-    expect(ticket).toContain("Op. exonerada");
+    expect(ticket).toContain("DOC. MODIFICADO: F001-000001");
+    expect(ticket).toContain("OP. EXONERADA");
     expect(texto(ticketEscPos({ ...base, emisor: { ...emisor!, nombreComercial: null, telefono: null, mensajePie: null }, hash: null, observacion: null, medioPago: null }))).not.toContain("Hash:");
     expect(ticketEscPos({ ...base, emisor: null, cadenaQr: null, cliente: { ...base.cliente, numeroDocumento: null } }).length).toBeGreaterThan(50);
   });
   it("imprime documentos sin totales, con datos extra y sin precios", () => {
     const guia: DocumentoImprimible = { ...base, tipo: "GUIA_REMISION", titulo: "GUÍA", totales: null, cadenaQr: null, hash: null, etiquetaCliente: "Destinatario", datosExtra: [{ etiqueta: "Estado", valor: "Emitida" }], items: [{ codigo: null, descripcion: "Bien", unidad: null, cantidad: "3", precioUnitario: null, descuento: null, total: null }] };
     const ticket = texto(ticketEscPos(guia));
-    expect(ticket).toContain("Destinatario: ");
-    expect(ticket).toContain("Estado: Emitida");
-    expect(ticket).toContain("3 x Bien");
+    expect(ticket).toContain("DESTINATARIO");
+    expect(ticket).toContain("ESTADO: Emitida");
+    expect(ticket).toMatch(/3 +Bien/);
     expect(ticket).not.toContain("TOTAL");
     expect(texto(ticketEscPos({ ...guia, items: [] }))).not.toContain("CANT");
     expect(texto(ticketEscPos({ ...guia, items: [{ ...guia.items[0], precioUnitario: null, total: "5.00" }] }))).toContain("S/ 5.00");
@@ -112,7 +113,7 @@ describe("ticket y A4 HTML", () => {
     const html80 = ticketHtml(electronico);
     expect(html80).toContain("@page{size:80mm");
     expect(html80).toContain("&lt;Cliente &amp; Cía&gt;");
-    expect(html80).toContain("Op. exonerada");
+    expect(html80).toContain("OP. EXONERADA");
     expect(html80).toContain("CRÉDITO");
     expect(ticketHtml({ ...base, emisor: null, cadenaQr: null, hash: null, medioPago: null })).toContain("width:72mm");
     expect(a4Html(base)).toContain("A4 portrait");
@@ -128,8 +129,45 @@ describe("ticket y A4 HTML", () => {
     const html = a4Html(guia);
     expect(html).not.toContain("TOTAL");
     expect(html).not.toContain("<table>");
-    expect(html).toContain("Destinatario:");
-    expect(html).toContain("Estado:");
+    expect(html).toContain("DESTINATARIO");
+    expect(html).toContain("ESTADO:");
     expect(ticketHtml({ ...base, items: [{ ...base.items[0], precioUnitario: null, total: null }] })).toContain("<td class=\"num\"></td>");
+  });
+});
+
+describe("diseño del ticket y logo", () => {
+  const logo = { ancho: 16, alto: 2, bytes: new Uint8Array(4).fill(0xff), dataUrl: "data:image/png;base64,AAAA" };
+  it("convierte el logo a 1 bit: negro = 1, blanco = 0, transparente = blanco", () => {
+    const pixeles = new Uint8ClampedArray([0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 255]);
+    const { bytes } = logoDesdePixeles(pixeles, 4, 1);
+    expect(bytes).toEqual(Uint8Array.from([0b10010000]));
+  });
+  it("rechaza un bitmap que no coincide con sus dimensiones", () => {
+    expect(() => new EscPos().imagen(8, 2, new Uint8Array(1))).toThrow(RangeError);
+    const bytes = Array.from(new EscPos().imagen(16, 2, new Uint8Array(4)).resultado());
+    expect(bytes.slice(0, 8)).toEqual([0x1d, 0x76, 0x30, 0, 2, 0, 2, 0]);
+  });
+  it("incluye el logo solo cuando se entrega", () => {
+    expect(ticketHtml(electronico, logo)).toContain('<img class="logo" src="data:image/png;base64,AAAA"');
+    expect(ticketHtml(electronico)).not.toContain("<img");
+    const conLogo = Array.from(ticketEscPos(electronico, logo));
+    expect(conLogo.join(",")).toContain("29,118,48,0,2,0,2,0");
+    expect(Array.from(ticketEscPos(electronico)).join(",")).not.toContain("29,118,48,0");
+  });
+  it("sigue el diseño de NubeFact: adquirente, columnas, importe en letras y resumen", () => {
+    const html = ticketHtml(electronico);
+    expect(html).toContain("ADQUIRIENTE");
+    expect(html).toContain("FECHA EMISIÓN:");
+    expect(html).toContain("MONEDA:");
+    expect(html).toContain("P/U");
+    expect(html).toContain("IMPORTE EN LETRAS:");
+    expect(html).toContain("Resumen:");
+    const ticket = texto(ticketEscPos(electronico));
+    expect(ticket).toContain("ADQUIRIENTE");
+    expect(ticket).toContain("CANT  DESCRIPCI");
+    expect(ticket).toContain("IMPORTE EN LETRAS:");
+    expect(ticket).toContain("Resumen:");
+    // Solo líneas de texto: las que llevan comandos binarios (QR, imagen) no cuentan.
+    for (const linea of ticket.split("\n")) if (!/[\u0000-\u001f]/.test(linea)) expect(linea.length).toBeLessThanOrEqual(48);
   });
 });
