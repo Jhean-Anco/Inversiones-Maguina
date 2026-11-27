@@ -273,6 +273,7 @@ describe("configuración de entorno", () => {
     ];
     try {
       for (const [nombre, valor, patron] of casos) {
+        for (const clave of Object.keys(process.env)) if (!(clave in respaldo)) delete process.env[clave];
         Object.assign(process.env, respaldo);
         if (valor === undefined) delete process.env[nombre]; else process.env[nombre] = valor;
         assert.throws(() => validarConfiguracionEntorno(), patron, nombre);

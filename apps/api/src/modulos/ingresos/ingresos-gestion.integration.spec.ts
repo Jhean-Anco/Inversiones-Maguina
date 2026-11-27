@@ -169,11 +169,13 @@ afterEach(() => { globalThis.fetch = fetchProhibido; restaurarEntorno(); });
 
 describe("series y numeraciones", () => {
   test("guarda series internas y fiscales, desactiva la anterior y expone la siguiente numeración", async () => {
+    const serieAnterior = (await servicio.listarSeriesConfiguradas()).find((fila) => fila.tipoComprobante === "COTIZACION" && fila.activa)?.serie;
+    assert.ok(serieAnterior);
     const internas = await servicio.guardarSerieConfigurada({ tipoComprobante: "COTIZACION", serie: "cit2", ultimoNumero: 0 });
     assert.deepEqual({ ...internas, ultimoNumero: undefined }, { tipoComprobante: "COTIZACION", serie: "CIT2", activa: true, ultimoNumero: undefined });
     let series = await servicio.listarSeriesConfiguradas();
     assert.equal(series.find((fila) => fila.tipoComprobante === "COTIZACION" && fila.activa)?.serie, "CIT2");
-    assert.equal(series.find((fila) => fila.tipoComprobante === "COTIZACION" && fila.serie === "CIT1")?.activa, false);
+    if (serieAnterior !== "CIT2") assert.equal(series.find((fila) => fila.tipoComprobante === "COTIZACION" && fila.serie === serieAnterior)?.activa, false);
     await servicio.guardarSerieConfigurada({ tipoComprobante: "COTIZACION", serie: "CIT1" });
     const fiscal = await servicio.guardarSerieConfigurada({ tipoComprobante: "GUIA_REMITENTE", serie: "TIT1", ultimoNumero: 3 });
     assert.ok(fiscal.ultimoNumero >= 3);
