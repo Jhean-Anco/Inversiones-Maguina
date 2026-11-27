@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gt, gte, ilike, inArray, isNull, lte, not, or, sql } from "drizzle-orm";
-import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, garantiasVentasMototaxis, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosModelosMototaxis, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, modelosMototaxis, transportistas } from "@magina/database";
+import { db, clientes, conductores, comprobantesRelacionados, comprobantesRelacionadosDetalle, cotizaciones, correlativosDocumentosInternos, cuentasFinancieras, entradasStockDetalle, garantiasVentasMototaxis, guiasRemision, ingresos, ingresosDetalle, ingresosPagos, marcasProductos, movimientosModelosMototaxis, movimientosStock, nubefactCorrelativos, seriesComprobantes, ordenesServicio, personas, personasDocumentos, preciosProductos, productos, productosCodigos, productosPresentaciones, saldosStock, tiposDocumento, tiposListasPrecio, tiposPersona, ubigeosPeru, unidadesMedida, modelosMototaxis, transportistas, trabajadores } from "@magina/database";
 import { validarConfiguracionEntorno } from "../../configuracion-entorno";
 import { lineaRepuestoVigente } from "../inventario/compras-vigentes.sql";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
@@ -108,7 +108,10 @@ export class ServicioIngresos {
       .leftJoin(clientes, eq(ordenesServicio.clienteId, clientes.personaId))
       .where(busqueda ? or(ilike(ordenesServicio.codigo, `%${busqueda}%`), ilike(ordenesServicio.vehiculoPlaca, `%${busqueda}%`), ilike(personas.nombres, `%${busqueda}%`), ilike(personas.razonSocial, `%${busqueda}%`), ilike(clientes.telefono, `%${busqueda}%`), ilike(clientes.correo, `%${busqueda}%`)) : undefined)
       .orderBy(desc(ordenesServicio.actualizadoEn)).limit(200);
-    return filas.map(({ orden, ...cliente }) => ({ ...orden, clienteNombre: cliente.razonSocial ?? [cliente.nombres, cliente.apellidoPaterno, cliente.apellidoMaterno].filter(Boolean).join(" "), clienteTelefono: cliente.telefono, clienteCorreo: cliente.correo }));
+    const idsTecnicos = filas.map((fila) => fila.orden.trabajadorResponsableId).filter((id): id is string => Boolean(id));
+    const tecnicos = idsTecnicos.length ? await db.select({ id: personas.id, nombres: personas.nombres, apellidoPaterno: personas.apellidoPaterno, apellidoMaterno: personas.apellidoMaterno }).from(trabajadores).innerJoin(personas, eq(trabajadores.personaId, personas.id)).where(inArray(trabajadores.personaId, idsTecnicos)) : [];
+    const nombreTecnico = new Map(tecnicos.map((persona) => [persona.id, [persona.nombres, persona.apellidoPaterno, persona.apellidoMaterno].filter(Boolean).join(" ")]));
+    return filas.map((fila) => ({ ...fila.orden, clienteNombre: fila.razonSocial ?? [fila.nombres, fila.apellidoPaterno, fila.apellidoMaterno].filter(Boolean).join(" "), clienteTelefono: fila.telefono, clienteCorreo: fila.correo, responsableNombre: nombreTecnico.get(fila.orden.trabajadorResponsableId ?? "") ?? null }));
   }
 
   async crearOrdenServicio(valor: unknown, usuarioId: string) {
@@ -118,6 +121,9 @@ export class ServicioIngresos {
     const [cliente] = await db.select({ id: clientes.personaId }).from(clientes).where(and(eq(clientes.personaId, datos.clienteId as string), eq(clientes.activo, true))).limit(1);
     if (!cliente) throw new NotFoundException("El cliente no está activo.");
     const placa = texto(datos.vehiculoPlaca, "La placa o identificador del vehículo", 20, true)!;
+    const trabajadorResponsableId = uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
+    if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
+    const condicionRecepcion = texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true);
     const detalles = validarDetallesGestion(datos.detalles, true);
     const fechaRecepcion = texto(datos.fechaRecepcion, "La fecha de recepción", 10, true)!;
     const fechaAcabado = texto(datos.fechaAcabado, "La fecha estimada de acabado", 10, true)!;
@@ -133,7 +139,7 @@ export class ServicioIngresos {
     const [correlativoOrden] = await db.insert(correlativosDocumentosInternos).values({ tipo: "ORDEN_SERVICIO", ultimoNumero: 1 }).onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } }).returning({ numero: correlativosDocumentosInternos.ultimoNumero });
     const codigoOrden = `${serieOrden}-${String(correlativoOrden.numero).padStart(6, "0")}`;
     const [orden] = await db.insert(ordenesServicio).values({ id, codigo: codigoOrden, clienteId: cliente.id,
-      vehiculoPlaca: placa.toLocaleUpperCase("es-PE"),
+      vehiculoPlaca: placa.toLocaleUpperCase("es-PE"), trabajadorResponsableId, condicionRecepcion,
       motivo, adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId, diagnostico: texto(datos.diagnostico, "El diagnóstico", 5000),
       detalles, fechaRecepcion, fechaAcabado, claveEmision: randomUUID(), usuarioId }).returning();
     return orden;
@@ -154,12 +160,14 @@ export class ServicioIngresos {
       if (fechaAcabado < actual.fechaRecepcion) throw new BadRequestException("La fecha estimada de acabado no puede ser anterior a la fecha de recepción.");
     }
     const motivo = datos.motivo === undefined ? actual.motivo : texto(datos.motivo, "El motivo de ingreso", 2000) ?? "";
+    const trabajadorResponsableId = datos.trabajadorResponsableId === undefined ? actual.trabajadorResponsableId : uuidValido(datos.trabajadorResponsableId) ? datos.trabajadorResponsableId as string : null;
+    if (!trabajadorResponsableId || !(await db.select({ id: trabajadores.personaId }).from(trabajadores).where(and(eq(trabajadores.personaId, trabajadorResponsableId), isNull(trabajadores.fechaCese))).limit(1))[0]) throw new BadRequestException("Selecciona a la persona responsable de revisar el móvil.");
     const adelanto = datos.adelanto === undefined ? Number(actual.adelanto) : numero(datos.adelanto, "El adelanto", 2, 0);
     const adelantoMedioPago = adelanto > 0 ? (datos.adelantoMedioPago === undefined ? actual.adelantoMedioPago : texto(datos.adelantoMedioPago, "El medio de pago del adelanto", 30, true)!) : null;
     const adelantoCuentaFinancieraId = adelanto > 0 ? await validarCuentaFinanciera(datos.adelantoCuentaFinancieraId ?? actual.adelantoCuentaFinancieraId, adelantoMedioPago!, true) : null;
     const [orden] = await db.update(ordenesServicio).set({ estado: estado as string,
       diagnostico: datos.diagnostico === undefined ? actual.diagnostico : texto(datos.diagnostico, "El diagnóstico", 5000),
-      motivo, adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
+      motivo, trabajadorResponsableId, condicionRecepcion: datos.condicionRecepcion === undefined ? actual.condicionRecepcion : texto(datos.condicionRecepcion, "El comentario de recepción", 2000, true), adelanto: adelanto.toFixed(2), adelantoMedioPago, adelantoCuentaFinancieraId,
       fechaAcabado, detalles, notasTrabajo: typeof datos.notaAvance === "string" && datos.notaAvance.trim() ? [...actual.notasTrabajo, { fecha: new Date().toISOString(), texto: texto(datos.notaAvance, "La nota de avance", 2000, true)!, usuarioId }] : actual.notasTrabajo, actualizadoEn: new Date() })
       .where(and(eq(ordenesServicio.id, id), inArray(ordenesServicio.estado, ["ABIERTA", "EN_PROCESO", "ESPERANDO_REPUESTOS", "COMPLETADA"]))).returning();
     if (!orden) throw new ConflictException("La orden cambió mientras la actualizabas. Recarga e inténtalo otra vez.");

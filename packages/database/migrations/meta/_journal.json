@@ -1387,6 +1387,13 @@
       "when": 1795733397061,
       "tag": "0197_notas_restricciones_declaradas",
       "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1795742355987,
+      "tag": "0198_living_queen_noir",
+      "breakpoints": true
     }
   ]
 }

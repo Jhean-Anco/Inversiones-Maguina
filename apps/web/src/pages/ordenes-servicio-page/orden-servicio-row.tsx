@@ -30,7 +30,7 @@ export function OrdenServicioRow({ orden, fecha, estado, total, puedeCrear, menu
   return (
     <tr>
       <td><strong className={`block ${c.documentCode}`}>{orden.codigo}</strong><small className={`block ${c.minorText}`}>Orden de servicio</small></td>
-      <td><span className={c.plate}>{orden.vehiculoPlaca || "Sin identificador"}</span></td>
+      <td><span className={c.plate}>{orden.vehiculoPlaca || "Sin identificador"}</span><small className={`block ${c.minorText}`}>Revisa: {orden.responsableNombre || "Sin asignar"}</small></td>
       <td className={`${anchoMinimoColumnaRelacionClasses} w-[26%]`}><strong className={`block ${c.clientName}`}>{orden.clienteNombre}</strong></td>
       <td className="whitespace-nowrap [font-variant-numeric:tabular-nums]">
         <span className="block text-[#142b42]">{fecha}</span>

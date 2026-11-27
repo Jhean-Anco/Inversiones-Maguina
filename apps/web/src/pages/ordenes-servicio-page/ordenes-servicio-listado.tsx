@@ -111,7 +111,7 @@ export function OrdenesServicioListado({
       claseTabla={`${c.table} ordenes-table`}
       claseContenedor={c.tableScroll}
       centrarCeldas={false}
-      encabezadoTabla={<tr><th>Orden</th><th>Vehículo</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th className="!text-right">Acciones</th></tr>}
+      encabezadoTabla={<tr><th>Orden</th><th>Móvil / encargado</th><th>Cliente</th><th>Recepción / entrega</th><th>Estado</th><th className={c.number}>Total estimado</th><th className="!text-right">Acciones</th></tr>}
       renderizarFila={(orden) => <OrdenServicioRow
         key={orden.id}
         orden={orden}

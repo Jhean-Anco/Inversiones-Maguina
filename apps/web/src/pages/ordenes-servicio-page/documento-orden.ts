@@ -15,6 +15,8 @@ export async function documentoDeOrden(orden: OrdenServicio): Promise<DocumentoI
     tipo: "ORDEN_SERVICIO", titulo: "ORDEN DE SERVICIO", codigo: orden.codigo, fecha: orden.fechaRecepcion, contraparte: orden.clienteNombre,
     datosExtra: [
       { etiqueta: "Vehículo", valor: orden.vehiculoPlaca },
+      ...(orden.responsableNombre ? [{ etiqueta: "Encargado de revisión", valor: orden.responsableNombre }] : []),
+      ...(orden.condicionRecepcion ? [{ etiqueta: "Condición de recepción", valor: orden.condicionRecepcion }] : []),
       { etiqueta: "Estado", valor: etiquetasEstadoOrden[orden.estado] },
       ...(orden.fechaAcabado ? [{ etiqueta: "Entrega estimada", valor: fechaCorta(orden.fechaAcabado.slice(0, 10)) }] : []),
       { etiqueta: "Motivo", valor: orden.motivo },

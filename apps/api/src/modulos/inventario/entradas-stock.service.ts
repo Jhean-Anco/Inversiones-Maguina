@@ -2,7 +2,7 @@ import { esViolacionUnicidad } from "../../utilidades/error-postgres";
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, exists, gte, ilike, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
-import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida } from "@magina/database";
+import { db, entradasStock, entradasStockDetalle, entradasStockDocumentoDetalle, egresosRegistros, pagosEntradasStock, marcasProductos, movimientosStock, productos, productosCodigos, productosPresentaciones, saldosStock, unidadesMedida, correlativosDocumentosInternos } from "@magina/database";
 import { fechaActualPeru } from "../../utilidades/fecha-peru";
 import { rucPeruValido } from "../../utilidades/ruc-peru";
 import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
@@ -10,7 +10,7 @@ import { validarCuentaFinanciera } from "../finanzas/cuentas-financieras.util";
 type DetalleEntrada = { productoId?: unknown; presentacionId?: unknown; detalleDocumentoId?: unknown; cantidad?: unknown; costoUnitario?: unknown; importeTotal?: unknown };
 type DetalleDocumentoEntrada = { clave?: unknown; codigo?: unknown; descripcion?: unknown; unidad?: unknown; cantidad?: unknown; costoUnitario?: unknown; descuento?: unknown; subtotal?: unknown; total?: unknown };
 type DatosEntrada = { claveIdempotencia?: unknown; fecha?: unknown; tipoDocumento?: unknown; numeroDocumento?: unknown; proveedor?: unknown; proveedorTipoPersona?: unknown; proveedorTipoDocumento?: unknown; proveedorNumeroDocumento?: unknown; proveedorDireccion?: unknown; medioPago?: unknown; cuentaFinancieraId?: unknown; montoPagado?: unknown; pagos?: unknown; totalDocumento?: unknown; detallesDocumento?: unknown; observacion?: unknown; detalles?: unknown };
-const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO", "OTRO"] as const;
+const tiposDocumento = ["FACTURA", "BOLETA", "GUIA_REMISION", "NOTA", "SIN_DOCUMENTO"] as const;
 const mediosPago = ["EFECTIVO", "TARJETA", "TRANSFERENCIA", "BILLETERA_DIGITAL", "OTRO"] as const;
 
 function texto(valor: unknown, etiqueta: string, maximo: number, opcional = false) {
@@ -151,7 +151,7 @@ export class ServicioEntradasStock {
     if (!(tiposDocumento as readonly string[]).includes(tipoDocumento)) throw new BadRequestException("Selecciona un tipo de documento válido.");
     let numeroDocumento = texto(datos.numeroDocumento, "El número de documento", 60, true);
     if (tipoDocumento === "FACTURA" && numeroDocumento) numeroDocumento = numeroDocumento.toUpperCase();
-    if (!numeroDocumento && !["SIN_DOCUMENTO", "OTRO"].includes(tipoDocumento)) throw new BadRequestException("Ingresa el número del comprobante o guía.");
+    if (!numeroDocumento && tipoDocumento !== "SIN_DOCUMENTO") throw new BadRequestException("Ingresa el número del comprobante o guía.");
     const proveedor = texto(datos.proveedor, "El proveedor", 180, true);
     const proveedorTipoPersona = texto(datos.proveedorTipoPersona, "El tipo de persona proveedora", 20, true);
     const proveedorTipoDocumento = texto(datos.proveedorTipoDocumento, "El tipo de documento del proveedor", 10, true);
@@ -249,17 +249,29 @@ export class ServicioEntradasStock {
           const factor = Number(producto.factorAUnidadBase);
           const cantidadBase = Number((detalle.cantidad * factor).toFixed(6));
           const subtotal = detalle.importeTotal ?? Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          const subtotalPorPrecioUnitario = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          if (detalle.importeTotal !== null && Math.round(subtotalPorPrecioUnitario * 100) !== Math.round(subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
           const costoUnitario = Number((subtotal / detalle.cantidad).toFixed(4));
           if (!Number.isFinite(cantidadBase) || cantidadBase <= 0 || !Number.isFinite(subtotal)) throw new BadRequestException("La cantidad o el subtotal calculado no es válido.");
           productosValidados.push({ ...detalle, costoUnitario, producto, factor, cantidadBase, subtotal, costoBase: Number((costoUnitario / factor).toFixed(6)) });
         }
         const total = productosValidados.reduce((suma, detalle) => suma + detalle.subtotal, 0);
         const totalPagos = pagos.reduce((suma, pago) => suma + pago.importe, 0);
-        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el total de la compra entre los medios de pago.");
+        if (Math.round(totalPagos * 100) !== Math.round(total * 100)) throw new BadRequestException("Distribuye el monto pagado completo entre los medios de pago.");
+        for (const detalle of productosValidados) {
+          const calculado = Number((detalle.cantidad * detalle.costoUnitario).toFixed(2));
+          if (Math.round(calculado * 100) !== Math.round(detalle.subtotal * 100)) throw new BadRequestException("La cantidad, el costo unitario y el total de una línea no coinciden.");
+        }
+        if (tipoDocumento === "SIN_DOCUMENTO") {
+          const [correlativo] = await tx.insert(correlativosDocumentosInternos).values({ tipo: "COMPRA_REPUESTOS_SIN_DOCUMENTO", ultimoNumero: 1 })
+            .onConflictDoUpdate({ target: correlativosDocumentosInternos.tipo, set: { ultimoNumero: sql`${correlativosDocumentosInternos.ultimoNumero} + 1` } })
+            .returning({ numero: correlativosDocumentosInternos.ultimoNumero });
+          numeroDocumento = `CRI-${String(correlativo.numero).padStart(6, "0")}`;
+        }
         if (totalDocumento !== null && Math.round(totalDocumento * 100) < Math.round(total * 100)) throw new BadRequestException("El total del documento no puede ser menor que la suma de los productos recibidos.");
         const [nuevaEntrada] = await tx.insert(entradasStock).values({
-          codigo, fecha, tipoDocumento, numeroDocumento, proveedor, proveedorTipoPersona, proveedorTipoDocumento,
-          proveedorNumeroDocumento, proveedorDireccion,
+          codigo, fecha, tipoDocumento, numeroDocumento, proveedor: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedor, proveedorTipoPersona: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoPersona, proveedorTipoDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorTipoDocumento,
+          proveedorNumeroDocumento: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorNumeroDocumento, proveedorDireccion: tipoDocumento === "SIN_DOCUMENTO" ? null : proveedorDireccion,
           medioPago: pagos.length === 1 ? pagos[0].medio : null,
           cuentaFinancieraId,
           montoPagado: totalPagos.toFixed(2), observacion, claveIdempotencia, huellaSolicitud: claveIdempotencia ? huellaSolicitud : null,

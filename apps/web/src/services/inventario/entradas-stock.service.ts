@@ -73,8 +73,8 @@ export type DatosEntradaStock = {
   tipoDocumento: string;
   numeroDocumento: string;
   proveedor: string;
-  proveedorTipoPersona: string;
-  proveedorTipoDocumento: string;
+  proveedorTipoPersona: string | null;
+  proveedorTipoDocumento: string | null;
   proveedorNumeroDocumento: string;
   proveedorDireccion: string;
   medioPago: string | null;

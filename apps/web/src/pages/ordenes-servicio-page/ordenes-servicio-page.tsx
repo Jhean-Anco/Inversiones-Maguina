@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
+import { servicioPersonal, type PersonaPersonal } from "../../services/personal.service";
 import { documentoDeOrden } from "./documento-orden";
 import { FormularioCliente } from "../clientes-page/clientes-page";
 import { useOrdenesServicioListado } from "./use-ordenes-servicio-listado";
@@ -31,6 +32,8 @@ type EstadoFormularioOrden = {
   clienteBusqueda: string;
   tipoDocumentoBusqueda: "DNI" | "RUC" | "NOMBRE";
   vehiculo: { placa: string; diagnostico: string };
+  trabajadorResponsableId: string;
+  condicionRecepcion: string;
   motivo: string;
   adelanto: string;
   adelantoMedioPago: string;
@@ -67,6 +70,11 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [adelantoCuentaId, setAdelantoCuentaId] = useState("");
   const [estado, setEstado] = useState<OrdenServicio["estado"]>("ABIERTA");
   const [tiposDocumentoDisponibles, setTiposDocumentoDisponibles] = useState<TipoDocumentoOrden[]>([]);
+  const [personal, setPersonal] = useState<PersonaPersonal[]>([]);
+  const [trabajadorResponsableId, setTrabajadorResponsableId] = useState("");
+  const [condicionRecepcion, setCondicionRecepcion] = useState("");
+
+  useEffect(() => { void servicioPersonal.listar().then(setPersonal).catch(() => setPersonal([])); }, []);
 
   useEffect(() => {
     if (!puedeCrear) { setTiposDocumentoDisponibles([]); return; }
@@ -92,6 +100,8 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
     clienteBusqueda,
     tipoDocumentoBusqueda,
     vehiculo,
+    trabajadorResponsableId,
+    condicionRecepcion,
     motivo,
     adelanto,
     adelantoMedioPago,
@@ -134,6 +144,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
     setFechaAcabado(fechaInicial);
     clientesForm.limpiarBusqueda();
     setVehiculo({ placa: "", diagnostico: "" });
+    setTrabajadorResponsableId(""); setCondicionRecepcion("");
     setMotivo(""); setAdelanto("0.00"); setAdelantoMedioPago("EFECTIVO"); setAdelantoCuentaId("");
     setLineas([]); setErrorServicio("");
     setBusquedaProducto(""); setProductos([]); setEstado("ABIERTA"); setError("");
@@ -144,6 +155,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       clienteBusqueda: "",
       tipoDocumentoBusqueda: "DNI",
       vehiculo: { placa: "", diagnostico: "" },
+      trabajadorResponsableId: "", condicionRecepcion: "",
       motivo: "",
       adelanto: "0.00",
       adelantoMedioPago: "EFECTIVO",
@@ -157,6 +169,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
   function abrirOrden(orden: OrdenServicio) {
     const lineasIniciales = (orden.detalles as LineaOrden[]).map((linea) => ({ ...linea, cantidad: String(Math.max(1, Math.trunc(Number(linea.cantidad) || 1))) }));
     const vehiculoInicial = { placa: orden.vehiculoPlaca, diagnostico: orden.diagnostico ?? "" };
+    setTrabajadorResponsableId(orden.trabajadorResponsableId ?? ""); setCondicionRecepcion(orden.condicionRecepcion ?? "");
     const motivoInicial = orden.motivo ?? "";
     const adelantoInicial = String(orden.adelanto ?? "0.00");
     const adelantoMedioInicial = orden.adelantoMedioPago ?? "EFECTIVO";
@@ -177,6 +190,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       clienteBusqueda: orden.clienteNombre,
       tipoDocumentoBusqueda,
       vehiculo: vehiculoInicial,
+      trabajadorResponsableId: orden.trabajadorResponsableId ?? "", condicionRecepcion: orden.condicionRecepcion ?? "",
       motivo: motivoInicial,
       adelanto: adelantoInicial,
       adelantoMedioPago: adelantoMedioInicial,
@@ -208,14 +222,15 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
     evento.preventDefault();
     if (!ordenActiva && !cliente) { setError("Selecciona un cliente para registrar la orden."); return; }
     if (!vehiculo.placa.trim()) { setError("Ingresa la placa o el identificador del vehículo."); return; }
+    if (!trabajadorResponsableId) { setError("Selecciona a la persona responsable de revisar el móvil."); return; }
     if (lineas.some(lineaServicioIncompleta)) { setErrorServicio("Completa la descripción, cantidad y precio del servicio antes de guardar."); return; }
     if (Number(adelanto) > 0 && !adelantoCuentaId) { setError("Selecciona la cuenta donde se recibió el adelanto."); return; }
     setGuardando(true); setError("");
     try {
       if (ordenActiva) {
-        await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico, detalles: lineas, estado, fechaAcabado });
+        await servicioIngresos.actualizarOrdenServicio(ordenActiva.id, { trabajadorResponsableId, condicionRecepcion, motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico, detalles: lineas, estado, fechaAcabado });
       } else {
-        await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, vehiculoPlaca: vehiculo.placa.trim().toLocaleUpperCase("es-PE"), motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico.trim() || null, fechaRecepcion, fechaAcabado, detalles: lineas });
+        await servicioIngresos.crearOrdenServicio({ clienteId: cliente!.id, trabajadorResponsableId, condicionRecepcion, vehiculoPlaca: vehiculo.placa.trim().toLocaleUpperCase("es-PE"), motivo, adelanto: Number(adelanto || 0), adelantoMedioPago, adelantoCuentaFinancieraId: adelantoCuentaId, diagnostico: vehiculo.diagnostico.trim() || null, fechaRecepcion, fechaAcabado, detalles: lineas });
       }
       claveFormularioInicial.current = null;
       setEnFormulario(false); setOrdenActiva(null); await cargarOrdenes();
@@ -263,6 +278,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       }}
       catalogo={{ busqueda: busquedaProducto, productos, recientes: productosRecientes, buscando: buscandoProductos, onBusqueda: setBusquedaProducto, onAgregar: agregarProducto, onAgregarReciente: (item) => void agregarProductoReciente(item) }}
       vehiculo={{ datos: vehiculo, onChange: setVehiculo }}
+      recepcion={{ trabajadorId: trabajadorResponsableId, condicion: condicionRecepcion, personal: personal.map((p) => ({ id: p.id, nombre: [p.nombres, p.apellidoPaterno, p.apellidoMaterno].filter(Boolean).join(" ") })), onTrabajador: setTrabajadorResponsableId, onCondicion: setCondicionRecepcion }}
       cliente={{
         seleccionado: cliente,
         nombreSeleccionado: nombreClienteSeleccionado,
