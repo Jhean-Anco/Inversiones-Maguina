@@ -18,6 +18,8 @@ type OrdenServicioDetalleProps = {
   onAgregarProducto: (producto: ProductoParaIngreso) => void;
   onActualizarLinea: (indice: number, cambios: Partial<LineaOrden>) => void;
   onQuitarLinea: (indice: number) => void;
+  /** Abre el registro rápido de repuesto con lo buscado precargado. */
+  onCrearRepuesto?: () => void;
 };
 
 type LineaIndexada = { linea: LineaOrden; indice: number };
@@ -36,6 +38,7 @@ export function OrdenServicioDetalle({
   onAgregarProducto,
   onActualizarLinea,
   onQuitarLinea,
+  onCrearRepuesto,
 }: OrdenServicioDetalleProps) {
   const lineasIndexadas: LineaIndexada[] = lineas.map((linea, indice) => ({ linea, indice }));
   const lineasProducto = lineasIndexadas.filter(({ linea }) => linea.tipo === "PRODUCTO");
@@ -124,7 +127,7 @@ export function OrdenServicioDetalle({
                   </span>
                   <strong className="os-resultado-precio">{formatearSoles(Number(producto.precio))}</strong>
                 </button>
-              )) : <p className="os-resultados-estado"><strong>No hay repuestos para mostrar</strong>No encontramos coincidencias. Prueba con otro nombre o código.</p>}
+              )) : <div className="os-resultados-estado"><strong>No hay repuestos para mostrar</strong><span>No encontramos «{consulta}» en inventario.</span>{onCrearRepuesto && <button className="os-crear-repuesto" type="button" onClick={onCrearRepuesto}><Plus aria-hidden="true" size={16} strokeWidth={2.4} />Crear repuesto «{consulta}»</button>}</div>}
           </div>
         ) : (
           <div className="os-recientes" aria-live="polite">

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { servicioIngresos, type ClienteRegistrado, type OrdenServicio, type ProductoParaIngreso } from "../../services/ingresos.service";
 import { servicioPersonal, type PersonaPersonal } from "../../services/personal.service";
 import { documentoDeOrden } from "./documento-orden";
+import { useAltaRapidaRepuesto } from "./use-alta-rapida-repuesto";
 import { useAlertas } from "../../components/ui/notificacion-flotante/notificacion-flotante";
 import { useImprimirAlEmitir } from "../../impresion/use-imprimir-al-emitir";
 import { mensajeErrorImpresion } from "../../impresion/use-impresion";
@@ -66,6 +67,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
   const [productos, setProductos] = useState<ProductoParaIngreso[]>([]);
   const [buscandoProductos, setBuscandoProductos] = useState(false);
   const lineasForm = useOrdenServicioLineas({ setBusquedaProducto, setProductos });
+  const altaRepuesto = useAltaRapidaRepuesto({ busqueda: busquedaProducto, alCrear: (producto) => lineasForm.agregarProducto(producto), alError: (mensaje) => lineasForm.setErrorServicio(mensaje) });
   const { lineas, setLineas, errorServicio, setErrorServicio, agregarProducto, agregarProductoReciente, productosRecientes, agregarServicio, actualizarLinea } = lineasForm;
   const [vehiculo, setVehiculo] = useState({ placa: "", diagnostico: "" });
   const [motivo, setMotivo] = useState("");
@@ -305,7 +307,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
         onSeleccionar: clientesForm.seleccionarCliente,
         onAgregar: () => { setError(""); clientesForm.setMostrarFormularioCliente(true); },
       }}
-      detalle={{ lineas, error: errorServicio, recientes: productosRecientes, onAgregarReciente: (item) => void agregarProductoReciente(item), buscando: buscandoProductos, onAgregarServicio: agregarServicio, onAgregarProducto: agregarProducto, onActualizarLinea: actualizarLinea, onQuitarLinea: (indice) => { setLineas((actuales) => actuales.filter((_, i) => i !== indice)); setErrorServicio(""); } }}
+      detalle={{ lineas, error: errorServicio, recientes: productosRecientes, onAgregarReciente: (item) => void agregarProductoReciente(item), buscando: buscandoProductos, onAgregarServicio: agregarServicio, onAgregarProducto: agregarProducto, onActualizarLinea: actualizarLinea, onQuitarLinea: (indice) => { setLineas((actuales) => actuales.filter((_, i) => i !== indice)); setErrorServicio(""); }, onCrearRepuesto: () => void altaRepuesto.abrir() }}
       pago={{
         motivo,
         onMotivo: setMotivo,
@@ -324,6 +326,7 @@ export function OrdenesServicioPage({ puedeCrear }: { puedeCrear: boolean }) {
       importes={importesOrden(lineas)}
     />
     {confirmarCancelacion && <ConfirmarDescartarOrden onSeguirEditando={() => setConfirmarCancelacion(false)} onDescartar={descartarFormulario} />}
+    {altaRepuesto.dialogo}
     {clientesForm.mostrarFormularioCliente && createPortal(<FormularioCliente numeroDocumentoInicial={/^\d+$/.test(clienteBusqueda.trim()) ? clienteBusqueda.trim() : ""} onGuardar={clientesForm.registrarCliente} onCancelar={() => clientesForm.setMostrarFormularioCliente(false)} />, document.body)}
   </>;
 

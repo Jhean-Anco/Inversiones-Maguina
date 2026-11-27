@@ -63,6 +63,7 @@ type OrdenServicioEditorProps = {
     onAgregarProducto: (producto: ProductoParaIngreso) => void;
     onActualizarLinea: (indice: number, cambios: Partial<LineaOrden>) => void;
     onQuitarLinea: (indice: number) => void;
+    onCrearRepuesto?: () => void;
   };
   pago: {
     motivo: string;
@@ -190,6 +191,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
             onAgregarProducto={detalle.onAgregarProducto}
             onActualizarLinea={detalle.onActualizarLinea}
             onQuitarLinea={detalle.onQuitarLinea}
+            onCrearRepuesto={detalle.onCrearRepuesto}
           />
 
           <section className="os-tarjeta">

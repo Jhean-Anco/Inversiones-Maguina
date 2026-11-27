@@ -973,3 +973,22 @@
 @media (max-width: 1100px) { .os-campos:has(.os-select) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .os-campos:has(.os-select) { grid-template-columns: minmax(0, 1fr); } }
 .os-opcional { margin-left: 4px; padding: 1px 7px; border-radius: 9px; background: #eef2f6; color: #52697d; font-size: 10px; font-style: normal; font-weight: 600; }
+.os-crear-repuesto {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #0b2545;
+  border-radius: 10px;
+  background: #0b2545;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.os-crear-repuesto:hover { background: #163a63; }
+.os-crear-repuesto:focus-visible { outline: 2px solid #2878b9; outline-offset: 2px; }

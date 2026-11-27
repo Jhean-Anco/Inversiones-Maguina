@@ -16,6 +16,7 @@ type PropiedadesProductoFormulario = {
   alGuardar: Parameters<typeof useProductoFormulario>[0]["alGuardar"];
   alCrearMarca: Parameters<typeof useProductoFormulario>[0]["alCrearMarca"];
   alCrearCategoria: Parameters<typeof useProductoFormulario>[0]["alCrearCategoria"];
+  valoresIniciales?: Parameters<typeof useProductoFormulario>[0]["valoresIniciales"];
 };
 
 function generarCodigoEAN13Interno() {
@@ -26,8 +27,8 @@ function generarCodigoEAN13Interno() {
   return `${base}${(10 - suma % 10) % 10}`;
 }
 
-export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGuardar, alCrearMarca, alCrearCategoria }: PropiedadesProductoFormulario) {
-  const formulario = useProductoFormulario({ producto, catalogos, alGuardar, alCrearMarca, alCrearCategoria });
+export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGuardar, alCrearMarca, alCrearCategoria, valoresIniciales }: PropiedadesProductoFormulario) {
+  const formulario = useProductoFormulario({ producto, catalogos, valoresIniciales, alGuardar, alCrearMarca, alCrearCategoria });
   const codigoBase = catalogos.unidadesMedida.find((unidad) => unidad.codigo === formulario.unidadBaseCodigo)?.nombre ?? formulario.unidadBaseCodigo;
   const formularioRef = useRef<HTMLFormElement>(null);
   const firmaDatos = JSON.stringify(Object.fromEntries(Object.entries(formulario).filter(([clave, valor]) => typeof valor !== "function" && !["guardando", "errorLocal"].includes(clave))));
