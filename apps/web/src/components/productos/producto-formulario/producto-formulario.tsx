@@ -92,17 +92,16 @@ export function ProductoFormulario({ catalogos, producto, error, alCerrar, alGua
             <button type="button" className="producto-add-row" onClick={formulario.agregarPresentacion}>+ Agregar presentación</button>
           </fieldset>
           <fieldset className="producto-form-section mobile-portrait:p-3">
-            <legend>Códigos de identificación</legend>
-            <p className="producto-section-help">El sistema asigna el código interno. Agrega códigos de fábrica o de barras para encontrarlos al buscarlos o escanearlos.</p>
+            <legend>Códigos de barras</legend>
+            <p className="producto-section-help">Los repuestos se identifican solo por código de barras. Escanéalo con el lector o genera uno interno EAN-13.</p>
             <div className="producto-code-list">
               {formulario.codigos.map((codigo, indice) => <div className="producto-row producto-code-row" key={codigo.clave}>
-                <select aria-label="Tipo de código" value={codigo.tipo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, tipo: event.target.value as typeof fila.tipo } : fila))}><option value="FABRICANTE">Fabricante / OEM</option><option value="BARRAS">Código de barras</option><option value="GTIN">GTIN</option></select>
-                <input id={codigo.tipo === "BARRAS" ? `codigo-barras-${codigo.clave}` : undefined} aria-label={codigo.tipo === "BARRAS" ? "Código de barras, listo para lector" : "Código"} value={codigo.codigo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: event.target.value } : fila))} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} autoComplete="off" maxLength={100} placeholder={codigo.tipo === "BARRAS" ? "Enfoca aquí el lector o escribe el código" : "Código"} />
-                {codigo.tipo === "BARRAS" && <div className="flex flex-wrap gap-2"><button type="button" className="producto-scan-button" onClick={() => document.getElementById(`codigo-barras-${codigo.clave}`)?.focus()}>Leer con escáner</button><button type="button" className="producto-scan-button" onClick={() => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: generarCodigoEAN13Interno() } : fila))}>Generar EAN-13</button></div>}
+                <input id={`codigo-barras-${codigo.clave}`} aria-label="Código de barras, listo para lector" value={codigo.codigo} onChange={(event) => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: event.target.value } : fila))} onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} autoComplete="off" maxLength={100} placeholder="Enfoca aquí el lector o escribe el código" />
+                <div className="flex flex-wrap gap-2"><button type="button" className="producto-scan-button" onClick={() => document.getElementById(`codigo-barras-${codigo.clave}`)?.focus()}>Leer con escáner</button><button type="button" className="producto-scan-button" onClick={() => formulario.setCodigos((actual) => actual.map((fila, i) => i === indice ? { ...fila, codigo: generarCodigoEAN13Interno() } : fila))}>Generar EAN-13</button></div>
                 <AccionIcono accion="eliminar" className="producto-remove-row" etiqueta="Eliminar código" onClick={() => formulario.setCodigos((actual) => actual.filter((_, i) => i !== indice))} />
               </div>)}
             </div>
-            <div className="producto-code-actions"><button type="button" className="producto-add-row" onClick={() => formulario.setCodigos((actual) => [...actual, { clave: crypto.randomUUID(), tipo: "FABRICANTE", codigo: "" }])}>+ Agregar código</button><button type="button" className="producto-add-row" onClick={() => formulario.setCodigos((actual) => [...actual, { clave: crypto.randomUUID(), tipo: "BARRAS", codigo: "" }])}>+ Agregar código de barras</button></div>
+            <div className="producto-code-actions"><button type="button" className="producto-add-row" onClick={() => formulario.setCodigos((actual) => [...actual, { clave: crypto.randomUUID(), tipo: "BARRAS", codigo: "" }])}>+ Agregar código de barras</button></div>
           </fieldset>
           <fieldset className="producto-form-section mobile-portrait:p-3">
             <legend>Ficha técnica</legend>

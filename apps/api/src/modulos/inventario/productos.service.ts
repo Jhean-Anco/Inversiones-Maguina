@@ -425,8 +425,8 @@ export class ServicioProductos {
     if (typeof valor !== "object" || valor === null) throw new BadRequestException("Un código externo no es válido.");
     const codigo = valor as RegistroCodigo;
     const tipo = texto(codigo.tipo, "El tipo de código", 30).toUpperCase();
-    if (!["FABRICANTE", "BARRAS", "GTIN"].includes(tipo)) throw new BadRequestException("El tipo de código debe ser de fabricante, barras o GTIN.");
-    return { tipo, codigo: texto(codigo.codigo, "El código", 100) };
+    if (!["BARRAS", "GTIN"].includes(tipo)) throw new BadRequestException("Los repuestos solo se identifican con código de barras.");
+    return { tipo: "BARRAS", codigo: texto(codigo.codigo, "El código", 100) };
   }
 
   private validarPresentacion(valor: RegistroPresentacion, indice: number) {
