@@ -1,61 +1,54 @@
 import { useAlertas, type TipoNotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
+import { FileCheck, FileCode, FileText, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MenuImpresion } from "../../components/impresion/menu-impresion";
 import { RegistrarAccionPrincipal } from "../../components/ui/accion-principal/accion-principal";
+import { BotonAccion } from "../../components/ui/boton-accion";
 import { ListadoMaestro } from "../../components/ui/listado-maestro/listado-maestro";
 import { tamanioTablaInicial } from "../../components/ui/listado-maestro/paginacion-responsive";
-import { servicioIngresos, type GrupoGuiasRemision, type GuiaRemision, type PaginaGuiasRemision } from "../../services/ingresos.service";
+import { urlApi } from "../../services/api-cliente";
+import { servicioIngresos, type GuiaRemision } from "../../services/ingresos.service";
+import { ventasClasses as c } from "../ventas-page/ventas-classes";
 import { documentoDeGuia } from "./documento-guia";
 import { FormularioGuiaRemision } from "./formulario-guia-remision";
-import { guidePageClasses } from "./guias-remision-page-classes";
+
+const rechazada = (estado: string) => estado.startsWith("ERROR") || estado.startsWith("RECHAZADO");
 
 function tipoAviso(estado: string): TipoNotificacionFlotante {
   if (estado === "EMITIDO") return "exito";
-  if (estado.startsWith("ERROR") || estado.startsWith("RECHAZADO")) return "error";
-  return "advertencia";
+  return rechazada(estado) ? "error" : "advertencia";
 }
 
-const filtros: { valor: GrupoGuiasRemision; etiqueta: string; conteo: keyof PaginaGuiasRemision["conteos"] }[] = [
-  { valor: "TODAS", etiqueta: "Todas", conteo: "todas" },
-  { valor: "EMITIDAS", etiqueta: "Emitidas", conteo: "emitidas" },
-  { valor: "PENDIENTES", etiqueta: "Pendientes", conteo: "pendientes" },
-  { valor: "RECHAZADAS", etiqueta: "Rechazadas", conteo: "rechazadas" },
-];
-
+// Listado de documentos ya emitidos: sin chips de estado; la píldora muestra el estado fiscal.
 const tonosEstado = {
-  emitida: { caja: "border-[#c9e3d4] bg-[#edf7f1] text-[#24734e]", punto: "bg-[#2e9467]", etiqueta: "Emitida" },
-  pendiente: { caja: "border-[#f0dbb1] bg-[#fff7e8] text-[#8a5a00]", punto: "bg-[#d99a1b]", etiqueta: "Pendiente de SUNAT" },
-  rechazada: { caja: "border-[#efc9cd] bg-[#fff1f2] text-[#b42335]", punto: "bg-[#c91f32]", etiqueta: "Rechazada" },
+  Emitida: { caja: "border-[#b3d8c4] bg-[#e4f3ec] text-[#1b5e40]", punto: "bg-[#1b5e40]" },
+  Pendiente: { caja: "border-[#c8deed] bg-[#eef6fb] text-[#17628b]", punto: "bg-[#2a8bbd]" },
+  Rechazada: { caja: "border-[#efcfcd] bg-[#fff4f3] text-[#9b2c2c]", punto: "bg-[#c64243]" },
 } as const;
 
-function tonoDeEstado(estado: string) {
-  if (estado === "EMITIDO") return tonosEstado.emitida;
-  if (estado.startsWith("ERROR") || estado.startsWith("RECHAZADO")) return tonosEstado.rechazada;
-  return tonosEstado.pendiente;
+function estadoVisible(estado: string): keyof typeof tonosEstado {
+  if (estado === "EMITIDO") return "Emitida";
+  return rechazada(estado) ? "Rechazada" : "Pendiente";
 }
 
-function etiquetaEstadoGuia(estado: string) {
-  if (estado === "EMITIDO") return "Emitida";
-  if (estado.startsWith("ERROR") || estado.startsWith("RECHAZADO")) return "Rechazada";
-  if (estado === "NUBEFACT_PENDIENTE") return "Pendiente de envío";
-  if (estado === "PENDIENTE_SUNAT") return "Pendiente de SUNAT";
+function detalleEstado(estado: string) {
+  if (estado === "NUBEFACT_PENDIENTE") return "Pendiente de envío a NubeFact";
+  if (estado === "PENDIENTE_SUNAT") return "Pendiente de confirmación de SUNAT";
   return estado.replaceAll("_", " ");
 }
 
-const claseChip = "inline-flex h-[38px] cursor-pointer items-center gap-2 rounded-[19px] border border-[#c5d1db] bg-white px-3.5 text-[13px] font-semibold text-[#27445f] transition-colors duration-150 hover:border-[#8eacc9] hover:bg-[#f5f9fd] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2878b9] aria-pressed:border-[#0b2545] aria-pressed:bg-[#0b2545] aria-pressed:text-white";
-const claseConteo = "inline-flex h-5 min-w-[22px] items-center justify-center rounded-[10px] bg-[#eef2f6] px-1.5 text-[11px] font-bold text-[#3d566e] [button[aria-pressed=true]_&]:bg-white/20 [button[aria-pressed=true]_&]:text-white";
-const claseEnlace = "inline-flex min-h-[34px] items-center rounded-lg border border-[#d4e1ed] bg-[#f8fbfe] px-2.5 text-xs font-bold text-[#28577f] no-underline hover:bg-[#edf5fc]";
+const enlace = (ruta: string) => (ruta.startsWith("/") ? urlApi(ruta) : ruta);
+const fecha = (valor: string) => valor.slice(0, 10).split("-").reverse().join("/");
+const encabezado = <tr><th>Fecha</th><th>Guía</th><th>Comprobante origen</th><th>Destinatario</th><th>Estado SUNAT</th><th>Acciones</th></tr>;
 
 export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean }) {
   const [guias, setGuias] = useState<GuiaRemision[]>([]);
-  const [totalGuias, setTotalGuias] = useState(0);
-  const [totalPaginasGuias, setTotalPaginasGuias] = useState(1);
-  const [conteos, setConteos] = useState<PaginaGuiasRemision["conteos"]>({ todas: 0, emitidas: 0, pendientes: 0, rechazadas: 0 });
-  const [grupo, setGrupo] = useState<GrupoGuiasRemision>("TODAS");
-  const [busquedaGuias, setBusquedaGuias] = useState("");
-  const [paginaGuias, setPaginaGuias] = useState(1);
-  const [porPaginaGuias, setPorPaginaGuias] = useState(tamanioTablaInicial);
-  const [cargandoGuias, setCargandoGuias] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [busqueda, setBusqueda] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(tamanioTablaInicial);
+  const [cargando, setCargando] = useState(true);
   const [consultando, setConsultando] = useState<string | null>(null);
   const [error, setError] = useState("");
   const alertas = useAlertas();
@@ -64,30 +57,25 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
 
   useEffect(() => {
     let vigente = true;
-    setCargandoGuias(true);
-    void servicioIngresos.listarGuias(paginaGuias, porPaginaGuias, grupo, busquedaGuias).then((resultado) => {
-      if (vigente) {
-        setGuias(resultado.items);
-        setTotalGuias(resultado.total);
-        setTotalPaginasGuias(resultado.totalPaginas);
-        setConteos(resultado.conteos);
-        setError("");
-      }
-    }).catch((problema) => {
-      if (vigente) setError(problema instanceof Error ? problema.message : "No se pudieron cargar las guías.");
-    }).finally(() => { if (vigente) setCargandoGuias(false); });
-    return () => { vigente = false; };
-  }, [actualizada, paginaGuias, porPaginaGuias, grupo, busquedaGuias]);
+    const temporizador = window.setTimeout(() => {
+      setCargando(true);
+      void servicioIngresos.listarGuias(pagina, porPagina, "TODAS", busqueda).then((resultado) => {
+        if (!vigente) return;
+        setGuias(resultado.items); setTotal(resultado.total); setTotalPaginas(resultado.totalPaginas); setError("");
+      }).catch((problema) => {
+        if (vigente) setError(problema instanceof Error ? problema.message : "No se pudieron cargar las guías.");
+      }).finally(() => { if (vigente) setCargando(false); });
+    }, busqueda ? 220 : 0);
+    return () => { vigente = false; window.clearTimeout(temporizador); };
+  }, [actualizada, pagina, porPagina, busqueda]);
 
-  const textoBusquedaGuias = busquedaGuias.trim();
-
-  async function consultar(id: string) {
-    setConsultando(id);
+  async function consultar(guia: GuiaRemision) {
+    setConsultando(guia.id);
     try {
-      const resultado = await servicioIngresos.consultarGuia(id);
+      const resultado = await servicioIngresos.consultarGuia(guia.id);
       alertas.mostrar({
         tipo: tipoAviso(resultado.estado),
-        mensaje: resultado.detalle || `${resultado.codigo}: ${resultado.estado === "EMITIDO" ? "aceptada por SUNAT" : resultado.estado}.`,
+        mensaje: resultado.detalle || `${resultado.codigo}: ${resultado.estado === "EMITIDO" ? "aceptada por SUNAT" : detalleEstado(resultado.estado)}.`,
       });
       setActualizada((valor) => valor + 1);
     } catch (problema) {
@@ -97,90 +85,81 @@ export function GuiasRemisionPage({ puedeCrear = false }: { puedeCrear?: boolean
     }
   }
 
+  // El formulario se devuelve sin contenedor: así toma los márgenes y el scroll propio de `.os-editor`.
   if (puedeCrear && mostrarFormulario) return <FormularioGuiaRemision
     alCancelar={() => setMostrarFormulario(false)}
     alEmitir={(guia) => {
-      const tipo = tipoAviso(guia.estado);
-      alertas.mostrar({
-        tipo,
-        mensaje: guia.mensaje
-          ? `${guia.codigo}: ${guia.mensaje}`
-          : tipo === "error" ? `No se pudo enviar la guía ${guia.codigo}.` : `${guia.codigo} enviada. Consulta SUNAT para obtener el PDF y el CDR.`,
+      if (guia.estado !== "EMITIDO") alertas.mostrar({
+        tipo: tipoAviso(guia.estado),
+        mensaje: guia.mensaje ? `${guia.codigo}: ${guia.mensaje}` : rechazada(guia.estado) ? `No se pudo enviar la guía ${guia.codigo}.` : `${guia.codigo} enviada. Consulta SUNAT desde el listado para imprimirla.`,
       });
-      setPaginaGuias(1);
+      setPagina(1);
       setActualizada((valor) => valor + 1);
-      setMostrarFormulario(false);
     }}
   />;
 
   return (
-    <main className={guidePageClasses}>
+    <section className={c.page}>
       {puedeCrear && <RegistrarAccionPrincipal etiqueta="Crear guía de remisión" onClick={() => setMostrarFormulario(true)} />}
+      <div className={c.toolbar}>
+        <label className={`${c.search} listado-maestro-busqueda-icono`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+          <input type="search" value={busqueda} placeholder="Buscar por guía, comprobante o cliente" aria-label="Buscar guías de remisión"
+            onChange={(evento) => { setPagina(1); setBusqueda(evento.target.value); }} />
+        </label>
+      </div>
       <ListadoMaestro<GuiaRemision>
         variante="tabla"
         titulo="Guías de remisión"
         registros={guias}
-        cargando={cargandoGuias}
+        cargando={cargando}
         error={error || undefined}
-        controlesCabecera={(
-          <>
-            <label className="flex h-[44px] min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#c5d1db] bg-white px-3 text-[#52697d] sm:min-w-[260px]">
-              <svg className="h-[18px] w-[18px] shrink-0 fill-none stroke-current" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" strokeWidth="2" /><path d="m16 16 4.5 4.5" strokeWidth="2" strokeLinecap="round" /></svg>
-              <input className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#142b42] outline-none placeholder:text-[#7a8fa1]" type="search" value={busquedaGuias}
-                onChange={(evento) => { setBusquedaGuias(evento.target.value); setPaginaGuias(1); }} placeholder="Buscar por guía, comprobante o cliente" aria-label="Buscar guías de remisión" />
-            </label>
-            <div className="flex w-full flex-wrap gap-2" role="group" aria-label="Filtrar por estado">
-              {filtros.map(({ valor, etiqueta, conteo }) => (
-                <button key={valor} type="button" className={claseChip} aria-pressed={grupo === valor} onClick={() => { setPaginaGuias(1); setGrupo(valor); }}>
-                  {etiqueta}<span className={claseConteo}>{conteos[conteo]}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        claseCabecera={c.header}
+        centrarCeldas={false}
+        claseTabla={c.table}
+        claseContenedor={c.tableScroll}
         paginacion={{
-          modo: "remota", pagina: paginaGuias, tamanio: porPaginaGuias, total: totalGuias,
-          totalPaginas: totalPaginasGuias,
-          desde: totalGuias ? (paginaGuias - 1) * porPaginaGuias + 1 : 0,
-          hasta: Math.min(paginaGuias * porPaginaGuias, totalGuias),
-          alCambiarPagina: setPaginaGuias,
-          alCambiarTamanio: (tamanio) => { setPorPaginaGuias(tamanio); setPaginaGuias(1); },
+          modo: "remota", pagina, tamanio: porPagina, total, totalPaginas,
+          desde: total ? (pagina - 1) * porPagina + 1 : 0,
+          hasta: Math.min(pagina * porPagina, total),
+          alCambiarPagina: setPagina,
+          alCambiarTamanio: (tamanio) => { setPorPagina(tamanio); setPagina(1); },
         }}
-        vacio={<span>{textoBusquedaGuias ? "No se encontraron guías con esos criterios." : grupo === "TODAS" ? "Las guías emitidas aparecerán aquí." : "No hay guías en este estado."}</span>}
-        encabezadoTabla={<tr><th>Tipo y código</th><th>Comprobante origen</th><th>Fecha</th><th>Estado y detalle</th><th>Documentos y acciones</th></tr>}
+        vacio={<div className={c.empty}><strong>No hay guías para mostrar</strong><span>{busqueda.trim() ? "Prueba con otra búsqueda." : "Las guías emitidas aparecerán aquí."}</span></div>}
+        encabezadoTabla={encabezado}
         renderizarFila={(guia) => {
-          const tono = tonoDeEstado(guia.estado);
+          const visible = estadoVisible(guia.estado);
+          const tono = tonosEstado[visible];
           return (
             <tr key={guia.id}>
+              <td className="[font-variant-numeric:tabular-nums] text-[#142b42]">{fecha(guia.fecha)}</td>
               <td>
-                <strong className="block text-[13px] tracking-[.01em] text-[#0b2545]">{guia.codigo}</strong>
-                <span className="text-[11px] text-[#5b7083]">Guía de remisión {guia.tipo === "REMITENTE" ? "remitente" : "transportista"}</span>
+                <strong className={c.documentCode}>{guia.codigo}</strong>
+                <small className={c.minorText}>{guia.tipo === "REMITENTE" ? "Remitente" : "Transportista"}</small>
               </td>
               <td>
                 {guia.comprobanteOrigen
-                  ? <><strong className="block text-[13px] text-[#142b42]">{guia.comprobanteOrigen.codigo}</strong><span className="text-[11px] text-[#5b7083]">{guia.comprobanteOrigen.tipo.replace("_", " ")}</span></>
+                  ? <><strong className={c.documentCode}>{guia.comprobanteOrigen.codigo}</strong><small className={c.minorText}>{guia.comprobanteOrigen.tipo === "NOTA_VENTA" ? "Nota de venta" : guia.comprobanteOrigen.tipo === "FACTURA" ? "Factura" : "Boleta"}</small></>
                   : <span className="text-[#5b7083]">Sin vínculo</span>}
               </td>
-              <td className="whitespace-nowrap tabular-nums">{guia.fecha}</td>
+              <td><strong className={c.clientName}>{guia.clienteNombre?.trim() || "Clientes varios"}</strong></td>
               <td>
-                <div className="flex flex-col items-start gap-1.5">
-                  <span className={`inline-flex h-[26px] items-center gap-[7px] whitespace-nowrap rounded-[13px] border px-2.5 text-xs font-semibold ${tono.caja}`}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{etiquetaEstadoGuia(guia.estado)}</span>
-                  {guia.detalle && <small className="max-w-[320px] text-[11px] leading-snug text-[#5b7083]">{guia.detalle}</small>}
-                </div>
+                <span className={`${c.status} ${tono.caja}`} title={guia.detalle || detalleEstado(guia.estado)}><i className={`h-[7px] w-[7px] rounded-full ${tono.punto}`} aria-hidden="true" />{visible}</span>
+                {visible === "Pendiente" && <small className={c.minorText}>Confirmando con SUNAT</small>}
               </td>
               <td>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <MenuImpresion codigo={guia.codigo} etiqueta={`Imprimir guía ${guia.codigo}`} tono="neutral" obtener={() => documentoDeGuia(guia)} />
-                  {guia.enlacePdf && <a className={claseEnlace} href={guia.enlacePdf} target="_blank" rel="noreferrer">PDF</a>}
-                  {guia.enlaceXml && <a className={claseEnlace} href={guia.enlaceXml} target="_blank" rel="noreferrer">XML</a>}
-                  {guia.enlaceCdr && <a className={claseEnlace} href={guia.enlaceCdr} target="_blank" rel="noreferrer">CDR</a>}
-                  {guia.estado !== "EMITIDO" && <button type="button" className={claseEnlace} disabled={consultando === guia.id} onClick={() => void consultar(guia.id)}>{consultando === guia.id ? "Consultando…" : "Consultar SUNAT"}</button>}
+                <div className={c.rowActions}>
+                  {visible !== "Rechazada" && <MenuImpresion codigo={guia.codigo} etiqueta={`Imprimir guía ${guia.codigo}`} tono="neutral" obtener={() => documentoDeGuia(guia)} />}
+                  {guia.enlacePdf && <BotonAccion tono="neutral" etiqueta={`Abrir PDF de ${guia.codigo}`} href={enlace(guia.enlacePdf)} target="_blank" rel="noreferrer" icono={<FileText aria-hidden="true" size={16} />} />}
+                  {guia.enlaceXml && <BotonAccion tono="neutral" etiqueta={`Descargar XML de ${guia.codigo}`} href={enlace(guia.enlaceXml)} target="_blank" rel="noreferrer" icono={<FileCode aria-hidden="true" size={16} />} />}
+                  {guia.enlaceCdr && <BotonAccion tono="positiva" etiqueta={`Ver constancia SUNAT de ${guia.codigo}`} href={enlace(guia.enlaceCdr)} target="_blank" rel="noreferrer" icono={<FileCheck aria-hidden="true" size={16} />} />}
+                  {guia.estado !== "EMITIDO" && <BotonAccion tono="informativa" etiqueta={consultando === guia.id ? `Consultando ${guia.codigo}…` : `Consultar estado SUNAT de ${guia.codigo}`} disabled={consultando === guia.id} onClick={() => void consultar(guia)} icono={<RefreshCw aria-hidden="true" size={16} className={consultando === guia.id ? "animate-spin" : undefined} />} />}
                 </div>
               </td>
             </tr>
           );
         }}
       />
-    </main>
+    </section>
   );
 }

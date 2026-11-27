@@ -1,8 +1,8 @@
 import { NotificacionFlotante } from "../../components/ui/notificacion-flotante/notificacion-flotante";
-import { Circle, MapPin, Route } from "lucide-react";
+import { Circle, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { servicioIngresos, type UbigeoPeru } from "../../services/ingresos.service";
-import { claseCampoGuia, claseControlGuia, SeccionGuia } from "./campos-guia";
+import { claseCampoGuia, SeccionGuia, SelectGuia } from "./campos-guia";
 
 function PuntoTraslado({ tipo, ubigeos, departamentos, cargando }: { tipo: "partida" | "llegada"; ubigeos: UbigeoPeru[]; departamentos: string[]; cargando: boolean }) {
   const [departamento, setDepartamento] = useState("");
@@ -12,35 +12,34 @@ function PuntoTraslado({ tipo, ubigeos, departamentos, cargando }: { tipo: "part
   const provincias = [...new Set(enDepartamento.map((item) => item.provincia))];
   const distritos = enDepartamento.filter((item) => item.provincia === provincia);
 
-  return <section aria-labelledby={`guia-punto-${tipo}`} className="@container/punto grid min-w-0 content-start gap-3 rounded-md border border-border bg-muted p-3.5">
-    <h3 id={`guia-punto-${tipo}`} className="flex items-center gap-2 text-sm font-bold">
-      {tipo === "partida" ? <Circle size={14} className="text-primary" aria-hidden="true" /> : <MapPin size={16} className="text-destructive" aria-hidden="true" />}
-      Punto de {tipo}
-    </h3>
-    <div className="grid min-w-0 gap-2.5 @[19rem]/punto:grid-cols-2 @[28rem]/punto:grid-cols-3">
-      <label className={claseCampoGuia}>Departamento
-        <select className={claseControlGuia} aria-label={`Departamento de ${tipo}`} value={departamento} required onChange={(evento) => { setDepartamento(evento.target.value); setProvincia(""); setDistrito(""); }}>
+  return <div className="os-revision guia-punto" role="group" aria-labelledby={`guia-punto-${tipo}`}>
+    <span id={`guia-punto-${tipo}`} className="os-revision-titulo">
+      {tipo === "partida" ? <Circle aria-hidden="true" size={14} /> : <MapPin aria-hidden="true" size={16} />}Punto de {tipo}
+    </span>
+    <div className="guia-ubigeo">
+      <label className={claseCampoGuia}>Departamento *
+        <SelectGuia aria-label={`Departamento de ${tipo}`} value={departamento} required onChange={(evento) => { setDepartamento(evento.target.value); setProvincia(""); setDistrito(""); }}>
           <option value="">{cargando ? "Cargando…" : "Seleccionar"}</option>
           {departamentos.map((item) => <option key={item}>{item}</option>)}
-        </select>
+        </SelectGuia>
       </label>
-      <label className={claseCampoGuia}>Provincia
-        <select className={claseControlGuia} aria-label={`Provincia de ${tipo}`} value={provincia} required disabled={!departamento} onChange={(evento) => { setProvincia(evento.target.value); setDistrito(""); }}>
+      <label className={claseCampoGuia}>Provincia *
+        <SelectGuia aria-label={`Provincia de ${tipo}`} value={provincia} required disabled={!departamento} onChange={(evento) => { setProvincia(evento.target.value); setDistrito(""); }}>
           <option value="">Seleccionar</option>
           {provincias.map((item) => <option key={item}>{item}</option>)}
-        </select>
+        </SelectGuia>
       </label>
-      <label className={`${claseCampoGuia} @[19rem]/punto:col-span-full @[28rem]/punto:col-span-1`}>Distrito
-        <select className={claseControlGuia} aria-label={`Distrito de ${tipo}`} name={`${tipo}Ubigeo`} value={distrito} required disabled={!provincia} onChange={(evento) => setDistrito(evento.target.value)}>
+      <label className={claseCampoGuia}>Distrito *
+        <SelectGuia aria-label={`Distrito de ${tipo}`} name={`${tipo}Ubigeo`} value={distrito} required disabled={!provincia} onChange={(evento) => setDistrito(evento.target.value)}>
           <option value="">Seleccionar</option>
           {distritos.map((item) => <option key={item.codigo} value={item.codigo}>{item.distrito}</option>)}
-        </select>
+        </SelectGuia>
       </label>
     </div>
-    <label className={claseCampoGuia}>Dirección de {tipo}
-      <input className={claseControlGuia} name={`${tipo}Direccion`} maxLength={150} required />
+    <label className={claseCampoGuia}>Dirección de {tipo} *
+      <input name={`${tipo}Direccion`} maxLength={150} placeholder={tipo === "partida" ? "Ej. Jr. Ica 380, Huancayo" : "Ej. Av. Ferrocarril 1020, El Tambo"} required />
     </label>
-  </section>;
+  </div>;
 }
 
 export function RutaGuia() {
@@ -58,9 +57,9 @@ export function RutaGuia() {
   }, []);
 
   const departamentos = [...new Set(ubigeos.map((item) => item.departamento))];
-  return <SeccionGuia titulo="Ruta del traslado" icono={<Route />}>
+  return <SeccionGuia paso={4} id="guia-titulo-ruta" titulo="Ruta del traslado">
     {error && <NotificacionFlotante mensaje={error} />}
-    <div className="grid min-w-0 gap-3 @[43rem]:grid-cols-2">
+    <div className="guia-ruta">
       <PuntoTraslado tipo="partida" ubigeos={ubigeos} departamentos={departamentos} cargando={cargando} />
       <PuntoTraslado tipo="llegada" ubigeos={ubigeos} departamentos={departamentos} cargando={cargando} />
     </div>
