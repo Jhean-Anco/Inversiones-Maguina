@@ -113,7 +113,7 @@ describe("impresión por navegador", () => {
     expect(await imprimirPdf("https://nubefact/x.pdf", false)).toBe("abierto");
     vi.stubGlobal("fetch", vi.fn(async () => new Response("pdf", { status: 500 })));
     await expect(imprimirPdf("/archivos/1", true)).rejects.toThrow(/500/);
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(new Blob(["%PDF"], { type: "text/plain" }))));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("%PDF", { headers: { "content-type": "text/plain" } })));
     URL.createObjectURL = vi.fn(() => "blob:x"); URL.revokeObjectURL = vi.fn();
     vi.useFakeTimers();
     const promesa = imprimirPdf("/archivos/1", true);
