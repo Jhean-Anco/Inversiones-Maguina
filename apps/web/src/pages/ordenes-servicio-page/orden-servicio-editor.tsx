@@ -130,7 +130,7 @@ export function OrdenServicioEditor({ alert, onSubmit, orden, catalogo, vehiculo
                   <select value={recepcion.trabajadorId} onChange={(evento) => recepcion.onTrabajador(evento.target.value)} required><option value="">Selecciona personal</option>{recepcion.personal.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}</select>
                 </label>
               </div>
-              <label className="os-campo">Comentario de cómo llega el móvil<textarea value={recepcion.condicion} maxLength={2000} rows={3} onChange={(evento) => recepcion.onCondicion(evento.target.value)} placeholder="Describe el estado en que se recibe el móvil" /></label>
+              <label className="os-campo">Comentario de cómo llega el móvil<textarea value={recepcion.condicion} maxLength={2000} rows={3} required onChange={(evento) => recepcion.onCondicion(evento.target.value)} placeholder="Describe el estado en que se recibe el móvil" /></label>
             </div>
             <div className="os-cliente">
               <label className="os-etiqueta" htmlFor="orden-cliente-busqueda">{edicion ? "Cliente" : "Cliente *"}</label>

@@ -202,7 +202,7 @@ describe("series y numeraciones", () => {
 
 describe("órdenes de servicio", () => {
   test("crea, lista y actualiza órdenes validando cliente, fechas y adelantos", async () => {
-    const base = { clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "abc-123", fechaRecepcion: hoy, fechaAcabado: diasAdelante(0), motivo: "Ruido en motor", detalles: [trabajo(50)] };
+    const base = { clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "abc-123", fechaRecepcion: hoy, fechaAcabado: diasAdelante(0), motivo: "Ruido en motor", detalles: [trabajo(50)] };
     await rechazaCon(servicio.crearOrdenServicio({ ...base, clienteId: randomUUID() }, usuarioId), NotFoundException, /no está activo/);
     await rechazaCon(servicio.crearOrdenServicio({ ...base, vehiculoPlaca: "" }, usuarioId), BadRequestException, /placa o identificador/);
     await rechazaCon(servicio.crearOrdenServicio({ ...base, trabajadorResponsableId: undefined }, usuarioId), BadRequestException, /responsable de revisar el móvil/);
@@ -238,7 +238,7 @@ describe("órdenes de servicio", () => {
   });
 
   test("emitir una orden genera la boleta, registra adelanto y saldo, y la marca facturada", async () => {
-    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "MOT-1", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(50)], adelanto: 20, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
+    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "MOT-1", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(50)], adelanto: 20, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
     simularNubefact(() => aceptada());
     const emitida = await servicio.emitirOrdenServicio(orden.id, { tipoComprobante: "BOLETA", saldoMedioPago: "EFECTIVO", saldoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
     assert.equal(emitida.ingreso.estado, "EMITIDO");
@@ -253,14 +253,14 @@ describe("órdenes de servicio", () => {
   });
 
   test("una orden pagada por completo con el adelanto usa su medio y una venta inválida revierte la orden", async () => {
-    const pagada = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "MOT-2", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(30)], adelanto: 30, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo, motivo: " " }, usuarioId);
+    const pagada = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "MOT-2", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(30)], adelanto: 30, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo, motivo: " " }, usuarioId);
     const resultado = await servicio.emitirOrdenServicio(pagada.id, { tipoComprobante: "NOTA_VENTA", medioPago: "TARJETA" }, usuarioId);
     assert.equal(resultado.ingreso.tipoComprobante, "NOTA_VENTA");
     const [venta] = await db.select().from(esquema.ingresos).where(eq(esquema.ingresos.id, String(resultado.ingreso.id)));
     assert.equal(venta.medioPago, "EFECTIVO");
     assert.equal(venta.observacion, `Orden de servicio ${pagada.codigo} · Vehículo MOT-2`);
 
-    const excedida = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "MOT-3", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(10)], adelanto: 30, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
+    const excedida = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "MOT-3", fechaRecepcion: hoy, fechaAcabado: hoy, detalles: [trabajo(10)], adelanto: 30, adelantoMedioPago: "EFECTIVO", adelantoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
     await rechazaCon(servicio.emitirOrdenServicio(excedida.id, {}, usuarioId), BadRequestException, /adelanto no puede superar/);
     const [revertida] = await db.select().from(esquema.ordenesServicio).where(eq(esquema.ordenesServicio.id, excedida.id));
     assert.equal(revertida.estado, "COMPLETADA");
@@ -269,7 +269,7 @@ describe("órdenes de servicio", () => {
   test("vincula una venta registrada con la orden solo si coincide en tipo, cliente, total y líneas", async () => {
     const producto = await crearProducto();
     const detalles = [{ tipo: "PRODUCTO", presentacionId: producto.presentacionId, cantidad: 1, precioUnitario: 10, afectacionIgv: "GRAVADO" }, trabajo(40)];
-    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "MOT-4", fechaRecepcion: hoy, fechaAcabado: hoy, detalles }, usuarioId);
+    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "MOT-4", fechaRecepcion: hoy, fechaAcabado: hoy, detalles }, usuarioId);
     const venta = (extra: Record<string, unknown> = {}) => servicio.crear({ idempotencyKey: randomUUID(), fecha: hoy, tipoComprobante: "NOTA_VENTA", clienteId: cliente.id, medioPago: "EFECTIVO", ordenServicioId: orden.id,
       detalles: orden.detalles.map((linea) => ({ ...linea, precioUnitario: Number(linea.precioUnitario) })), ...extra }, usuarioId);
     await rechazaCon(venta({ ordenServicioId: "x" }), BadRequestException, /orden de servicio asociada no es válida/);
@@ -300,7 +300,7 @@ describe("órdenes de servicio", () => {
   test("emite directamente órdenes y cotizaciones con repuestos conservando el precio registrado", async () => {
     const producto = await crearProducto("10.00");
     const detalles = [{ tipo: "PRODUCTO", presentacionId: producto.presentacionId, cantidad: 1, precioUnitario: 10 }, trabajo(40)];
-    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, vehiculoPlaca: "REP-1", fechaRecepcion: hoy, fechaAcabado: hoy, detalles }, usuarioId);
+    const orden = await servicio.crearOrdenServicio({ clienteId: cliente.id, trabajadorResponsableId, condicionRecepcion: "Llega con daños visibles en el lateral", vehiculoPlaca: "REP-1", fechaRecepcion: hoy, fechaAcabado: hoy, detalles }, usuarioId);
     const resultado = await servicio.emitirOrdenServicio(orden.id, { tipoComprobante: "NOTA_VENTA", saldoMedioPago: "EFECTIVO", saldoCuentaFinancieraId: cuentaEfectivo }, usuarioId);
     assert.equal(resultado.ingreso.total, "50.00");
     const salidas = await db.select().from(esquema.movimientosStock).where(eq(esquema.movimientosStock.origenId, String(resultado.ingreso.id)));
