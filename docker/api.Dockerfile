@@ -2,7 +2,11 @@
 FROM node:22.23.5-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable \
+    && corepack prepare pnpm@10.20.0 --activate
 WORKDIR /workspace
 
 FROM base AS build
@@ -22,7 +26,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/database/package.json packages/database/package.json
 RUN pnpm install --prod --frozen-lockfile --filter @magina/api...
 
-FROM node:22.23.5-bookworm-slim AS api
+FROM base AS api
 ARG BUILD_SHA=local
 ENV NODE_ENV=production
 ENV MAGINA_BUILD_SHA=${BUILD_SHA}
